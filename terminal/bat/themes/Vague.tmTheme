@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+	<key>name</key>
+	<string>Vague (official port)</string>
+
+	<key>settings</key>
+	<array>
+
+		<!-- Base -->
+		<dict>
+			<key>settings</key>
+			<dict>
+				<key>background</key>
+				<string>#141415</string>
+				<key>foreground</key>
+				<string>#CDCDCD</string>
+				<key>caret</key>
+				<string>#CDCDCD</string>
+				<key>selection</key>
+				<string>#252530</string>
+				<key>invisibles</key>
+				<string>#606079</string>
+				<key>lineHighlight</key>
+				<string>#1C1C24</string>
+			</dict>
+		</dict>
+
+		<!-- Comment -->
+		<dict>
+			<key>name</key>
+			<string>Comment</string>
+			<key>scope</key>
+			<string>comment</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#606079</string>
+				<key>fontStyle</key>
+				<string>italic</string>
+			</dict>
+		</dict>
+
+		<!-- Keyword -->
+		<dict>
+			<key>name</key>
+			<string>Keyword</string>
+			<key>scope</key>
+			<string>keyword</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#D8647E</string>
+			</dict>
+		</dict>
+
+		<!-- String -->
+		<dict>
+			<key>name</key>
+			<string>String</string>
+			<key>scope</key>
+			<string>string</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#F3BE7C</string>
+			</dict>
+		</dict>
+
+		<!-- Number -->
+		<dict>
+			<key>name</key>
+			<string>Number</string>
+			<key>scope</key>
+			<string>constant.numeric</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#F3BE7C</string>
+			</dict>
+		</dict>
+
+		<!-- Function -->
+		<dict>
+			<key>name</key>
+			<string>Function</string>
+			<key>scope</key>
+			<string>entity.name.function</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#7E98E8</string>
+			</dict>
+		</dict>
+
+		<!-- Type -->
+		<dict>
+			<key>name</key>
+			<string>Type</string>
+			<key>scope</key>
+			<string>entity.name.class, support.type, support.class</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#BB9DBD</string>
+			</dict>
+		</dict>
+
+		<!-- Variable -->
+		<dict>
+			<key>name</key>
+			<string>Variable</string>
+			<key>scope</key>
+			<string>variable</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#CDCDCD</string>
+			</dict>
+		</dict>
+
+		<!-- Parameter -->
+		<dict>
+			<key>name</key>
+			<string>Parameter</string>
+			<key>scope</key>
+			<string>variable.parameter</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#90A0B5</string>
+				<key>fontStyle</key>
+				<string>italic</string>
+			</dict>
+		</dict>
+
+		<!-- Tag -->
+		<dict>
+			<key>name</key>
+			<string>Tag</string>
+			<key>scope</key>
+			<string>entity.name.tag</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#7FA563</string>
+			</dict>
+		</dict>
+
+		<!-- Attribute -->
+		<dict>
+			<key>name</key>
+			<string>Attribute</string>
+			<key>scope</key>
+			<string>entity.other.attribute-name</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#6E94B2</string>
+			</dict>
+		</dict>
+
+		<!-- Constant -->
+		<dict>
+			<key>name</key>
+			<string>Constant</string>
+			<key>scope</key>
+			<string>constant, constant.language</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#F3BE7C</string>
+			</dict>
+		</dict>
+
+		<!-- Error -->
+		<dict>
+			<key>name</key>
+			<string>Error</string>
+			<key>scope</key>
+			<string>invalid</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#141415</string>
+				<key>background</key>
+				<string>#D8647E</string>
+			</dict>
+		</dict>
+
+	</array>
+
+	<key>colorSpaceName</key>
+	<string>sRGB</string>
+
+</dict>
+</plist>

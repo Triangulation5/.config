@@ -1,0 +1,103 @@
+// Place your key bindings in this file to override the defaults
+[
+    // --- QUICK OPEN NAVIGATION ---
+    {
+        "key": "ctrl+n",
+        "command": "workbench.action.quickOpenSelectNext",
+        "when": "inQuickOpen && !vim.active"
+    },
+    {
+        "key": "ctrl+p",
+        "command": "workbench.action.quickOpenSelectPrevious",
+        "when": "inQuickOpen && !vim.active"
+    },
+
+    // --- VIM-LIKE CTRL+N/P FOR COMPLETIONS ---
+    {
+        "key": "ctrl+n",
+        "command": "extension.vim_ctrl+n",
+        "when": "vim.active && vim.use<C-n> && !inQuickOpen && !inDebugRepl"
+    },
+    {
+        "key": "ctrl+p",
+        "command": "extension.vim_ctrl+p",
+        "when": "vim.active && vim.use<C-p> && !inQuickOpen && !inDebugRepl"
+    },
+
+    // --- HARPOON KEYBINDS (EDITOR NAVIGATION) ---
+    {
+        "key": "ctrl+h",
+        "command": "vscode-harpoon.gotoEditor1"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "vscode-harpoon.gotoEditor2"
+    },
+    {
+        "key": "ctrl+k",
+        "command": "vscode-harpoon.gotoEditor3"
+    },
+    {
+        "key": "ctrl+l",
+        "command": "vscode-harpoon.gotoEditor4"
+    },
+
+    // --- SIDEBAR NAVIGATION (LIST MOVEMENT) ---
+    {
+        "key": "j",
+        "command": "list.focusAnyDown",
+        "when": "sideBarFocus && !inputFocus"
+    },
+    {
+        "key": "k",
+        "command": "list.focusAnyUp",
+        "when": "sideBarFocus && !inputFocus"
+    },
+
+    // --- EXPLORER ACTIONS ---
+    {
+        "key": "a",
+        "command": "workbench.files.action.createFileFromExplorer",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "f",
+        "command": "workbench.files.action.createFolderFromExplorer",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "c",
+        "command": "filesExplorer.copy",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "x",
+        "command": "filesExplorer.cut",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "p",
+        "command": "filesExplorer.paste",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "d",
+        "command": "moveFileToTrash",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "r",
+        "command": "renameFile",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "y",
+        "command": "copyRelativeFilePath",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    },
+    {
+        "key": "g y",
+        "command": "copyFilePath",
+        "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    }
+]

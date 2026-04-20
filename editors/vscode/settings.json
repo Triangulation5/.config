@@ -1,0 +1,383 @@
+{
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell"
+    },
+    "Command Prompt": {
+      "path": [
+        "${env:windir}\\Sysnative\\cmd.exe",
+        "${env:windir}\\System32\\cmd.exe"
+      ],
+      "args": [],
+      "icon": "terminal-cmd"
+    },
+    "Git Bash": {
+      "path": [
+        "C:\\Program Files\\Git\\bin\\bash.exe"
+      ],
+      "args": [
+        "--login",
+        "-i"
+      ],
+      "icon": "terminal-bash"
+    }
+  },
+  "editor.cursorBlinking": "expand",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.wordWrap": "on",
+  "editor.formatOnSave": true,
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+  "github.copilot.enable": {
+    "*": false,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false
+  },
+  "editor.minimap.enabled": false,
+  "workbench.sideBar.location": "right",
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.activityBar.location": "hidden",
+  "workbench.statusBar.visible": false,
+  "workbench.colorTheme": "Rosé Pine",
+  "workbench.startupEditor": "none",
+  "workbench.tips.enabled": false,
+  "workbench.tree.renderIndentGuides": "none",
+  "workbench.tree.indent": 8,
+  "explorer.compactFolders": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.confirmDelete": false,
+  "explorer.decorations.badges": false,
+  "material-icon-theme.hidesExplorerArrows": true,
+  "breadcrumbs.enabled": false,
+  "editor.renderWhitespace": "none",
+  "window.zoomLevel": 3,
+  "window.titleBarStyle": "custom",
+  "custom-ui-style.font.sansSerif": "Fira Code",
+  "custom-ui-style.stylesheet": {
+    ".notification-toast": "box-shadow: none !important",
+    ".quick-input-widget.show-file-icons": "box-shadow: none !important",
+    ".quick-input-widget": "top: 25vh !important",
+    ".quick-input-list .scrollbar": "display: none",
+    ".monaco-action-bar.quick-input-inline-action-bar": "display: none",
+    ".editor-widget.find-widget": "box-shadow: none; border-radius: 4px",
+    ".quick-input-titlebar": "background: #100B15 !important",
+    ".monaco-workbench .part.editor > .content .editor-group-container > .title.title-border-bottom:after": "display: none",
+    ".monaco-scrollable-element > .shadow.top": "display: none",
+    ".sidebar .title-label": "padding: 0 !important",
+    ".sidebar": "border: none !important",
+    ".monaco-workbench .monaco-list:not(.element-focused):focus:before": "outline: none !important",
+    ".monaco-list-row.focused": "outline: none !important",
+    ".monaco-editor .scroll-decoration": "display: none",
+    ".title-actions": "display: none !important",
+    ".title.show-file-icons .label-container .monaco-icon-label.file-icon": "justify-content: center; padding: 0 !important",
+    ".title .monaco-icon-label:after": "margin-right: 0",
+    ".monaco-workbench .part.editor > .content .editor-group-container > .title > .label-container > .title-label": "padding-left: 60px",
+    ".title .monaco-icon-label.file-icon": "margin: 0 60px"
+  },
+  "editor.fontFamily": "Fira Code",
+  "editor.fontSize": 14,
+  "editor.fontLigatures": true,
+  // Imported settings
+  "workbench.editor.showTabs": "single", // Make make this "single" or "multiple" both are fine
+  "window.commandCenter": false,
+  // if you opt for tabs :)
+  "window.density.editorTabHeight": "compact",
+  "window.restoreWindows": "none",
+  // vscodevim settings
+  "vim.useSystemClipboard": true,
+  "vim.hlsearch": true,
+  "vim.useCtrlKeys": true,
+  // vscodevim appearance settings
+  "editor.cursorSurroundingLines": 10,
+  "vim.smartRelativeLine": true,
+  // highlighted yank
+  "vim.highlightedyank.enable": true,
+  "vim.highlightedyank.color": "rgba(250, 189, 47, 0.5)",
+  "vim.highlightedyank.textColor": "#202020",
+  "vim.highlightedyank.duration": 150,
+  // statusbar colors
+  "vim.statusBarColorControl": false,
+  "vim.statusBarColors.normal": [
+    "#171819",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.insert": [
+    "#2C2E07",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.visual": [
+    "#35151D",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.visualline": [
+    "#35151D",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.visualblock": [
+    "#35151D",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.commandlineinprogress": [
+    "#2C2206",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.searchinprogressmode": [
+    "#171819",
+    "#ffffff"
+  ],
+  "vim.statusBarColors.surroundinputmode": [
+    "#171819",
+    "#ffffff"
+  ],
+  // which key settings
+  "vim.normalModeKeyBindingsNonRecursive": [
+    {
+      "before": [
+        "<space>"
+      ],
+      "commands": [
+        "whichkey.show"
+      ]
+    }
+  ],
+  "vim.visualModeKeyBindingsNonRecursive": [
+    {
+      "before": [
+        "<space>"
+      ],
+      "commands": [
+        "whichkey.show"
+      ]
+    }
+  ],
+  "whichkey.useFullWidthCharacters": true,
+  "whichkey.bindingOverrides": [],
+  "whichkey.bindings": [
+    {
+      "key": "/",
+      "name": "[/] Fuzzy search in current editor",
+      "type": "command",
+      "command": "fuzzySearch.activeTextEditor"
+    },
+    {
+      "key": "a",
+      "name": "[A]dd editor to harpoon",
+      "type": "command",
+      "command": "vscode-harpoon.addEditor"
+    },
+    {
+      "key": "e",
+      "name": "[E]dit harpoon editors",
+      "type": "command",
+      "command": "vscode-harpoon.editEditors"
+    },
+    {
+      "key": "f",
+      "name": "[F]ormat Document",
+      "type": "command",
+      "command": "editor.action.formatDocument"
+    },
+    {
+      "key": "T",
+      "name": "Open File [T]ree",
+      "type": "command",
+      "command": "workbench.explorer.fileView.focus"
+    },
+    {
+      "key": "s",
+      "name": "[S]earch",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "h",
+          "name": "[S]earch [H]arpoon Editors",
+          "type": "command",
+          "command": "vscode-harpoon.editorQuickPick"
+        },
+        {
+          "key": "p",
+          "name": "[S]earch Command [P]alette",
+          "type": "command",
+          "command": "workbench.action.showCommands"
+        },
+        {
+          "key": "f",
+          "name": "[S]earch [F]iles",
+          "type": "command",
+          "command": "workbench.action.quickOpen"
+        },
+        {
+          "key": "k",
+          "name": "[S]earch [K]eybindings",
+          "type": "command",
+          "command": "workbench.action.openGlobalKeybindings"
+        },
+        {
+          "key": "e",
+          "name": "[S]earch [E]xtensions",
+          "type": "command",
+          "command": "workbench.view.extensions"
+        },
+        {
+          "key": ".",
+          "name": "[S]earch Recent Files",
+          "type": "command",
+          "command": "workbench.action.openRecent"
+        }
+      ]
+    },
+    // LSP
+    {
+      "key": "c",
+      "name": "[C]ode",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "a",
+          "name": "[C]ode [A]ctions",
+          "type": "command",
+          "command": "editor.action.quickFix"
+        }
+      ]
+    },
+    {
+      "key": "r",
+      "name": "",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "c",
+          "name": "[R]efactor [C]ode",
+          "type": "command",
+          "command": "editor.action.refactor"
+        },
+        {
+          "key": "n",
+          "name": "[R]e[N]ame Symbol",
+          "type": "command",
+          "command": "editor.action.rename"
+        },
+        {
+          "key": "d",
+          "name": "[R]un with [D]ebuging",
+          "type": "command",
+          "command": "workbench.action.debug.start"
+        },
+        {
+          "key": "r",
+          "name": "[R]un Without debugging",
+          "type": "command",
+          "command": "workbench.action.debug.run"
+        }
+      ]
+    },
+    {
+      "key": "g",
+      "name": "goto",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "d",
+          "name": "[G]oto [D]efinition",
+          "type": "command",
+          "command": "editor.revealDefinition"
+        },
+        {
+          "key": "r",
+          "name": "[G]oto [R]eferences",
+          "type": "command",
+          "command": "editor.action.goToReferences"
+        },
+        {
+          "key": "I",
+          "name": "[G]oto [I]mplementation",
+          "type": "command",
+          "command": "editor.action.goToImplementation"
+        },
+        {
+          "key": "D",
+          "name": "[G]oto [D]eclaration",
+          "type": "command",
+          "command": "editor.action.revealDeclaration"
+        }
+      ]
+    },
+    {
+      "key": "D",
+      "name": "Jump to Type [D]efinition",
+      "type": "command",
+      "command": "editor.action.goToTypeDefinition"
+    },
+    {
+      "key": "d",
+      "name": "",
+      "type": "bindings",
+      "bindings": [
+        {
+          "key": "s",
+          "name": "[D]ocument [S]ymbols",
+          "type": "command",
+          "command": "workbench.action.gotoSymbol"
+        }
+      ]
+    }
+  ],
+  "python.defaultInterpreterPath": "C:\\Users\\Rency\\AppData\\Local\\Microsoft\\WindowsApps\\python3.11.exe",
+  "workbench.layoutControl.enabled": false,
+  "chat.commandCenter.enabled": false,
+  "extensions.experimental.affinity": {
+    "asvetliakov.vscode-neovim": 1
+  },
+  "window.menuBarVisibility": "toggle",
+  "workbench.tree.enableStickyScroll": false,
+  "workbench.colorCustomizations": {
+    "[Vira*]": {
+      "toolbar.activeBackground": "#80CBC426",
+      "button.background": "#80CBC4",
+      "button.hoverBackground": "#80CBC4cc",
+      "extensionButton.separator": "#80CBC433",
+      "extensionButton.background": "#80CBC414",
+      "extensionButton.foreground": "#80CBC4",
+      "extensionButton.hoverBackground": "#80CBC433",
+      "extensionButton.prominentForeground": "#80CBC4",
+      "extensionButton.prominentBackground": "#80CBC414",
+      "extensionButton.prominentHoverBackground": "#80CBC433",
+      "activityBarBadge.background": "#80CBC4",
+      "activityBar.activeBorder": "#80CBC4",
+      "activityBarTop.activeBorder": "#80CBC4",
+      "list.inactiveSelectionIconForeground": "#80CBC4",
+      "list.activeSelectionForeground": "#80CBC4",
+      "list.inactiveSelectionForeground": "#80CBC4",
+      "list.highlightForeground": "#80CBC4",
+      "sash.hoverBorder": "#80CBC480",
+      "list.activeSelectionIconForeground": "#80CBC4",
+      "scrollbarSlider.activeBackground": "#80CBC480",
+      "editorSuggestWidget.highlightForeground": "#80CBC4",
+      "textLink.foreground": "#80CBC4",
+      "progressBar.background": "#80CBC4",
+      "pickerGroup.foreground": "#80CBC4",
+      "tab.activeBorder": "#80CBC4",
+      "notificationLink.foreground": "#80CBC4",
+      "editorWidget.resizeBorder": "#80CBC4",
+      "editorWidget.border": "#80CBC4",
+      "settings.modifiedItemIndicator": "#80CBC4",
+      "panelTitle.activeBorder": "#80CBC4",
+      "breadcrumb.activeSelectionForeground": "#80CBC4",
+      "menu.selectionForeground": "#80CBC4",
+      "menubar.selectionForeground": "#80CBC4",
+      "editor.findMatchBorder": "#80CBC4",
+      "selection.background": "#80CBC440",
+      "statusBarItem.remoteBackground": "#80CBC414",
+      "statusBarItem.remoteHoverBackground": "#80CBC4",
+      "statusBarItem.remoteForeground": "#80CBC4",
+      "notebook.inactiveFocusedCellBorder": "#80CBC480",
+      "commandCenter.activeBorder": "#80CBC480",
+      "chat.slashCommandForeground": "#80CBC4",
+      "chat.avatarForeground": "#80CBC4",
+      "activityBarBadge.foreground": "#000000",
+      "button.foreground": "#000000",
+      "statusBarItem.remoteHoverForeground": "#000000"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+[plugin]
+deps = []
+
+[[flavor.deps]]
+use = "yazi-rs/flavors:catppuccin-frappe"
+rev = "9cd2ac4"
+hash = "b5e0a30e0441f32a7c4508a2e6490ce"
+
+[[flavor.deps]]
+use = "gosxrgxx/flexoki-dark"
+rev = "28e1977"
+hash = "e83c95d5193c0d2165e961955e521a15"
+
+[[flavor.deps]]
+use = "dangooddd/kanagawa"
+rev = "a0b1d9d"
+hash = "d0bfdbc8221a2acef9e7cf28e8a6157e"
+
+[[flavor.deps]]
+use = "kmlupreti/ayu-dark"
+rev = "648a178"
+hash = "2ebdd4e3e00d6612bfa64dd7ca3dac4f"
+
+[[flavor.deps]]
+use = "Chromium-3-Oxide/everforest-medium"
+rev = "0158f0f"
+hash = "e6a51e72d652374ab50123c762f4bf"
