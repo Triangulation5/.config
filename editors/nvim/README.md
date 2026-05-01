@@ -1,9 +1,8 @@
-# Neovim Nightly Configuration
-## This configuration only works in Neovim Nightly
+# Neovim v0.12.0 Configuration
+## This configuration only works in Neovim v0.12.0+
 ## NVIM v0.12.0-dev-1215+ga897cc17a5
 
-You can see full configuration and branches at:
-[sleepyvim](https://github.com/Triangulation5/sleepyvim)
+This is a high-performance, minimal, and extensible Neovim Nightly configuration designed around fast startup, sane defaults, and modern plugin architecture. Built for Neovim 0.12+.
 
 ---
 
@@ -25,20 +24,18 @@ You can see full configuration and branches at:
 
 ## Features
 
-- ⚡ Fast startup using `vim.loader`
+- ⚡ Fast startup using `vim.pack.add()`
 - 🧼 Clean UI with custom `fillchars`, `guicursor`, and `winblend`
 - ⌨️ Keymap-driven workflow with no-yank deletes, quick buffer cycling, Harpoon nav, and LSP integration
-- 🛠️ Language support for Lua, Python, and Go via native LSP
+- 🛠️ Language support for Python, Go, and more via native LSP
 - 🧩 Minimal plugin set using:
   - `mini.nvim` suite
-  - `harpoon` (v2)
-    - You will have to clone it into your nvim-data:
-    - git clone --branch harpoon2 https://github.com/ThePrimeagen/harpoon.git
   - `oil.nvim`
   - `mason.nvim`
-  - `Pick` interface via `mini.pick`
-- 🎨 Built-in color scheme cycling (`tokyonight`, `rose-pine`, `vague`, etc.)
+  - Picker interface via `Telescope`
+- 🎨 Nice colorscheme (`vague`)
 - 🧠 Smart formatting dispatch per filetype (`ruff`, `gofmt`, etc.)
+  - Built-in support for Python, Go, Rust, Typst, and Markdown files.
 
 ---
 
@@ -50,14 +47,15 @@ You can see full configuration and branches at:
   - Python: `ruff`
   - Go: `gofmt`
   - Rust: `rust-analyzer`, `cargo`
-  - Shell/git tools: `lazygit`
+  - Typst: `tinymist`, `typst`
+  - Shell/git tools: `lazygit`, `yazi`
 
 ## Getting Started
 
 1. Install [Neovim Nightly](https://neovim.io/download/nightly).
 2. Clone this configuration:
    ```bash
-   git clone https://github.com/Triangulation5/minimalvim ~/.config/nvim
+   git clone https://github.com/Triangulation5/sleepyvim ~/.config/nvim
    ```
 ---
 
@@ -73,11 +71,7 @@ Managed via [`vim.pack.add`](https://neovim.io/doc/user/repeat.html#vim.pack):
 - [`rose-pine/neovim`](https://github.com/rose-pine/neovim)
 - [`folke/tokyonight`](https://github.com/folke/tokyonight.nvim)
 - [`Saghen/blink.cmp`](https://github.com/Saghen/blink.cmp)
-
-Managed via [`mini.deps`](https://github.com/echasnovski/mini.deps):
-
 - [`nvim-lua/plenary.nvim`](https://github.com/nvim-lua/plenary.nvim)
-- [`ThePrimeagen/harpoon`](https://github.com/ThePrimeagen/harpoon) (`harpoon2` branch)
 
 ---
 
@@ -104,14 +98,6 @@ Managed via [`mini.deps`](https://github.com/echasnovski/mini.deps):
 | `<leader>h`      | Pick help             |
 | `<leader>e`      | Open Oil              |
 | `<leader>ef`     | Open MiniFiles        |
-
-### Harpoon
-| Key              | Action                |
-|------------------|-----------------------|
-| `<leader>a`      | Add to Harpoon        |
-| `<C-e>`          | Toggle menu           |
-| `<C-h/t/n/s>`    | Select slot 1–4       |
-| `<leader>hx`     | Clear list            |
 
 ### LSP
 | Key              | Action                     |
@@ -153,11 +139,7 @@ Custom `LspAttach` handler enables completion autotriggering. (Could optionally 
 Themes supported:
 
 - `rose-pine`
-- `tokyonight`
 - `vague` (with custom statusline)
-- `retrobox` (built-in fallback theme)
-
-Cycle using `<leader>t`.
 
 ---
 

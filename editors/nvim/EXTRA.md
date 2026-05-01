@@ -38,6 +38,10 @@ require('blink.cmp').setup({keymap={preset='default',['<CR>']={'accept','fallbac
 -- vim.pack.add(): { src = "https://github.com/NStefan002/screenkey.nvim" },
 require("screenkey").setup({win_opts={row=(vim.o.lines-vim.o.cmdheight)/2-1,col=vim.o.columns-1,relative="editor",anchor="NE",width=20,height=3,border="rounded",title=" Screenkey ",title_pos="center",style="minimal",focusable=false,noautocmd=true},hl_groups={["screenkey.hl.key"]={link="Normal"},["screenkey.hl.map"]={link="Normal"},["screenkey.hl.sep"]={link="Normal"}},compress_after=3,clear_after=4,emit_events=true,disable={filetypes={},buftypes={}},show_leader=true,group_mappings=false,display_infront={},display_behind={},filter=function(keys)return keys end,colorize=function(keys)return keys end,separator=" ",keys={["<TAB>"]="󰌒",["<CR>"]="󰌑",["<ESC>"]="Esc",["<SPACE>"]="␣",["<BS>"]="󰌥",["<DEL>"]="Del",["<LEFT>"]="",["<RIGHT>"]="",["<UP>"]="",["<DOWN>"]="",["<HOME>"]="Home",["<END>"]="End",["<PAGEUP>"]="PgUp",["<PAGEDOWN>"]="PgDn",["<INSERT>"]="Ins",["<F1>"]="󱊫",["<F2>"]="󱊬",["<F3>"]="󱊭",["<F4>"]="󱊮",["<F5>"]="󱊯",["<F6>"]="󱊰",["<F7>"]="󱊱",["<F8>"]="󱊲",["<F9>"]="󱊳",["<F10>"]="󱊴",["<F11>"]="󱊵",["<F12>"]="󱊶",CTRL="Ctrl",ALT="Alt",SUPER="󰘳",["<leader>"]="<leader>"}})
 
+-- Add this for showkeys
+-- vim.pack.add(): { src = "https://github.com/nvzone/showkeys" },
+require("showkeys").setup({ position = "top-right", winopts = { border = "rounded" }, }); vim.api.nvim_create_autocmd("VimEnter", { callback = function() vim.cmd("ShowkeysToggle") end })
+
 -- Add this for undotree: { src = "https://github.com/mbbill/undotree" },
 vim.opt.undofile = true; local u = vim.fn.stdpath("state") .. "/undo"; vim.opt.undodir = u; vim.fn.mkdir(u, "p"); local t = u .. "/.last_cleanup"; local n = os.time(); local l = vim.fn.filereadable(t) == 1 and tonumber(vim.fn.readfile(t)[1]) or 0; if n - l > 86400 then for _, f in ipairs(vim.fn.glob(u .. "/*", true, true)) do if f ~= t then os.remove(f) end end; vim.fn.writefile({ tostring(n) }, t) end
 -- The kaymap that you have to add to the keymap section:
@@ -132,6 +136,9 @@ vim.api.nvim_set_hl(0, "NvimTreeNormal", { bg = "NONE" })
 vim.api.nvim_set_hl(0, "NvimTreeNormalNC", { bg = "NONE" })
 vim.api.nvim_set_hl(0, "NvimTreeEndOfBuffer", { bg = "NONE" })
 vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#3a3a3a" })
+
+-- Add this for a blinking cursor in insert mode:
+gcr = "a:block,i:blinkon500-blinkoff500"
 ```
 
 ## Extra: Keymaps
@@ -148,6 +155,19 @@ vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#3a3a3a" })
     { src = "https://github.com/projekt0n/github-nvim-theme"},
     { src = "https://github.com/folke/tokyonight.nvim" },
     { src = "https://github.com/olimorris/onedarkpro.nvim" },
+
+    -- Rose Pine theme with custom transparency
+    require("rose-pine").setup({ styles = { transparency = true }})
+
+    function ColorMyPencils(color)
+        color = color or "rose-pine-moon"
+        vim.cmd.colorscheme(color)
+        vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+        vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+    end
+    ColorMyPencils();
+
+    vim.api.nvim_set_hl(0, "Normal", { bg = "none" }) ; vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
 
     -- Flexoki theme
     { src = "https://github.com/nuvic/flexoki-nvim" },
