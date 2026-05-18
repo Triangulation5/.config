@@ -44,8 +44,8 @@ active   = { fg = "#e0def4", bg = "#3e8fb0", bold = true }
 inactive = { fg = "#3e8fb0", bg = "#e0def4" }
 
 # Separator
-sep_inner = { open = "", close = "" }
-sep_outer = { open = "", close = "" }
+sep_inner = { open = "", close = "" }
+sep_outer = { open = "█", close = "█" }
 
 # : }}}
 

@@ -2,7 +2,6 @@ local wezterm = require 'wezterm'
 
 wezterm.on("format-tab-title", function(tab)
   local index = tab.tab_index + 1
-
   local pane = tab.active_pane
   local title = pane.title or ""
 
@@ -11,8 +10,18 @@ wezterm.on("format-tab-title", function(tab)
     :gsub("%.exe$", "")
     :gsub("%s+$", "")
 
+  local bg = "#000000"
+  local fg = "#777777"
+
+  if tab.is_active then
+    bg = "#1a1a1a"
+    fg = "#ffffff"
+  end
+
   return {
-    { Text = string.format(" %d:%s ", index, title) }
+    { Background = { Color = bg } },
+    { Foreground = { Color = fg } },
+    { Text = string.format(" %d:%s ", index, title) },
   }
 end)
 
@@ -22,18 +31,19 @@ return {
         "JetBrainsMono Nerd Font",
         "FiraCode Nerd Font",
     }),
-    font_size = 18.0,
+    font_size = 15,
     hide_tab_bar_if_only_one_tab = true,
     tab_bar_at_bottom = true,
     use_fancy_tab_bar = false,
-
     enable_tab_bar = true,
 
+    window_close_confirmation = "NeverPrompt",
+
     window_padding = {
-        left = 8,
-        right = 8,
-        top = 8,
-        bottom = 8,
+        left = 0,
+        right = 0,
+        top = 0,
+        bottom = 0,
     },
 
     window_decorations = "INTEGRATED_BUTTONS|RESIZE",

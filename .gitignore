@@ -1,5 +1,3 @@
-.DS_Store
-Thumbs.db
 desktop.ini
 
 .vscode/*
@@ -33,7 +31,7 @@ nvim/lazy-lock.json
 .fzf.bash
 .fzf.zsh
 .rgignore
-yazi/state/
+tools/yazi/state/
 yazi/.dds
 bat/cache/
 bat/themes/build/

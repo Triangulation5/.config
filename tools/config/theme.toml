@@ -2,6 +2,17 @@
 dark = "flexoki-dark"
 light = "flexoki-dark"
 
+# Installed themes:
+
+# ayu-dark
+# catppuccin-frappe
+# everforest-medium
+# flexoki-dark
+# kanagawa
+# rose-pine-dawn
+# rose-pine-moon
+# rose-pine
+
 # SECTION SEPARATORS
 # These separate entire statusline sections (e.g. lualine_a, lualine_b, etc.)
 #

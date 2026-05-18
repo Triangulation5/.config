@@ -62,7 +62,8 @@ function fzfn {
     fzf | % { & nvim $_ }
 }
 
-$env:BAT_THEME = "Vague"
+$env:BAT_THEME = "vague"
+$env:MANPAGER = "nvim +Man!"
 
 Invoke-Expression (& { (zoxide init powershell | Out-String) })
 
