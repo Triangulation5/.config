@@ -1,0 +1,30 @@
+/**
+ * Vague color palette
+ */
+
+* {
+    /* Base */
+    background:         #141415FF;
+    background-alt:     #252530FF;
+    foreground:         #cdcdcdFF;
+    foreground-alt:     #aeaed1FF;
+
+    /* Accent */
+    selected:           #6e94b2FF;
+    active:             #7fa563FF;
+    urgent:             #d8647eFF;
+
+    /* Additional palette */
+    warning:            #f3be7cFF;
+    info:               #7e98e8FF;
+    purple:             #bb9dbdFF;
+    muted:              #606079FF;
+
+    /* Optional aliases */
+    border:             @muted;
+    separator:          @muted;
+    placeholder:        @muted;
+
+    success:            @active;
+    error:              @urgent;
+}
