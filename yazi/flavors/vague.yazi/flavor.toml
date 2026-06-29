@@ -1,0 +1,150 @@
+# vague.nvim adapted palette (cool, muted, low-contrast)
+# ---
+# bg         "#1e1e1e"
+# bg-2       "#252525"
+# ui         "#2a2a2a"
+# ui-2       "#303030"
+# ui-3       "#3a3a3a"
+# tx-3       "#6a6a6a"
+# tx-2       "#8a8a8a"
+# tx         "#d4d4d4"
+# re         "#d16969"
+# or         "#d7ba7d"
+# ye         "#e5c07b"
+# ye-2       "#c8a75b"
+# gr         "#98c379"
+# cy         "#56b6c2"
+# cy-2       "#3f8f96"
+# cy-700     "#2f6f75"
+# cy-900     "#1f3f42"
+# bl         "#61afef"
+# pu         "#c678dd"
+# ma         "#d16d9e"
+
+[mgr]
+cwd = { fg = "#d4d4d4", bold = true }
+
+hovered = { bg = "#252525" }
+preview_hovered = { underline = true }
+
+find_keyword = { fg = "#c8a75b", reversed = true }
+find_position = { fg = "#6a6a6a", bold = true, italic = true }
+
+marker_copied = { fg = "#98c379", bg = "#98c379" }
+marker_cut = { fg = "#d16969", bg = "#d16969" }
+marker_marked = { fg = "#2f6f75", bg = "#2f6f75" }
+marker_selected = { fg = "#56b6c2", bg = "#56b6c2" }
+
+count_copied = { fg = "#98c379", bold = true, reversed = true }
+count_cut = { fg = "#d16969", bold = true, reversed = true }
+count_selected = { fg = "#56b6c2", bold = true, reversed = true }
+
+border_symbol = "│"
+border_style = { fg = "#2a2a2a" }
+
+[tabs]
+active = { fg = "#d4d4d4", bg = "#3a3a3a", bold = true }
+inactive = { fg = "#8a8a8a", bg = "#2a2a2a" }
+sep_inner = { open = "", close = "" }
+sep_outer = { open = "", close = "" }
+
+[mode]
+normal_main = { fg = "#d4d4d4", bg = "#3a3a3a", bold = true }
+normal_alt = { fg = "#8a8a8a", bg = "#2a2a2a" }
+
+select_main = { fg = "#1e1e1e", bg = "#56b6c2", bold = true }
+select_alt = { fg = "#56b6c2", bg = "#1f3f42" }
+
+unset_main = { fg = "#1e1e1e", bg = "#56b6c2", bold = true }
+unset_alt = { fg = "#56b6c2", bg = "#1f3f42" }
+
+[status]
+overall = { fg = "#d4d4d4" }
+sep_left = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+
+perm_type = { fg = "#61afef" }
+perm_read = { fg = "#e5c07b" }
+perm_write = { fg = "#d16969" }
+perm_exec = { fg = "#98c379" }
+perm_sep = { fg = "#8a8a8a" }
+
+progress_label = { fg = "#1e1e1e" }
+progress_normal = { fg = "#56b6c2", bg = "#2f6f75" }
+progress_error = { bg = "#d16969" }
+
+[which]
+cols = 3
+mask = { bg = "#252525" }
+cand = { fg = "#e5c07b", bold = true }
+rest = { fg = "#e5c07b", italic = true }
+desc = { fg = "#6a6a6a" }
+separator = " "
+separator_style = {}
+
+[confirm]
+border = { fg = "#3a3a3a" }
+title = { fg = "#6a6a6a", bold = true }
+content = { fg = "#d4d4d4", bold = true }
+list = { fg = "#d4d4d4" }
+btn_yes = { fg = "#d4d4d4", bg = "#3a3a3a", bold = true }
+btn_no = { fg = "#8a8a8a", bg = "#2a2a2a" }
+
+[spot]
+border = { fg = "#3a3a3a" }
+title = { fg = "#6a6a6a", bold = true }
+tbl_col = { fg = "#8a8a8a" }
+tbl_cell = { bg = "#252525" }
+
+[notify]
+title_info = { fg = "#61afef" }
+title_warn = { fg = "#d7ba7d" }
+title_error = { fg = "#d16969" }
+
+[pick]
+border = { fg = "#3a3a3a", bold = true }
+active = { fg = "#d4d4d4" }
+inactive = { fg = "#8a8a8a" }
+
+[input]
+border = { fg = "#3a3a3a" }
+title = { fg = "#6a6a6a", bold = true }
+value = { fg = "#d4d4d4" }
+selected = { bg = "#252525" }
+
+[cmp]
+border = { fg = "#3a3a3a", bold = true }
+active = { fg = "#8a8a8a", bg = "#252525" }
+inactive = { fg = "#8a8a8a" }
+
+[tasks]
+border = { fg = "#3a3a3a" }
+title = { fg = "#6a6a6a", bold = true }
+hovered = { bg = "#252525" }
+
+[help]
+on = { fg = "#61afef" }
+run = { fg = "#56b6c2" }
+desc = { fg = "#6a6a6a", italic = true }
+hovered = { bg = "#252525" }
+footer = { fg = "#d4d4d4", bg = "#2a2a2a", bold = true }
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#c678dd" },
+  { mime = "video/*", fg = "#e5c07b" },
+  { mime = "audio/*", fg = "#e5c07b" },
+
+  { name = "*", is = "orphan", fg = "#6a6a6a", crossed = true },
+  { name = "*/", is = "orphan", fg = "#6a6a6a", crossed = true },
+
+  { name = "*", is = "link", fg = "#56b6c2" },
+  { name = "*/", is = "link", fg = "#56b6c2" },
+
+  { name = "*", is = "exec", fg = "#98c379" },
+
+  { mime = "inode/empty", fg = "#6a6a6a" },
+
+  { name = "*", fg = "#8a8a8a" },
+  { name = "*/", fg = "#d4d4d4" }
+]

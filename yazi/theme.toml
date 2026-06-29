@@ -1,0 +1,107 @@
+[flavor]
+dark = "flexoki-dark"
+light = "flexoki-dark"
+
+# Installed themes:
+
+# ayu-dark
+# catppuccin-frappe
+# everforest-medium
+# flexoki-dark
+# kanagawa
+# rose-pine-dawn
+# rose-pine-moon
+# rose-pine
+
+# SECTION SEPARATORS
+# These separate entire statusline sections (e.g. lualine_a, lualine_b, etc.)
+#
+#  Left   | Right  | Style                     | Notes
+# --------|--------|---------------------------|--------------------------------------------------
+#        |       | Powerline Classic         | Most commonly used, sharp angles
+#        |       | Powerline Soft            | Smoother, rounded; good for soft themes
+#        |       | Wave                      | Curved and elegant
+#        |       | Powerline Arrows (alt)    | Heavier version, similar shape
+#        |       | Half-height               | Compressed spacing for subtle look
+#   █     |  █     | Blocky Full Height        | Very bold — only works well with opaque backgrounds
+#        |       | Nerd Font Angles          | Clean, modern angled brackets (nf-fa-angle_*)
+#        |       | Nerd Font Chevrons        | Sharp directional chevrons (nf-oct-chevron_*)
+#        |       | Nerd Font Triangles       | Solid triangular pointers (nf-oct-triangle_*)
+#   ▶     |  ◀     | Triangle Simple           | Clean, geometric ASCII fallback
+#   »     |  «     | Double Arrow              | Sharp, minimalist
+#   ▷     |  ◁     | Hollow Triangle           | Lighter variation
+#   ⟩     |  ⟨     | Angle Brackets            | Minimal and symmetrical
+#   →     |  ←     | Simple Arrows             | Basic, universal
+#         |        | None                      | Flat style — no visual break
+#   ─     |  ─     | Flat Dash                 | Neutral divider
+#   ·     |  ·     | Dot Minimal               | For extremely minimal UI
+#
+#
+# COMPONENT SEPARATORS
+# These separate components *within* a section (like `filetype | filename`)
+#
+#  Left   | Right  | Style                    | Notes
+# --------|--------|--------------------------|--------------------------------------------------
+#        |       | Powerline Thin Slash     | Default for many setups
+#        |       | Soft Slash               | Matches `/`, softer aesthetics
+#   │     |  │     | Pipe Bar                 | Vertical divider
+#   ¦     |  ¦     | Thin Double Bar          | Lightweight alternative
+#   •     |  •     | Bullet Dot               | Subtle and minimal
+#   ·     |  ·     | Mid Dot                  | Smaller than bullet
+#        |       | Nerd Font Vert Chevrons  | Vertical chevrons for up/down separation (nf-oct-chevron_*)
+#   :     |  :     | Colon Separator          | Clean, ASCII-safe
+#   ⋮     |  ⋮     | Vertical Ellipsis        | Decorative vertical stack
+#   ⸽     |  ⸽     | Low Line                 | Unique and rare
+#   ⟡     |  ⟡     | Star Geometry            | Geometric ornament
+#   +     |  +     | Plus Symbol              | Simple ASCII fallback
+#         |        | None                     | No visual divider (clean interface)
+#
+#
+# VERTICAL/DIRECTIONAL SEPARATORS (Special Use)
+# For hierarchical or directional context
+#
+#  Symbol | Style                    | Notes
+# --------|--------------------------|--------------------------------------------------
+#        | Up Chevron               | Indicates parent/above context (nf-oct-chevron_up)
+#        | Down Chevron             | Indicates child/below context (nf-oct-chevron_down)
+#   ⮁     | Up Triangle              | Alternative upward pointer
+#   ⮃     | Down Triangle            | Alternative downward pointer
+#   ⮌     | Left Loop Arrow          | Circular/repeat context
+#   ⮎     | Right Loop Arrow         | Circular/repeat context
+#
+# Tip:
+# Use a Nerd Font–patched terminal (e.g. FiraCode Nerd Font, JetBrains Mono NF),
+# and `set guifont` if you're in a GUI. Otherwise, symbols like ``, ``, and `⟡` may not render properly.
+#
+# -- Quick switch
+#
+# -- section_separators = { left = "", right = "" },
+# -- component_serporators = { left = "", right = "" },
+#
+# -- section_separators = { left = "█", right = "█" },
+# -- component_separators = { left = "│", right = "│" },
+#
+# -- section_separators = { left = "", right = "" },
+# -- component_separators = { left = "", right = "" },
+#
+# -- section_separators = { left = "", right = "" },
+# -- component_separators = { left = "╲", right = "╱" }
+#
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "⟜", right = "⟝" } }
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "❮", right = "❯" } }
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "╭", right = "╮" } }
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "┆", right = "┆" } }
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "⟨", right = "⟩" } }
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "╱", right = "╲" } }
+# -- { section_separators = { left = "", right = "" }, component_separators = { left = "⟪", right = "⟫" } }
+#
+# -- { left = "╱", right = "╲" }
+# -- { left = "⟍", right = "⟋" }
+# -- { left = "⟜", right = "⟝" }
+# -- { left = "❮", right = "❯" }
+# -- { left = "⟨", right = "⟩" }
+# -- { left = "╭", right = "╮" }
+# -- { left = "╰", right = "╯" }
+# -- { left = "┆", right = "┆" }
+# -- { left = "⧼", right = "⧽" }
+# -- { left = "⸤", right = "⸥" }
