@@ -42,17 +42,25 @@ window#waybar {
     font-size: 1.12rem;
 }
 
-#battery {
-    color: @green;
-    margin-left: 24px;
-}
-
 #network {
     color: @magenta;
 }
 
+#battery {
+    color: @green;
+    margin-left: 22px;
+}
+
 #pulseaudio {
     color: @yellow;
+}
+
+#custom-cava {
+    color: @red;
+    margin-left: 22px;
+    margin-right: 12px;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
 }
 
 .modules-left {
@@ -61,12 +69,4 @@ window#waybar {
 
 .modules-right {
     margin-right: 12px;
-}
-
-#custom-cava {
-    color: @red;
-    margin-left: 24px;
-    margin-right: 12px;
-    font-size: 0.7rem;
-    letter-spacing: 1px;
 }
