@@ -65,7 +65,8 @@ window#waybar {
 
 #custom-cava {
     color: @red;
-    margin: 0 12px;
+    margin-left: 24px;
+    margin-right: 12px;
     font-size: 0.7rem;
     letter-spacing: 1px;
 }
