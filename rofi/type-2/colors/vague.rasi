@@ -3,28 +3,29 @@
  */
 
 * {
+
     /* Base */
-    background:         #141415FF;
-    background-alt:     #252530FF;
+    background:         #141415D9;
+    background-alt:     #252530CC;
     foreground:         #cdcdcdFF;
-    foreground-alt:     #aeaed1FF;
+    foreground-alt:     #AEAED1FF;
 
     /* Accent */
-    selected:           #6e94b2FF;
-    active:             #7fa563FF;
-    urgent:             #d8647eFF;
+    selected:           #252530E6;
+    active:             #7FA563FF;
+    urgent:             #D8647EFF;
 
     /* Additional palette */
-    warning:            #f3be7cFF;
-    info:               #7e98e8FF;
-    purple:             #bb9dbdFF;
+    warning:            #F3BE7CFF;
+    info:               #6E94B2FF;
+    purple:             #BB9DBDFF;
     muted:              #606079FF;
 
-    /* Optional aliases */
-    border:             @muted;
-    separator:          @muted;
-    placeholder:        @muted;
+    /* Optional aliases (resolved, not references) */
+    border:             #6060798C;
+    separator:          #60607966;
+    placeholder:        #606079FF;
 
-    success:            @active;
-    error:              @urgent;
+    success:            #7FA563FF;
+    error:              #D8647EFF;
 }
