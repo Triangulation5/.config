@@ -42,3 +42,9 @@ hl.layer_rule({
     match = { namespace = "swaync-control-center" },
     animation = "slide top",
 })
+
+hl.layer_rule({
+    name  = "hyprlock-slide",
+    match = { namespace = "hyprlock" },
+    animation = "slide top",
+})
