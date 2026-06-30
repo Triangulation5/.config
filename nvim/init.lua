@@ -4,7 +4,7 @@ if vim.loader then vim.loader.enable() end; vim.g.mapleader = " "; local opt = v
     ts = 4, sts = 4, sw = 4, et = true,
     si = true, bri = true, stal = 2,
     ic = true, scs = true, hls = false,
-    gcr = "a:block", ut = 50, tm = 250,
+     ut = 50, tm = 250, -- gcr = "a:block",
     so = 8, siso = 8,
     winborder = "rounded", cb = "unnamedplus",
     cot = { "menuone", "noselect" },
