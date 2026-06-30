@@ -5,14 +5,14 @@
 -- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in  = 6,
-        gaps_out = 12,
+        gaps_in  = 5,
+        gaps_out = 10,
 
         border_size = 1,
 
         col = {
-            active_border   = { colors = { "rgba(6e94b2ff)" } },
-            inactive_border = "rgba(252530ff)",
+            active_border   = { colors = { "#cdcdcd" } },
+            inactive_border = "rgba(205, 205, 205, 0.12)",
         },
 
         -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
@@ -28,7 +28,7 @@ hl.config({
 
         -- Change transparency of focused and unfocused windows
         active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        inactive_opacity = 0.98,
 
         shadow = {
             enabled      = true,

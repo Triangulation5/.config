@@ -34,8 +34,8 @@ window {
     padding:                     0px;
     border:                      1px 1px 0px 1px solid;
     border-radius:               10px 10px 0px 0px;
-    border-color:                @background-alt;
-    background-color:            #141415D1;
+    border-color:                @selected;
+    background-color:            @background;
     cursor:                      "default";
 }
 
@@ -57,11 +57,11 @@ entry {
     enabled: true;
     expand: false;
     padding: 20px 0px;
-    background-color: #141415D1;
-    text-color: @foreground;
+    background-color:            @selected;
+    text-color:                  @purple;
     cursor: text;
     placeholder: "Search...";
-    placeholder-color: @foreground-alt;
+    placeholder-color:           inherit;
     vertical-align: 0.5;
     horizontal-align: 0.5;
 }
@@ -93,7 +93,7 @@ scrollbar {
     handle-width: 5px;
     handle-color: @selected;
     border-radius: 0px;
-    background-color: @background;
+    background-color: @background-alt;
 }
 
 /*****----- Elements -----*****/
@@ -115,8 +115,8 @@ element normal.normal {
     text-color:                  @foreground;
 }
 element selected.normal {
-    background-color: @selected;
-    text-color: @background;
+    background-color:            @background-alt;
+    text-color:                  @foreground;
     border-radius: 10px;
 }
 element-icon {
