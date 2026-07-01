@@ -20,7 +20,7 @@
 /* Core surfaces */
 .notification-background {
 	background: @notification-bg;
-	border-radius: var(--border-radius);
+	border-radius: var(--border-radius) var(--border-radius);
 	margin: 8px;
 	padding: 0;
 }
@@ -100,7 +100,7 @@
 /* Control center container */
 .control-center {
 	background: @center-bg;
-	border-radius: 0 0 var(--border-radius) var(--border-radius);
+	border-radius: var(--border-radius) var(--border-radius) var(--border-radius) var(--border-radius);
     border: 1px solid;
     border-top: 0px;
     border-color: @black;
