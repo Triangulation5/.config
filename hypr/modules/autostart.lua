@@ -9,6 +9,5 @@
 
 hl.on("hyprland.start", function ()
   hl.exec_cmd("bash ~/.config/quickshell/reload.sh")
-  hl.exec_cmd("swaync")
   hl.exec_cmd("awww-daemon")
 end)
