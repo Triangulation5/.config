@@ -1,7 +1,8 @@
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
   "logo": {
-    "type": "builtin",
+    "type": "file",
+    "source": "~/.config/fastfetch/ascii.txt",
     "padding": {
       "top": 0,
       "left": 3
@@ -35,11 +36,6 @@
     },
 
     {
-      "type": "custom",
-      "format": " "
-    },
-
-    {
       "type": "shell",
       "key": "{#33}   Shell"
     },
@@ -55,11 +51,6 @@
     {
       "type": "custom",
       "format": "├───────────────────────────────────────────────────┤"
-    },
-
-    {
-      "type": "custom",
-      "format": " "
     },
 
     {
