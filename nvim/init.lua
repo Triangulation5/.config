@@ -22,7 +22,7 @@ for _, m in ipairs({
     { "n", "<leader>lf", function() require("mini.trailspace").trim(); require("mini.trailspace").trim_last_lines(); vim.lsp.buf.format() end, "LSP: Format" }, { "n", "<leader>i", [[<Cmd>tabedit .gitignore<CR>]], "Edit .gitignore" }, { "n", "<leader>p", ":TypstPreview<CR>", "Preview Typst File" },
     { "n", "<leader>bf", ":bd!<CR>", "Force Delete Buffer" }, { "n", "<leader>tf", ":tabc<CR>", "Close Tab" },
     { "n", "<leader>da", function() vim.diagnostic.setqflist({ open = true, title = "Diagnostics"}) end, "Show Diagnostics in Quickfix"}, { "n", "<C-q>", ":copen<CR>", "Opens Quickfix"},
-    { "n", "<M-t>", function() vim.cmd('botright split term://powershell') end, "PowerShell" },
+    { "n", "<M-t>", function() vim.cmd('botright split term://bash') end, "Bash" },
 }) do vim.keymap.set(m[1], m[2], m[3], { desc = m[4] }) end
 
 vim.pack.add({
@@ -45,5 +45,5 @@ require("mason").setup(); oil_loaded, oil = false, function() if oil_loaded then
 require("vague").setup(); vim.cmd.colorscheme("vague")
 
 vim.api.nvim_create_autocmd("LspAttach", { callback = function(ev) local client = vim.lsp.get_client_by_id(ev.data.client_id); if client then vim.api.nvim_buf_set_option(ev.buf, "omnifunc", "v:lua.vim.lsp.omnifunc"); if client:supports_method("textDocument/completion") then vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true }) end end end })
-vim.lsp.enable({ "pyright", "ruff", "gopls", "marksman", "vtsls", "tinymist" })
+vim.lsp.enable({ "pyright", "ruff", "gopls", "marksman", "vtsls", "tinymist", "qmlls " })
 vim.lsp.config("gopls", { settings = { gopls = { completeUnimported = true, usePlaceholders = true, analyses = { unusedparams = true, shadow = true }, staticcheck = true } } }); vim.lsp.config("vtsls", { root_dir = vim.fs.root(0, { "jsconfig.json", "package.json", "tsconfig.json" }) }); vim.lsp.config("tinymist", { settings = { formatterMode = "typstyle", exportPdf = "never" } }); vim.diagnostic.config({ virtual_text = { prefix = "■", spacing = 6, hl_mode = "combine", format = function(d) return string.format("%s [%s]", d.message, d.source or d.code or "") end }, signs = true, underline = true, update_in_insert = false, severity_sort = true, float = { border = "rounded", header = "Diagnostic(s):", source = "always", focusable = true } }); local typst_loaded = false; vim.api.nvim_create_autocmd("FileType", { pattern = "typst", callback = function() if typst_loaded then return end typst_loaded = true vim.schedule(function() vim.cmd.packadd("typst-preview.nvim") local ok, typst = pcall(require, "typst-preview") if not ok then vim.notify("typst-preview failed to load") return end typst.setup({}) vim.notify("typst-preview initialized") end) end, })
