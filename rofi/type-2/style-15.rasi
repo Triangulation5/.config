@@ -33,7 +33,8 @@ window {
     margin:                      0px;
     padding:                     0px;
     border:                      1px 1px 0px 1px solid;
-    border-radius:               10px 10px 0px 0px;
+    // border-radius:               10px 10px 0px 0px;
+    border-radius:               0px;
     border-color:                @selected;
     background-color:            @background;
     cursor:                      "default";
@@ -117,7 +118,8 @@ element normal.normal {
 element selected.normal {
     background-color:            @background-alt;
     text-color:                  @foreground;
-    border-radius: 10px;
+    // border-radius:               10px;
+    border-radius:               0px;
 }
 element-icon {
     background-color:            transparent;
