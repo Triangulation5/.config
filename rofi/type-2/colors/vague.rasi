@@ -1,5 +1,5 @@
 /**
- * Vague color palette
+ * Vague color palette (ported from vague.css)
  */
 
 * {
@@ -8,7 +8,7 @@
     background:         #141415D9;
     background-alt:     #252530CC;
     foreground:         #cdcdcdFF;
-    foreground-alt:     #AEAED1FF;
+    foreground-alt:     #878787FF;
 
     /* Accent */
     selected:           #252530E6;
