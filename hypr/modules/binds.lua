@@ -5,9 +5,10 @@
 -- Set programs that you use
 local terminal    = "ghostty"
 local fileManager = "nautilus"
-local launcher    = "./.config/rofi/type-2/launcher.sh"
+local launcher    = "~/.config/rofi/type-2/launcher.sh"
 local notif_toggle= "swaync-client -t"
 local locker      = "hyprlock"
+local finder      = "bash ~/.config/quickshell/launcher-loader.sh"
 
 ---------------------
 ---- KEYBINDINGS ----
@@ -22,6 +23,7 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("bash /home/josh/.local/bin/powermenu
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(locker))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash /home/josh/.config/waybar/scripts/launch.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
+-- hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(finder))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(notif_toggle))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
