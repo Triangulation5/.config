@@ -1,9 +1,9 @@
 /* vague.nvim theme made ranges for semi-transparency */
 
-@define-color background rgba(20, 20, 21, 0.85);
+@define-color background rgba(20, 20, 21, 0.95);
 @define-color foreground #cdcdcd;
 
-@define-color black rgba(37, 37, 48, 0.85);
+@define-color black rgba(37, 37, 48, 0.95);
 @define-color black_bright #606079;
 
 @define-color red #d8647e;
@@ -18,17 +18,17 @@
 @define-color text-alt #878787;
 
 @define-color hover alpha(@white, 0.10);
-@define-color selected rgba(37, 37, 48, 0.90);
+@define-color selected rgba(37, 37, 48, 0.95);
 
-@define-color background-alt rgba(37, 37, 48, 0.80);
-@define-color notification-bg rgba(20, 20, 21, 0.82);
-@define-color center-bg rgba(20, 20, 21, 0.88);
-@define-color center-notification-bg rgba(37, 37, 48, 0.82);
+@define-color background-alt rgba(37, 37, 48, 0.95);
+@define-color notification-bg rgba(20, 20, 21, 0.95);
+@define-color center-bg rgba(20, 20, 21, 0.95);
+@define-color center-notification-bg rgba(37, 37, 48, 0.95);
 
 @define-color urgent #d8647e;
 
-@define-color border rgba(96, 96, 121, 0.55);
-@define-color divider rgba(96, 96, 121, 0.40);
+@define-color border rgba(96, 96, 121, 0.95);
+@define-color divider rgba(96, 96, 121, 0.95);
 
 @define-color success #7fa563;
 @define-color warning #f3be7c;
