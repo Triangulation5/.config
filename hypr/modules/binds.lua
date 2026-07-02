@@ -34,8 +34,12 @@ hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(quickshell .. " sysmon"))
+hl.bind(mainMod .. " + J", hl.dsp.exec_cmd(quickshell .. " media"))
+hl.bind(mainMod .. " + K", hl.dsp.exec_cmd(quickshell .. " keybinds"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
+hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
 
 -- Rishot
 -- hl.bind(mainMod .. "+ U", hl.dsp.exec_cmd(screenshots))
