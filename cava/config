@@ -1,14 +1,8 @@
-## Configuration file for CAVA.
-# Remove the ; to change parameters.
-
-
 [general]
-bars = 14
+# bars = 14
 
 # Smoothing mode. Can be 'normal', 'scientific' or 'waves'. DEPRECATED as of 0.6.0
 ; mode = normal
-
-# Accepts only non-negative values.
 ; framerate = 60
 
 # 'autosens' will attempt to decrease sensitivity if the bars peak. 1 = on, 0 = off
@@ -127,10 +121,11 @@ source = auto
 ; autoconnect = 2
 
 [output]
-method = raw
-raw_target = /dev/stdout
-data_format = ascii
-ascii_max_range = 14
+
+# method = raw
+# raw_target = /dev/stdout
+# data_format = ascii
+# ascii_max_range = 14
 
 # method = raw
 # raw_target = /dev/stdout

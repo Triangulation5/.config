@@ -9,6 +9,7 @@ local launcher    = "~/.config/rofi/type-2/launcher.sh"
 local notif_toggle= "swaync-client -t"
 local locker      = "hyprlock"
 local quickshell  = "sh ~/.config/quickshell/open-surface.sh"
+local screenshots = "rishot"
 
 ---------------------
 ---- KEYBINDINGS ----
@@ -28,12 +29,17 @@ hl.bind("ALT + Return", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " link"))
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
+hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
+
+-- Rishot
+-- hl.bind(mainMod .. "+ U", hl.dsp.exec_cmd(screenshots))
+-- hl.bind("+ SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))

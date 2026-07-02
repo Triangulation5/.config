@@ -21,7 +21,7 @@
     purple:             #BB9DBDFF;
     muted:              #606079FF;
 
-    /* Optional aliases (resolved, not references) */
+    /* Optional aliases */
     border:             #6060798C;
     separator:          #60607966;
     placeholder:        #606079FF;
