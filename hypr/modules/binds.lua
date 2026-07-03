@@ -29,7 +29,6 @@ hl.bind("ALT + Return", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
@@ -41,6 +40,13 @@ hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
+
+-- hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("bash /home/josh/.config/hypr/scripts/minimize-toggle.sh"))
+-- hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
+-- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
+-- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
+-- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
+-- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
 
 -- Rishot
 -- hl.bind(mainMod .. "+ U", hl.dsp.exec_cmd(screenshots))
