@@ -1,31 +1,46 @@
-/**
- * Vague color palette (ported from vague.css)
- */
-
 * {
 
     /* Base */
-    background:         #141415D9;
-    background-alt:     #252530CC;
-    foreground:         #cdcdcdFF;
-    foreground-alt:     #878787FF;
+    background:                 #141415F2;
+    background-alt:             #252530F2;
+    foreground:                 #CDCDCDFF;
+    foreground-alt:             #878787FF;
 
-    /* Accent */
-    selected:           #252530E6;
-    active:             #7FA563FF;
-    urgent:             #D8647EFF;
+    /* ANSI palette */
+    black:                      #252530F2;
+    black-bright:               #606079FF;
 
-    /* Additional palette */
-    warning:            #F3BE7CFF;
-    info:               #6E94B2FF;
-    purple:             #BB9DBDFF;
-    muted:              #606079FF;
+    red:                        #D8647EFF;
+    green:                      #7FA563FF;
+    yellow:                     #F3BE7CFF;
+    blue:                       #6E94B2FF;
+    magenta:                    #BB9DBDFF;
+    cyan:                       #AEAED1FF;
+    white:                      #CDCDCDFF;
 
-    /* Optional aliases */
-    border:             #6060798C;
-    separator:          #60607966;
-    placeholder:        #606079FF;
+    /* Text aliases */
+    text:                       #CDCDCDFF;
+    text-alt:                   #878787FF;
 
-    success:            #7FA563FF;
-    error:              #D8647EFF;
+    /* UI */
+    hover:                      #CDCDCD1A;  /* 10% white */
+    selected:                   #252530F2;
+
+    notification-bg:            #141415F2;
+    center-bg:                  #141415F2;
+    center-notification-bg:     #252530F2;
+
+    /* Status */
+    urgent:                     #D8647EFF;
+    success:                    #7FA563FF;
+    warning:                    #F3BE7CFF;
+    error:                      #D8647EFF;
+    info:                       #6E94B2FF;
+
+    /* Borders */
+    border:                     #606079F2;
+    divider:                    #606079F2;
+
+    /* Misc */
+    inactive:                   #606079FF;
 }
