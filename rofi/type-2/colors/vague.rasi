@@ -1,13 +1,13 @@
 * {
 
     /* Base */
-    background:                 #141415F2;
-    background-alt:             #252530F2;
+    background:                 #141415E6;
+    background-alt:             #252530E6;
     foreground:                 #CDCDCDFF;
     foreground-alt:             #878787FF;
 
     /* ANSI palette */
-    black:                      #252530F2;
+    black:                      #252530FF;
     black-bright:               #606079FF;
 
     red:                        #D8647EFF;
@@ -23,12 +23,12 @@
     text-alt:                   #878787FF;
 
     /* UI */
-    hover:                      #CDCDCD1A;  /* 10% white */
-    selected:                   #252530F2;
+    hover:                      #2F2F3AFF;  /* opaque hover */
+    selected:                   #252530E6;
 
-    notification-bg:            #141415F2;
-    center-bg:                  #141415F2;
-    center-notification-bg:     #252530F2;
+    notification-bg:            #141415FF;
+    center-bg:                  #141415FF;
+    center-notification-bg:     #252530FF;
 
     /* Status */
     urgent:                     #D8647EFF;
@@ -38,8 +38,8 @@
     info:                       #6E94B2FF;
 
     /* Borders */
-    border:                     #606079F2;
-    divider:                    #606079F2;
+    border:                     #606079E6;
+    divider:                    #606079FF;
 
     /* Misc */
     inactive:                   #606079FF;
