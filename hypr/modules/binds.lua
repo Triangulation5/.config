@@ -8,7 +8,7 @@ local fileManager = "nautilus"
 local launcher    = "~/.config/rofi/type-2/launcher.sh"
 local notif_toggle= "swaync-client -t"
 local locker      = "hyprlock"
-local quickshell  = "sh ~/.config/quickshell/open-surface.sh"
+local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
 local screenshots = "rishot"
 
 ---------------------
@@ -21,7 +21,7 @@ local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(locker))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash /home/josh/.config/waybar/scripts/launch.sh"))
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(notif_toggle))
@@ -33,16 +33,16 @@ hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(quickshell .. " sysmon"))
+hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
 hl.bind(mainMod .. " + J", hl.dsp.exec_cmd(quickshell .. " media"))
 hl.bind(mainMod .. " + K", hl.dsp.exec_cmd(quickshell .. " keybinds"))
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
-hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
+hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
--- hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("bash /home/josh/.config/hypr/scripts/minimize-toggle.sh"))
--- hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
 -- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
 -- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))

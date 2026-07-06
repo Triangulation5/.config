@@ -11,7 +11,7 @@ hl.config({
         border_size = 1,
 
         col = {
-            active_border   = { colors = { "rgba(205, 205, 205, 0.24)" } },
+            active_border   = { colors = { "rgba(205, 205, 205, 0.34)" } },
             inactive_border = "rgba(205, 205, 205, 0.12)",
         },
 
@@ -39,8 +39,8 @@ hl.config({
 
         blur = {
             enabled   = true,
-            size      = 3, -- 3 default, 8 for decent amount, 20
-            passes    = 1, -- 1 default, 2 for decent amount, 3 for more frosted glass
+            size      = 6, -- 3 default, 8 for decent amount, 20
+            passes    = 2, -- 1 default, 2 for decent amount, 3 for more frosted glass
             vibrancy  = 0.1696,
         },
     },
