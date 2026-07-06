@@ -29,9 +29,10 @@ Singleton {
 
     readonly property string wpDir: Quickshell.env("HOME") + "/Pictures/"
     readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ricelin-wp-thumbs/"
-    readonly property string thumbScript: Quickshell.env("HOME") + "/.config/quickshell/wallpaper-thumbs.sh"
-    readonly property string setScript: Quickshell.env("HOME") + "/.config/quickshell/wallpaper.sh"
+    readonly property string thumbScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/wallpaper-thumbs.sh"
+    readonly property string setScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/wallpaper.sh"
     readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper"
+    readonly property string syncScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-sync.sh"
 
     function refresh() {
         if (thumbProc.running || listProc.running || stateProc.running) {
@@ -114,6 +115,14 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.current = this.text.trim();
+
+                syncLockWallpaper.command = [
+                    "bash",
+                    root.syncScript,
+                    root.current
+                ];
+                syncLockWallpaper.running = true;
+
                 if (root.pending) {
                     root.pending = false;
                     Qt.callLater(root.refresh);
@@ -134,6 +143,10 @@ Singleton {
             }
             stateProc.running = true;
         }
+    }
+
+    Process {
+        id: syncLockWallpaper
     }
 
     Component.onCompleted: refresh()

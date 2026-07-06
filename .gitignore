@@ -19,6 +19,7 @@ nautilus/
 gtk-3.0/
 gtk-4.0/
 sioyek/*.db
+connections.db
 
 gnome-initial-setup-done
 .gsd-keyboard.settings-ported
