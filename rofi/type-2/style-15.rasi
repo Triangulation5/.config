@@ -25,7 +25,7 @@ window {
     location:                    south;
     anchor:                      south;
     fullscreen:                  false;
-    width:                       450px;
+    width:                       460px;
     x-offset:                    0px;
     y-offset:                    0px;
 
@@ -33,7 +33,7 @@ window {
     margin:                      0px;
     padding:                     0px;
     border:                      0px solid;
-    border-radius:               10px 10px 0px 0px;
+    border-radius:               18px 18px 0px 0px;
     border-color:                @selected;
     background-color:            @background;
     cursor:                      "default";
@@ -58,7 +58,7 @@ entry {
     expand:                      false;
     padding:                     20px 0px;
     background-color:            @background-alt;
-    text-color:                  @foreground;
+    text-color:                  @white;
     cursor:                      text;
     placeholder:                 "Search...";
     placeholder-color:           inherit;
