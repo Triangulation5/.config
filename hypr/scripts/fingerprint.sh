@@ -6,6 +6,12 @@ set -u
 # Fedora Fingerprint Health Check
 # ────────────────────────────────────────
 
+QUIET=false
+
+if [[ "${1:-}" == "--quiet" ]]; then
+    QUIET=true
+fi
+
 GREEN="\033[0;32m"
 RED="\033[0;31m"
 YELLOW="\033[1;33m"
@@ -22,19 +28,24 @@ services=(
 all_good=true
 
 ok() {
+    $QUIET && return
     echo -e "${GREEN}✔  ${RESET} $1"
 }
 
 fail() {
-    echo -e "${RED}✘ ${RESET} $1"
     all_good=false
+    $QUIET && return
+    echo -e "${RED}✘ ${RESET} $1"
 }
 
 info() {
+    $QUIET && return
     echo -e "${CYAN}➜${RESET} $1"
 }
 
 header() {
+    $QUIET && return
+
     clear
     echo -e "${BLUE}${BOLD}"
     echo "╔════════════════════════════════════╗"
@@ -44,6 +55,8 @@ header() {
 }
 
 section() {
+    $QUIET && return
+
     echo
     echo -e "${BOLD}$1${RESET}"
     echo "────────────────────────────────────"
@@ -52,14 +65,16 @@ section() {
 header
 
 # Ensure sudo credentials are available
-sudo -v
+if ! sudo -v; then
+    exit 1
+fi
 
 section "[1/4] Restarting fingerprint services"
 
 for service in "${services[@]}"; do
     info "Restarting $service..."
 
-    if sudo systemctl restart "$service"; then
+    if sudo systemctl restart "$service" >/dev/null 2>&1; then
         ok "$service restarted"
     else
         fail "$service failed to restart"
@@ -87,21 +102,36 @@ if echo "$device_check" | grep -qi "no devices available"; then
     fail "No fingerprint device detected"
 else
     ok "Fingerprint device detected"
-    echo
-    echo "$device_check"
+
+    if ! $QUIET; then
+        echo
+        echo "$device_check"
+    fi
 fi
 
 
 section "[4/4] Fingerprint verification"
 
-echo
-echo -e "${YELLOW}Touch the fingerprint sensor when prompted...${RESET}"
-echo
+if ! $QUIET; then
+    echo
+    echo -e "${YELLOW}Touch the fingerprint sensor when prompted...${RESET}"
+    echo
 
-if fprintd-verify; then
-    ok "Fingerprint verification successful"
-else
-    fail "Fingerprint verification failed"
+    if fprintd-verify; then
+        ok "Fingerprint verification successful"
+    else
+        fail "Fingerprint verification failed"
+    fi
+fi
+
+
+# Quiet mode returns only status code
+if $QUIET; then
+    if [ "$all_good" = true ]; then
+        exit 0
+    else
+        exit 1
+    fi
 fi
 
 

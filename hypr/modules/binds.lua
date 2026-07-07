@@ -10,6 +10,7 @@ local notif_toggle= "swaync-client -t"
 local locker      = "hyprlock"
 local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
 local screenshots = "rishot"
+local fingerprint = "bash ~/.config/hypr/scripts/fingerprint.sh --quiet"
 
 ---------------------
 ---- KEYBINDINGS ----
@@ -25,6 +26,7 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/re
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(notif_toggle))
+hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(fingerprint))
 hl.bind("ALT + Return", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
