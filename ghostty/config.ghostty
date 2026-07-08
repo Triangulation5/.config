@@ -24,11 +24,14 @@ selection-background = #252530
 selection-foreground = #cdcdcd
 split-divider-color = #878787
 
-background-opacity = 0.80
+# background-opacity = 0.80
+
+background-opacity = 1
 window-padding-x = 0
 window-padding-y = 0
 window-padding-balance = false
 window-padding-color = extend-always
+scrollbar = never
 
-font-family = FiraCode Nerd Font Mono Regular
+font-family = "FiraCode Nerd Font Mono Regular"
 font-size = 12
