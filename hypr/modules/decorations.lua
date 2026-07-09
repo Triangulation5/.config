@@ -85,7 +85,7 @@ hl.curve("tight",          { type = "spring", mass = 0.8, stiffness = 220, dampe
 -- Minimal animations for when doing actual work
 hl.animation({ leaf = "global",        enabled = true, speed = 1,   bezier = "quicker" })
 hl.animation({ leaf = "windows",       enabled = false, speed = 0.5, spring = "tight" })
-hl.animation({ leaf = "windowsIn",     enabled = false, speed = 0.3, bezier = "quicker", style = "popin 96%" })
+hl.animation({ leaf = "windowsIn",     enabled = false, speed = 0.3, bezier = "quicker", style = "popin 100%" })
 hl.animation({ leaf = "windowsOut",    enabled = false, speed = 0.3, bezier = "quicker", style = "popin 96%" })
 hl.animation({ leaf = "fadeIn",        enabled = true, speed = 0.2, bezier = "linear" })
 hl.animation({ leaf = "fadeOut",       enabled = true, speed = 0.2, bezier = "linear" })
