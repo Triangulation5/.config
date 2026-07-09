@@ -1,5 +1,20 @@
 [mgr]
 
+[[mgr.prepend_keymap]]
+on = "T"
+run = "plugin toggle-pane min-preview"
+desc = "Toggle preview pane"
+
+[[mgr.prepend_keymap]]
+on = "M"
+run = "plugin toggle-pane max-preview"
+desc = "Maximize preview pane"
+
+[[mgr.prepend_keymap]]
+on = "R"
+run = "plugin toggle-pane reset"
+desc = "Reset pane layout"
+
 keymap = [
 	{ on = "<Esc>", run = "escape",             desc = "Exit visual mode, clear selection, or cancel search" },
 	{ on = "<C-[>", run = "escape",             desc = "Exit visual mode, clear selection, or cancel search" },
