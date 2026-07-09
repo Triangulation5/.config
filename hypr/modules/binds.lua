@@ -20,7 +20,7 @@ local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd(locker))
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
@@ -32,15 +32,15 @@ hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
+hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(quickshell .. " power"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(quickshell .. " sysmon"))
 hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
-hl.bind(mainMod .. " + J", hl.dsp.exec_cmd(quickshell .. " media"))
-hl.bind(mainMod .. " + K", hl.dsp.exec_cmd(quickshell .. " keybinds"))
+hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(quickshell .. " media"))
+hl.bind(mainMod .. " + I", hl.dsp.exec_cmd(quickshell .. " keybinds"))
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
-hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
 
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
 -- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
@@ -51,11 +51,17 @@ hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize
 -- hl.bind(mainMod .. "+ U", hl.dsp.exec_cmd(screenshots))
 -- hl.bind("+ SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
 
--- Move focus with mainMod + arrow keys
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+-- Move focus with mainMod + HJKL keys
+hl.bind(mainMod .. " + H",  hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
+hl.bind(mainMod .. " + K",    hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + J",  hl.dsp.focus({ direction = "down" }))
+
+-- Nudge floating widows by pixels using mainMod + ALT + HJKL
+hl.bind(mainMod .. " + ALT + H", hl.dsp.window.move({ x = -20, y = 0, relative = true }))
+hl.bind(mainMod .. " + ALT + J", hl.dsp.window.move({ x = 0, y = 20, relative = true }))
+hl.bind(mainMod .. " + ALT + K", hl.dsp.window.move({ x = 0, y = -20, relative = true }))
+hl.bind(mainMod .. " + ALT + L", hl.dsp.window.move({ x = 20, y = 0, relative = true }))
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
@@ -79,10 +85,10 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Keyboard resizing
 local step = 50
-hl.bind(mainMod .. " + CTRL + left",  hl.dsp.window.resize({ x = -step, y = 0, relative = true }))
-hl.bind(mainMod .. " + CTRL + right", hl.dsp.window.resize({ x =  step, y = 0, relative = true }))
-hl.bind(mainMod .. " + CTRL + up",    hl.dsp.window.resize({ x = 0, y = -step, relative = true }))
-hl.bind(mainMod .. " + CTRL + down",  hl.dsp.window.resize({ x = 0, y =  step, relative = true }))
+hl.bind(mainMod .. " + CTRL + H",  hl.dsp.window.resize({ x = -step, y = 0, relative = true }))
+hl.bind(mainMod .. " + CTRL + L", hl.dsp.window.resize({ x =  step, y = 0, relative = true }))
+hl.bind(mainMod .. " + CTRL + K",    hl.dsp.window.resize({ x = 0, y = -step, relative = true }))
+hl.bind(mainMod .. " + CTRL + J",  hl.dsp.window.resize({ x = 0, y =  step, relative = true }))
 
 -- Move the active window in the layout
 hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
