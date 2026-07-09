@@ -78,7 +78,7 @@
       "key": "󰍛 ",
       "keyColor": "#bb9dbd",
       "color": "#cdcdcd",
-      "format": "{} {}"
+      "format": "{} / {}"
     },
     {
       "type": "disk",
