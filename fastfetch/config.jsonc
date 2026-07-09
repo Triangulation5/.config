@@ -7,11 +7,11 @@
         "right": 4
     },
     "color": {
-      "1": "magenta",
-      "2": "white",
-      "3": "blue",
-      "4": "blue",
-      "5": "black"
+      "1": "#bb9dbd",
+      "2": "#cdcdcd",
+      "3": "#6e94b2",
+      "4": "#6e94b2",
+      "5": "#252530"
     }
   },
   "display": {
@@ -23,7 +23,7 @@
     {
       "type": "title",
       "keyWidth": 10,
-      "color": "#C4A7E7"
+      "color": "#bb9dbd"
     },
     {
       "type": "custom",
@@ -33,64 +33,64 @@
     {
       "type": "os",
       "key": " ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "host",
       "key": "🖥 ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "shell",
       "key": ">_",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "terminal",
       "key": " ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "wm",
       "format": "{} (wayland)",
       "key": " ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "cpu",
       "key": "󰍛 ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "gpu",
       "key": "󰢮 ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "memory",
       "key": "󰍛 ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4",
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd",
       "format": "{} {}"
     },
     {
       "type": "disk",
       "key": "󰋊 ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "uptime",
       "key": " ",
-      "keyColor": "#c4a7e7",
-      "color": "#e0def4"
+      "keyColor": "#bb9dbd",
+      "color": "#cdcdcd"
     },
     {
       "type": "custom",
