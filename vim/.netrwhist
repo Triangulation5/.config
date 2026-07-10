@@ -1,3 +1,12 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =1
-let g:netrw_dirhist_1='/home/josh/.config/vim'
+let g:netrw_dirhistcnt =0
+let g:netrw_dirhist_0='/home/josh'
+let g:netrw_dirhist_9='/home/josh/.config'
+let g:netrw_dirhist_8='/home/josh/.config/vim'
+let g:netrw_dirhist_7='/home/josh'
+let g:netrw_dirhist_6='/home/josh/.config/vim'
+let g:netrw_dirhist_5='/home/josh/.config'
+let g:netrw_dirhist_4='/home/josh/.config/nvim'
+let g:netrw_dirhist_3='/home/josh/.config'
+let g:netrw_dirhist_2='/home/josh'
+let g:netrw_dirhist_1='/home/josh/.cargo'
