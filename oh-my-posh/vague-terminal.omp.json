@@ -46,7 +46,7 @@
   "transient_prompt": {
     "foreground": "#cecec1",
     "background": "transparent",
-    "template": "→ "
+    "template": "➜ "
   },
   "final_space": true,
   "version": 3
