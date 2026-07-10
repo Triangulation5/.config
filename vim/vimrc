@@ -1,0 +1,94 @@
+" --- encoding / core ---
+set encoding=utf-8
+set background=dark
+set termguicolors
+set noswapfile
+set viminfo='50,<20,s5,h
+
+" --- UI / behavior ---
+set number
+set relativenumber
+set numberwidth=4
+set signcolumn=yes
+set title
+set more
+set laststatus=2
+set statusline=%f%m%r\ [%{&filetype}]\ %=%l:%c\ %p%%
+set belloff=all
+set pumheight=10
+set omnifunc=syntaxcomplete#Complete
+set path=.,**
+set showtabline=2
+
+" --- tabs / indent ---
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
+set expandtab
+set autoindent
+set smartindent
+set breakindent
+
+" --- search ---
+set ignorecase
+set smartcase
+set incsearch
+set nohlsearch
+
+" --- scrolling ---
+set scrolloff=8
+set sidescrolloff=8
+
+" --- timing ---
+set updatetime=200
+set timeoutlen=150
+
+" --- misc ---
+set list
+set listchars=tab:\ \ ,trail:·
+set whichwrap+=<,>,[,],h,l
+set iskeyword+=-
+set completeopt=menuone,longest,popup
+set complete=.,w,b,u,t
+set grepprg=rg\ --vimgrep\ --smart-case\ --hidden
+set grepformat=%f:%l:%c:%m
+set wildmenu
+set wildmode=longest:full,full
+
+" --- netrw ---
+let g:netrw_banner=0
+
+" --- restore cursor ---
+augroup restore_cursor | autocmd! | autocmd BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif | augroup END
+
+" --- leader ---
+let mapleader=" "
+let maplocalleader="\\"
+
+nnoremap <leader>f :find<Space>
+nnoremap <leader>fg :grep<Space>
+nnoremap <leader>fw :grep <C-R><C-W><CR>:copen<CR>
+command! -nargs=1 Ngrep vimgrep <args> **
+nnoremap <leader>[ :Ngrep<Space>
+nnoremap <leader>fb :ls<CR>:buffer<Space>
+nnoremap <leader>h :h<Space>
+nnoremap <leader>e :Explore<CR>
+
+" --- basic mappings ---
+nnoremap <leader>w :%s/\s\+$//e<CR>:write<CR>
+nnoremap <leader>q :quit<CR>
+nnoremap <leader>wq :xa<CR>
+nnoremap <leader>n :norm<Space>
+vnoremap <leader>n :norm<Space>
+xnoremap <leader>n :norm<Space>
+nnoremap <leader>bn :bn<CR>
+nnoremap <leader>bp :bp<CR>
+nnoremap <leader>bf :bw!<CR>
+inoremap ( ()<Left>
+inoremap [ []<Left>
+inoremap { {}<Left>
+
+vnoremap K :m '<-2<CR>gv=gv
+vnoremap J :m '>+1<CR>gv=gv
+
+colorscheme retrobox
