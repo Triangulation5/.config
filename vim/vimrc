@@ -54,12 +54,10 @@ set grepprg=rg\ --vimgrep\ --smart-case\ --hidden
 set grepformat=%f:%l:%c:%m
 set wildmenu
 set wildmode=longest:full,full
+set clipboard=unnamed
 
 " --- netrw ---
 let g:netrw_banner=0
-
-" --- restore cursor ---
-augroup restore_cursor | autocmd! | autocmd BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif | augroup END
 
 " --- leader ---
 let mapleader=" "
@@ -90,6 +88,10 @@ inoremap { {}<Left>
 
 vnoremap K :m '<-2<CR>gv=gv
 vnoremap J :m '>+1<CR>gv=gv
+xnoremap <silent> <leader>y :w !wl-copy<CR><CR>
+nnoremap <silent> <leader>p :read !wl-paste --no-newline<CR>
+xnoremap <silent> <leader>p c<C-r>=system('wl-paste --no-newline')<CR><Esc>
 
-colorscheme vague
+colorscheme gruvbox
 highlight Normal guibg=NONE ctermbg=NONE
+highlight SignColumn guibg=NONE ctermbg=NONE
