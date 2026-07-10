@@ -42,6 +42,7 @@ hl.bind(mainMod .. " + I", hl.dsp.exec_cmd(quickshell .. " keybinds"))
 hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
 -- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
