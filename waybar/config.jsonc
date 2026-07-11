@@ -1,87 +1,85 @@
 {
-    "layer": "top",
-    "width": 1000,
-    "modules-left": [
-        "pulseaudio",
-        "custom/cava"
-    ],
-    "modules-center": [
-        "clock",
-        "hyprland/workspaces",
-        "clock#right"
-    ],
-    "modules-right": [
-        "network",
-        "battery"
-    ],
-    "clock": {
-        "format": "{:%H}",
-        "on-click": "gnome-clocks"
-    },
-    "clock#right": {
-        "format": "{:%M}",
-        "on-click": "gnome-clocks"
-    },
-    "hyprland/workspaces": {
-        "format": "{icon}",
-        "format-icons": {
-                "1": "",
-                "2": "",
-                "3": "",
-                "4": "",
-                "5": ""
-            },
-        "on-scroll-down": "swaync-client -op",
-        "on-scroll-up": "swaync-client -cp"
-    },
-    "battery": {
-        "interval": 60,
-        "states": {
-            "warning": 30,
-            "critical": 20
-        },
-        "format": "{icon} {capacity}%",
-        "format-icons": {
-            "default": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
-            "charging": ["󰢟", "󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"]
-        },
-        "on-click": "ghostty -e btop"
-    },
-    "network": {
-        "format-wifi": "󰖩 {essid}",
-        "format-ethernet": "󰊗 {ipaddr}/{cidr}",
-        "format-disconnected": "Disconnected",
-        "tooltip-format-wifi": "{ifname} {essid} ({signalStrength}%) ",
-        "tooltip-format-ethernet": " {ifname}",
-        "tooltip-format-disconnected": "Disconnected",
-        "max-length": 50,
-        "on-click": "ghostty -e nmtui",
-        "on-click-right": "nm-connection-editor"
-    },
+  "layer": "top",
+  "position": "top",
+  "height": 27,
+  "reload_style_on_change": true,
 
-    "pulseaudio": {
-        "format": "{icon} {volume}%",
-        "format-bluetooth": " {volume}%",
-        "format-muted": "",
-        "format-icons": {
-            "headphone": "",
-            "hands-free": "",
-            "headset": "",
-            "phone": "",
-            "phone-muted": "",
-            "portable": "",
-            "car": "",
-            "default": ["󰖀", "󰕾"]
-        },
-        "scroll-step": 1,
-        "on-click": "pavucontrol",
-        "ignored-sinks": ["Easy Effects Sink"]
-    },
+  "modules-left": [
+    "hyprland/workspaces",
+    "hyprland/submap"
+  ],
 
-    "custom/cava": {
-        "exec": "~/.config/waybar/scripts/cava.sh",
-        "return-type": "text",
-        "restart-interval": 1,
-        "format": "{}"
+  "modules-right": [
+    "cpu",
+    "pulseaudio",
+    "clock"
+  ],
+
+  "hyprland/workspaces": {
+    "format": "{icon}",
+    "on-click": "activate",
+    "on-scroll-up": "hyprctl dispatch workspace e+1",
+    "on-scroll-down": "hyprctl dispatch workspace e-1",
+    "all-outputs": false,
+    "active-only": false,
+    "show-special": false,
+    "format-icons": {
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5",
+      "6": "6",
+      "7": "7",
+      "8": "8",
+      "9": "9",
+      "10": "10"
     }
+  },
+
+  "hyprland/submap": {
+    "format": "{}",
+    "max-length": 8,
+    "tooltip": false
+  },
+
+  "cpu": {
+    "interval": 2,
+    "format": "CPU {usage}%"
+  },
+
+  "pulseaudio": {
+    "scroll-step": 2,
+    "format": "VOL {volume}%",
+    "format-muted": "MUTED",
+    "format-icons": {
+      "default": [
+        "VOL "
+      ],
+      "headphone": "󰋋 "
+    },
+    "on-click": "pamixer -t"
+  },
+
+  "clock": {
+    "format": "{:%a %b %d %I:%M %p}",
+    "tooltip-format": "<tt><small>{calendar}</small></tt>",
+    "calendar": {
+      "mode": "month",
+      "mode-mon-col": 3,
+      "on-scroll": 1,
+      "format": {
+        "months": "<b>{}</b>",
+        "days": "{}",
+        "weeks": "W{}",
+        "weekdays": "<b>{}</b>",
+        "today": "<b>{}</b>"
+      }
+    },
+    "actions": {
+      "on-click": "mode",
+      "on-click-right": "tz_down",
+      "on-click-middle": "tz_up"
+    }
+  }
 }
