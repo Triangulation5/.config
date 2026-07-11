@@ -1,0 +1,37 @@
+@define-color background #141415;
+@define-color foreground #cdcdcd;
+
+@define-color black #252530;
+@define-color black_bright #606079;
+
+@define-color red #d8647e;
+@define-color green #7fa563;
+@define-color yellow #f3be7c;
+@define-color blue #6e94b2;
+@define-color magenta #bb9dbd;
+@define-color cyan #aeaed1;
+@define-color white #cdcdcd;
+
+@define-color text #cdcdcd;
+@define-color text-alt #878787;
+
+@define-color hover #3d3d4b;
+@define-color selected #252530;
+
+@define-color background-alt #252530;
+@define-color notification-bg #141415;
+@define-color center-bg #141415;
+@define-color center-notification-bg #252530;
+
+@define-color urgent #d8647e;
+
+@define-color border #606079;
+@define-color divider #606079;
+
+@define-color success #7fa563;
+@define-color warning #f3be7c;
+@define-color error #d8647e;
+
+@define-color info #6e94b2;
+
+@define-color inactive #606079;
