@@ -31,14 +31,14 @@ hl.config({
         inactive_opacity = 0.95,
 
         shadow = {
-            enabled      = true, -- false for minimalism
+            enabled      = false, -- false for minimalism
             range        = 20,
             render_power = 3,
             color        = 0xee121212,
         },
 
         blur = {
-            enabled   = true, -- false for minimalism
+            enabled   = false, -- false for minimalism
             size      = 6, -- 3 default, 8 for decent amount, 20
             passes    = 2, -- 1 default, 2 for decent amount, 3 for frosted glass
             vibrancy  = 0.1696,
@@ -47,7 +47,7 @@ hl.config({
     },
 
     animations = {
-        enabled = true,
+        enabled = false,
     },
 })
 
