@@ -5,7 +5,7 @@ import Quickshell.Io
 Text {
     id: root
 
-    color: "white"
+    color: "#cdcdcd"
     font.pixelSize: 14
 
     property string windowTitle: ""

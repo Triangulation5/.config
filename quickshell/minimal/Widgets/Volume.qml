@@ -4,7 +4,7 @@ import Quickshell.Services.Pipewire
 Text {
     readonly property var sink: Pipewire.defaultAudioSink
 
-    color: "white"
+    color: "#cdcdcd"
 
     PwObjectTracker {
         objects: [sink].filter(Boolean)
