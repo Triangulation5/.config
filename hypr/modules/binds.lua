@@ -3,9 +3,9 @@
 ---------------------
 
 -- Set programs that you use
-local terminal    = "ghostty"
+local terminal    = "kitty"
 local fileManager = "nautilus"
-local launcher    = "~/.config/rofi/type-2/launcher.sh"
+local launcher    = "~/.config/rofi/launcher.sh"
 local notif_toggle= "swaync-client -t"
 local locker      = "hyprlock"
 local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
@@ -44,12 +44,13 @@ hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
+-- Private and Scratchpad
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
 -- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
 -- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
 -- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
 
--- Rishot
+-- Rishot (screenshot tool)
 -- hl.bind(mainMod .. "+ U", hl.dsp.exec_cmd(screenshots))
 -- hl.bind("+ SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
 

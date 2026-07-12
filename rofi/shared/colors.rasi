@@ -15,4 +15,4 @@
 
 /* Import color-scheme from `colors` directory */
 
-@import "~/.config/rofi/type-2/colors/vague.rasi"
+@import "~/.config/rofi/colors/vague.rasi"
