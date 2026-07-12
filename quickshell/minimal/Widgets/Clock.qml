@@ -1,7 +1,7 @@
 import QtQuick
 
 Text {
-    color: "white"
+    color: "#cdcdcd"
 
     function update() {
         text = Qt.formatDateTime(

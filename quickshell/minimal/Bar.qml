@@ -12,11 +12,11 @@ PanelWindow {
     }
 
     implicitHeight: 27
-    color: "#111111"
+    color: "#141415"
 
     Rectangle {
         anchors.fill: parent
-        color: "#111111"
+        color: "#141415"
 
         RowLayout {
             anchors.fill: parent
