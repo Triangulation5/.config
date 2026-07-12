@@ -3,17 +3,17 @@
 * {
 	all: unset;
 
-    --border-radius: 18px;
-	--border-radius-s: 8px;
-	--border-radius-xl: 18px;
+	/*    --border-radius: 18px; */
+	/* --border-radius-s: 8px; */
+	/* --border-radius-xl: 18px; */
 
 	/* --border-radius: 16px; */
 	/* --border-radius-s: 8px; */
 	/* --border-radius-xl: 18px; */
 
-    /* --border-radius: 0; */
-    /* --border-radius-s: 0; */
-    /* --border-radius-xl: 0; */
+    --border-radius: 0;
+    --border-radius-s: 0;
+    --border-radius-xl: 0;
 
 	--shadow: 2px 4px 10px rgba(0,0,0,0.15);
 

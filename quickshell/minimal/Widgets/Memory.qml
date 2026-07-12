@@ -7,7 +7,7 @@ Text {
 
     property int usedMemory: 0
 
-    color: "white"
+    color: "#cdcdcd"
     text: "Mem " + usedMemory + "%"
 
     Process {

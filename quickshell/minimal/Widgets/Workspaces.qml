@@ -11,17 +11,17 @@ Row {
             width: 22
             height: 20
 
-            color: modelData.active
-                ? "#ffffff"
-                : "transparent"
+        color: modelData.active
+            ? "#d8647e"
+            : "transparent"
 
             Text {
                 anchors.centerIn: parent
                 text: modelData.id
 
                 color: modelData.active
-                    ? "#000000"
-                    : "#ffffff"
+                    ? "#141415"
+                    : "#cdcdcd"
             }
 
             MouseArea {
