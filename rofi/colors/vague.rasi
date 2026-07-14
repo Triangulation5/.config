@@ -1,46 +1,46 @@
 * {
 
     /* Base */
-    background:                 #141415E6;
-    background-alt:             #252530E6;
-    foreground:                 #CDCDCDFF;
-    foreground-alt:             #878787FF;
+    background:                 #141415F2;
+    background-alt:             #252530F2;
+    foreground:                 #CDCDCDF2;
+    foreground-alt:             #878787F2;
 
     /* ANSI palette */
-    black:                      #252530FF;
-    black-bright:               #606079FF;
+    black:                      #252530F2;
+    black-bright:               #606079F2;
 
     red:                        #D8647EFF;
-    green:                      #7FA563FF;
-    yellow:                     #F3BE7CFF;
-    blue:                       #6E94B2FF;
-    magenta:                    #BB9DBDFF;
-    cyan:                       #AEAED1FF;
-    white:                      #CDCDCDFF;
+    green:                      #7FA563F2;
+    yellow:                     #F3BE7CF2;
+    blue:                       #6E94B2F2;
+    magenta:                    #BB9DBDF2;
+    cyan:                       #AEAED1F2;
+    white:                      #CDCDCDF2;
 
     /* Text aliases */
-    text:                       #CDCDCDFF;
-    text-alt:                   #878787FF;
+    text:                       #CDCDCDF2;
+    text-alt:                   #878787F2;
 
     /* UI */
-    hover:                      #2F2F3AFF;  /* opaque hover */
+    hover:                      #2F2F3AF2;  /* opaque hover */
     selected:                   #252530E6;
 
-    notification-bg:            #141415FF;
-    center-bg:                  #141415FF;
-    center-notification-bg:     #252530FF;
+    notification-bg:            #141415F2;
+    center-bg:                  #141415F2;
+    center-notification-bg:     #252530F2;
 
     /* Status */
-    urgent:                     #D8647EFF;
-    success:                    #7FA563FF;
-    warning:                    #F3BE7CFF;
-    error:                      #D8647EFF;
-    info:                       #6E94B2FF;
+    urgent:                     #D8647EF2;
+    success:                    #7FA563F2;
+    warning:                    #F3BE7CF2;
+    error:                      #D8647EF2;
+    info:                       #6E94B2F2;
 
     /* Borders */
     border:                     #606079E6;
-    divider:                    #606079FF;
+    divider:                    #606079F2;
 
     /* Misc */
-    inactive:                   #606079FF;
+    inactive:                   #606079F2;
 }
