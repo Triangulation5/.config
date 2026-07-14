@@ -233,21 +233,28 @@ source = auto
 # background must also be defined in hex or remain commented out. 1 = on, 0 = off.
 # You can define as many as 8 different colors. They range from bottom to top of screen
 gradient = 1
-gradient_count = 8
-# Cool base (blue / periwinkle)
+gradient_count = 4 # 8, or 4
+
+# # Cool base (blue / periwinkle)
+# gradient_color_1 = '#7e98e8'
+# gradient_color_2 = '#7e98e8'
+#
+# # Mid-low transition (steel blue / lavender)
+# gradient_color_3 = '#6e94b2'
+# gradient_color_4 = '#bb9dbd'
+#
+# # Mid-high transition (gold / orange)
+# gradient_color_5 = '#f3be7c'
+# gradient_color_6 = '#f3be7c'
+#
+# # Hot peaks (rose pink)
+# gradient_color_7 = '#d8647e'
+# gradient_color_8 = '#d8647e'
+
 gradient_color_1 = '#7e98e8'
-gradient_color_2 = '#7e98e8'
-# Mid-low transition (steel blue / lavender)
-gradient_color_3 = '#6e94b2'
-gradient_color_4 = '#bb9dbd'
-# Mid-high transition (gold / orange)
-gradient_color_5 = '#f3be7c'
-gradient_color_6 = '#f3be7c'
-# Hot peaks (rose pink)
-gradient_color_7 = '#d8647e'
-gradient_color_8 = '#d8647e'
-
-
+gradient_color_2 = '#bb9dbd'
+gradient_color_3 = '#f3be7c'
+gradient_color_4 = '#d8647e'
 
 [smoothing]
 
