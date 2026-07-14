@@ -34,6 +34,11 @@
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-gruvbox)
 
+;; Maintain terminal transparency in Doom Emacs
+(after! doom-themes
+  (unless (display-graphic-p)
+    (set-face-background 'default "unspecified-bg")))
+
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type `relative)
