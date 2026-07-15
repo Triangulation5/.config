@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Shapes
+import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Services.Pipewire
 import "Singletons"
@@ -77,6 +78,12 @@ PillSurface {
     readonly property string stageTitle: ScreenRec.recording ? "Recording" : "Screen recorder"
 
     readonly property string stageSpec: ScreenRec.fps + " fps · " + root.qualityLabel
+
+    /** Deletes one clip file (argv form, no shell), then re-reads the strip. */
+    Process {
+        id: rmClipProc
+        onExited: ScreenRec.refreshRecent()
+    }
 
     function fmtTime(sec) {
         var m = Math.floor(sec / 60);
@@ -1234,6 +1241,9 @@ PillSurface {
                     }
                     readonly property bool coverReady: cover.status === Image.Ready && cover.source !== ""
 
+                    /** Two-step delete: first ✕ click arms it red, the next removes the clip. */
+                    property bool armed: false
+
                     width: 108 * root.s
                     height: filmstrip.height
 
@@ -1349,6 +1359,48 @@ PillSurface {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: ScreenRec.openFile(frame.modelData.path)
+                    }
+
+                    Rectangle {
+                        id: delBadge
+                        anchors.top: thumb.top
+                        anchors.right: thumb.right
+                        anchors.margins: 4 * root.s
+                        width: 15 * root.s
+                        height: 15 * root.s
+                        radius: width / 2
+                        color: frame.armed ? "#e0533f" : Qt.rgba(0, 0, 0, 0.4)
+                        opacity: frameArea.containsMouse || delClipArea.containsMouse ? 1 : 0
+                        visible: opacity > 0
+                        Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+                        Behavior on color { ColorAnimation { duration: Motion.fast } }
+
+                        GlyphIcon {
+                            anchors.centerIn: parent
+                            width: 8 * root.s
+                            height: 8 * root.s
+                            name: "close"
+                            stroke: 2
+                            color: frame.armed || delClipArea.containsMouse ? Theme.cream : Theme.dim
+                        }
+
+                        MouseArea {
+                            id: delClipArea
+                            anchors.fill: parent
+                            anchors.margins: -4 * root.s
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onExited: frame.armed = false
+                            onClicked: {
+                                if (!frame.armed) {
+                                    frame.armed = true;
+                                    return;
+                                }
+                                frame.armed = false;
+                                rmClipProc.command = ["rm", "--", frame.modelData.path];
+                                rmClipProc.running = true;
+                            }
+                        }
                     }
                 }
             }

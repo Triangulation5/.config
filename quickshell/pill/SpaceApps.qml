@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import "Singletons"
-import "lib/fuzzy.js" as Fuzzy
 
 /**
  * App manager for a user-defined special workspace (the one named by
@@ -38,71 +37,9 @@ PillSurface {
     readonly property var entries: editingSpace ? editingSpace.apps : []
     readonly property string spaceName: editingSpace && editingSpace.name ? editingSpace.name : "SPACE"
 
-    property bool addOpen: false
-    property string query: ""
-    property int selectedIndex: 0
-
-    /**
-     * Collapse a window-class token to a comparable key: a two-char character
-     * class like `[Ss]` keeps its lowercase letter, then everything non-alnum is
-     * dropped so `[Ss]potify` and `Ghosttype-app` line up with an entry's
-     * StartupWMClass or id.
-     */
-    function normalizeClass(cls) {
-        return String(cls)
-            .replace(/\[(.)(.)\]/g, "$2")
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "");
-    }
-
-    readonly property var allApps: DesktopEntries.applications.values
-
-    /**
-     * The installed app behind a window class, used only to dress the row with a
-     * real name and icon. Normalized equality on StartupWMClass, id or name is
-     * preferred (Spotify: `[Ss]potify` → `spotify`); when nothing matches exactly,
-     * a normalized substring link is tried (GhostType ships StartupWMClass
-     * `GhostType` while its window class is `Ghosttype-app`, so `ghosttypeapp`
-     * contains `ghosttype`). Among substring links the longest matched field wins,
-     * and the substring side must be at least four chars so short tokens cannot
-     * cross-link unrelated apps. Null when nothing matches.
-     */
-    function resolveEntry(cls) {
-        var want = root.normalizeClass(cls);
-        if (want.length === 0)
-            return null;
-        var apps = root.allApps;
-        for (var i = 0; i < apps.length; i++) {
-            var e = apps[i];
-            if (!e)
-                continue;
-            var cands = [e.startupClass, e.id, e.name];
-            for (var j = 0; j < cands.length; j++)
-                if (cands[j] && root.normalizeClass(cands[j]) === want)
-                    return e;
-        }
-        var best = null;
-        var bestLen = 0;
-        for (var k = 0; k < apps.length; k++) {
-            var e2 = apps[k];
-            if (!e2)
-                continue;
-            var cands2 = [e2.startupClass, e2.id, e2.name];
-            for (var n = 0; n < cands2.length; n++) {
-                if (!cands2[n])
-                    continue;
-                var got = root.normalizeClass(cands2[n]);
-                if (got.length < 4)
-                    continue;
-                var hit = (want.length >= 4 && got.indexOf(want) !== -1) || want.indexOf(got) !== -1;
-                if (hit && got.length > bestLen) {
-                    best = e2;
-                    bestLen = got.length;
-                }
-            }
-        }
-        return best;
-    }
+    /** Pill.qml folds the picker back when the surface leaves */
+    readonly property alias addOpen: picker.addOpen
+    function closeAdd() { picker.closeAdd(); }
 
     function removeAt(i) {
         if (i < 0 || i >= root.entries.length)
@@ -111,56 +48,12 @@ PillSurface {
     }
 
     function addClass(cls) {
-        if (!cls || cls.length === 0) {
-            root.closeAdd();
-            return;
-        }
-        Spaces.addApp(Spaces.editing, cls);
-        root.closeAdd();
+        if (cls && cls.length > 0)
+            Spaces.addApp(Spaces.editing, cls);
+        picker.closeAdd();
     }
 
-    function openAdd() {
-        root.query = "";
-        root.selectedIndex = 0;
-        root.addOpen = true;
-    }
-
-    function closeAdd() {
-        root.addOpen = false;
-        root.query = "";
-    }
-
-    readonly property var allEntries: {
-        var src = DesktopEntries.applications.values;
-        var out = [];
-        for (var i = 0; i < src.length; i++)
-            if (src[i] && !src[i].noDisplay)
-                out.push(src[i]);
-        return out;
-    }
-    readonly property var results: Fuzzy.rank(allEntries, query, ({}))
-
-    function pick() {
-        if (results.length === 0 || selectedIndex < 0 || selectedIndex >= results.length)
-            return;
-        var e = results[selectedIndex];
-        if (e)
-            root.addClass(e.startupClass || e.id);
-    }
-
-    function move(delta) {
-        if (results.length === 0)
-            return;
-        selectedIndex = Math.max(0, Math.min(results.length - 1, selectedIndex + delta));
-        addList.positionViewAtIndex(selectedIndex, ListView.Contain);
-    }
-
-    onActiveChanged: {
-        addOpen = false;
-        query = "";
-    }
-    onResultsChanged: if (selectedIndex >= results.length) selectedIndex = 0;
-    onAddOpenChanged: if (addOpen) Qt.callLater(search.input.forceActiveFocus)
+    onActiveChanged: picker.closeAdd()
 
     Column {
         id: content
@@ -218,7 +111,7 @@ PillSurface {
         Item {
             width: parent.width
             height: visible ? 26 * root.s : 0
-            visible: !root.addOpen && root.entries.length === 0
+            visible: !picker.addOpen && root.entries.length === 0
 
             Text {
                 anchors.left: parent.left
@@ -236,7 +129,7 @@ PillSurface {
             id: list
             width: parent.width
             height: visible ? Math.min(contentHeight, 230 * root.s) : 0
-            visible: !root.addOpen && root.entries.length > 0
+            visible: !picker.addOpen && root.entries.length > 0
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.entries
@@ -247,8 +140,8 @@ PillSurface {
                 required property string modelData
 
                 readonly property var resolved: {
-                    void root.allApps;
-                    return root.resolveEntry(modelData);
+                    void picker.allApps;
+                    return picker.resolveEntry(modelData);
                 }
                 readonly property string title: resolved && resolved.name ? resolved.name : modelData
                 readonly property bool named: resolved && resolved.name && resolved.name !== modelData
@@ -365,223 +258,13 @@ PillSurface {
             }
         }
 
-        Item { width: 1; height: visible ? 6 * root.s : 0; visible: !root.addOpen }
+        Item { width: 1; height: visible ? 6 * root.s : 0; visible: !picker.addOpen }
 
-        Item {
+        AppPickerList {
+            id: picker
             width: parent.width
-            height: visible ? 40 * root.s : 0
-            visible: !root.addOpen
-
-            Canvas {
-                id: dash
-                anchors.fill: parent
-                anchors.topMargin: 4 * root.s
-                anchors.bottomMargin: 4 * root.s
-                property color stroke: Qt.alpha(Theme.vermLit, addArea.containsMouse ? 0.7 : 0.36)
-                onStrokeChanged: requestPaint()
-                onWidthChanged: requestPaint()
-                onHeightChanged: requestPaint()
-                onPaint: {
-                    var ctx = getContext("2d");
-                    ctx.reset();
-                    var r = 9 * root.s;
-                    var w = width;
-                    var h = height;
-                    var p = 0.5;
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = stroke;
-                    ctx.setLineDash([4 * root.s, 4 * root.s]);
-                    ctx.beginPath();
-                    ctx.moveTo(p + r, p);
-                    ctx.lineTo(w - p - r, p);
-                    ctx.arcTo(w - p, p, w - p, p + r, r);
-                    ctx.lineTo(w - p, h - p - r);
-                    ctx.arcTo(w - p, h - p, w - p - r, h - p, r);
-                    ctx.lineTo(p + r, h - p);
-                    ctx.arcTo(p, h - p, p, h - p - r, r);
-                    ctx.lineTo(p, p + r);
-                    ctx.arcTo(p, p, p + r, p, r);
-                    ctx.stroke();
-                }
-            }
-
-            Row {
-                anchors.centerIn: parent
-                spacing: 6 * root.s
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "+"
-                    color: Theme.vermLit
-                    font.family: Theme.font
-                    font.pixelSize: 14 * root.s
-                    font.weight: Font.Bold
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Add app"
-                    color: Theme.vermLit
-                    font.family: Theme.font
-                    font.pixelSize: 11 * root.s
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 0.5 * root.s
-                }
-            }
-
-            MouseArea {
-                id: addArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openAdd()
-            }
-        }
-
-        /** ── add view ── */
-
-        Item {
-            width: parent.width
-            height: visible ? 22 * root.s : 0
-            visible: root.addOpen
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 7 * root.s
-
-                Item {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 16 * root.s
-                    height: 16 * root.s
-
-                    GlyphIcon {
-                        anchors.fill: parent
-                        name: "chevron-left"
-                        color: addBackArea.containsMouse ? Theme.cream : Theme.iconDim
-                        stroke: 1.8
-                    }
-
-                    MouseArea {
-                        id: addBackArea
-                        anchors.fill: parent
-                        anchors.margins: -6 * root.s
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.closeAdd()
-                    }
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "ADD APP"
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 9.5 * root.s
-                    font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1.4 * root.s
-                }
-            }
-        }
-
-        Item { width: 1; height: visible ? 4 * root.s : 0; visible: root.addOpen }
-
-        SearchField {
-            id: search
-            width: parent.width
-            visible: root.addOpen
             s: root.s
-            kanji: "探"
-            placeholder: "Search apps"
-            counterText: root.results.length + ""
-            onTextChanged: {
-                root.query = text;
-                root.selectedIndex = 0;
-            }
-            onMoved: (d) => root.move(d)
-            onAccepted: root.pick()
-            onDismissed: root.closeAdd()
-        }
-
-        Item { width: 1; height: visible ? 6 * root.s : 0; visible: root.addOpen }
-
-        ListView {
-            id: addList
-            width: parent.width
-            height: visible ? Math.min(contentHeight, 226 * root.s) : 0
-            visible: root.addOpen
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            spacing: 4 * root.s
-            model: root.results.length
-
-            delegate: Item {
-                id: appRow
-                required property int index
-                width: addList.width
-                height: 40 * root.s
-
-                readonly property var entry: root.results[index]
-                readonly property bool selected: index === root.selectedIndex
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 9 * root.s
-                    visible: appRow.selected || appArea.containsMouse
-                    color: appRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03)
-                    border.width: appRow.selected ? 1 : 0
-                    border.color: Theme.frameBorder
-                }
-
-                MouseArea {
-                    id: appArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onPositionChanged: root.selectedIndex = appRow.index
-                    onClicked: {
-                        root.selectedIndex = appRow.index;
-                        root.pick();
-                    }
-                }
-
-                Rectangle {
-                    id: appTileBg
-                    anchors.left: parent.left
-                    anchors.leftMargin: 11 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 24 * root.s
-                    height: 24 * root.s
-                    radius: 6 * root.s
-                    color: Qt.rgba(1, 1, 1, 0.05)
-                    visible: !(appIcon.status === Image.Ready && appIcon.source != "")
-                }
-                Image {
-                    id: appIcon
-                    anchors.fill: appTileBg
-                    sourceSize.width: Math.round(40 * root.s)
-                    sourceSize.height: Math.round(40 * root.s)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    smooth: true
-                    visible: status === Image.Ready && source != ""
-                    source: appRow.entry && appRow.entry.icon ? Quickshell.iconPath(appRow.entry.icon, true) : ""
-                }
-
-                Text {
-                    anchors.left: appTileBg.right
-                    anchors.leftMargin: 11 * root.s
-                    anchors.right: parent.right
-                    anchors.rightMargin: 12 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: appRow.entry ? appRow.entry.name : ""
-                    color: Theme.cream
-                    font.family: Theme.font
-                    font.pixelSize: 12.5 * root.s
-                    font.weight: appRow.selected ? Font.DemiBold : Font.Normal
-                    elide: Text.ElideRight
-                }
-            }
+            onPicked: (entry) => root.addClass(entry.startupClass || entry.id)
         }
 
         Item { width: 1; height: 4 * root.s }

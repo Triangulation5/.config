@@ -20,13 +20,14 @@ local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
-hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
+-- hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(notif_toggle))
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/lock.sh"))
 
 -- Quickshell
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))

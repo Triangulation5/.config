@@ -62,6 +62,9 @@ Item {
             root.edited(n);
     }
 
+    Keys.onLeftPressed: bump(-1)
+    Keys.onRightPressed: bump(1)
+
     Rectangle {
         anchors.fill: parent
         radius: Motion.rSmall * root.s
@@ -113,6 +116,29 @@ Item {
                 root.bump(-1);
             else if (mouse.x > width * 0.6)
                 root.bump(1);
+        }
+    }
+
+    /**
+     * Wheel-to-step bridge (button-less MouseArea, the mixer pattern — native
+     * WheelHandler is unreliable on this layer-shell). One notch is one step;
+     * fractional touchpad deltas accumulate until they make a whole notch.
+     */
+    MouseArea {
+        anchors.fill: scrub
+        acceptedButtons: Qt.NoButton
+        cursorShape: Qt.SizeHorCursor
+        property real acc: 0
+        onWheel: (event) => {
+            acc += event.angleDelta.y / 120;
+            const notches = Math.trunc(acc);
+            if (notches !== 0) {
+                var cand = root.snap(root.value + notches * root.step);
+                if (cand !== root.value)
+                    root.edited(cand);
+                acc -= notches;
+            }
+            event.accepted = true;
         }
     }
 

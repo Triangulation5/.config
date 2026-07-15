@@ -37,7 +37,11 @@ SettingsSurface {
         { label: "30 min", value: 30 }, { label: "60 min", value: 60 }
     ]
 
-    rows: []
+    rows: [
+        { item: lockRow, kind: "seg", vals: root.lockOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleLockMin; }, set: function (v) { Flags.idleLockMin = v; root.apply(); } },
+        { item: screenRow, kind: "seg", vals: root.screenOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleScreenOffMin; }, set: function (v) { Flags.idleScreenOffMin = v; root.apply(); } },
+        { item: suspendRow, kind: "seg", vals: root.suspendOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleSuspendMin; }, set: function (v) { Flags.idleSuspendMin = v; root.apply(); } }
+    ]
 
     /**
      * Builds the full hypridle.conf from the three flag values. The general block
@@ -181,6 +185,7 @@ SettingsSurface {
         Item { width: 1; height: 12 * root.s }
 
         IdleRow {
+            id: lockRow
             name: "Auto-lock"
             caption: "Lock the screen after idle"
 
@@ -194,6 +199,7 @@ SettingsSurface {
         }
 
         IdleRow {
+            id: screenRow
             name: "Screen off"
             caption: "Blank the display after idle"
 
@@ -207,6 +213,7 @@ SettingsSurface {
         }
 
         IdleRow {
+            id: suspendRow
             name: "Suspend"
             caption: "Sleep the machine after idle"
             last: true
