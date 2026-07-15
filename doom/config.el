@@ -38,7 +38,7 @@
 (setq doom-theme 'doom-nord)
 
 ;; Custom splash image
-(setq fancy-splash-image "~/.config/doom/assets/gnu-meditate-levitating-resized.png")
+(setq fancy-splash-image "~/.config/doom/assets/lake-surrounded-with-mountain-resized.png")
 
 ;; Maintain terminal transparency in Doom Emacs
 (after! doom-themes
