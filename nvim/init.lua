@@ -22,7 +22,7 @@ for _, m in ipairs({
     { "n", "<leader>lf", function() require("mini.trailspace").trim(); require("mini.trailspace").trim_last_lines(); vim.lsp.buf.format() end, "LSP: Format" }, { "n", "<leader>i", [[<Cmd>tabedit .gitignore<CR>]], "Edit .gitignore" }, { "n", "<leader>p", ":TypstPreview<CR>", "Preview Typst File" },
     { "n", "<leader>bf", ":bd!<CR>", "Force Delete Buffer" }, { "n", "<leader>tf", ":tabc<CR>", "Close Tab" },
     { "n", "<leader>da", function() vim.diagnostic.setqflist({ open = true, title = "Diagnostics"}) end, "Show Diagnostics in Quickfix"}, { "n", "<C-q>", ":copen<CR>", "Opens Quickfix"},
-    { "n", "<M-t>", function() vim.cmd('botright split term://bash') end, "Bash" },
+    { "n", "<M-m>", function() vim.cmd('botright split term://bash') end, "Bash" },
 }) do vim.keymap.set(m[1], m[2], m[3], { desc = m[4] }) end
 
 vim.pack.add({
@@ -30,7 +30,7 @@ vim.pack.add({
     { src = "https://github.com/mason-org/mason.nvim" },
     { src = "https://github.com/stevearc/oil.nvim" },
     { src = "https://github.com/echasnovski/mini.nvim" },
-    { src = "https://github.com/vague-theme/vague.nvim", }, -- version = "24cd29d"
+    { src = "https://github.com/vague-theme/vague.nvim", version = "24cd29d" },
     { src = "https://github.com/chomosuke/typst-preview.nvim" },
 })
 
