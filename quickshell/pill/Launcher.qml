@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "Singletons"
 import "lib/fuzzy.js" as Fuzzy
+import "lib/calc.js" as Calc
 
 /**
  * Launcher surface: search field over a ranked application list, drawn as one
@@ -24,10 +25,29 @@ PillSurface {
     property int selectedIndex: 0
     property var usage: ({})
 
+    /**
+     * Calc mode: when the whole query parses as a real calculation (an
+     * expression with at least one operation, so lone numbers and app names like
+     * i3 or python3 fall through to app search), a result row appears above the
+     * list and Enter copies the value. The parser in lib/calc.js never evals, so
+     * a query cannot run code.
+     */
+    readonly property var calc: Calc.evaluate(query)
+    readonly property bool calcActive: calc.ok
+    property bool calcCopied: false
+    onQueryChanged: calcCopied = false
+
+    function copyResult() {
+        if (!root.calcActive)
+            return;
+        Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", root.calc.display]);
+        root.calcCopied = true;
+    }
+
     /** Row index currently in AppImage edit mode (rename plus armed delete), -1 when none. */
     property int editIndex: -1
 
-    readonly property string appimageScript: Quickshell.env("HOME") + "/.config/hypr/scripts/appimage-install.sh"
+    readonly property string appimageScript: Quickshell.env("HOME") + "/.config/hypr/scripts/app-install.sh"
 
     function appimageSlug(entry) {
         return entry && entry.id && entry.id.indexOf("ricelin-") === 0 ? entry.id.substring(8) : "";
@@ -94,6 +114,10 @@ PillSurface {
     }
 
     function activate() {
+        if (root.calcActive) {
+            root.copyResult();
+            return;
+        }
         if (results.length === 0 || selectedIndex < 0 || selectedIndex >= results.length)
             return;
         var entry = results[selectedIndex];
@@ -166,9 +190,75 @@ PillSurface {
         color: Theme.hair
     }
 
+    Item {
+        id: calcRow
+        visible: root.calcActive
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: visible ? 44 * root.s : 0
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 9 * root.s
+            color: Theme.frameBg
+            border.width: 1
+            border.color: Theme.frameBorder
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.copyResult()
+        }
+
+        Item {
+            anchors.fill: parent
+            anchors.leftMargin: 12 * root.s
+            anchors.rightMargin: 12 * root.s
+
+            Column {
+                anchors.left: parent.left
+                anchors.right: copyHint.left
+                anchors.rightMargin: 8 * root.s
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1 * root.s
+
+                Text {
+                    width: parent.width
+                    text: "= " + root.calc.display
+                    color: Theme.bright
+                    font.family: Theme.font
+                    font.pixelSize: 15 * root.s
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width
+                    text: root.query
+                    color: Theme.faint
+                    font.family: Theme.font
+                    font.pixelSize: 10.5 * root.s
+                    elide: Text.ElideRight
+                }
+            }
+
+            Text {
+                id: copyHint
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.calcCopied ? "copied" : "↵ copy"
+                color: root.calcCopied ? Theme.dim : Theme.vermLit
+                font.family: Theme.font
+                font.pixelSize: 11 * root.s
+            }
+        }
+    }
+
     Text {
         anchors.centerIn: list
-        visible: root.results.length === 0
+        visible: root.results.length === 0 && !root.calcActive
         text: root.query.length ? "No matches" : "No apps found"
         color: Theme.faint
         font.family: Theme.font
@@ -177,7 +267,7 @@ PillSurface {
 
     ListView {
         id: list
-        anchors.top: divider.bottom
+        anchors.top: root.calcActive ? calcRow.bottom : divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
@@ -396,6 +486,12 @@ PillSurface {
                 }
             }
         }
+    }
+
+    WheelScroller {
+        anchors.fill: list
+        s: root.s
+        flick: list
     }
 
     /** Faint nudge so the drag-to-install gesture is discoverable at all. */

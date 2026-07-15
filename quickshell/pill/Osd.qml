@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell.Widgets
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
-import Quickshell.Io
 import "Singletons"
 
 Item {
@@ -28,7 +27,7 @@ Item {
     readonly property var subject: pendingSubject ? pendingSubject : Players.active
     readonly property bool subjectHas: subject !== null
     readonly property bool subjectPlaying: subjectHas && subject.isPlaying
-    readonly property string subjectTitle: subjectHas && subject.trackTitle ? subject.trackTitle : ""
+    readonly property string subjectTitle: subjectHas ? Players.refineTitle(subject, subject.trackTitle || Players.labelOf(subject)) : ""
     readonly property string subjectArtist: subjectHas ? Theme.joinArtists(subject.trackArtists, subject.trackArtist) : ""
     readonly property string subjectIcon: subjectHas ? Players.appIconFor(subject) : ""
 
@@ -42,8 +41,7 @@ Item {
         return u.indexOf("file:") === 0 ? u + "#" + Players.keyFor(subject) : u;
     }
 
-    property real brightness: 0
-    property int lastBrightness: -1
+    readonly property real brightness: Backlight.brightness
     property bool recordStarted: false
 
     readonly property var sink: Pipewire.defaultAudioSink
@@ -94,8 +92,20 @@ Item {
         }
     }
 
+    /**
+     * Every pill carries its own Osd but the volume/track/battery signals are
+     * global, so without this gate one keypress flashes every monitor at once.
+     * Workspace flashes skip it: those are already keyed to this screen's own
+     * active workspace.
+     */
+    readonly property bool onFocusedMonitor: !Hyprland.focusedMonitor || Hyprland.focusedMonitor.name === screenName
+
     function flash(which) {
         if (!armed || suppressed)
+            return false;
+        if (which !== "workspace" && !onFocusedMonitor)
+            return false;
+        if (which === "track" && flashing && (kind === "volume" || kind === "brightness"))
             return false;
         if (which === "track")
             holdExtends = 0;
@@ -114,6 +124,9 @@ Item {
             tryShow();
         }
     }
+
+    /** A track announce that lost to live hardware feedback replays once the bar clears. */
+    onFlashingChanged: if (!flashing && dirty) tryShow()
 
     Timer {
         interval: 1500
@@ -186,21 +199,10 @@ Item {
         }
     }
 
-    Process {
-        id: brightMonitor
-        command: ["sh", "-c", "dev=$(ls /sys/class/backlight 2>/dev/null | head -n1); [ -n \"$dev\" ] || exit 0; max=$(cat /sys/class/backlight/$dev/max_brightness); last=\"\"; while true; do val=$(cat /sys/class/backlight/$dev/brightness); if [ \"$val\" != \"$last\" ]; then echo \"$(( val * 100 / max ))\"; last=\"$val\"; fi; sleep 0.4; done"]
-        running: true
-        stdout: SplitParser {
-            onRead: (line) => {
-                var pct = parseInt(line.trim(), 10);
-                if (isNaN(pct))
-                    return;
-                var seen = root.lastBrightness >= 0;
-                root.brightness = Math.max(0, Math.min(100, pct)) / 100.0;
-                root.lastBrightness = pct;
-                if (seen)
-                    root.flash("brightness");
-            }
+    Connections {
+        target: Backlight
+        function onChanged() {
+            root.flash("brightness");
         }
     }
 

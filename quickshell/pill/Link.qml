@@ -89,7 +89,7 @@ PillSurface {
         ? ("Ethernet"
             + (ethSpeedText.length ? " · " + ethSpeedText : "")
             + (ethIp.length ? " · " + ethIp : ""))
-        : (wifiActive ? (wifiActive.name || "") : (wifiOn ? "Nicht verbunden" : "Aus"))
+        : (wifiActive ? (wifiActive.name || "") : (wifiOn ? "Not connected" : "Off"))
 
     readonly property var btAdapter: (typeof Bluetooth !== "undefined" && Bluetooth) ? Bluetooth.defaultAdapter : null
     readonly property var btDevices: (typeof Bluetooth !== "undefined" && Bluetooth && Bluetooth.devices) ? Bluetooth.devices.values : []
@@ -98,7 +98,7 @@ PillSurface {
     readonly property var btPrimary: btConnected.length > 0 ? btConnected[0] : null
     readonly property int btBattery: batteryLevel(btPrimary)
 
-    readonly property string btSubText: !btOn ? "Aus"
+    readonly property string btSubText: !btOn ? "Off"
         : (btPrimary
             ? ((btPrimary.deviceName || btPrimary.name || "Unknown")
                 + (btConnected.length > 1 ? " +" + (btConnected.length - 1) : ""))
@@ -408,7 +408,7 @@ PillSurface {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: Notifs.unread + " NEU"
+                        text: Notifs.unread + " NEW"
                         color: Theme.dim
                         font.family: Theme.font
                         font.pixelSize: 9.5 * root.s
@@ -655,11 +655,21 @@ PillSurface {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
+                        visible: Flags.showGlyphs
                         text: "払"
                         color: clearArea.containsMouse ? Theme.vermLit : Theme.vermDim
                         font.family: Theme.fontJp
                         font.pixelSize: 9 * root.s
                         font.weight: Font.Bold
+                    }
+                    GlyphIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: !Flags.showGlyphs
+                        width: 11 * root.s
+                        height: 11 * root.s
+                        name: "trash"
+                        color: clearArea.containsMouse ? Theme.vermLit : Theme.vermDim
+                        stroke: 1.8
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
