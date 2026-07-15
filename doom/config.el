@@ -38,7 +38,7 @@
 (setq doom-theme 'doom-nord)
 
 ;; Custom splash image
-(setq fancy-splash-image "~/.config/doom/assets/lake-surrounded-with-mountain-resized.png")
+(setq fancy-splash-image "~/.config/doom/assets/everforest-fog-forest-1-resized.png")
 
 ;; Maintain terminal transparency in Doom Emacs
 (after! doom-themes
@@ -49,8 +49,8 @@
     (set-face-background 'line-number-current-line "unspecified-bg" nil)))
 
 ;; Set frame transparency
-(set-frame-parameter nil 'alpha-background 85)
-(add-to-list 'default-frame-alist '(alpha-background . 85))
+(set-frame-parameter nil 'alpha-background 80)
+(add-to-list 'default-frame-alist '(alpha-background . 80))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -59,7 +59,23 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/Documents/org/")
+(after! org
+  ;; Files shown in Org Agenda
+  (setq org-agenda-files
+        '("~/Documents/org/agenda/refile.org"
+          "~/Documents/org/agenda/projects.org"
+          "~/Documents/org/agenda/someday.org"
+          "~/Documents/org/agenda/habits.org"))
 
+  ;; Refile destinations
+  (setq org-refile-targets
+        '((org-agenda-files :maxlevel . 3)))
+
+  ;; Show file names in refile targets
+  (setq org-refile-use-outline-path 'file)
+
+  ;; Do not force step-by-step completion
+  (setq org-outline-path-complete-in-steps nil))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `with-eval-after-load' block, otherwise Doom's defaults may override your
