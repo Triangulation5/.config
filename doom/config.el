@@ -35,10 +35,10 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 ;; 'doom-nord, 'doom-gruvbox, 'doom-tomorrow-night
-(setq doom-theme 'doom-nord)
+(setq doom-theme 'doom-gruvbox)
 
 ;; Custom splash image
-(setq fancy-splash-image "~/.config/doom/assets/everforest-fog-forest-1-resized.png")
+(setq fancy-splash-image "~/.config/doom/assets/lake-surrounded-with-mountain-resized.png")
 
 ;; Maintain terminal transparency in Doom Emacs
 (after! doom-themes
@@ -49,8 +49,8 @@
     (set-face-background 'line-number-current-line "unspecified-bg" nil)))
 
 ;; Set frame transparency
-(set-frame-parameter nil 'alpha-background 80)
-(add-to-list 'default-frame-alist '(alpha-background . 80))
+(set-frame-parameter nil 'alpha-background 85)
+(add-to-list 'default-frame-alist '(alpha-background . 85))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
