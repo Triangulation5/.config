@@ -10,8 +10,9 @@ import QtQuick
  * and lays out its own content column (header, section labels, SettingsRow lines).
  *
  * Each `rows` entry pairs a row item with its control kind and the backing getter
- * and setter: `seg` steps a segmented choice, `toggle` flips a boolean, `nav`
- * morphs to another surface. The host routes arrow keys through `kbMove`,
+ * and setter: `seg` cycles a segmented choice (wrapping), `toggle` flips a
+ * boolean, `scrub` bumps a numeric scrub through its `bump(dir)`, `nav` morphs
+ * to another surface. The host routes arrow keys through `kbMove`,
  * `kbAdjust` and `kbActivate`; hover and clicks route through `reportRowHover`
  * and `activateRow`, keeping `kbIndex` and the seam in sync.
  */
@@ -48,23 +49,34 @@ PillSurface {
         return -1;
     }
 
+    /** Step a seg row's value by `dir`, wrapping at both ends like a mouse click. */
+    function segCycle(r, dir) {
+        var n = r.vals.length;
+        var i = r.vals.indexOf(r.get());
+        r.set(r.vals[(((i < 0 ? 0 : i) + dir) % n + n) % n]);
+    }
+
     function kbMove(dir) {
+        if (!rows.length)
+            return;
         kbIndex = Math.max(0, Math.min(rows.length - 1, (kbIndex < 0 ? 0 : kbIndex + dir)));
         focusRowItem = rows[kbIndex].item;
     }
 
     function kbAdjust(dir) {
+        if (!rows.length)
+            return;
         if (kbIndex < 0) {
             kbIndex = 0;
             focusRowItem = rows[0].item;
         }
         var r = rows[kbIndex];
-        if (r.kind === "seg") {
-            var i = r.vals.indexOf(r.get());
-            r.set(r.vals[Math.max(0, Math.min(r.vals.length - 1, (i < 0 ? 0 : i) + dir))]);
-        } else if (r.kind === "toggle") {
+        if (r.kind === "seg")
+            segCycle(r, dir);
+        else if (r.kind === "toggle")
             r.set(dir > 0);
-        }
+        else if (r.kind === "scrub")
+            r.bump(dir);
     }
 
     function kbActivate() {
@@ -75,6 +87,8 @@ PillSurface {
             r.set(!r.get());
         else if (r.kind === "nav")
             root.requestSurface(r.surface);
+        else if (r.kind === "seg")
+            segCycle(r, 1);
     }
 
     /**
@@ -94,10 +108,8 @@ PillSurface {
             r.set(!r.get());
         else if (r.kind === "nav")
             root.requestSurface(r.surface);
-        else if (r.kind === "seg") {
-            var i = r.vals.indexOf(r.get());
-            r.set(r.vals[((i < 0 ? 0 : i) + 1) % r.vals.length]);
-        }
+        else if (r.kind === "seg")
+            segCycle(r, 1);
     }
 
     readonly property bool rowFocused: focusRowItem !== null && active

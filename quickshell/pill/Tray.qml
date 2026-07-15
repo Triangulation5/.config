@@ -99,6 +99,13 @@ Item {
                         slot.modelData.scroll(wheel.angleDelta.y, false);
                     }
                 }
+
+                Tooltip {
+                    s: tray.s
+                    placement: "below"
+                    title: slot.modelData.tooltipTitle || slot.modelData.title || slot.modelData.id
+                    show: area.containsMouse && !menu.open
+                }
             }
         }
     }

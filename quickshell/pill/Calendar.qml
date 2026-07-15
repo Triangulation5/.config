@@ -818,112 +818,134 @@ PillSurface {
                 color: Theme.hair
             }
 
-            Column {
-                id: edList
+            /** Capped so a day stacked with events scrolls instead of growing the surface. */
+            Item {
                 width: parent.width
-                spacing: 4 * root.s
+                height: edFlick.height
 
-                Text {
-                    visible: editor.dayEvents.length === 0
-                    text: "Nothing yet"
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 11 * root.s
-                    font.weight: Font.Medium
-                    font.italic: true
-                }
+                Flickable {
+                    id: edFlick
+                    width: parent.width
+                    height: Math.min(edList.implicitHeight, 230 * root.s)
+                    contentHeight: edList.implicitHeight
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    onContentHeightChanged: returnToBounds()
 
-                Repeater {
-                    model: editor.dayEvents
+                    Column {
+                        id: edList
+                        width: edFlick.width
+                        spacing: 4 * root.s
 
-                    Rectangle {
-                        id: evRow
-                        required property var modelData
-                        width: edList.width
-                        height: evBody.implicitHeight + 12 * root.s
-                        radius: Motion.rSmall * root.s
-                        color: evArea.hovered ? Theme.frameBg : "transparent"
-
-                        /** "all day" or "09:00–10:00", a date span when multi-day, "every year" when recurring. */
-                        readonly property string meta: {
-                            var datePart = "";
-                            if (evRow.modelData.endDate && evRow.modelData.endDate.length > 0)
-                                datePart = root.fmtSpan(evRow.modelData.date, evRow.modelData.endDate);
-                            var t = evRow.modelData.time || "";
-                            var e = evRow.modelData.endTime || "";
-                            var timePart = t.length === 0 ? "all day"
-                                : (e.length > 0 ? t + "–" + e : t);
-                            var base = datePart.length > 0 ? datePart + " · " + timePart : timePart;
-                            var r = evRow.modelData.recur;
-                            if (r === "year") return "every year · " + base;
-                            if (r === "month") return "every month · " + base;
-                            return base;
+                        Text {
+                            visible: editor.dayEvents.length === 0
+                            text: "Nothing yet"
+                            color: Theme.faint
+                            font.family: Theme.font
+                            font.pixelSize: 11 * root.s
+                            font.weight: Font.Medium
+                            font.italic: true
                         }
 
-                        HoverHandler { id: evArea }
+                        Repeater {
+                            model: editor.dayEvents
 
-                        Column {
-                            id: evBody
-                            anchors.left: parent.left
-                            anchors.leftMargin: 8 * root.s
-                            anchors.right: evDel.left
-                            anchors.rightMargin: 6 * root.s
-                            anchors.top: parent.top
-                            anchors.topMargin: 6 * root.s
-                            spacing: 2 * root.s
+                            Rectangle {
+                                id: evRow
+                                required property var modelData
+                                width: edList.width
+                                height: evBody.implicitHeight + 12 * root.s
+                                radius: Motion.rSmall * root.s
+                                color: evArea.hovered ? Theme.frameBg : "transparent"
 
-                            Text {
-                                text: evRow.modelData.text
-                                width: parent.width
-                                color: Theme.cream
-                                font.family: Theme.font
-                                font.pixelSize: 11 * root.s
-                                font.weight: Font.Medium
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 4
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                text: evRow.meta
-                                width: parent.width
-                                color: Theme.flameGlow
-                                font.family: Theme.font
-                                font.pixelSize: 9 * root.s
-                                font.weight: Font.DemiBold
-                                font.features: { "tnum": 1 }
-                                wrapMode: Text.Wrap
-                                elide: Text.ElideRight
-                            }
-                        }
+                                /** "all day" or "09:00–10:00", a date span when multi-day, "every year" when recurring. */
+                                readonly property string meta: {
+                                    var datePart = "";
+                                    if (evRow.modelData.endDate && evRow.modelData.endDate.length > 0)
+                                        datePart = root.fmtSpan(evRow.modelData.date, evRow.modelData.endDate);
+                                    var t = evRow.modelData.time || "";
+                                    var e = evRow.modelData.endTime || "";
+                                    var timePart = t.length === 0 ? "all day"
+                                        : (e.length > 0 ? t + "–" + e : t);
+                                    var base = datePart.length > 0 ? datePart + " · " + timePart : timePart;
+                                    var r = evRow.modelData.recur;
+                                    if (r === "year") return "every year · " + base;
+                                    if (r === "month") return "every month · " + base;
+                                    return base;
+                                }
 
-                        Item {
-                            id: evDel
-                            anchors.right: parent.right
-                            anchors.rightMargin: 7 * root.s
-                            anchors.top: parent.top
-                            anchors.topMargin: 7 * root.s
-                            width: 16 * root.s
-                            height: 16 * root.s
-                            opacity: evArea.hovered ? 1 : 0.32
-                            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+                                HoverHandler { id: evArea }
 
-                            GlyphIcon {
-                                anchors.fill: parent
-                                name: "close"
-                                color: delArea.containsMouse ? Theme.vermLit : Theme.iconDim
-                                stroke: 1.6
-                            }
+                                Column {
+                                    id: evBody
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 8 * root.s
+                                    anchors.right: evDel.left
+                                    anchors.rightMargin: 6 * root.s
+                                    anchors.top: parent.top
+                                    anchors.topMargin: 6 * root.s
+                                    spacing: 2 * root.s
 
-                            MouseArea {
-                                id: delArea
-                                anchors.fill: parent
-                                anchors.margins: -5 * root.s
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: Events.remove(evRow.modelData.id)
+                                    Text {
+                                        text: evRow.modelData.text
+                                        width: parent.width
+                                        color: Theme.cream
+                                        font.family: Theme.font
+                                        font.pixelSize: 11 * root.s
+                                        font.weight: Font.Medium
+                                        wrapMode: Text.Wrap
+                                        maximumLineCount: 4
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        text: evRow.meta
+                                        width: parent.width
+                                        color: Theme.flameGlow
+                                        font.family: Theme.font
+                                        font.pixelSize: 9 * root.s
+                                        font.weight: Font.DemiBold
+                                        font.features: { "tnum": 1 }
+                                        wrapMode: Text.Wrap
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                Item {
+                                    id: evDel
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 7 * root.s
+                                    anchors.top: parent.top
+                                    anchors.topMargin: 7 * root.s
+                                    width: 16 * root.s
+                                    height: 16 * root.s
+                                    opacity: evArea.hovered ? 1 : 0.32
+                                    Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+                                    GlyphIcon {
+                                        anchors.fill: parent
+                                        name: "close"
+                                        color: delArea.containsMouse ? Theme.vermLit : Theme.iconDim
+                                        stroke: 1.6
+                                    }
+
+                                    MouseArea {
+                                        id: delArea
+                                        anchors.fill: parent
+                                        anchors.margins: -5 * root.s
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: Events.remove(evRow.modelData.id)
+                                    }
+                                }
                             }
                         }
                     }
+                }
+
+                WheelScroller {
+                    anchors.fill: parent
+                    s: root.s
+                    flick: edFlick
                 }
             }
 

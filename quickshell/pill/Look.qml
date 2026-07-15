@@ -21,7 +21,62 @@ SettingsSurface {
 
     backSurface: "settings"
     implicitHeight: content.implicitHeight
-    rows: []
+
+    /**
+     * Row registry, rebound whenever a group folds or a dependent toggle flips so
+     * keyboard navigation never lands on a hidden line. Scrub rows expose a bump
+     * that steps their ScrubValue one increment.
+     */
+    rows: {
+        var r = [];
+        if (winGrp.open) {
+            r.push({ item: gapsInRow, kind: "scrub", bump: function (d) { gapsInScrub.bump(d); } });
+            r.push({ item: gapsOutRow, kind: "scrub", bump: function (d) { gapsOutScrub.bump(d); } });
+            r.push({ item: roundRow, kind: "scrub", bump: function (d) { roundScrub.bump(d); } });
+            r.push({ item: roundPowRow, kind: "scrub", bump: function (d) { roundPowScrub.bump(d); } });
+            r.push({ item: borderRow, kind: "scrub", bump: function (d) { borderScrub.bump(d); } });
+            r.push({ item: resizeRow, kind: "toggle", get: function () { return root.resizeOnBorder; }, set: function (v) { root.resizeOnBorder = v; root.writeDeco("resize_on_border", v ? "true" : "false"); } });
+            r.push({ item: layoutRow, kind: "seg", vals: ["dwindle", "master"], get: function () { return root.layout; }, set: function (v) { root.layout = v; root.writeDeco("layout", "\"" + v + "\""); } });
+        }
+        if (nightGrp.open) {
+            r.push({ item: nlModeRow, kind: "seg", vals: ["off", "on", "scheduled"], get: function () { return Flags.nightLightMode; }, set: function (v) { NightLight.setMode(v); } });
+            if (Flags.nightLightMode !== "off")
+                r.push({ item: nlTempRow, kind: "scrub", bump: function (d) { nlTempScrub.bump(d); } });
+            if (Flags.nightLightMode === "scheduled") {
+                r.push({ item: nlOnRow, kind: "scrub", bump: function (d) { nlOnScrub.bump(d); } });
+                r.push({ item: nlOffRow, kind: "scrub", bump: function (d) { nlOffScrub.bump(d); } });
+            }
+        }
+        if (shadowGrp.open) {
+            r.push({ item: shEnRow, kind: "toggle", get: function () { return root.shadowOn; }, set: function (v) { root.shadowOn = v; root.writeShadow("enabled", v ? "true" : "false"); } });
+            if (root.shadowOn) {
+                r.push({ item: shRangeRow, kind: "scrub", bump: function (d) { shRangeScrub.bump(d); } });
+                r.push({ item: shPowRow, kind: "scrub", bump: function (d) { shPowScrub.bump(d); } });
+            }
+        }
+        if (blurGrp.open) {
+            r.push({ item: blEnRow, kind: "toggle", get: function () { return root.blurOn; }, set: function (v) { root.blurOn = v; root.writeBlur("enabled", v ? "true" : "false"); } });
+            if (root.blurOn) {
+                r.push({ item: blSizeRow, kind: "scrub", bump: function (d) { blSizeScrub.bump(d); } });
+                r.push({ item: blPassRow, kind: "scrub", bump: function (d) { blPassScrub.bump(d); } });
+                r.push({ item: blVibRow, kind: "scrub", bump: function (d) { blVibScrub.bump(d); } });
+                r.push({ item: blNoiseRow, kind: "scrub", bump: function (d) { blNoiseScrub.bump(d); } });
+            }
+        }
+        if (opGrp.open) {
+            r.push({ item: opActRow, kind: "scrub", bump: function (d) { opActScrub.bump(d); } });
+            r.push({ item: opInactRow, kind: "scrub", bump: function (d) { opInactScrub.bump(d); } });
+        }
+        if (pillGrp.open) {
+            r.push({ item: pillGapRow, kind: "scrub", bump: function (d) { pillGapScrub.bump(d); } });
+            r.push({ item: appGapRow, kind: "scrub", bump: function (d) { appGapScrub.bump(d); } });
+            r.push({ item: pillOpRow, kind: "scrub", bump: function (d) { pillOpScrub.bump(d); } });
+            r.push({ item: pillBlurRow, kind: "toggle", get: function () { return Flags.pillBlur; }, set: function (v) { Flags.pillBlur = v; root.applyPillBlur(v); } });
+        }
+        return r;
+    }
+
+    property string note: ""
 
     readonly property string decoPath: Quickshell.env("HOME") + "/.config/hypr/modules/decoration.lua"
     readonly property string pillBlurRule: 'hl.layer_rule({ name = "pill-blur", match = { namespace = "pill" }, blur = true, ignore_alpha = 0.5 })\n'
@@ -126,6 +181,8 @@ SettingsSurface {
             activeOpacity: root.activeOpacity,
             inactiveOpacity: root.inactiveOpacity,
             pillOpacity: Flags.pillOpacity,
+            topGap: Flags.topGap,
+            appGap: Flags.appGap,
             nlTemp: Flags.nightLightTemp,
             nlOnMin: Flags.nightLightOnMin,
             nlOffMin: Flags.nightLightOffMin
@@ -155,7 +212,7 @@ SettingsSurface {
             return;
         root.decoText = res.text;
         decoWriter.setText(res.text);
-        reloadProc.running = true;
+        reloadTimer.restart();
     }
 
     /**
@@ -186,7 +243,7 @@ SettingsSurface {
             return;
         root.decoText = res.text;
         decoWriter.setText(res.text);
-        reloadProc.running = true;
+        reloadTimer.restart();
     }
 
     /**
@@ -200,7 +257,7 @@ SettingsSurface {
             return;
         root.decoText = res.text;
         decoWriter.setText(res.text);
-        reloadProc.running = true;
+        reloadTimer.restart();
     }
 
     /**
@@ -223,7 +280,7 @@ SettingsSurface {
             return;
         root.decoText = res.text;
         decoWriter.setText(res.text);
-        reloadProc.running = true;
+        reloadTimer.restart();
     }
 
     FileView {
@@ -240,9 +297,24 @@ SettingsSurface {
         printErrors: false
     }
 
+    /**
+     * Reload is debounced so a scrub drag writes the file per step but reloads
+     * Hyprland once, and captured so a failed reload surfaces as the inline note
+     * instead of vanishing with a detached process.
+     */
+    Timer {
+        id: reloadTimer
+        interval: 250
+        repeat: false
+        onTriggered: reloadProc.running = true
+    }
+
     Process {
         id: reloadProc
-        command: ["setsid", "-f", "sh", "-c", "sleep 0.4; hyprctl reload"]
+        command: ["sh", "-c", "sleep 0.3; hyprctl reload"]
+        onExited: function (exitCode) {
+            root.note = exitCode === 0 ? "" : "Hyprland reload failed. The change is saved but not applied.";
+        }
     }
 
     Process {
@@ -315,21 +387,23 @@ SettingsSurface {
     }
 
     /**
-     * One settings line. At rest it is a single label + control row; hovering the
-     * row folds its grey caption open below the label so a long tab stays compact
-     * by default. `collapsed` drops the whole row to zero height with the same
-     * height animation, used by the blur and shadow rows that depend on a toggle.
-     * The label and control are pinned to the top line so only the caption space
-     * grows; nothing above it shifts.
+     * One settings line. At rest it is an icon + label + control row; hovering or
+     * keyboard-focusing the row folds its grey caption open below the label so a
+     * long tab stays compact by default. `collapsed` drops the whole row to zero
+     * height with the same height animation, used by the blur and shadow rows that
+     * depend on a toggle. The row feeds the surface registry: hover moves the soul
+     * seam and a click anywhere on the line drives its control via activateRow.
      */
     component FieldRow: Item {
         id: frow
         property string label: ""
         property string caption: ""
+        property string icon: ""
         property bool collapsed: false
         default property alias control: ctrl.data
 
-        readonly property bool expanded: !frow.collapsed && fhover.hovered
+        readonly property bool focused: root.focusRowItem === frow
+        readonly property bool expanded: !frow.collapsed && (fhover.hovered || frow.focused)
         readonly property real rowH: 30 * root.s
         readonly property real capH: 14 * root.s
 
@@ -338,36 +412,68 @@ SettingsSurface {
         clip: true
         Behavior on height { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
 
-        HoverHandler { id: fhover }
-
-        Text {
-            id: labelT
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.topMargin: 8 * root.s
-            text: frow.label
-            color: Theme.cream
-            font.family: Theme.font
-            font.pixelSize: 12.5 * root.s
-            font.weight: Font.Medium
+        HoverHandler {
+            id: fhover
+            onHoveredChanged: if (!frow.collapsed) root.reportRowHover(frow, hovered)
         }
 
-        Text {
+        Rectangle {
+            anchors.fill: parent
+            anchors.topMargin: 3 * root.s
+            anchors.bottomMargin: 3 * root.s
+            radius: 9 * root.s
+            color: (fhover.hovered || frow.focused) ? Theme.frameBg : "transparent"
+            Behavior on color { ColorAnimation { duration: Motion.fast } }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.activateRow(frow)
+        }
+
+        GlyphIcon {
+            id: rowIcon
             anchors.left: parent.left
-            anchors.top: labelT.bottom
-            anchors.topMargin: 2 * root.s
-            visible: frow.expanded && frow.caption.length > 0
-            text: frow.caption
-            color: Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 9 * root.s
-            font.weight: Font.Medium
+            anchors.leftMargin: 9 * root.s
+            anchors.verticalCenter: parent.verticalCenter
+            visible: frow.icon.length > 0
+            width: 15 * root.s
+            height: 15 * root.s
+            name: frow.icon
+            color: frow.focused ? Theme.cream : Theme.subtle
+            stroke: 1.8
+        }
+
+        Column {
+            anchors.left: rowIcon.visible ? rowIcon.right : parent.left
+            anchors.leftMargin: 9 * root.s
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2 * root.s
+
+            Text {
+                text: frow.label
+                color: Theme.cream
+                font.family: Theme.font
+                font.pixelSize: 12.5 * root.s
+                font.weight: Font.Medium
+            }
+
+            Text {
+                visible: frow.expanded && frow.caption.length > 0
+                text: frow.caption
+                color: Theme.faint
+                font.family: Theme.font
+                font.pixelSize: 9 * root.s
+                font.weight: Font.Medium
+            }
         }
 
         Item {
             id: ctrl
             anchors.right: parent.right
-            anchors.verticalCenter: labelT.verticalCenter
+            anchors.rightMargin: 9 * root.s
+            anchors.verticalCenter: parent.verticalCenter
             width: childrenRect.width
             height: childrenRect.height
         }
@@ -397,12 +503,15 @@ SettingsSurface {
             anchors.rightMargin: 12 * root.s
             spacing: 0
 
-            Group { title: "Window"; open: true
+            Group { id: winGrp; title: "Window"; open: true
 
             FieldRow {
+                id: gapsInRow
                 label: "Gaps inner"
                 caption: "Space between tiled windows"
+                icon: "app-window"
                 ScrubValue {
+                    id: gapsInScrub
                     s: root.s
                     value: root.gapsIn
                     openValue: root.base.gapsIn
@@ -415,9 +524,12 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: gapsOutRow
                 label: "Gaps outer"
                 caption: "Space to the screen edge"
+                icon: "monitor"
                 ScrubValue {
+                    id: gapsOutScrub
                     s: root.s
                     value: root.gapsOut
                     openValue: root.base.gapsOut
@@ -430,9 +542,12 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: roundRow
                 label: "Rounding"
                 caption: "Corner radius in pixels"
+                icon: "record"
                 ScrubValue {
+                    id: roundScrub
                     s: root.s
                     value: root.rounding
                     openValue: root.base.rounding
@@ -445,9 +560,12 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: roundPowRow
                 label: "Rounding power"
                 caption: "Higher bends corners to a squircle"
+                icon: "sparkles"
                 ScrubValue {
+                    id: roundPowScrub
                     s: root.s
                     value: root.roundingPower
                     openValue: root.base.roundingPower
@@ -460,9 +578,12 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: borderRow
                 label: "Border size"
                 caption: "Window outline thickness"
+                icon: "scaling"
                 ScrubValue {
+                    id: borderScrub
                     s: root.s
                     value: root.borderSize
                     openValue: root.base.borderSize
@@ -475,8 +596,10 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: resizeRow
                 label: "Resize on border"
                 caption: "Drag a window edge to resize"
+                icon: "mouse"
                 LinkToggle {
                     s: root.s
                     on: root.resizeOnBorder
@@ -488,8 +611,10 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: layoutRow
                 label: "Layout"
                 caption: "Tiling layout for new windows"
+                icon: "mixer"
                 SettingsSeg {
                     s: root.s
                     options: root.layoutOptions
@@ -503,11 +628,13 @@ SettingsSurface {
 
             }
 
-            Group { title: "Night light"
+            Group { id: nightGrp; title: "Night light"
 
             FieldRow {
+                id: nlModeRow
                 label: "Mode"
                 caption: "Off, always warm, or auto by time"
+                icon: "moon"
                 SettingsSeg {
                     s: root.s
                     options: root.nightModeOptions
@@ -517,10 +644,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: nlTempRow
                 label: "Temperature"
                 caption: "Lower is warmer"
+                icon: "sun"
                 collapsed: Flags.nightLightMode === "off"
                 ScrubValue {
+                    id: nlTempScrub
                     s: root.s
                     value: Flags.nightLightTemp
                     openValue: root.base.nlTemp
@@ -530,10 +660,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: nlOnRow
                 label: "On at"
                 caption: "Warm tint starts"
+                icon: "clock"
                 collapsed: Flags.nightLightMode !== "scheduled"
                 ScrubValue {
+                    id: nlOnScrub
                     s: root.s
                     value: Flags.nightLightOnMin
                     openValue: root.base.nlOnMin
@@ -544,10 +677,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: nlOffRow
                 label: "Off at"
                 caption: "Back to neutral"
+                icon: "stopwatch"
                 collapsed: Flags.nightLightMode !== "scheduled"
                 ScrubValue {
+                    id: nlOffScrub
                     s: root.s
                     value: Flags.nightLightOffMin
                     openValue: root.base.nlOffMin
@@ -559,11 +695,13 @@ SettingsSurface {
 
             }
 
-            Group { title: "Shadow"
+            Group { id: shadowGrp; title: "Shadow"
 
             FieldRow {
+                id: shEnRow
                 label: "Enabled"
                 caption: "Drop shadow under windows"
+                icon: "cloud"
                 LinkToggle {
                     s: root.s
                     on: root.shadowOn
@@ -575,10 +713,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: shRangeRow
                 label: "Range"
                 caption: "How far the shadow spreads"
+                icon: "scaling"
                 collapsed: !root.shadowOn
                 ScrubValue {
+                    id: shRangeScrub
                     s: root.s
                     value: root.shadowRange
                     openValue: root.base.shadowRange
@@ -591,10 +732,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: shPowRow
                 label: "Render power"
                 caption: "Shadow falloff sharpness"
+                icon: "bolt"
                 collapsed: !root.shadowOn
                 ScrubValue {
+                    id: shPowScrub
                     s: root.s
                     value: root.shadowRenderPower
                     openValue: root.base.shadowRenderPower
@@ -608,11 +752,13 @@ SettingsSurface {
 
             }
 
-            Group { title: "Blur"
+            Group { id: blurGrp; title: "Blur"
 
             FieldRow {
+                id: blEnRow
                 label: "Enabled"
                 caption: "Blur behind transparent windows"
+                icon: "droplet"
                 LinkToggle {
                     s: root.s
                     on: root.blurOn
@@ -624,10 +770,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: blSizeRow
                 label: "Strength"
                 caption: "Blur radius"
+                icon: "waves"
                 collapsed: !root.blurOn
                 ScrubValue {
+                    id: blSizeScrub
                     s: root.s
                     value: root.blurSize
                     openValue: root.base.blurSize
@@ -640,10 +789,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: blPassRow
                 label: "Passes"
                 caption: "More passes, smoother blur"
+                icon: "reboot"
                 collapsed: !root.blurOn
                 ScrubValue {
+                    id: blPassScrub
                     s: root.s
                     value: root.blurPasses
                     openValue: root.base.blurPasses
@@ -656,10 +808,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: blVibRow
                 label: "Vibrancy"
                 caption: "Color saturation behind the blur"
+                icon: "palette"
                 collapsed: !root.blurOn
                 ScrubValue {
+                    id: blVibScrub
                     s: root.s
                     value: root.blurVibrancy
                     openValue: root.base.blurVibrancy
@@ -672,10 +827,13 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: blNoiseRow
                 label: "Noise"
                 caption: "Grain mixed into the blur"
+                icon: "cloud-fog"
                 collapsed: !root.blurOn
                 ScrubValue {
+                    id: blNoiseScrub
                     s: root.s
                     value: root.blurNoise
                     openValue: root.base.blurNoise
@@ -689,12 +847,15 @@ SettingsSurface {
 
             }
 
-            Group { title: "Opacity"
+            Group { id: opGrp; title: "Opacity"
 
             FieldRow {
+                id: opActRow
                 label: "Active window"
                 caption: "Focused window transparency"
+                icon: "awake"
                 ScrubValue {
+                    id: opActScrub
                     s: root.s
                     value: root.activeOpacity
                     openValue: root.base.activeOpacity
@@ -707,9 +868,12 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: opInactRow
                 label: "Inactive window"
                 caption: "Unfocused window transparency"
+                icon: "moon"
                 ScrubValue {
+                    id: opInactScrub
                     s: root.s
                     value: root.inactiveOpacity
                     openValue: root.base.inactiveOpacity
@@ -723,12 +887,45 @@ SettingsSurface {
 
             }
 
-            Group { title: "Pill"
+            Group { id: pillGrp; title: "Pill"
 
             FieldRow {
+                id: pillGapRow
+                label: "Pill gap"
+                caption: "Distance from the screen top. Lower squeezes the pill up and pulls windows with it."
+                icon: "chevron-up"
+                ScrubValue {
+                    id: pillGapScrub
+                    s: root.s
+                    value: Flags.topGap
+                    openValue: root.base.topGap
+                    from: 0; to: 2; step: 0.1; decimals: 1
+                    onEdited: v => Flags.topGap = v
+                }
+            }
+
+            FieldRow {
+                id: appGapRow
+                label: "App gap"
+                caption: "Distance between the pill and the windows below it. Lower pulls them up under the pill."
+                icon: "chevron-down"
+                ScrubValue {
+                    id: appGapScrub
+                    s: root.s
+                    value: Flags.appGap
+                    openValue: root.base.appGap
+                    from: 0; to: 2; step: 0.1; decimals: 1
+                    onEdited: v => Flags.appGap = v
+                }
+            }
+
+            FieldRow {
+                id: pillOpRow
                 label: "Pill opacity"
                 caption: "How see-through the pill sits"
+                icon: "sun"
                 ScrubValue {
+                    id: pillOpScrub
                     s: root.s
                     value: Flags.pillOpacity
                     openValue: root.base.pillOpacity
@@ -738,8 +935,10 @@ SettingsSurface {
             }
 
             FieldRow {
+                id: pillBlurRow
                 label: "Pill blur"
                 caption: "Frosts what is behind the pill. Needs opacity below 100%."
+                icon: "sparkles"
                 LinkToggle {
                     s: root.s
                     on: Flags.pillBlur
@@ -750,6 +949,19 @@ SettingsSurface {
                 }
             }
 
+            }
+
+            Text {
+                width: parent.width
+                topPadding: 8 * root.s
+                visible: root.note.length > 0
+                text: root.note
+                color: Theme.subtle
+                font.family: Theme.font
+                font.pixelSize: 10 * root.s
+                font.weight: Font.Medium
+                wrapMode: Text.WordWrap
+                lineHeight: 1.25
             }
 
             Item { width: 1; height: 10 * root.s }

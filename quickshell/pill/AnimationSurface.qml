@@ -28,10 +28,22 @@ SettingsSurface {
 
     backSurface: "settings"
     implicitHeight: content.implicitHeight
-    rows: []
+
+    /**
+     * Keyboard row registry: the enabled toggle always, the speed scrub only
+     * while animations are on (its row is folded away otherwise). The curve
+     * editor and preset strip stay mouse-only — a 2D handle drag has no single
+     * bump axis.
+     */
+    rows: {
+        var r = [{ item: enabledRow, kind: "toggle", get: function () { return root.animOn; }, set: function (v) { root.animOn = v; root.writeEnabled(v); } }];
+        if (root.animOn)
+            r.push({ item: speedRow, kind: "scrub", bump: function (d) { speedScrub.bump(d); } });
+        return r;
+    }
 
     readonly property string animPath: Quickshell.env("HOME") + "/.config/hypr/modules/animations.lua"
-    readonly property string mainCurve: "easeOutQuint"
+    readonly property string mainCurve: "pillMorph"
 
     property bool animOn: true
     property real speed: 3
@@ -125,57 +137,13 @@ SettingsSurface {
     component GroupLabel: Text {
         topPadding: 16 * root.s
         bottomPadding: 6 * root.s
+        leftPadding: 12 * root.s
         color: Theme.faint
         font.family: Theme.font
         font.pixelSize: 8.5 * root.s
         font.weight: Font.Bold
         font.capitalization: Font.AllUppercase
         font.letterSpacing: 1.2 * root.s
-    }
-
-    component FieldRow: Item {
-        id: frow
-        property string label: ""
-        property string caption: ""
-        default property alias control: ctrl.data
-
-        readonly property bool expanded: fhover.hovered
-        width: parent ? parent.width : 0
-        height: 30 * root.s + (expanded ? 14 * root.s : 0)
-        clip: true
-        Behavior on height { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
-
-        HoverHandler { id: fhover }
-
-        Text {
-            id: lbl
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.topMargin: 8 * root.s
-            text: frow.label
-            color: Theme.cream
-            font.family: Theme.font
-            font.pixelSize: 12.5 * root.s
-            font.weight: Font.Medium
-        }
-        Text {
-            anchors.left: parent.left
-            anchors.top: lbl.bottom
-            anchors.topMargin: 2 * root.s
-            visible: frow.expanded && frow.caption.length > 0
-            text: frow.caption
-            color: Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 9 * root.s
-            font.weight: Font.Medium
-        }
-        Item {
-            id: ctrl
-            anchors.right: parent.right
-            anchors.verticalCenter: lbl.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
-        }
     }
 
     Column {
@@ -195,252 +163,260 @@ SettingsSurface {
             showBack: true
         }
 
-        Column {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-            spacing: 0
+        GroupLabel { text: "Motion" }
 
-            GroupLabel { text: "Motion" }
-
-            FieldRow {
-                label: "Enabled"
-                caption: "Animate windows, workspaces and fades"
-                LinkToggle {
-                    s: root.s
-                    on: root.animOn
-                    onToggled: {
-                        root.animOn = !root.animOn;
-                        root.writeEnabled(root.animOn);
-                    }
+        SettingsRow {
+            id: enabledRow
+            surface: root
+            name: "Enabled"
+            sub: "Animate windows, workspaces and fades"
+            captionOnFocus: true
+            icon: "sparkles"
+            last: !root.animOn
+            LinkToggle {
+                s: root.s
+                on: root.animOn
+                onToggled: {
+                    root.animOn = !root.animOn;
+                    root.writeEnabled(root.animOn);
                 }
             }
+        }
 
-            FieldRow {
-                label: "Speed"
-                caption: "Higher is faster, applied to every animation"
-                visible: root.animOn
-                ScrubValue {
-                    s: root.s
-                    value: root.speed
-                    openValue: root.base.speed
-                    from: 1; to: 10; step: 0.5; decimals: 1
-                    onEdited: v => {
-                        root.speed = v;
-                        root.writeSpeed(v);
-                    }
+        SettingsRow {
+            id: speedRow
+            surface: root
+            name: "Speed"
+            sub: "Higher is faster, applied to every animation"
+            captionOnFocus: true
+            icon: "bolt"
+            visible: root.animOn
+            last: true
+            ScrubValue {
+                id: speedScrub
+                s: root.s
+                value: root.speed
+                openValue: root.base.speed
+                from: 1; to: 10; step: 0.5; decimals: 1
+                onEdited: v => {
+                    root.speed = v;
+                    root.writeSpeed(v);
                 }
             }
+        }
 
-            GroupLabel {
-                text: "Curve"
-                visible: root.animOn
+        GroupLabel {
+            text: "Curve"
+            visible: root.animOn
+        }
+
+        /**
+         * Bezier editor. The square maps unit curve-space (0,0 bottom-left to
+         * 1,1 top-right) to pixels with y inverted; the two handles are the
+         * source of truth and the cx/cy properties read back from them. An undo
+         * glyph appears whenever the live points drift from the on-open snapshot.
+         */
+        Item {
+            id: editor
+            visible: root.animOn
+            width: parent.width
+            height: visible ? square.height + 18 * root.s : 0
+
+            readonly property real es: 150 * root.s
+            readonly property real r: 7 * root.s
+            readonly property bool dirty: root.base.cx1 !== undefined
+                && (root.cx1 !== root.base.cx1 || root.cy1 !== root.base.cy1
+                    || root.cx2 !== root.base.cx2 || root.cy2 !== root.base.cy2)
+
+            function pxX(v) { return v * editor.es; }
+            function pxY(v) { return editor.es - v * editor.es; }
+
+            function commitFromHandles() {
+                root.cx1 = Math.max(0, Math.min(1, (h1.x + editor.r) / editor.es));
+                root.cy1 = 1 - (h1.y + editor.r) / editor.es;
+                root.cx2 = Math.max(0, Math.min(1, (h2.x + editor.r) / editor.es));
+                root.cy2 = 1 - (h2.y + editor.r) / editor.es;
             }
 
-            /**
-             * Bezier editor. The square maps unit curve-space (0,0 bottom-left to
-             * 1,1 top-right) to pixels with y inverted; the two handles are the
-             * source of truth and the cx/cy properties read back from them. An undo
-             * glyph appears whenever the live points drift from the on-open snapshot.
-             */
+            function syncHandles() {
+                h1.x = editor.pxX(root.cx1) - editor.r;
+                h1.y = editor.pxY(root.cy1) - editor.r;
+                h2.x = editor.pxX(root.cx2) - editor.r;
+                h2.y = editor.pxY(root.cy2) - editor.r;
+            }
+
+            onVisibleChanged: if (visible) syncHandles()
+            Component.onCompleted: syncHandles()
+            Connections {
+                target: root
+                function onBaseChanged() { editor.syncHandles(); }
+            }
+
             Item {
-                id: editor
-                visible: root.animOn
-                width: parent.width
-                height: visible ? square.height + 18 * root.s : 0
+                id: square
+                width: editor.es
+                height: editor.es
+                anchors.horizontalCenter: parent.horizontalCenter
 
-                readonly property real es: 150 * root.s
-                readonly property real r: 7 * root.s
-                readonly property bool dirty: root.base.cx1 !== undefined
-                    && (root.cx1 !== root.base.cx1 || root.cy1 !== root.base.cy1
-                        || root.cx2 !== root.base.cx2 || root.cy2 !== root.base.cy2)
-
-                function pxX(v) { return v * editor.es; }
-                function pxY(v) { return editor.es - v * editor.es; }
-
-                function commitFromHandles() {
-                    root.cx1 = Math.max(0, Math.min(1, (h1.x + editor.r) / editor.es));
-                    root.cy1 = 1 - (h1.y + editor.r) / editor.es;
-                    root.cx2 = Math.max(0, Math.min(1, (h2.x + editor.r) / editor.es));
-                    root.cy2 = 1 - (h2.y + editor.r) / editor.es;
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10 * root.s
+                    color: Theme.frameBg
+                    border.width: 1
+                    border.color: Theme.hairSoft
                 }
 
-                function syncHandles() {
-                    h1.x = editor.pxX(root.cx1) - editor.r;
-                    h1.y = editor.pxY(root.cy1) - editor.r;
-                    h2.x = editor.pxX(root.cx2) - editor.r;
-                    h2.y = editor.pxY(root.cy2) - editor.r;
-                }
-
-                onVisibleChanged: if (visible) syncHandles()
-                Component.onCompleted: syncHandles()
-                Connections {
-                    target: root
-                    function onBaseChanged() { editor.syncHandles(); }
-                }
-
-                Item {
-                    id: square
-                    width: editor.es
-                    height: editor.es
-                    anchors.horizontalCenter: parent.horizontalCenter
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 10 * root.s
-                        color: Theme.frameBg
-                        border.width: 1
-                        border.color: Theme.hairSoft
-                    }
-
-                    Shape {
-                        anchors.fill: parent
-                        preferredRendererType: Shape.CurveRenderer
-                        ShapePath {
-                            strokeColor: Qt.alpha(Theme.cream, 0.12)
-                            strokeWidth: 1
-                            fillColor: "transparent"
-                            startX: 0; startY: editor.es
-                            PathLine { x: editor.es; y: 0 }
-                        }
-                    }
-
-                    Shape {
-                        anchors.fill: parent
-                        preferredRendererType: Shape.CurveRenderer
-                        ShapePath {
-                            strokeColor: Qt.alpha(Theme.onGlow, 0.35)
-                            strokeWidth: 1.2
-                            fillColor: "transparent"
-                            startX: 0; startY: editor.es
-                            PathLine { x: editor.pxX(root.cx1); y: editor.pxY(root.cy1) }
-                        }
-                    }
-                    Shape {
-                        anchors.fill: parent
-                        preferredRendererType: Shape.CurveRenderer
-                        ShapePath {
-                            strokeColor: Qt.alpha(Theme.onGlow, 0.35)
-                            strokeWidth: 1.2
-                            fillColor: "transparent"
-                            startX: editor.es; startY: 0
-                            PathLine { x: editor.pxX(root.cx2); y: editor.pxY(root.cy2) }
-                        }
-                    }
-
-                    Shape {
-                        anchors.fill: parent
-                        preferredRendererType: Shape.CurveRenderer
-                        ShapePath {
-                            strokeColor: Theme.onGlow
-                            strokeWidth: 2.4 * root.s
-                            fillColor: "transparent"
-                            capStyle: ShapePath.RoundCap
-                            startX: 0; startY: editor.es
-                            PathCubic {
-                                control1X: editor.pxX(root.cx1); control1Y: editor.pxY(root.cy1)
-                                control2X: editor.pxX(root.cx2); control2Y: editor.pxY(root.cy2)
-                                x: editor.es; y: 0
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        id: h1
-                        width: 2 * editor.r
-                        height: 2 * editor.r
-                        radius: editor.r
-                        color: h1drag.active ? Theme.bright : Theme.cream
-                        border.width: 2
-                        border.color: Theme.onGlow
-
-                        DragHandler {
-                            id: h1drag
-                            target: h1
-                            xAxis.minimum: -editor.r
-                            xAxis.maximum: editor.es - editor.r
-                            yAxis.minimum: -editor.r - 0.35 * editor.es
-                            yAxis.maximum: editor.es - editor.r + 0.35 * editor.es
-                            onActiveChanged: if (!active) root.writeCurve()
-                        }
-                        onXChanged: if (h1drag.active) editor.commitFromHandles()
-                        onYChanged: if (h1drag.active) editor.commitFromHandles()
-                    }
-
-                    Rectangle {
-                        id: h2
-                        width: 2 * editor.r
-                        height: 2 * editor.r
-                        radius: editor.r
-                        color: h2drag.active ? Theme.bright : Theme.cream
-                        border.width: 2
-                        border.color: Theme.onGlow
-
-                        DragHandler {
-                            id: h2drag
-                            target: h2
-                            xAxis.minimum: -editor.r
-                            xAxis.maximum: editor.es - editor.r
-                            yAxis.minimum: -editor.r - 0.35 * editor.es
-                            yAxis.maximum: editor.es - editor.r + 0.35 * editor.es
-                            onActiveChanged: if (!active) root.writeCurve()
-                        }
-                        onXChanged: if (h2drag.active) editor.commitFromHandles()
-                        onYChanged: if (h2drag.active) editor.commitFromHandles()
+                Shape {
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        strokeColor: Qt.alpha(Theme.cream, 0.12)
+                        strokeWidth: 1
+                        fillColor: "transparent"
+                        startX: 0; startY: editor.es
+                        PathLine { x: editor.es; y: 0 }
                     }
                 }
 
-                GlyphIcon {
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.topMargin: 4 * root.s
-                    visible: editor.dirty
-                    width: 15 * root.s
-                    height: 15 * root.s
-                    name: "undo"
-                    color: revertArea.containsMouse ? Theme.bright : Qt.alpha(Theme.onGlow, 0.6)
-                    stroke: 1.9
+                Shape {
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        strokeColor: Qt.alpha(Theme.onGlow, 0.35)
+                        strokeWidth: 1.2
+                        fillColor: "transparent"
+                        startX: 0; startY: editor.es
+                        PathLine { x: editor.pxX(root.cx1); y: editor.pxY(root.cy1) }
+                    }
+                }
+                Shape {
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        strokeColor: Qt.alpha(Theme.onGlow, 0.35)
+                        strokeWidth: 1.2
+                        fillColor: "transparent"
+                        startX: editor.es; startY: 0
+                        PathLine { x: editor.pxX(root.cx2); y: editor.pxY(root.cy2) }
+                    }
+                }
 
-                    MouseArea {
-                        id: revertArea
-                        anchors.fill: parent
-                        anchors.margins: -5 * root.s
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.cx1 = root.base.cx1; root.cy1 = root.base.cy1;
-                            root.cx2 = root.base.cx2; root.cy2 = root.base.cy2;
+                Shape {
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        strokeColor: Theme.onGlow
+                        strokeWidth: 2.4 * root.s
+                        fillColor: "transparent"
+                        capStyle: ShapePath.RoundCap
+                        startX: 0; startY: editor.es
+                        PathCubic {
+                            control1X: editor.pxX(root.cx1); control1Y: editor.pxY(root.cy1)
+                            control2X: editor.pxX(root.cx2); control2Y: editor.pxY(root.cy2)
+                            x: editor.es; y: 0
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: h1
+                    width: 2 * editor.r
+                    height: 2 * editor.r
+                    radius: editor.r
+                    color: h1drag.active ? Theme.bright : Theme.cream
+                    border.width: 2
+                    border.color: Theme.onGlow
+
+                    DragHandler {
+                        id: h1drag
+                        target: h1
+                        xAxis.minimum: -editor.r
+                        xAxis.maximum: editor.es - editor.r
+                        yAxis.minimum: -editor.r - 0.35 * editor.es
+                        yAxis.maximum: editor.es - editor.r + 0.35 * editor.es
+                        onActiveChanged: if (!active) root.writeCurve()
+                    }
+                    onXChanged: if (h1drag.active) editor.commitFromHandles()
+                    onYChanged: if (h1drag.active) editor.commitFromHandles()
+                }
+
+                Rectangle {
+                    id: h2
+                    width: 2 * editor.r
+                    height: 2 * editor.r
+                    radius: editor.r
+                    color: h2drag.active ? Theme.bright : Theme.cream
+                    border.width: 2
+                    border.color: Theme.onGlow
+
+                    DragHandler {
+                        id: h2drag
+                        target: h2
+                        xAxis.minimum: -editor.r
+                        xAxis.maximum: editor.es - editor.r
+                        yAxis.minimum: -editor.r - 0.35 * editor.es
+                        yAxis.maximum: editor.es - editor.r + 0.35 * editor.es
+                        onActiveChanged: if (!active) root.writeCurve()
+                    }
+                    onXChanged: if (h2drag.active) editor.commitFromHandles()
+                    onYChanged: if (h2drag.active) editor.commitFromHandles()
+                }
+            }
+
+            GlyphIcon {
+                anchors.right: parent.right
+                anchors.rightMargin: 12 * root.s
+                anchors.top: parent.top
+                anchors.topMargin: 4 * root.s
+                visible: editor.dirty
+                width: 15 * root.s
+                height: 15 * root.s
+                name: "undo"
+                color: revertArea.containsMouse ? Theme.bright : Qt.alpha(Theme.onGlow, 0.6)
+                stroke: 1.9
+
+                MouseArea {
+                    id: revertArea
+                    anchors.fill: parent
+                    anchors.margins: -5 * root.s
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        root.cx1 = root.base.cx1; root.cy1 = root.base.cy1;
+                        root.cx2 = root.base.cx2; root.cy2 = root.base.cy2;
+                        editor.syncHandles();
+                        root.writeCurve();
+                    }
+                }
+            }
+        }
+
+        SettingsRow {
+            surface: root
+            name: "Preset"
+            sub: "Drop in a ready-made curve"
+            captionOnFocus: true
+            icon: "waves"
+            visible: root.animOn
+            last: true
+            SettingsSeg {
+                s: root.s
+                options: root.presets.map(function (p) { return { label: p.label, value: p.label }; })
+                value: ""
+                onPicked: (v) => {
+                    for (var i = 0; i < root.presets.length; i++) {
+                        if (root.presets[i].label === v) {
+                            var p = root.presets[i];
+                            root.cx1 = p.x1; root.cy1 = p.y1; root.cx2 = p.x2; root.cy2 = p.y2;
                             editor.syncHandles();
                             root.writeCurve();
+                            break;
                         }
                     }
                 }
             }
-
-            FieldRow {
-                label: "Preset"
-                caption: "Drop in a ready-made curve"
-                visible: root.animOn
-                SettingsSeg {
-                    s: root.s
-                    options: root.presets.map(function (p) { return { label: p.label, value: p.label }; })
-                    value: ""
-                    onPicked: (v) => {
-                        for (var i = 0; i < root.presets.length; i++) {
-                            if (root.presets[i].label === v) {
-                                var p = root.presets[i];
-                                root.cx1 = p.x1; root.cy1 = p.y1; root.cx2 = p.x2; root.cy2 = p.y2;
-                                editor.syncHandles();
-                                root.writeCurve();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            Item { width: 1; height: 10 * root.s }
         }
+
+        Item { width: 1; height: 10 * root.s }
     }
 }
