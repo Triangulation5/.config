@@ -115,6 +115,14 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.current = this.text.trim();
+
+                syncLockWallpaper.command = [
+                    "bash",
+                    root.syncScript,
+                    root.current
+                ];
+                syncLockWallpaper.running = true;
+
                 if (root.pending) {
                     root.pending = false;
                     Qt.callLater(root.refresh);
@@ -135,6 +143,10 @@ Singleton {
             }
             stateProc.running = true;
         }
+    }
+
+    Process {
+        id: syncLockWallpaper
     }
 
     Component.onCompleted: refresh()
