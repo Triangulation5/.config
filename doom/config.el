@@ -34,11 +34,11 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-;; 'doom-nord or 'doom-gruvbox
-(setq doom-theme 'doom-gruvbox)
+;; 'doom-nord, 'doom-gruvbox, 'doom-tomorrow-night
+(setq doom-theme 'doom-nord)
 
 ;; Custom splash image
-(setq fancy-splash-image "~/.config/doom/assets/lake-surrounded-with-mountain-resized.png")
+(setq fancy-splash-image "~/.config/doom/assets/gnu-meditate-levitating-resized.png")
 
 ;; Maintain terminal transparency in Doom Emacs
 (after! doom-themes
