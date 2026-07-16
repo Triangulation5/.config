@@ -35,7 +35,7 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 ;; 'doom-nord, 'doom-gruvbox, 'doom-tomorrow-night
-(setq doom-theme 'doom-gruvbox)
+(setq doom-theme 'doom-tomorrow-night)
 
 ;; Custom splash image
 (setq fancy-splash-image "~/.config/doom/assets/lake-surrounded-with-mountain-resized.png")
