@@ -5,7 +5,7 @@ if vim.loader then vim.loader.enable() end; vim.g.mapleader = " "; local opt = v
     si = true, bri = true, stal = 2,
     ic = true, scs = true, hls = false,
      ut = 50, tm = 250, gcr = "a:block",
-    so = 8, siso = 8,
+    so = 8, siso = 8, cole = 2,
     winborder = "rounded", cb = "unnamedplus",
     cot = { "menuone", "noselect" },
     ph = 10, swf = false,
@@ -33,6 +33,12 @@ vim.pack.add({
     { src = "https://github.com/echasnovski/mini.nvim" },
     { src = "https://github.com/vague-theme/vague.nvim", version = "24cd29d" },
     { src = "https://github.com/chomosuke/typst-preview.nvim" },
+    { src = "https://github.com/nvim-orgmode/orgmode" },
+})
+
+require('orgmode').setup({
+  org_agenda_files = '~/Documents/org/agenda/**/*',
+  org_default_notes_file = '~/Documents/org/refile.org',
 })
 
 vim.opt.undofile = true; local u = vim.fn.stdpath("state") .. "/undo"; vim.opt.undodir = u; vim.fn.mkdir(u, "p"); local t = u .. "/.last_cleanup"; local n = os.time(); local l = vim.fn.filereadable(t) == 1 and tonumber(vim.fn.readfile(t)[1]) or 0; if n - l > 86400 then for _,f in ipairs(vim.fn.glob(u.."/*",true,true)) do local s=vim.uv.fs_stat(f); if f~=t and s and n-s.mtime.sec>60*86400 then os.remove(f) end end; vim.fn.writefile({tostring(n)},t) end
