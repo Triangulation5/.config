@@ -43,6 +43,7 @@ hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
+hl.bind(mainMod .. " + U", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 -- Private and Scratchpad
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
