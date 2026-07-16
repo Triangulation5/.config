@@ -38,7 +38,7 @@
 (setq doom-theme 'doom-tomorrow-night)
 
 ;; Custom splash image
-(setq fancy-splash-image "~/.config/doom/assets/lake-surrounded-with-mountain-resized.png")
+(setq fancy-splash-image "~/.config/doom/assets/aerial-view-of-pine-trees-macos-resized.png")
 
 ;; Maintain terminal transparency in Doom Emacs
 (after! doom-themes
@@ -49,8 +49,8 @@
     (set-face-background 'line-number-current-line "unspecified-bg" nil)))
 
 ;; Set frame transparency
-(set-frame-parameter nil 'alpha-background 85)
-(add-to-list 'default-frame-alist '(alpha-background . 85))
+(set-frame-parameter nil 'alpha-background 80)
+(add-to-list 'default-frame-alist '(alpha-background . 80))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.

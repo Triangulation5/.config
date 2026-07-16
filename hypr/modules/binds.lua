@@ -6,10 +6,9 @@
 local terminal    = "kitty"
 local fileManager = "nautilus"
 local launcher    = "~/.config/rofi/launcher.sh"
-local notif_toggle= "swaync-client -t"
 local locker      = "hyprlock"
 local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
-local screenshots = "rishot"
+local screenshots = "~/.local/bin/rishot"
 
 ---------------------
 ---- KEYBINDINGS ----
@@ -24,13 +23,12 @@ hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
-hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(notif_toggle))
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
 -- Quickshell
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))
-hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(quickshell .. " link"))
+hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
@@ -43,7 +41,6 @@ hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
-hl.bind(mainMod .. " + U", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 -- Private and Scratchpad
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
@@ -51,9 +48,9 @@ hl.bind(mainMod .. " + U", hl.dsp.layout("togglesplit"))    -- dwindle only
 -- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
 -- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
 
--- Rishot (screenshot tool)
--- hl.bind(mainMod .. "+ U", hl.dsp.exec_cmd(screenshots))
--- hl.bind("+ SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
+-- rishot (screenshot tool)
+hl.bind("Print", hl.dsp.exec_cmd(screenshots))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
 
 -- Move focus with mainMod + HJKL keys
 hl.bind(mainMod .. " + H",  hl.dsp.focus({ direction = "left" }))
