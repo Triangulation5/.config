@@ -6,4 +6,4 @@ mpc update
 
 pkill ncmpcpp
 
-ghostty -e ncmpcpp &
+kitty -e ncmpcpp &

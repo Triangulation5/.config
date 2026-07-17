@@ -99,5 +99,4 @@ else
     python3 "$(dirname "$0")/wallcolors.py" "$pic" >/dev/null 2>&1 || true
 fi
 hyprctl reload >/dev/null 2>&1 || true
-busctl --user call com.mitchellh.ghostty /com/mitchellh/ghostty org.gtk.Actions \
-    Activate "sava{sv}" reload-config 0 0 >/dev/null 2>&1 || true
+kitty @ load-config >/dev/null 2>&1 || true
