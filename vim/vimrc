@@ -12,13 +12,13 @@ set numberwidth=4
 set signcolumn=yes
 set title
 set more
-set laststatus=2
-set statusline=%f%m%r\ [%{&filetype}]\ %=%l:%c\ %p%%
+"set laststatus=2
+"set statusline=%f%m%r\ [%{&filetype}]\ %=%l:%c\ %p%%
 set belloff=all
 set pumheight=10
 set omnifunc=syntaxcomplete#Complete
 set path=.,**
-set showtabline=2
+"set showtabline=2
 
 " --- tabs / indent ---
 set tabstop=4
