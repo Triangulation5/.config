@@ -5,6 +5,7 @@
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "nautilus"
+local browser     = "firefox"
 local launcher    = "~/.config/rofi/launcher.sh"
 local locker      = "hyprlock"
 local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
@@ -23,6 +24,7 @@ hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
@@ -30,7 +32,7 @@ hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(quickshell .. " record"))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(quickshell .. " record"))
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(quickshell .. " sysmon"))
