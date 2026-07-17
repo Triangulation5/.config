@@ -5,7 +5,7 @@ if vim.loader then vim.loader.enable() end; vim.g.mapleader = " "; local opt = v
     si = true, bri = true, stal = 2,
     ic = true, scs = true, hls = false,
      ut = 50, tm = 250, gcr = "a:block",
-    so = 8, siso = 8, cole = 1, -- Remove cole if you want you editor to show you everything
+    so = 8, siso = 8, cole = 2, -- Remove cole if you want you editor to show you everything
     winborder = "rounded", cb = "unnamedplus",
     cot = { "menuone", "noselect" },
     ph = 10, swf = false,
