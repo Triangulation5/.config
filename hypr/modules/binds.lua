@@ -50,6 +50,9 @@ hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 -- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
 -- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
 
+hl.bind(mainMod .. " + bracketleft", hl.dsp.layout("addmaster"))
+hl.bind(mainMod .. " + bracketright", hl.dsp.layout("removemaster"))
+
 -- rishot (screenshot tool)
 hl.bind("Print", hl.dsp.exec_cmd(screenshots))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
