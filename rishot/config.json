@@ -3,7 +3,7 @@
   "blurRadius": 64,
   "zoomFactor": 2,
   "copyToDisk": false,
-  "copyOnSave": false,
+  "copyOnSave": true,
   "skipSaveDialog": false,
   "saveDir": "",
   "toolStyle": {}
