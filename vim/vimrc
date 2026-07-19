@@ -79,8 +79,8 @@ nnoremap <leader>wq :xa<CR>
 nnoremap <leader>n :norm<Space>
 vnoremap <leader>n :norm<Space>
 xnoremap <leader>n :norm<Space>
-nnoremap <leader>bn :bn<CR>
-nnoremap <leader>bp :bp<CR>
+nnoremap ]b :bn<CR>
+nnoremap [b :bp<CR>
 nnoremap <leader>bf :bw!<CR>
 inoremap ( ()<Left>
 inoremap [ []<Left>
