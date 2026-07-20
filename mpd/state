@@ -1,8 +1,8 @@
 sw_volume: 100
 audio_device_state:1:PipeWire
 state: play
-current: 1
-time: 32.985
+current: 8
+time: 133.929
 random: 0
 repeat: 0
 single: 0
@@ -14,11 +14,11 @@ lastloadedplaylist:
 playlist_begin
 0:youtube/Arctic Monkeys - 505.opus
 1:youtube/Dedede´s Royal Payback Kirby Triple Deluxe.mp3
-2:youtube/20230728 - Beach Bunny - Prom Queen (Lyrics).opus
-3:youtube/Gorillaz - Feel Good Inc. (Official Video).opus
-4:youtube/20230302 - Join Me In Death.opus
-5:youtube/20110411 - Michael Jackson - Beat It (Official 4K Video).opus
-6:youtube/20250306 - bôa - Duvet.opus
-7:youtube/t.A.T.u. - All The Things She Said (Official Music Video).opus
-8:youtube/20200926 - Каникулы (Nightcore Edit).opus
+2:youtube/Gorillaz - Feel Good Inc. (Official Video).opus
+3:youtube/t.A.T.u. - All The Things She Said (Official Music Video).opus
+4:youtube/Каникулы (Nightcore Edit).opus
+5:youtube/Join Me In Death.opus
+6:youtube/Michael Jackson - Beat It (Official 4K Video).opus
+7:youtube/bôa - Duvet.opus
+8:youtube/Beach Bunny - Prom Queen (Lyrics).opus
 playlist_end
