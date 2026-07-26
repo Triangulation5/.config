@@ -3,7 +3,7 @@ set encoding=utf-8
 set background=dark
 set termguicolors
 set noswapfile
-set viminfo= "Temporary disabled .viminfo file
+set viminfo= "Temporary disabled .viminfo file ( '50,<20,s5,h )
 
 " --- UI / behavior ---
 set number
@@ -79,6 +79,7 @@ nnoremap <leader>wq :xa<CR>
 nnoremap <leader>n :norm<Space>
 vnoremap <leader>n :norm<Space>
 xnoremap <leader>n :norm<Space>
+nnoremap <leader>lf :let v=winsaveview()<Bar>keepjumps %s/\s\+$//e<Bar>keepjumps %s/\n\+\%$//e<Bar>call winrestview(v)<CR>
 nnoremap ]b :bn<CR>
 nnoremap [b :bp<CR>
 nnoremap <leader>bf :bw!<CR>
