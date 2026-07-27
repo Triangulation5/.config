@@ -153,7 +153,7 @@ Singleton {
     property var fontFamilies: Qt.fontFamilies()
     function refreshFonts() { fontFamilies = Qt.fontFamilies(); }
     readonly property string font: (Flags.uiFont.length > 0 && fontFamilies.indexOf(Flags.uiFont) >= 0) ? Flags.uiFont : "Inter"
-    readonly property string fontJp: "Zen Kaku Gothic New"
+    readonly property string fontJp: "FiraCode Nerd Font Mono"
 
     function joinArtists(artists, single) {
         if (artists && typeof artists.join === "function" && artists.length > 0)
