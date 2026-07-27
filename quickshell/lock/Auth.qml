@@ -23,7 +23,7 @@ Item {
 
     PamContext {
         id: pam
-        config: "login"
+        config: "hyprlock"
         user: auth.user
 
         onResponseRequiredChanged: {
