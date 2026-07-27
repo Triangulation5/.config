@@ -10,7 +10,7 @@ Item {
     readonly property bool live: Cava.active && !Cava.quiet
     property var levels: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    opacity: live ? 0.52 : 0
+    opacity: live ? 0.62 : 0
     visible: opacity > 0.004
 
     Behavior on opacity {
