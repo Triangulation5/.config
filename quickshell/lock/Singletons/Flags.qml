@@ -24,8 +24,8 @@ Singleton {
         JsonAdapter {
             id: adapter
             property string paletteMode: "static"
-            property bool time12h: false
-            property real topGap: 1.0
+            property bool time12h: true
+            property real topGap: 0.7
         }
     }
 }

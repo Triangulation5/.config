@@ -9,6 +9,7 @@ local browser     = "firefox"
 local launcher    = "~/.config/rofi/launcher.sh"
 local locker      = "hyprlock"
 local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
+local locker2     = "sh ~/.config/hypr/scripts/lock.sh"
 local screenshots = "~/.local/bin/rishot"
 
 ---------------------
@@ -20,7 +21,7 @@ local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
-hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker2))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
