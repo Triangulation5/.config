@@ -7,7 +7,8 @@ Text {
 
     property int usage: 0
 
-    color: "#cdcdcd"
+    // color: "#cdcdcd"
+    color: "#BB9DBDF2"
     text: "CPU " + usage + "%"
 
     Process {
