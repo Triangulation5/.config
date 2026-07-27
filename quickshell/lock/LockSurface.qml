@@ -7,7 +7,7 @@ import "Singletons"
 
 Item {
     id: surface
-    property real s: 1
+    property real s: 1.1
     property var auth: null
     property string screenName: ""
 
@@ -305,8 +305,8 @@ Item {
             color: "white"
             antialiasing: true
 
-            readonly property real pillW: 160 * surface.s
-            readonly property real pillH: 38 * surface.s
+            readonly property real pillW: 176 * surface.s
+            readonly property real pillH: 42 * surface.s
             readonly property real pillY: 8 * Flags.topGap * surface.s
 
             width: pillW + (surface.width - pillW) * surface.maskP

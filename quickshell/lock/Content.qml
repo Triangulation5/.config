@@ -8,7 +8,7 @@ import "Singletons"
 
 Item {
     id: content
-    property real s: 1
+    property real s: 1.1
     property var auth: null
     property bool isMain: true
 
