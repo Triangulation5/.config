@@ -14,6 +14,7 @@ Item {
 
     readonly property bool authenticating: auth ? auth.authenticating : false
     property bool showError: false
+    property bool showCursor: false
 
     Connections {
         target: content.auth
@@ -130,7 +131,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height * 0.24
         color: Theme.bright
-        font.family: "Zen Kaku Gothic New"
+        font.family: "FiraCode Nerd Font Mono"
         font.weight: 500
         font.pixelSize: 130 * content.s
         /** Qt reads "h" as 24h unless the same format holds AP, and the AM/PM sits in its own label here, so the 12h hour is built by hand. */
@@ -161,7 +162,7 @@ Item {
         anchors.baseline: clockText.baseline
         color: Theme.bright
         opacity: 0.55
-        font.family: "Zen Kaku Gothic New"
+        font.family: "FiraCode Nerd Font Mono"
         font.weight: 600
         font.pixelSize: 34 * content.s
         text: Qt.formatDateTime(sysClock.date, "AP")
@@ -258,8 +259,8 @@ Item {
             Rectangle {
                 x: Math.min(parent.width - width, Math.max(0, threadFill.width - width / 2))
                 anchors.verticalCenter: parent.verticalCenter
-                width: 5 * content.s
-                height: 5 * content.s
+                width: 8 * content.s
+                height: 8 * content.s
                 radius: width / 2
                 color: Theme.cream
             }
@@ -274,9 +275,9 @@ Item {
         width: 340 * content.s
         height: 50 * content.s
         radius: height / 2
-        color: Theme.fieldBg
+        color: Theme.capsule
         border.width: 1
-        border.color: Theme.fieldBorder
+        border.color: Theme.capsuleBorder
         opacity: content.isMain ? (content.authenticating ? 0.6 : 1) : 0
 
         transform: Translate { id: capsuleShift }
@@ -298,7 +299,7 @@ Item {
             verticalAlignment: TextInput.AlignVCenter
             horizontalAlignment: TextInput.AlignHCenter
             echoMode: TextInput.Password
-            passwordCharacter: "•"
+            passwordCharacter: "●"
             color: Theme.bright
             font.family: Theme.font
             font.pixelSize: 15 * content.s
@@ -326,13 +327,15 @@ Item {
             }
 
             cursorDelegate: Rectangle {
-                visible: input.text.length > 0
+                visible: content.showCursor && input.text.length > 0
                 width: 2 * content.s
                 height: input.cursorRectangle.height
                 color: Theme.verm
+
                 SequentialAnimation on opacity {
-                    running: input.activeFocus
+                    running: content.showCursor && input.activeFocus
                     loops: Animation.Infinite
+
                     NumberAnimation { to: 0; duration: 0 }
                     PauseAnimation { duration: 550 }
                     NumberAnimation { to: 1; duration: 0 }
@@ -345,11 +348,11 @@ Item {
                 visible: input.text.length === 0
                 text: {
                     if (!content.showError)
-                        return "password";
+                        return "Enter Password...";
                     var pamMsg = content.auth ? content.auth.lastError : "";
-                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
+                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "Authentication Failed";
                 }
-                color: content.showError ? Theme.error : Theme.dim
+                color: content.showError ? Theme.error : Theme.placeholder
                 font.family: Theme.font
                 font.pixelSize: 14 * content.s
                 font.letterSpacing: 1 * content.s

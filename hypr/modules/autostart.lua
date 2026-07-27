@@ -10,4 +10,5 @@
 hl.on("hyprland.start", function ()
   hl.exec_cmd("awww-daemon")
   hl.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh")
+  hl.exec_cmd("qs -c ~/.config/quickshell/lock/ & disown")
 end)

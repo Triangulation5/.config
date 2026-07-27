@@ -9,7 +9,7 @@ Singleton {
     id: root
 
     readonly property int bars: 12
-    property bool enabled: false
+    property bool enabled: true
     property var values: []
     property bool quiet: true
 
@@ -50,11 +50,12 @@ Singleton {
     }
 
     Process {
-        running: root.active && root.enabled
+        running: root.enabled
         command: ["cava", "-p", Quickshell.shellPath("assets/cava.conf")]
         stdout: SplitParser {
             splitMarker: "\n"
             onRead: line => {
+                console.log("CAVA:", line);
                 if (!line || line.length === 0)
                     return;
                 var parts = line.split(";");

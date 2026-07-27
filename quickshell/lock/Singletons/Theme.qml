@@ -20,5 +20,9 @@ Singleton {
     readonly property color fieldBg: dyn ? Qt.alpha(bright, 0.10) : Qt.rgba(1, 0.96, 0.94, 0.10)
     readonly property color fieldBorder: dyn ? Qt.alpha(cream, 0.30) : Qt.rgba(230 / 255, 214 / 255, 203 / 255, 0.30)
     readonly property color trackBg: dyn ? Qt.alpha(cream, 0.16) : Qt.rgba(240 / 255, 224 / 255, 215 / 255, 0.16)
-    readonly property color error:  dyn ? Dyn.primary : "#e0563b"
+    readonly property color error: dyn ? Dyn.primary : "#e0563b"
+
+    readonly property color placeholder: dyn ? Dyn.faint : "#606079"
+    readonly property color capsule: dyn ? Dyn.surface : "rgba(20,20,21,0.85)"
+    readonly property color capsuleBorder: dyn ? Dyn.outlineVariant : "rgba(96,96,121,0.55)"
 }
