@@ -13,12 +13,12 @@ Row {
     id: root
 
     property real s: 1
-    property real span: 18
+    property real span: 12
 
     property bool centeredVisualizer: true
 
     height: span * s
-    spacing: 1.2 * s
+    spacing: 1.4 * s
 
     y: 2 * s
 
