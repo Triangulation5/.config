@@ -663,6 +663,45 @@ Item {
         }
     }
 
+    // Fake burner rectangle to make rounded dock like thing
+    Rectangle {
+        id: topBurner
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width + pill.morphRadius
+        height: pill.morphRadius * 2
+        y: -pill.morphRadius * 1.6
+
+        radius: pill.morphRadius * 2
+        opacity: Flags.pillOpacity
+
+        border { width: 1; color: Theme.border }
+
+        gradient: Gradient {
+            GradientStop { position: 0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity) }
+            GradientStop { position: 1; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity) }
+        }
+
+        layer {
+            enabled: true
+            effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
+                shadowBlur: 0.7
+                shadowVerticalOffset: 3 * pill.s
+            }
+        }
+
+        Rectangle {
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            anchors.topMargin: 1
+            anchors.leftMargin: topBurner.radius * 0.6
+            anchors.rightMargin: topBurner.radius * 0.6
+            height: 1
+            color: Theme.sheen
+        }
+    }
+
     Rectangle {
         id: body
         anchors.fill: parent
@@ -675,10 +714,12 @@ Item {
         Behavior on gameFlat { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
 
         radius: pill.morphRadius
-        topLeftRadius: pill.morphRadius * (1 - gameFlat)
-        topRightRadius: pill.morphRadius * (1 - gameFlat)
-        bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
-        bottomRightRadius: pill.morphRadius * (1 - gameFlat)
+        // Docked on the top of the screen for a nice loook
+        // Old values are commented out
+        topLeftRadius: 0 // pill.morphRadius * (1 - gameFlat)
+        topRightRadius: 0 // pill.morphRadius * (1 - gameFlat)
+        bottomLeftRadius: pill.morphRadius // * (1 - gameFlat)
+        bottomRightRadius: pill.morphRadius // * (1 - gameFlat)
         border.width: 1
         border.color: Theme.border
         gradient: Gradient {
