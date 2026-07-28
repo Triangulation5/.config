@@ -112,8 +112,8 @@ Item {
         opacity: 0.85
         font.family: Theme.font
         font.weight: 600
-        font.pixelSize: 11 * content.s
-        font.letterSpacing: 3.5 * content.s
+        font.pixelSize: 12 * content.s
+        font.letterSpacing: 3.85 * content.s
         font.capitalization: Font.AllUppercase
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -133,7 +133,7 @@ Item {
         color: Theme.bright
         font.family: "FiraCode Nerd Font Mono"
         font.weight: 500
-        font.pixelSize: 130 * content.s
+        font.pixelSize: 143 * content.s
         /** Qt reads "h" as 24h unless the same format holds AP, and the AM/PM sits in its own label here, so the 12h hour is built by hand. */
         text: {
             var d = sysClock.date;
@@ -158,13 +158,13 @@ Item {
     Text {
         visible: content.isMain && Flags.time12h
         anchors.left: clockText.right
-        anchors.leftMargin: 12 * content.s
+        anchors.leftMargin: 13 * content.s
         anchors.baseline: clockText.baseline
         color: Theme.bright
         opacity: 0.55
         font.family: "FiraCode Nerd Font Mono"
         font.weight: 600
-        font.pixelSize: 34 * content.s
+        font.pixelSize: 37 * content.s
         text: Qt.formatDateTime(sysClock.date, "AP")
     }
 
@@ -180,9 +180,9 @@ Item {
             spacing: 12 * content.s
 
             Rectangle {
-                width: 48 * content.s
-                height: 48 * content.s
-                radius: 10 * content.s
+                width: 53 * content.s
+                height: 53 * content.s
+                radius: 11 * content.s
                 anchors.verticalCenter: parent.verticalCenter
                 clip: true
                 color: "#1a100c"
@@ -225,24 +225,24 @@ Item {
                     font.pixelSize: 12 * content.s
                     font.weight: 600
                     elide: Text.ElideRight
-                    width: 140 * content.s
+                    width: 154 * content.s
                 }
                 Text {
                     visible: content.metaLine.length > 0
                     text: content.metaLine
                     color: Theme.dim
                     font.family: Theme.font
-                    font.pixelSize: 10 * content.s
+                    font.pixelSize: 11 * content.s
                     font.weight: 500
                     elide: Text.ElideRight
-                    width: 140 * content.s
+                    width: 154 * content.s
                 }
             }
         }
 
         Item {
-            width: 200 * content.s
-            height: 2
+            width: 220 * content.s
+            height: 2.2
 
             Rectangle {
                 anchors.fill: parent
