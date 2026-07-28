@@ -10,7 +10,7 @@ Item {
     property real s: 1.1
     property var auth: null
     property string screenName: ""
-    property bool dockStyle: true
+    property bool dockStyle: false
 
     /**
      * Drives the lock-open morph. A pill-shaped hole grows from the pill's resting
@@ -319,6 +319,21 @@ Item {
             topRightRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP)
             bottomLeftRadius: (height / 2) * (1 - surface.maskP)
             bottomRightRadius: (height / 2) * (1 - surface.maskP)
+        }
+
+        Rectangle {
+            id: burnerMask
+            visible: dockStyle
+            color: "red"
+            antialiasing: true
+
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            width: parent.width * 1.5
+            height: pill.morphRadius * 5
+            y: -pill.morphRadius * 3
+
+            radius: pill.morphRadius * 2.5
         }
     }
 

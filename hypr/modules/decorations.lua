@@ -39,7 +39,7 @@ hl.config({
 
         blur = {
             enabled   = true, -- false for minimalism
-            size      = 8, -- 3 default, 8 for decent amount, 20
+            size      = 6, -- 3 default, 8 for decent amount, 20
             passes    = 2, -- 1 default, 2 for decent amount, 3 for frosted glass
             vibrancy  = 0.17, -- 0.1696,
             new_optimizations = true,
