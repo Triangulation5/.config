@@ -32,7 +32,7 @@ Item {
     property bool forcePinned: false
 
     // Custom made outward rounded borders
-    property bool dockStyle: false
+    property bool dockStyle: true
 
     readonly property bool held: pinned || forcePinned
     readonly property bool mixerOpen: surface === "mixer"
