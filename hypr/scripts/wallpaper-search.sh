@@ -62,32 +62,31 @@ import urllib.parse
 import urllib.request
 import re
 
-query = sys.argv[1].lower()
+query = sys.argv[1].lower().strip()
 repo = sys.argv[2]
 branch = sys.argv[3]
 
-api = f"https://api.github.com/repos/{repo}/git/trees/{branch}?recursive=1"
-
-req = urllib.request.Request(
-    api,
-    headers={
-        "User-Agent": "wallpaper-search"
-    }
-)
+url = f"https://api.github.com/repos/{repo}/git/trees/{branch}?recursive=1"
 
 try:
-    with urllib.request.urlopen(req, timeout=15) as r:
-        data = json.load(r)
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Mozilla/5.0"
+        }
+    )
 
-    out = []
+    with urllib.request.urlopen(req, timeout=20) as response:
+        tree = json.load(response)
 
-    for item in data.get("tree", []):
+    results = []
+
+    for item in tree.get("tree", []):
         path = item.get("path", "")
 
-        if not re.search(
-            r"\.(png|jpg|jpeg|webp|gif|mp4|webm)$",
-            path,
-            re.I
+        if not path.lower().endswith(
+            (".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".webm")
         ):
             continue
 
@@ -95,12 +94,12 @@ try:
             continue
 
         raw = (
-            f"https://raw.githubusercontent.com/"
+            "https://raw.githubusercontent.com/"
             f"{repo}/{branch}/"
             f"{urllib.parse.quote(path)}"
         )
 
-        out.append({
+        results.append({
             "image": raw,
             "thumb": raw,
             "file": path,
@@ -109,7 +108,7 @@ try:
             "h": 0
         })
 
-        print(json.dumps(out))
+    print(json.dumps(results))
 
 except Exception:
     print("[]")
