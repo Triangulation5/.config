@@ -10,6 +10,7 @@ Item {
     property real s: 1.1
     property var auth: null
     property string screenName: ""
+    property bool dockStyle: true
 
     /**
      * Drives the lock-open morph. A pill-shaped hole grows from the pill's resting
@@ -307,14 +308,17 @@ Item {
 
             readonly property real pillW: 176 * surface.s
             readonly property real pillH: 42 * surface.s
-            readonly property real pillY: 8 * Flags.topGap * surface.s
+            readonly property real pillY: (surface.dockStyle ? 0 : 8 * Flags.topGap) * surface.s
 
             width: pillW + (surface.width - pillW) * surface.maskP
             height: pillH + (surface.height - pillH) * surface.maskP
             x: (surface.width - width) / 2
             y: pillY * (1 - surface.maskP)
             /** Corner follows the current height so the hole stays a rounded stadium the whole way, then eases to square edges only as it fills the screen. */
-            radius: (height / 2) * (1 - surface.maskP)
+            topLeftRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP)
+            topRightRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP)
+            bottomLeftRadius: (height / 2) * (1 - surface.maskP)
+            bottomRightRadius: (height / 2) * (1 - surface.maskP)
         }
     }
 
