@@ -12,6 +12,7 @@ Singleton {
     readonly property string paletteMode: adapter.paletteMode
     readonly property bool time12h: adapter.time12h
     readonly property real topGap: adapter.topGap
+    readonly property bool gameMode: adapter.gameMode
     readonly property bool dockStyle: true
 
     FileView {
@@ -27,6 +28,7 @@ Singleton {
             property string paletteMode: "static"
             property bool time12h: true
             property real topGap: dockStyle ? 0 : 0.7
+            property bool gameMode: false
         }
     }
 }

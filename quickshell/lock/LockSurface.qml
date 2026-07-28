@@ -310,15 +310,20 @@ Item {
             readonly property real pillH: 42 * surface.s
             readonly property real pillY: (surface.dockStyle ? 0 : 8 * Flags.topGap) * surface.s
 
-            width: pillW + (surface.width - pillW) * surface.maskP
+            readonly property real gameFlat: Flags.gameMode ? 1 : 0
+
+            width: Flags.gameMode ? surface.width : pillW + (surface.width - pillW) * surface.maskP
             height: pillH + (surface.height - pillH) * surface.maskP
-            x: (surface.width - width) / 2
-            y: pillY * (1 - surface.maskP)
-            /** Corner follows the current height so the hole stays a rounded stadium the whole way, then eases to square edges only as it fills the screen. */
-            topLeftRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP)
-            topRightRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP)
-            bottomLeftRadius: (height / 2) * (1 - surface.maskP)
-            bottomRightRadius: (height / 2) * (1 - surface.maskP)
+
+            x: Flags.gameMode ? 0 : (surface.width - width) / 2
+            y: Flags.gameMode ? pillY : pillY * (1 - surface.maskP)
+
+            /** Normal mode keeps the rounded stadium shape.
+                Game mode removes corner rounding for the full-width bar. */
+            topLeftRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
+            topRightRadius: surface.dockStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
+            bottomLeftRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
+            bottomRightRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
         }
 
         Rectangle {
