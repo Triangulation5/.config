@@ -23,7 +23,7 @@ Item {
 
     PamContext {
         id: pam
-        config: "hyprlock"
+        config: "quickshell-lock"
         user: auth.user
 
         onResponseRequiredChanged: {
