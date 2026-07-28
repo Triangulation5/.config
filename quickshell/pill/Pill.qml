@@ -31,6 +31,9 @@ Item {
     property bool pinned: false
     property bool forcePinned: false
 
+    // Custom made outward rounded borders
+    property bool dockStyle: true
+
     readonly property bool held: pinned || forcePinned
     readonly property bool mixerOpen: surface === "mixer"
     readonly property bool calendarOpen: surface === "calendar"
@@ -666,6 +669,7 @@ Item {
     // Fake burner rectangle to make rounded dock like thing
     Rectangle {
         id: topBurner
+        visible: dockStyle
 
         anchors.horizontalCenter: parent.horizontalCenter
         width: parent.width + pill.morphRadius
@@ -673,13 +677,12 @@ Item {
         y: -pill.morphRadius * 1.6
 
         radius: pill.morphRadius * 2
-        opacity: Flags.pillOpacity
 
-        border { width: 1; color: Theme.border }
+        border { width: 1; color: Qt.alpha(Theme.border, Flags.pillOpacity * 0.7) }
 
         gradient: Gradient {
-            GradientStop { position: 0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity) }
-            GradientStop { position: 1; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity) }
+            GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity * 0.7) }
+            GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity * 0.7) }
         }
 
         layer {
@@ -716,10 +719,10 @@ Item {
         radius: pill.morphRadius
         // Docked on the top of the screen for a nice loook
         // Old values are commented out
-        topLeftRadius: 0 // pill.morphRadius * (1 - gameFlat)
-        topRightRadius: 0 // pill.morphRadius * (1 - gameFlat)
-        bottomLeftRadius: pill.morphRadius // * (1 - gameFlat)
-        bottomRightRadius: pill.morphRadius // * (1 - gameFlat)
+        topLeftRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+        topRightRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+        bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
+        bottomRightRadius: pill.morphRadius * (1 - gameFlat)
         border.width: 1
         border.color: Theme.border
         gradient: Gradient {
