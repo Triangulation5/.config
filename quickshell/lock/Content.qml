@@ -298,15 +298,17 @@ Item {
             anchors.rightMargin: 24 * content.s
             verticalAlignment: TextInput.AlignVCenter
             horizontalAlignment: TextInput.AlignHCenter
-            echoMode: TextInput.Password
-            passwordCharacter: "●"
-            color: Theme.bright
+
+            echoMode: TextInput.NoEcho
+            color: "transparent"
+
             font.family: Theme.font
             font.pixelSize: 15 * content.s
             font.letterSpacing: 2 * content.s
             clip: true
             focus: true
             enabled: !content.authenticating
+
             onTextChanged: {
                 if (text.length > 0)
                     content.showError = false;
@@ -321,13 +323,14 @@ Item {
                         input.text = Pw.text;
                 }
             }
+
             onAccepted: {
                 if (content.auth && text.length > 0)
                     content.auth.submit(text);
             }
 
             cursorDelegate: Rectangle {
-                visible: content.showCursor && input.text.length > 0
+                visible: content.showCursor && input.activeFocus
                 width: 2 * content.s
                 height: input.cursorRectangle.height
                 color: Theme.verm
@@ -343,15 +346,78 @@ Item {
                 }
             }
 
+            Row {
+                anchors.centerIn: parent
+                spacing: 8 * content.s
+                visible: input.text.length > 0
+
+                Repeater {
+                    model: input.text.length
+
+                    Rectangle {
+                        id: dot
+
+                        width: 10 * content.s
+                        height: width
+                        radius: width / 2
+                        color: Theme.bright
+
+                        property real lift: 0
+                        property real dotScale: 1
+
+                        scale: dotScale
+
+                        transform: Translate {
+                            y: dot.lift
+                        }
+
+                        Behavior on lift {
+                            NumberAnimation {
+                                duration: 260
+                                easing.type: Easing.Bezier
+                                easing.bezierCurve: [0.18, 0.9, 0.25, 1]
+                            }
+                        }
+
+                        Behavior on dotScale {
+                            NumberAnimation {
+                                duration: 220
+                                easing.type: Easing.Bezier
+                                easing.bezierCurve: [0.18, 0.9, 0.25, 1]
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            dotScale = 0.55
+                            lift = -10 * content.s
+
+                            settleTimer.start()
+                        }
+
+                        Timer {
+                            id: settleTimer
+                            interval: 70
+
+                            onTriggered: {
+                                dotScale = 1
+                                lift = 0
+                            }
+                        }
+                    }
+                }
+            }
+
             Text {
                 anchors.centerIn: parent
                 visible: input.text.length === 0
+
                 text: {
                     if (!content.showError)
-                        return "Enter Password...";
+                        return "Enter Password"
                     var pamMsg = content.auth ? content.auth.lastError : "";
                     return pamMsg.length > 0 ? pamMsg.toLowerCase() : "Authentication Failed";
                 }
+
                 color: content.showError ? Theme.error : Theme.placeholder
                 font.family: Theme.font
                 font.pixelSize: 14 * content.s
