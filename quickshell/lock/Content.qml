@@ -413,11 +413,12 @@ Item {
 
                 text: {
                     if (!content.showError)
-                        return "Enter Password"
+                        return "<i>Enter Password</i>"
                     var pamMsg = content.auth ? content.auth.lastError : "";
                     return pamMsg.length > 0 ? pamMsg.toLowerCase() : "Authentication Failed";
                 }
 
+                textFormat: Text.RichText
                 color: content.showError ? Theme.error : Theme.placeholder
                 font.family: Theme.font
                 font.pixelSize: 14 * content.s
