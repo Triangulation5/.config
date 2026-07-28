@@ -678,11 +678,11 @@ Item {
 
         radius: pill.morphRadius * 2
 
-        border { width: 1; color: Qt.alpha(Theme.border, Flags.pillOpacity * 0.7) }
+        border { width: 1; color: Qt.alpha(Theme.border, Flags.pillOpacity * 0.4) }
 
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity * 0.7) }
-            GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity * 0.7) }
+            GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity * 0.9) }
+            GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity * 0.9) }
         }
 
         layer {
