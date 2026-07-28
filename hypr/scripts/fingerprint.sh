@@ -2,10 +2,6 @@
 
 set -u
 
-# ────────────────────────────────────────
-# Fedora Fingerprint Health Check
-# ────────────────────────────────────────
-
 QUIET=false
 
 if [[ "${1:-}" == "--quiet" ]]; then
