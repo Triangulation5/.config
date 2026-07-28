@@ -15,8 +15,12 @@ Row {
     property real s: 1
     property real span: 18
 
+    property bool centeredVisualizer: true
+
     height: span * s
     spacing: 1.2 * s
+
+    y: 2 * s
 
     Repeater {
         model: Cava.bars
@@ -26,16 +30,37 @@ Row {
 
             width: 1.8 * root.s
             radius: width / 2
-            anchors.bottom: parent.bottom
-            height: Math.max(2 * root.s, (Cava.levels[index] || 0) * root.span * 0.7 * root.s)
+
+            anchors.verticalCenter: root.centeredVisualizer
+                ? parent.verticalCenter
+                : undefined
+
+            anchors.bottom: root.centeredVisualizer
+                ? undefined
+                : parent.bottom
+
+            height: Math.max(
+                2 * root.s,
+                (Cava.levels[index] || 0) * root.span * root.s
+            )
 
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Theme.flameGlow }
-                GradientStop { position: 1.0; color: Theme.vermLit }
+                GradientStop {
+                    position: 0.0
+                    color: Theme.flameGlow
+                }
+
+                GradientStop {
+                    position: 1.0
+                    color: Theme.vermLit
+                }
             }
 
             Behavior on height {
-                NumberAnimation { duration: Motion.fast; easing.type: Easing.OutQuad }
+                NumberAnimation {
+                    duration: Motion.fast
+                    easing.type: Easing.OutQuad
+                }
             }
         }
     }
