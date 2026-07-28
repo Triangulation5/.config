@@ -41,7 +41,7 @@ Row {
 
             height: Math.max(
                 2 * root.s,
-                (Cava.levels[index] || 0) * root.span * root.s
+                (Cava.levels[index] || 0) * root.span * root.s * 1.4
             )
 
             gradient: Gradient {
