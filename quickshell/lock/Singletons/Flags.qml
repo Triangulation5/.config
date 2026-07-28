@@ -12,6 +12,7 @@ Singleton {
     readonly property string paletteMode: adapter.paletteMode
     readonly property bool time12h: adapter.time12h
     readonly property real topGap: adapter.topGap
+    readonly property bool dockStyle: true
 
     FileView {
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/flags.json"
@@ -25,7 +26,7 @@ Singleton {
             id: adapter
             property string paletteMode: "static"
             property bool time12h: true
-            property real topGap: 0.7
+            property real topGap: dockStyle ? 0 : 0.7
         }
     }
 }
