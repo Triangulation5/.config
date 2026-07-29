@@ -348,59 +348,110 @@ Item {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 8 * content.s
+                spacing: 7 * content.s
                 visible: input.text.length > 0
 
+                ListModel {
+                    id: passwordDots
+                }
+
+                Connections {
+                    target: input
+
+                    property int previousLength: 0
+
+                    function onTextChanged() {
+                        var current = input.text.length;
+
+                        if (current > previousLength) {
+                            for (var i = previousLength; i < current; ++i)
+                                passwordDots.append({});
+                        } else if (current < previousLength) {
+                            for (var j = previousLength; j > current; --j)
+                                passwordDots.remove(passwordDots.count - 1);
+                        }
+
+                        previousLength = current;
+                    }
+                }
+
                 Repeater {
-                    model: input.text.length
+                    model: passwordDots
 
                     Rectangle {
                         id: dot
 
-                        width: 10 * content.s
+                        width: 9 * content.s
                         height: width
                         radius: width / 2
                         color: Theme.bright
 
-                        property real lift: 0
-                        property real dotScale: 1
+                        antialiasing: true
+                        smooth: true
 
+                        property real lift: -4 * content.s
+                        property real dotScale: 0.72
+                        property real dotOpacity: 0
+                        property real slideX: 0
+
+                        opacity: dotOpacity
                         scale: dotScale
 
                         transform: Translate {
+                            x: dot.slideX
                             y: dot.lift
                         }
 
+                        layer.enabled: true
+                        layer.smooth: true
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowBlur: 0.55
+                            shadowVerticalOffset: 1
+                            shadowHorizontalOffset: 0
+                            shadowColor: Qt.rgba(0, 0, 0, 0.16)
+                        }
+
                         Behavior on lift {
-                            NumberAnimation {
-                                duration: 260
-                                easing.type: Easing.Bezier
-                                easing.bezierCurve: [0.18, 0.9, 0.25, 1]
+                            SpringAnimation {
+                                spring: 4.8
+                                damping: 0.34
                             }
                         }
 
                         Behavior on dotScale {
+                            SpringAnimation {
+                                spring: 5.5
+                                damping: 0.36
+                            }
+                        }
+
+                        Behavior on dotOpacity {
+                            NumberAnimation {
+                                duration: 90
+                                easing.type: Easing.OutQuad
+                            }
+                        }
+
+
+                        Behavior on slideX {
                             NumberAnimation {
                                 duration: 220
-                                easing.type: Easing.Bezier
-                                easing.bezierCurve: [0.18, 0.9, 0.25, 1]
+                                easing.type: Easing.OutCubic
                             }
                         }
 
                         Component.onCompleted: {
-                            dotScale = 0.55
-                            lift = -10 * content.s
+                            dotOpacity = 1;
+                            dotScale = 1;
+                            lift = 0;
 
-                            settleTimer.start()
-                        }
+                            if (index === passwordDots.count - 1) {
+                                slideX = 8 * content.s;
 
-                        Timer {
-                            id: settleTimer
-                            interval: 70
-
-                            onTriggered: {
-                                dotScale = 1
-                                lift = 0
+                                Qt.callLater(function() {
+                                    slideX = 0;
+                                });
                             }
                         }
                     }
