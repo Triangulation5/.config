@@ -727,8 +727,8 @@ Item {
             Behavior on gameFlat { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
 
             radius: pill.morphRadius
-            // Docked on the top of the screen for a nice loook
-            // Old values are commented out
+
+            /** Docked on the top of the screen for a nice look */
             topLeftRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
             topRightRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
             bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
