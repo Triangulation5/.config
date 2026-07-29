@@ -47,7 +47,7 @@ function evaluate(src) {
 
     function parseExpr() {
         var v = parseTerm();
-        for (;;) {
+        for (; ;) {
             var tok = peek();
             if (tok && tok.t === '+') { pos++; v = v + parseTerm(); ops++; }
             else if (tok && tok.t === '-') { pos++; v = v - parseTerm(); ops++; }
@@ -57,7 +57,7 @@ function evaluate(src) {
     }
     function parseTerm() {
         var v = parsePower();
-        for (;;) {
+        for (; ;) {
             var tok = peek();
             if (tok && tok.t === '*') { pos++; v = v * parsePower(); ops++; }
             else if (tok && tok.t === '/') { pos++; v = v / parsePower(); ops++; }
