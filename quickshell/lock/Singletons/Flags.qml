@@ -13,7 +13,7 @@ Singleton {
     readonly property bool time12h: adapter.time12h
     readonly property real topGap: adapter.topGap
     readonly property bool gameMode: adapter.gameMode
-    readonly property bool dockStyle: false
+    readonly property bool dockStyle: true
 
     FileView {
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/flags.json"

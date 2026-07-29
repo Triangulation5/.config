@@ -31,8 +31,8 @@ Item {
     property bool pinned: false
     property bool forcePinned: false
 
-    // Custom made outward rounded borders
-    property bool dockStyle: false
+    // Custom made notch style bar
+    property bool dockStyle: true
 
     readonly property bool held: pinned || forcePinned
     readonly property bool mixerOpen: surface === "mixer"
@@ -666,87 +666,98 @@ Item {
         }
     }
 
-    // Fake burner rectangle to make rounded dock like thing
-    Rectangle {
-        id: topBurner
-        visible: dockStyle
+    Item {
+        anchors.fill: parent
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: parent.width + pill.morphRadius
-        height: pill.morphRadius * 2
-        y: -pill.morphRadius * 1.6
+        // Fake burner rectangle to make rounded dock like thing
+        Item {
+            id: topBurnerContainer
+            anchors.fill: parent
+            z: 0
 
-        radius: pill.morphRadius * 2
+            Rectangle {
+                id: topBurner
+                visible: dockStyle
 
-        border { width: 1; color: Qt.alpha(Theme.border, Flags.pillOpacity * 0.4) }
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width + pill.morphRadius
+                height: pill.morphRadius * 2
+                y: -pill.morphRadius * 1.6
 
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity * 0.9) }
-            GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity * 0.9) }
+                radius: pill.morphRadius * 2
+
+                border { width: 1; color: Qt.alpha(Theme.border, Flags.pillOpacity * 0.4) }
+
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity * 0.9) }
+                    GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity * 0.9) }
+                }
+
+                layer {
+                    enabled: true
+                    effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
+                        shadowBlur: 0.7
+                        shadowVerticalOffset: 3 * pill.s
+                    }
+                }
+
+                Rectangle {
+                    anchors { top: parent.top; left: parent.left; right: parent.right }
+                    anchors.topMargin: 1
+                    anchors.leftMargin: topBurner.radius * 0.6
+                    anchors.rightMargin: topBurner.radius * 0.6
+                    height: 1
+                    color: Theme.sheen
+                }
+            }
         }
 
-        layer {
-            enabled: true
-            effect: MultiEffect {
+        Rectangle {
+            id: body
+            anchors.fill: parent
+            z: 1
+
+            /**
+             * Corner flatness rides the morph curve so docking into the game bar
+             * squares the corners as one continuous shape change instead of a snap.
+             */
+            property real gameFlat: pill.mode === "game" ? 1 : 0
+            Behavior on gameFlat { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
+
+            radius: pill.morphRadius
+            // Docked on the top of the screen for a nice loook
+            // Old values are commented out
+            topLeftRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+            topRightRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+            bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
+            bottomRightRadius: pill.morphRadius * (1 - gameFlat)
+            border.width: 1
+            border.color: Theme.border
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity) }
+                GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity) }
+            }
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
                 shadowEnabled: true
                 shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
                 shadowBlur: 0.7
                 shadowVerticalOffset: 3 * pill.s
             }
-        }
 
-        Rectangle {
-            anchors { top: parent.top; left: parent.left; right: parent.right }
-            anchors.topMargin: 1
-            anchors.leftMargin: topBurner.radius * 0.6
-            anchors.rightMargin: topBurner.radius * 0.6
-            height: 1
-            color: Theme.sheen
-        }
-    }
-
-    Rectangle {
-        id: body
-        anchors.fill: parent
-
-        /**
-         * Corner flatness rides the morph curve so docking into the game bar
-         * squares the corners as one continuous shape change instead of a snap.
-         */
-        property real gameFlat: pill.mode === "game" ? 1 : 0
-        Behavior on gameFlat { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
-
-        radius: pill.morphRadius
-        // Docked on the top of the screen for a nice loook
-        // Old values are commented out
-        topLeftRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
-        topRightRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
-        bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
-        bottomRightRadius: pill.morphRadius * (1 - gameFlat)
-        border.width: 1
-        border.color: Theme.border
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity) }
-            GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity) }
-        }
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
-            shadowBlur: 0.7
-            shadowVerticalOffset: 3 * pill.s
-        }
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.topMargin: 1
-            anchors.leftMargin: body.radius * 0.6
-            anchors.rightMargin: body.radius * 0.6
-            height: 1
-            color: Theme.sheen
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.topMargin: 1
+                anchors.leftMargin: body.radius * 0.6
+                anchors.rightMargin: body.radius * 0.6
+                height: 1
+                color: Theme.sheen
+            }
         }
     }
 

@@ -34,6 +34,19 @@ PillSurface {
     property int holdingIndex: -1
     property real holdProgress: 0
 
+    Timer {
+        id: lockDelay
+        interval: 450
+        repeat: false
+        onTriggered: {
+            Quickshell.execDetached([
+                "sh",
+                Quickshell.env("HOME") + "/.config/hypr/scripts/lock.sh"
+            ]);
+            root.requestClose();
+        }
+    }
+
     readonly property real anchorX: tiles.x + tiles.width / 2
     readonly property real anchorY: tiles.y - 10 * root.s
     property real tileHeatX: 0
@@ -58,10 +71,17 @@ PillSurface {
     readonly property int splitAfter: 2
 
     function run(a) {
+        if (a.key === "lock") {
+            root.requestClose();
+            lockDelay.start();
+            return;
+        }
+
         if (a.dispatch && a.dispatch.length)
             Hyprland.dispatch(a.dispatch);
         else
             Quickshell.execDetached(a.argv);
+
         root.requestClose();
     }
 
