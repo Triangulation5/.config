@@ -110,7 +110,7 @@ Singleton {
     readonly property color cardTop:  dyn ? Dyn.surfaceContainerHigh : "rgba(37,37,48,0.85)"
     readonly property color cardBot:  dyn ? Dyn.surfaceContainerLow : "rgba(37,37,48,0.85)"
 
-    readonly property color border:   dyn ? Dyn.outlineVariant : "rgba(96,96,121,0.55)"
+    readonly property color border: dyn ? Qt.rgba(Dyn.outlineVariant.r, Dyn.outlineVariant.g, Dyn.outlineVariant.b, 0.5) : "rgba(96,96,121,0.55)"
 
     readonly property color shadow: Qt.rgba(0, 0, 0, 0.55)
 
