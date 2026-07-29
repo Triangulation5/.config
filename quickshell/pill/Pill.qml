@@ -32,7 +32,7 @@ Item {
     property bool forcePinned: false
 
     // Custom made notch style bar
-    property bool dockStyle: true
+    property bool notchStyle: true
 
     readonly property bool held: pinned || forcePinned
     readonly property bool mixerOpen: surface === "mixer"
@@ -669,75 +669,46 @@ Item {
     Item {
         anchors.fill: parent
 
-        // Fake burner rectangle to make rounded dock like thing
-        Item {
-            id: topBurnerContainer
-            anchors.fill: parent
-            z: 0
-
-            Rectangle {
-                id: topBurner
-                visible: dockStyle
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width + pill.morphRadius
-                height: pill.morphRadius * 2
-                y: -pill.morphRadius * 1.6
-
-                radius: pill.morphRadius * 2
-
-                border { width: 1; color: Qt.alpha(Theme.border, Flags.pillOpacity * 0.4) }
-
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity * 0.9) }
-                    GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity * 0.9) }
-                }
-
-                layer {
-                    enabled: true
-                    effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
-                        shadowBlur: 0.7
-                        shadowVerticalOffset: 3 * pill.s
-                    }
-                }
-
-                Rectangle {
-                    anchors { top: parent.top; left: parent.left; right: parent.right }
-                    anchors.topMargin: 1
-                    anchors.leftMargin: topBurner.radius * 0.6
-                    anchors.rightMargin: topBurner.radius * 0.6
-                    height: 1
-                    color: Theme.sheen
-                }
-            }
-        }
+        property int cornerSize: pill.morphRadius
 
         Rectangle {
             id: body
-            anchors.fill: parent
-            z: 1
 
-            /**
-             * Corner flatness rides the morph curve so docking into the game bar
-             * squares the corners as one continuous shape change instead of a snap.
-             */
+            anchors.fill: parent
+            z: 2
+
             property real gameFlat: pill.mode === "game" ? 1 : 0
-            Behavior on gameFlat { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
+
+            Behavior on gameFlat {
+                NumberAnimation {
+                    duration: Motion.morph
+                    easing.type: Motion.easeMorph
+                    easing.bezierCurve: Motion.morphCurve
+                }
+            }
 
             radius: pill.morphRadius
 
-            /** Docked on the top of the screen for a nice look */
-            topLeftRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
-            topRightRadius: dockStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+            // Flat top when docked, ears create the shape
+            topLeftRadius: notchStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+            topRightRadius: notchStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+
             bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
             bottomRightRadius: pill.morphRadius * (1 - gameFlat)
+
             border.width: 1
             border.color: Theme.border
+
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, Flags.pillOpacity) }
-                GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, Flags.pillOpacity) }
+                GradientStop {
+                    position: 0.0
+                    color: Qt.alpha(Theme.cardTop, Flags.pillOpacity)
+                }
+
+                GradientStop {
+                    position: 1.0
+                    color: Qt.alpha(Theme.cardBot, Flags.pillOpacity)
+                }
             }
 
             layer.enabled: true
@@ -752,12 +723,87 @@ Item {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
+
                 anchors.topMargin: 1
                 anchors.leftMargin: body.radius * 0.6
                 anchors.rightMargin: body.radius * 0.6
+
                 height: 1
                 color: Theme.sheen
             }
+        }
+
+        // Left notch ear border
+        RoundCorner {
+            visible: notchStyle
+
+            anchors.right: body.left
+            anchors.top: body.top
+
+            anchors.rightMargin: -1
+
+            size: pill.morphRadius + 1
+
+            corner: RoundCorner.CornerEnum.TopRight
+
+            color: Theme.border
+
+            z: 0
+        }
+
+        // Left notch ear fill
+        RoundCorner {
+            visible: notchStyle
+
+            anchors.right: body.left
+            anchors.top: body.top
+
+            anchors.rightMargin: -1
+
+            size: pill.morphRadius
+
+            corner: RoundCorner.CornerEnum.TopRight
+
+            color: Qt.alpha(Theme.cardTop, Flags.pillOpacity)
+
+            z: 1
+        }
+
+
+        // Right notch ear border
+        RoundCorner {
+            visible: notchStyle
+
+            anchors.left: body.right
+            anchors.top: body.top
+
+            anchors.leftMargin: -1
+
+            size: pill.morphRadius + 1
+
+            corner: RoundCorner.CornerEnum.TopLeft
+
+            color: Theme.border
+
+            z: 0
+        }
+
+        // Right notch ear fill
+        RoundCorner {
+            visible: notchStyle
+
+            anchors.left: body.right
+            anchors.top: body.top
+
+            anchors.leftMargin: -1
+
+            size: pill.morphRadius
+
+            corner: RoundCorner.CornerEnum.TopLeft
+
+            color: Qt.alpha(Theme.cardTop, Flags.pillOpacity)
+
+            z: 1
         }
     }
 
