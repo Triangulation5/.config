@@ -3,16 +3,17 @@
 umask 077
 
 dir="${XDG_RUNTIME_DIR:-/tmp}"
-config="$HOME/.config/hypr/hyprlock-wallpaper.conf"
+config="$HOME/.local/state/ricelin-wallpaper"
 
 # Read wallpaper configuration.
-# The file uses Hyprland-style variables, for example:
 #
-# $background = /home/josh/Pictures/gruvbox-van-anime.png
+# The file contains only the wallpaper path, for example:
 #
-# Extract only the path value so it can be used by other lock components.
+# /home/josh/Pictures/gruvbox-streetlight.jpg
+#
+# Extract the path directly so it can be used by other lock components.
 if [ -f "$config" ]; then
-    background=$(grep '^\$background' "$config" | cut -d '=' -f2- | xargs)
+    background=$(cat "$config")
 fi
 
 # Capture each monitor before activating the lock.
@@ -25,7 +26,7 @@ fi
 #
 #   $XDG_RUNTIME_DIR/ricelin-lock-<monitor>.png
 #
-# These can be used by the lock screen as its background surfaces.
+# These can be used by the lock screen as their background surfaces.
 for out in $(hyprctl monitors -j | jq -r '.[].name'); do
     [ -n "$out" ] || continue
 
