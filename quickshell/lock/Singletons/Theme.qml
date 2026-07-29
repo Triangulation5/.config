@@ -24,5 +24,5 @@ Singleton {
 
     readonly property color placeholder: dyn ? Dyn.faint : "#606079"
     readonly property color capsule: dyn ? Dyn.surface : "rgba(20,20,21,0.85)"
-    readonly property color capsuleBorder: dyn ? Dyn.outlineVariant : "rgba(96,96,121,0.55)"
+    readonly property color capsuleBorder: dyn ? Qt.rgba(Dyn.outlineVariant.r, Dyn.outlineVariant.g, Dyn.outlineVariant.b, 0.5) : "rgba(96,96,121,0.55)"
 }
