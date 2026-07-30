@@ -18,10 +18,12 @@ Item {
     property bool showError: false
     property bool showCursor: false
 
-    focus: true
-    Keys.onEscapePressed: {
-        if (content.clockExpanded)
+    Shortcut {
+        sequence: "Escape"
+
+        onActivated: {
             content.clockExpanded = false;
+        }
     }
 
     Connections {
