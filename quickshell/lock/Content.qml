@@ -104,6 +104,8 @@ Item {
     BatterySurface {
         id: batteryIndicator
 
+        z: 10
+
         visible: content.isMain && !content.clockExpanded
 
         anchors.right: parent.right
