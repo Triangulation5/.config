@@ -9,25 +9,10 @@ Item {
         BottomLeft,
         BottomRight
     }
-    property var corner: RoundCorner.CornerEnum.TopLeft // Default to TopLeft
 
+    property var corner: RoundCorner.CornerEnum.TopLeft
     property int size: 25
     property color color: "#000000"
-
-    onColorChanged: {
-        canvas.requestPaint();
-    }
-    onCornerChanged: {
-        canvas.requestPaint();
-    }
-    onSizeChanged: {
-        canvas.requestPaint();
-    }
-    onVisibleChanged: {
-        if (visible) {
-            canvas.requestPaint();
-        }
-    }
 
     implicitWidth: size
     implicitHeight: size
@@ -38,29 +23,47 @@ Item {
         anchors.fill: parent
         antialiasing: true
 
+        Connections {
+            target: root
+
+            function onColorChanged() { canvas.requestPaint(); }
+            function onCornerChanged() { canvas.requestPaint(); }
+            function onSizeChanged() { canvas.requestPaint(); }
+            function onVisibleChanged() {
+                if (root.visible)
+                    canvas.requestPaint();
+            }
+        }
+
         onPaint: {
-            var ctx = getContext("2d");
-            var r = root.size;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const ctx = getContext("2d");
+            const r = root.size;
+
+            ctx.clearRect(0, 0, width, height);
             ctx.beginPath();
+
             switch (root.corner) {
             case RoundCorner.CornerEnum.TopLeft:
                 ctx.arc(r, r, r, Math.PI, 3 * Math.PI / 2);
                 ctx.lineTo(0, 0);
                 break;
+
             case RoundCorner.CornerEnum.TopRight:
                 ctx.arc(0, r, r, 3 * Math.PI / 2, 2 * Math.PI);
                 ctx.lineTo(r, 0);
                 break;
+
             case RoundCorner.CornerEnum.BottomLeft:
                 ctx.arc(r, 0, r, Math.PI / 2, Math.PI);
                 ctx.lineTo(0, r);
                 break;
+
             case RoundCorner.CornerEnum.BottomRight:
                 ctx.arc(0, 0, r, 0, Math.PI / 2);
                 ctx.lineTo(r, r);
                 break;
             }
+
             ctx.closePath();
             ctx.fillStyle = root.color;
             ctx.fill();
