@@ -16,7 +16,7 @@ Row {
     property real span: 10 // Maximum height range of the Cava bars. Increase for taller reactions.
     property bool centeredVisualizer: false // true = bars grow from the center, false = bars grow from the bottom.
 
-    property bool stringVisualizer: false // true = use FastMusicLine strings, false = use normal Cava bars.
+    property bool stringVisualizer: true // true = use FastMusicLine strings, false = use normal Cava bars.
 
     // Overall visualizer height.
     height: span * s
@@ -45,9 +45,9 @@ Row {
             width: parent.width
             height: parent.height
 
-            x: -15 * root.s // Moves the string visualizer left/right.
+            x: -18 * root.s // Moves the string visualizer left/right.
             y: -0.5 * root.s // Moves the string visualizer vertically.
-            scale: 0.10 // Controls string thickness/size.
+            scale: 0.12 // Controls string thickness/size.
             transformOrigin: Item.Center
         }
     }
