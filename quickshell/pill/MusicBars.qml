@@ -12,8 +12,8 @@ import "Singletons"
 Row {
     id: root
 
-    property real s: 1 // Global scale multiplier. Increase to make the entire visualizer larger.
-    property real span: 12 // Maximum height range of the Cava bars. Increase for taller reactions.
+    property real s: 1.1 // Global scale multiplier. Increase to make the entire visualizer larger.
+    property real span: 10 // Maximum height range of the Cava bars. Increase for taller reactions.
     property bool centeredVisualizer: false // true = bars grow from the center, false = bars grow from the bottom.
 
     property bool stringVisualizer: true // true = use FastMusicLine strings, false = use normal Cava bars.
@@ -46,7 +46,7 @@ Row {
             height: parent.height
 
             x: -14 * root.s // Moves the string visualizer left/right.
-            y: 0 // Moves the string visualizer vertically.
+            y: -0.5 * root.s // Moves the string visualizer vertically.
             scale: 0.10 // Controls string thickness/size.
             transformOrigin: Item.Center
         }
@@ -62,7 +62,6 @@ Row {
 
             // Controls bar thickness.
             width: 1.8 * root.s
-
             // Makes bars rounded.
             radius: width / 2
 
