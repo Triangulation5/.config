@@ -10,7 +10,7 @@ Item {
     property real s: 1.1
     property var auth: null
     property string screenName: ""
-    property bool notchStyle: false
+    property bool notchStyle: true
 
     /**
      * Drives the lock-open morph. A pill-shaped hole grows from the pill's resting
