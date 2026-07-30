@@ -6,6 +6,7 @@ import Quickshell.Hyprland
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import QtQuick.Shapes
+import "Singletons"
 
 Rectangle {
     id: musicLineContainer
@@ -25,14 +26,12 @@ Rectangle {
     ]
 
     property var colors: [
-        "#00E5FF",
-        "#38BDF8",
-        "#818CF8",
-        "#A78BFA",
-        "#D946EF",
-        "#F472B6"
+        "#9BB6FF",
+        "#7FC4FF",
+        "#E0B6FF",
+        "#FFD27F",
+        "#FF7F9A"
     ]
-
 
     Process {
         id: cava
@@ -75,9 +74,9 @@ Rectangle {
 
     function color_mix(color1, color2, weight) {
         return Qt.rgba(
-            color1.r * (1 - weight) + color2.r * weight,
-            color1.g * (1 - weight) + color2.g * weight,
-            color1.b * (1 - weight) + color2.b * weight,
+            color1.r + (color2.r - color1.r) * weight,
+            color1.g + (color2.g - color1.g) * weight,
+            color1.b + (color2.b - color1.b) * weight,
             1
         )
     }
@@ -109,10 +108,10 @@ Rectangle {
         samples: 25
 
         color: Qt.rgba(
-            0.1,
-            0.6,
             1.0,
-            0.35
+            0.78,
+            0.45,
+            0.45
         )
 
         source: musicLine
@@ -150,15 +149,13 @@ Rectangle {
 
                 readonly property int index: model.index
 
-
-                property int segments: 100
-
-                property int curveHeight: 100
-                property int curveWidth: 200
+                property int segments: musicLineContainer.segments
+                property int curveHeight: musicLineContainer.curveHeight
+                property int curveWidth: musicLineContainer.curveWidth
 
 
                 strokeWidth:
-                    3 + (cavaData[index] || 0) * 5
+                    3.5 + (cavaData[index] || 0) * 6
 
 
                 strokeColor:
@@ -214,7 +211,7 @@ Rectangle {
 
             strokeColor: "transparent"
 
-            fillColor: Qt.color(colors[0])
+            fillColor: Qt.color("#9BB6FF")
 
             startX: 0
             startY: parent.height / 2
@@ -238,7 +235,7 @@ Rectangle {
 
             strokeColor: "transparent"
 
-            fillColor: Qt.color(colors[colors.length - 1])
+            fillColor: Qt.color("#FF7F9A")
 
             startX: curveWidth
             startY: parent.height / 2
