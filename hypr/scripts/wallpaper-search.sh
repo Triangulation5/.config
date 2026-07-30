@@ -216,6 +216,12 @@ PYEOF
 search() {
     local query="${1:-}" kind="${2:-all}"
 
+    # gh: prefix → search only personal GitHub repo
+    if [[ "$query" == gh:* ]]; then
+        query="${query#gh:}"
+        kind="github"
+    fi
+
     for term in "${BLOCKED_TERMS[@]}"; do
         if [[ "${query,,}" == *"$term"* ]]; then
             printf '[]\n'
@@ -253,13 +259,11 @@ PYEOF
             ;;
     esac
 
-
     # If repo has matches, return them first
     if [ "$(printf '%s' "$repo_results" | jq 'length')" -gt 0 ]; then
         printf '%s\n' "$repo_results"
         return 0
     fi
-
 
     # Fall back to DuckDuckGo
     local q="$query" f=",,,"
@@ -270,7 +274,6 @@ PYEOF
             ;;
     esac
 
-
     local enc vqd raw
 
     enc=$(jq -rn --arg q "$q" '$q|@uri') || {
@@ -278,13 +281,11 @@ PYEOF
         return 0
     }
 
-
     vqd=$(curl -s --max-time 10 \
         "https://duckduckgo.com/?q=${enc}&iax=images&ia=images" \
         -A "$UA" |
         grep -oP 'vqd=\\?"?\K[0-9-]+' |
         head -1)
-
 
     [ -n "$vqd" ] || {
         printf '[]\n'
@@ -300,7 +301,6 @@ PYEOF
         printf '[]\n'
         return 0
     }
-
 
     printf '%s' "$raw" |
     jq -c --arg kind "$kind" '
