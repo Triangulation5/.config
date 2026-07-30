@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import QtQuick.Layouts
+import "Singletons"
 
 Rectangle {
     height: 150
@@ -15,19 +16,19 @@ Rectangle {
     property variant values: []
     property double prev_end: 0.0
 
-    // Color palette
     property var colors: [
-        "#00E5FF", // cyan
-        "#38BDF8", // sky
-        "#818CF8", // indigo
-        "#A78BFA", // violet
-        "#E879F9", // pink
-        "#F472B6"  // rose
+        Theme.flameCore,
+        Theme.vermLit,
+        Theme.verm,
+        Theme.vermBurn,
+        Theme.vermDeep,
+        Theme.flameTip
     ]
 
     onValuesChanged: {
         canvas.requestPaint();
     }
+
 
     Process {
         id: cava
@@ -66,9 +67,6 @@ Rectangle {
         }
     }
 
-    function hexToColor(hex) {
-        return Qt.color(hex)
-    }
 
     function color_mix(color1, color2, weight) {
         return Qt.rgba(
@@ -79,7 +77,9 @@ Rectangle {
         )
     }
 
+
     function getSectionColor(index) {
+
         var pos = index / Math.max(1, sections - 1)
 
         var scaled = pos * (colors.length - 1)
@@ -90,11 +90,12 @@ Rectangle {
         var amount = scaled - first
 
         return color_mix(
-            hexToColor(colors[first]),
-            hexToColor(colors[second]),
+            colors[first],
+            colors[second],
             amount
         )
     }
+
 
     Canvas {
         id: canvas
@@ -102,6 +103,7 @@ Rectangle {
         anchors.fill: parent
 
         onPaint: {
+
             var ctx = canvas.getContext("2d")
 
             ctx.clearRect(
@@ -110,6 +112,7 @@ Rectangle {
                 canvas.width,
                 canvas.height
             )
+
 
             for (var i = 0; i < sections; i++) {
 
@@ -123,14 +126,17 @@ Rectangle {
 
                 ctx.lineWidth = 2 + (5 * value)
 
-                // glow effect
+
                 ctx.shadowBlur = 15
+
                 ctx.shadowColor = lineColor
+
 
                 ctx.moveTo(
                     0,
                     canvas.height / 2
                 )
+
 
                 ctx.bezierCurveTo(
                     0,
@@ -148,6 +154,7 @@ Rectangle {
                     canvas.width,
                     canvas.height / 2
                 )
+
 
                 ctx.stroke()
 
