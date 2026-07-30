@@ -47,7 +47,7 @@ Row {
 
             x: -18 * root.s // Moves the string visualizer left/right.
             y: -0.8 * root.s // Moves the string visualizer vertically.
-            scale: 0.12 // Controls string thickness/size.
+            scale: 0.15 * root.s // Controls string thickness/size.
             transformOrigin: Item.Center
         }
     }
