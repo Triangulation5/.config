@@ -12,9 +12,17 @@ Item {
     property var auth: null
     property bool isMain: true
 
+    property bool clockExpanded: false
+
     readonly property bool authenticating: auth ? auth.authenticating : false
     property bool showError: false
     property bool showCursor: false
+
+    focus: true
+    Keys.onEscapePressed: {
+        if (content.clockExpanded)
+            content.clockExpanded = false;
+    }
 
     Connections {
         target: content.auth
@@ -28,13 +36,6 @@ Item {
             content.showError = false;
             input.text = "";
         }
-    }
-
-    readonly property var weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    readonly property var months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-    readonly property string dateText: {
-        var d = sysClock.date;
-        return weekdays[d.getDay()] + " · " + months[d.getMonth()] + " " + d.getDate();
     }
 
     readonly property var player: {
@@ -91,11 +92,6 @@ Item {
         return trackArtist.length > 0 ? trackArtist : t;
     }
 
-    SystemClock {
-        id: sysClock
-        precision: SystemClock.Minutes
-    }
-
     Timer {
         interval: 1000
         running: content.playing && content.isMain
@@ -103,73 +99,37 @@ Item {
         onTriggered: if (content.player) content.player.positionChanged()
     }
 
-    Text {
-        visible: content.isMain
-        x: parent.width * 0.055
-        y: parent.height * 0.065
-        text: content.dateText
-        color: Theme.cream
-        opacity: 0.85
-        font.family: Theme.font
-        font.weight: 600
-        font.pixelSize: 12 * content.s
-        font.letterSpacing: 3.85 * content.s
-        font.capitalization: Font.AllUppercase
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.45)
-            shadowBlur: 0.6
-            shadowVerticalOffset: 1
-            shadowHorizontalOffset: 0
-        }
+    BatterySurface {
+        id: batteryIndicator
+
+        visible: content.isMain && !content.clockExpanded
+
+        anchors.right: parent.right
+        anchors.top: parent.top
+
+        anchors.rightMargin: parent.width * 0.055
+        anchors.topMargin: parent.height * 0.065
+
+        s: content.s
     }
 
-    Text {
-        id: clockText
-        visible: content.isMain
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height * 0.24
-        color: Theme.bright
-        font.family: "FiraCode Nerd Font Mono"
-        font.weight: 500
-        font.pixelSize: 143 * content.s
-        /** Qt reads "h" as 24h unless the same format holds AP, and the AM/PM sits in its own label here, so the 12h hour is built by hand. */
-        text: {
-            var d = sysClock.date;
-            if (!Flags.time12h)
-                return Qt.formatDateTime(d, "HH:mm");
-            var h = d.getHours() % 12;
-            if (h === 0)
-                h = 12;
-            var m = d.getMinutes();
-            return h + ":" + (m < 10 ? "0" : "") + m;
-        }
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 1.0
-            shadowVerticalOffset: 2
-            shadowHorizontalOffset: 0
-        }
-    }
+    Clock {
+        id: mainClock
 
-    Text {
-        visible: content.isMain && Flags.time12h
-        anchors.left: clockText.right
-        anchors.leftMargin: 13 * content.s
-        anchors.baseline: clockText.baseline
-        color: Theme.bright
-        opacity: 0.55
-        font.family: "FiraCode Nerd Font Mono"
-        font.weight: 600
-        font.pixelSize: 37 * content.s
-        text: Qt.formatDateTime(sysClock.date, "AP")
+        anchors.fill: parent
+
+        s: content.s
+        visibleClock: content.isMain
+
+        expanded: content.clockExpanded
+
+        onClockClicked: {
+            content.clockExpanded = !content.clockExpanded;
+        }
     }
 
     Column {
-        visible: content.isMain && content.hasPlayer
+        visible: content.isMain && content.hasPlayer && !content.clockExpanded
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.leftMargin: parent.width * 0.045
@@ -269,6 +229,7 @@ Item {
 
     Rectangle {
         id: capsule
+        visible: !content.clockExpanded
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: parent.height * 0.09
@@ -306,7 +267,7 @@ Item {
             font.pixelSize: 15 * content.s
             font.letterSpacing: 2 * content.s
             clip: true
-            focus: true
+            focus: content.isMain && !content.clockExpanded
             enabled: !content.authenticating
 
             onTextChanged: {
@@ -464,9 +425,9 @@ Item {
 
                 text: {
                     if (!content.showError)
-                        return "<i>Enter Password</i>"
+                        return "<i>enter password</i>"
                     var pamMsg = content.auth ? content.auth.lastError : "";
-                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "Authentication Failed";
+                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "authentication failed";
                 }
 
                 textFormat: Text.RichText
