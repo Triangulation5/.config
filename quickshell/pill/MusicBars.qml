@@ -46,7 +46,7 @@ Row {
             height: parent.height
 
             x: -18 * root.s // Moves the string visualizer left/right.
-            y: -0.5 * root.s // Moves the string visualizer vertically.
+            y: -0.8 * root.s // Moves the string visualizer vertically.
             scale: 0.12 // Controls string thickness/size.
             transformOrigin: Item.Center
         }
