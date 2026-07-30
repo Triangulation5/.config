@@ -733,52 +733,61 @@ Item {
             }
         }
 
-        // Left notch ear
-        Item {
+        // Left notch ear border
+        RoundCorner {
             visible: notchStyle
 
             anchors.right: body.left
             anchors.top: body.top
 
             anchors.rightMargin: -1
-
-            width: pill.morphRadius
-            height: pill.morphRadius
-
-            z: 3
-
-            opacity: Flags.pillOpacity
-
-            RoundCorner {
-                anchors.fill: parent
-                size: pill.morphRadius
-                corner: RoundCorner.CornerEnum.TopRight
-                color: Theme.cardTop
-            }
+            size: pill.morphRadius + 1
+            corner: RoundCorner.CornerEnum.TopRight
+            color: Theme.border
+            z: 0
         }
 
-        // Right notch ear
-        Item {
+        // Left notch ear fill
+        RoundCorner {
+            visible: notchStyle
+
+            anchors.right: body.left
+            anchors.top: body.top
+
+            anchors.rightMargin: -1
+            size: pill.morphRadius
+            corner: RoundCorner.CornerEnum.TopRight
+            color: Qt.alpha(Theme.cardTop, Flags.pillOpacity)
+            z: 1
+        }
+
+
+        // Right notch ear border
+        RoundCorner {
             visible: notchStyle
 
             anchors.left: body.right
             anchors.top: body.top
 
             anchors.leftMargin: -1
+            size: pill.morphRadius + 1
+            corner: RoundCorner.CornerEnum.TopLeft
+            color: Theme.border
+            z: 0
+        }
 
-            width: pill.morphRadius
-            height: pill.morphRadius
+        // Right notch ear fill
+        RoundCorner {
+            visible: notchStyle
 
-            z: 3
+            anchors.left: body.right
+            anchors.top: body.top
 
-            opacity: Flags.pillOpacity
-
-            RoundCorner {
-                anchors.fill: parent
-                size: pill.morphRadius
-                corner: RoundCorner.CornerEnum.TopLeft
-                color: Theme.cardTop
-            }
+            anchors.leftMargin: -1
+            size: pill.morphRadius
+            corner: RoundCorner.CornerEnum.TopLeft
+            color: Qt.alpha(Theme.cardTop, Flags.pillOpacity)
+            z: 1
         }
     }
 
