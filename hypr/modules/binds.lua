@@ -6,9 +6,8 @@
 local terminal    = "kitty"
 local fileManager = "nautilus"
 local browser     = "firefox"
-local launcher    = "~/.config/rofi/launcher.sh"
 local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
-local locker     = "sh ~/.config/hypr/scripts/lock.sh"
+local locker      = "sh ~/.config/hypr/scripts/lock.sh"
 local screenshots = "~/.local/bin/rishot"
 
 ---------------------
@@ -23,13 +22,12 @@ hl.bind(mainMod .. " + C", hl.dsp.window.close())
 hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(launcher))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
 -- Quickshell
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(quickshell .. " launcher"))
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(quickshell .. " record"))
