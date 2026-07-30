@@ -1,46 +1,46 @@
 * {
 
     /* Base */
-    background:                 #141415D9;
-    background-alt:             #252530D9;
-    foreground:                 #CDCDCDD9;
-    foreground-alt:             #878787D9;
+    background:                 rgba(20,20,21,0.80);
+    background-alt:             rgba(37,37,48,0.80);
+    foreground:                 #CDCDCD;
+    foreground-alt:             #878787;
 
     /* ANSI palette */
-    black:                      #252530D9;
-    black-bright:               #606079D9;
+    black:                      rgba(20,20,21,0.85);
+    black-bright:               #606079;
 
-    red:                        #D8647EFF;
-    green:                      #7FA563D9;
-    yellow:                     #F3BE7CD9;
-    blue:                       #6E94B2D9;
-    magenta:                    #BB9DBDD9;
-    cyan:                       #AEAED1D9;
-    white:                      #CDCDCDD9;
+    red:                        #D8647E;
+    green:                      #7FA563;
+    yellow:                     #F3BE7C;
+    blue:                       #6E94B2;
+    magenta:                    #BB9DBD;
+    cyan:                       #AEAED1;
+    white:                      #CDCDCD;
 
     /* Text aliases */
-    text:                       #CDCDCDD9;
-    text-alt:                   #878787D9;
+    text:                       #CDCDCD;
+    text-alt:                   #878787;
 
     /* UI */
-    hover:                      #2D9F3AD9;  /* opaque hover */
-    selected:                   #252530E6;
+    hover:                      rgba(216,100,126,0.18);
+    selected:                   rgba(37,37,48,0.90);
 
-    notification-bg:            #141415D9;
-    center-bg:                  #141415D9;
-    center-notification-bg:     #252530D9;
+    notification-bg:            rgba(20,20,21,0.85);
+    center-bg:                  rgba(20,20,21,0.85);
+    center-notification-bg:     rgba(37,37,48,0.85);
 
     /* Status */
-    urgent:                     #D8647ED9;
-    success:                    #7FA563D9;
-    warning:                    #F3BE7CD9;
-    error:                      #D8647ED9;
-    info:                       #6E94B2D9;
+    urgent:                     rgba(216,100,126,0.85);
+    success:                    rgba(127,165,99,0.85);
+    warning:                    rgba(243,190,124,0.85);
+    error:                      rgba(216,100,126,0.85);
+    info:                       rgba(110,148,178,0.85);
 
     /* Borders */
-    border:                     #606079E6;
-    divider:                    #606079D9;
+    border:                     rgba(96,96,121,0.55);
+    divider:                    rgba(96,96,121,0.85);
 
     /* Misc */
-    inactive:                   #606079D9;
+    inactive:                   rgba(96,96,121,0.85);
 }
