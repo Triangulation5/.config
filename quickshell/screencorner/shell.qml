@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "Singletons"
 
 PanelWindow {
     id: corners
@@ -26,49 +27,45 @@ PanelWindow {
     }
 
     readonly property int cornerSize: 18
-    readonly property color cornerColor: "#111111"
 
-    // Top-left outward corner
-    RoundCorner {
-        anchors.top: parent.top
-        anchors.left: parent.left
+    // Always match the current pill/lockscreen surface.
+    readonly property color cornerColor: Theme.capsule
 
-        size: corners.cornerSize
-        corner: RoundCorner.CornerEnum.TopLeft
+    Repeater {
+        model: [
+            {
+                h: Qt.AlignLeft,
+                v: Qt.AlignTop,
+                c: RoundCorner.CornerEnum.TopLeft
+            },
+            {
+                h: Qt.AlignRight,
+                v: Qt.AlignTop,
+                c: RoundCorner.CornerEnum.TopRight
+            },
+            {
+                h: Qt.AlignLeft,
+                v: Qt.AlignBottom,
+                c: RoundCorner.CornerEnum.BottomLeft
+            },
+            {
+                h: Qt.AlignRight,
+                v: Qt.AlignBottom,
+                c: RoundCorner.CornerEnum.BottomRight
+            }
+        ]
 
-        color: corners.cornerColor
-    }
+        delegate: RoundCorner {
+            size: corners.cornerSize
+            corner: modelData.c
+            color: corners.cornerColor
 
-    // Top-right outward corner
-    RoundCorner {
-        anchors.top: parent.top
-        anchors.right: parent.right
-
-        size: corners.cornerSize
-        corner: RoundCorner.CornerEnum.TopRight
-
-        color: corners.cornerColor
-    }
-
-    // Bottom-left outward corner
-    RoundCorner {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-
-        size: corners.cornerSize
-        corner: RoundCorner.CornerEnum.BottomLeft
-
-        color: corners.cornerColor
-    }
-
-    // Bottom-right outward corner
-    RoundCorner {
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-
-        size: corners.cornerSize
-        corner: RoundCorner.CornerEnum.BottomRight
-
-        color: corners.cornerColor
+            anchors {
+                left: modelData.h === Qt.AlignLeft ? parent.left : undefined
+                right: modelData.h === Qt.AlignRight ? parent.right : undefined
+                top: modelData.v === Qt.AlignTop ? parent.top : undefined
+                bottom: modelData.v === Qt.AlignBottom ? parent.bottom : undefined
+            }
+        }
     }
 }
