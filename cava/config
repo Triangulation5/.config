@@ -148,7 +148,7 @@ source = auto
 # 'sdl' uses the Simple DirectMedia Layer to render in a graphical context.
 # 'sdl_glsl' uses SDL to create an OpenGL context. Write your own shaders or
 # use one of the predefined ones.
-; method = sdl_glsl
+method = sdl_glsl
 
 # Orientation of the visualization. Can be 'bottom', 'top', 'left' or 'right'.
 # Default is 'bottom'. Other orientations are only supported on sdl and ncruses
@@ -200,8 +200,8 @@ source = auto
 ; alacritty_sync = 0
 
 # Shaders for sdl_glsl, located in $HOME/.config/cava/shaders
-; vertex_shader = pass_through.vert
-; fragment_shader = bar_spectrum.frag
+vertex_shader = pass_through.vert
+fragment_shader = bar_spectrum.frag
 
 ; for glsl output mode, keep rendering even if no audio
 ; continuous_rendering = 0
