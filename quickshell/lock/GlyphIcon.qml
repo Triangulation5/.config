@@ -26,16 +26,12 @@ Item {
         "battery-low": { d: "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M21 10v4 M7 10h2v4H7z", fill: false },
         "battery-empty": { d: "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M21 10v4", fill: false },
         "battery-charging": { d: "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M21 10v4 M12 8l-3 6h4l-1 4 5-7h-4z", fill: false },
-
-        "lock": { d: "M6 10h12a2 2 0 0 1 2 2v7H4v-7a2 2 0 0 1 2-2z M8 10V7a4 4 0 0 1 8 0v3", fill: false },
-
+        "lock": { d: "M6 10h12a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H6a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 6 10z M8.5 10V7a3.5 3.5 0 0 1 7 0v3", fill: false },
         "clock": { d: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 7v5l3 2", fill: false },
-
         "wifi": { d: "M4 9.5c5-4.5 11-4.5 16 0 M7 13c3-3 7-3 10 0 M10.5 16.5a2 2 0 1 0 3 0", fill: false },
-
-        "user": { d: "M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8z M4 21a8 8 0 0 1 16 0", fill: false }
+        "user": { d: "M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8z M4 21a8 8 0 0 1 16 0", fill: false },
+        "cog": { d: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z", fill: false }
     })
-
 
     readonly property var g:
         glyphs[name] !== undefined
@@ -51,15 +47,18 @@ Item {
         scale: root.u
         transformOrigin: Item.TopLeft
 
-        x: root.width / 2 - 12 * root.u
-        y: root.height / 2 - 12 * root.u
+        x: glyph.boundingRect.width > 0
+            ? root.width / 2 - (glyph.boundingRect.x + glyph.boundingRect.width / 2) * root.u
+            : (root.width - 24 * root.u) / 2
+
+        y: glyph.boundingRect.height > 0
+            ? root.height / 2 - (glyph.boundingRect.y + glyph.boundingRect.height / 2) * root.u
+            : (root.height - 24 * root.u) / 2
 
         antialiasing: true
         preferredRendererType: Shape.CurveRenderer
 
-
         ShapePath {
-
             strokeColor: root.g.fill
                 ? "transparent"
                 : root.color
