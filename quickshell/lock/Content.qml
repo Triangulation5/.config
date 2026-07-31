@@ -106,15 +106,20 @@ Item {
         id: batteryIndicator
 
         z: 20
+        visible: content.isMain
+        opacity: content.clockExpanded ? 0 : 1
 
-        visible: content.isMain && !content.clockExpanded
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
 
         anchors.right: parent.right
         anchors.top: parent.top
-
         anchors.rightMargin: parent.width * 0.055
         anchors.topMargin: parent.height * 0.065
-
         s: content.s
     }
 
@@ -122,13 +127,20 @@ Item {
         id: linkSurface
 
         z: 20
+        visible: content.isMain
+        opacity: content.clockExpanded ? 0 : 1
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
 
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-
         anchors.rightMargin: parent.width * 0.055
         anchors.bottomMargin: parent.height * 0.09
-
         s: content.s
     }
 
@@ -149,6 +161,13 @@ Item {
 
     Column {
         visible: content.isMain && content.hasPlayer && !content.clockExpanded
+        opacity: content.clockExpanded ? 0 : 1
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.leftMargin: parent.width * 0.045
@@ -249,6 +268,13 @@ Item {
     Rectangle {
         id: capsule
         visible: !content.clockExpanded
+        opacity: content.clockExpanded ? 0 : 1
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: parent.height * 0.09
