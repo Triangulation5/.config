@@ -14,7 +14,6 @@ Item {
 
     property bool clockExpanded: false
     property bool revealPassword: false
-    property bool settingsOpen: false
 
     readonly property bool authenticating: auth ? auth.authenticating : false
     property bool showError: false
@@ -25,7 +24,6 @@ Item {
 
         onActivated: {
             content.clockExpanded = false;
-            content.settingsOpen = false;
         }
     }
 
@@ -120,28 +118,6 @@ Item {
         s: content.s
     }
 
-    // SettingsButton {
-    //     id: settingsBtn
-    //
-    //     z: 100
-    //     visible: content.isMain && !content.clockExpanded && settingsSurface.progress < 0.98
-    //
-    //     anchors.right: parent.right
-    //     anchors.bottom: parent.bottom
-    //
-    //     anchors.rightMargin: parent.width * 0.045
-    //     anchors.bottomMargin: parent.height * 0.055
-    //
-    //     s: content.s
-    //     expanded: content.settingsOpen
-    //
-    //     opacity: Math.max(0, 1.0 - settingsSurface.progress * 1.5)
-    //
-    //     onClicked: {
-    //         content.settingsOpen = !content.settingsOpen;
-    //     }
-    // }
-
     Clock {
         id: mainClock
 
@@ -154,19 +130,6 @@ Item {
 
         onClockClicked: {
             content.clockExpanded = !content.clockExpanded;
-        }
-    }
-
-    Settings {
-        id: settingsSurface
-
-        z: 99
-        s: content.s
-
-        open: content.settingsOpen && !content.clockExpanded
-
-        onCloseRequested: {
-            content.settingsOpen = false;
         }
     }
 
