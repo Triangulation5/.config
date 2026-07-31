@@ -120,42 +120,27 @@ Item {
         s: content.s
     }
 
-    Item {
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-
-        width: 20 * content.s
-        height: 20 * content.s
-
-        anchors.rightMargin: parent.width * 0.055
-        anchors.bottomMargin: parent.height * 0.065
-
-        z: 100
-
-        GlyphIcon {
-            anchors.fill: parent
-
-            name: "cog"
-
-            color: settingsMouse.containsMouse
-                ? Theme.cream
-                : Theme.placeholder
-        }
-
-        MouseArea {
-            id: settingsMouse
-
-            anchors.fill: parent
-            anchors.margins: -10 * content.s
-
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-
-            onClicked: {
-                content.settingsOpen = !content.settingsOpen;
-            }
-        }
-    }
+    // SettingsButton {
+    //     id: settingsBtn
+    //
+    //     z: 100
+    //     visible: content.isMain && !content.clockExpanded && settingsSurface.progress < 0.98
+    //
+    //     anchors.right: parent.right
+    //     anchors.bottom: parent.bottom
+    //
+    //     anchors.rightMargin: parent.width * 0.045
+    //     anchors.bottomMargin: parent.height * 0.055
+    //
+    //     s: content.s
+    //     expanded: content.settingsOpen
+    //
+    //     opacity: Math.max(0, 1.0 - settingsSurface.progress * 1.5)
+    //
+    //     onClicked: {
+    //         content.settingsOpen = !content.settingsOpen;
+    //     }
+    // }
 
     Clock {
         id: mainClock
@@ -172,11 +157,13 @@ Item {
         }
     }
 
-    SettingsSurface {
+    Settings {
         id: settingsSurface
 
+        z: 99
         s: content.s
-        open: content.settingsOpen
+
+        open: content.settingsOpen && !content.clockExpanded
 
         onCloseRequested: {
             content.settingsOpen = false;
@@ -482,7 +469,7 @@ Item {
                     if (!content.showError)
                         return "<i>enter password</i>"
                     var pamMsg = content.auth ? content.auth.lastError : "";
-                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "authentication failed";
+                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
                 }
 
                 textFormat: Text.RichText
