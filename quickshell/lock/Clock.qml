@@ -25,69 +25,37 @@ Item {
     }
 
     readonly property var weekdays: [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday"
+        "Sunday", "Monday", "Tuesday",
+        "Wednesday", "Thursday", "Friday", "Saturday"
     ]
 
     readonly property var months: [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December"
+        "January", "February", "March",
+        "April", "May", "June",
+        "July", "August", "September",
+        "October", "November", "December"
     ]
 
     readonly property string dateText: {
         var d = sysClock.date;
+
         if (Flags.dateFormat === "2026-07-30")
             return Qt.formatDateTime(d, "yyyy-MM-dd");
+
         if (Flags.dateFormat === "30/07/2026")
             return Qt.formatDateTime(d, "dd/MM/yyyy");
+
         if (Flags.dateFormat === "Jul 30, 2026")
             return Qt.formatDateTime(d, "MMM dd, yyyy");
+
         return weekdays[d.getDay()] + " · " + months[d.getMonth()] + " " + d.getDate();
     }
 
-    SystemClock {
-        id: sysClock
-
-        precision: (clock.expanded || Flags.showSeconds)
-            ? SystemClock.Seconds
-            : SystemClock.Minutes
-    }
-
-    /**
-     * Builds the normal date display.
-     * This is kept separate from the expanded display so the layout can
-     * change without affecting the clock formatting logic.
-     */
     readonly property string expandedDateText: {
         var d = sysClock.date;
-
-        return weekdays[d.getDay()]
-            + " · "
-            + months[d.getMonth()]
-            + " "
-            + d.getDate();
+        return weekdays[d.getDay()] + " · " + months[d.getMonth()] + " " + d.getDate();
     }
 
-    /**
-     * Creates the normal time string.
-     * Qt treats "HH" as 24-hour time, so 12-hour formatting is handled
-     * manually to keep the AM/PM label separate.
-     */
     readonly property string timeText: {
         var d = sysClock.date;
 
@@ -95,7 +63,6 @@ Item {
             return Qt.formatDateTime(d, "HH:mm");
 
         var h = d.getHours() % 12;
-
         if (h === 0)
             h = 12;
 
@@ -104,9 +71,6 @@ Item {
         return h + ":" + (m < 10 ? "0" : "") + m;
     }
 
-    /**
-     * Expanded clock mode includes seconds.
-     */
     readonly property string secondsText: {
         var d = sysClock.date;
 
@@ -114,7 +78,6 @@ Item {
             return Qt.formatDateTime(d, "HH:mm:ss");
 
         var h = d.getHours() % 12;
-
         if (h === 0)
             h = 12;
 
@@ -130,7 +93,17 @@ Item {
             + s;
     }
 
+    SystemClock {
+        id: sysClock
+
+        precision: clock.expanded || Flags.showSeconds
+            ? SystemClock.Seconds
+            : SystemClock.Minutes
+    }
+
     Text {
+        id: compactDate
+
         visible: clock.visibleClock && !clock.expanded
 
         x: parent.width * 0.055
@@ -147,17 +120,34 @@ Item {
         font.letterSpacing: 3.85 * clock.s
         font.capitalization: Font.AllUppercase
 
+        scale: visible ? 1 : 0.85
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 180
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: 260
+                easing.type: Easing.OutBack
+            }
+        }
+
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: Qt.rgba(0, 0, 0, 0.45)
             shadowBlur: 0.6
             shadowVerticalOffset: 1
-            shadowHorizontalOffset: 0
         }
     }
 
     Text {
+        id: expandedDate
+
         visible: clock.visibleClock && clock.expanded
 
         anchors.horizontalCenter: parent.horizontalCenter
@@ -174,13 +164,28 @@ Item {
         font.letterSpacing: 3.85 * clock.s
         font.capitalization: Font.AllUppercase
 
+        scale: visible ? 1 : 0.8
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: 320
+                easing.type: Easing.OutBack
+            }
+        }
+
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: Qt.rgba(0, 0, 0, 0.45)
             shadowBlur: 0.6
             shadowVerticalOffset: 1
-            shadowHorizontalOffset: 0
         }
     }
 
@@ -204,21 +209,21 @@ Item {
             ? 160 * clock.s
             : 143 * clock.s
 
-        text: (clock.expanded || Flags.showSeconds)
+        text: clock.expanded || Flags.showSeconds
             ? clock.secondsText
             : clock.timeText
 
         Behavior on y {
             NumberAnimation {
-                duration: 250
-                easing.type: Easing.OutCubic
+                duration: 360
+                easing.type: Easing.OutBack
             }
         }
 
         Behavior on font.pixelSize {
             NumberAnimation {
-                duration: 250
-                easing.type: Easing.OutCubic
+                duration: 360
+                easing.type: Easing.OutBack
             }
         }
 
@@ -226,16 +231,15 @@ Item {
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 1.0
+            shadowBlur: 1
             shadowVerticalOffset: 2
-            shadowHorizontalOffset: 0
         }
     }
 
     Text {
-        visible: clock.visibleClock
-            && !clock.expanded
-            && Flags.time12h
+        id: period
+
+        visible: clock.visibleClock && !clock.expanded && Flags.time12h
 
         anchors.left: clockText.right
         anchors.leftMargin: 13 * clock.s
@@ -249,25 +253,28 @@ Item {
         font.pixelSize: 37 * clock.s
 
         text: Qt.formatDateTime(sysClock.date, "AP")
+
+        Behavior on x {
+            NumberAnimation {
+                duration: 300
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 200
+            }
+        }
     }
 
     MouseArea {
         anchors.fill: parent
 
-        onPressed: {
-            clock.pressScale = 0.96;
-        }
+        onPressed: clock.pressScale = 0.96
+        onReleased: clock.pressScale = 1
+        onCanceled: clock.pressScale = 1
 
-        onReleased: {
-            clock.pressScale = 1;
-        }
-
-        onCanceled: {
-            clock.pressScale = 1;
-        }
-
-        onClicked: {
-            clock.clockClicked();
-        }
+        onClicked: clock.clockClicked()
     }
 }

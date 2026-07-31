@@ -17,7 +17,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property bool active: false
 
     signal back()
