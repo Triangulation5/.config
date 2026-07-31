@@ -105,7 +105,7 @@ Item {
     BatterySurface {
         id: batteryIndicator
 
-        z: 10
+        z: 20
 
         visible: content.isMain && !content.clockExpanded
 
@@ -114,6 +114,20 @@ Item {
 
         anchors.rightMargin: parent.width * 0.055
         anchors.topMargin: parent.height * 0.065
+
+        s: content.s
+    }
+
+    LinkSurface {
+        id: linkSurface
+
+        z: 20
+
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+
+        anchors.rightMargin: parent.width * 0.055
+        anchors.bottomMargin: parent.height * 0.09
 
         s: content.s
     }
