@@ -46,7 +46,8 @@ Item {
         "next": { d: "M6 5l9 7-9 7z M16 5h2v14h-2z", fill: true },
         "prev": { d: "M18 5l-9 7 9 7z M6 5h2v14H6z", fill: true },
         "return": { d: "M20 6v6a3 3 0 0 1-3 3H5 M9 11l-4 4 4 4", fill: false },
-        "close": { d: "M6 6l12 12 M18 6l-12 12", fill: false }
+        "close": { d: "M6 6l12 12 M18 6l-12 12", fill: false },
+        "bluetooth": { d: "M12 2.8v18.4 M12 2.8l5.2 4.6-10.4 9 M12 21.2l5.2-4.6-10.4-9", fill: false },
     })
 
     readonly property var g:

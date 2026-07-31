@@ -13,46 +13,34 @@ Item {
     readonly property string icon: {
         if (Battery.full)
             return "battery-full";
-
         if (Battery.charging)
             return "battery-charging";
-
         if (Battery.pct >= 90)
             return "battery-full";
-
         if (Battery.pct >= 70)
             return "battery-high";
-
         if (Battery.pct >= 50)
             return "battery-medium";
-
         if (Battery.pct >= 30)
             return "battery-low";
-
         if (Battery.low)
             return "battery-warning";
-
         return "battery-empty";
     }
 
     readonly property string timeRemaining: {
         if (!Battery.dev)
             return "";
-
         if (Battery.full)
             return "Plugged in";
-
         if (!Battery.hasTime)
             return "Calculating...";
-
         return Battery.timeStr + (Battery.charging ? " to full" : " remaining");
     }
 
     width: batteryBackground.width
     height: batteryBackground.height
-
     visible: Battery.dev !== null
-
     scale: pressScale
 
     Behavior on scale {
@@ -75,47 +63,43 @@ Item {
             ? 105 * battery.s
             : batteryRow.height + 8 * battery.s
 
-        radius: battery.expanded
-            ? 18 * battery.s
-            : height / 2
+        radius: battery.expanded ? 18 * battery.s : height / 2
 
-        color: battery.expanded
-            ? Theme.capsule
-            : "transparent"
+        color: battery.expanded ? Theme.capsule : "transparent"
 
         border.width: battery.expanded ? 1 : 0
         border.color: Theme.capsuleBorder
 
         Behavior on width {
             NumberAnimation {
-                duration: 320
-                easing.type: Easing.OutCubic
+                duration: 420
+                easing.type: Easing.OutBack
             }
         }
 
         Behavior on height {
             NumberAnimation {
-                duration: 320
-                easing.type: Easing.OutCubic
+                duration: 420
+                easing.type: Easing.OutBack
             }
         }
 
         Behavior on radius {
             NumberAnimation {
-                duration: 320
+                duration: 360
                 easing.type: Easing.OutCubic
             }
         }
 
         Behavior on color {
             ColorAnimation {
-                duration: 220
+                duration: 260
             }
         }
 
         Behavior on border.width {
             NumberAnimation {
-                duration: 220
+                duration: 260
                 easing.type: Easing.OutCubic
             }
         }
@@ -128,37 +112,39 @@ Item {
             spacing: 7 * battery.s
 
             opacity: battery.expanded ? 0 : 1
-            scale: battery.expanded ? 0.85 : 1
+            scale: battery.expanded ? 0.8 : 1
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 140
+                    duration: 160
                     easing.type: Easing.OutCubic
                 }
             }
 
             Behavior on scale {
                 NumberAnimation {
-                    duration: 220
-                    easing.type: Easing.OutCubic
+                    duration: 300
+                    easing.type: Easing.OutBack
                 }
             }
 
             GlyphIcon {
-                name: battery.icon
+                anchors.verticalCenter: parent.verticalCenter
 
-                color: Theme.cream
+                name: battery.icon
 
                 width: 17 * battery.s
                 height: 17 * battery.s
 
+                color: Theme.cream
+
                 stroke: 1.8
                 opacity: 0.9
-
-                anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
+                anchors.verticalCenter: parent.verticalCenter
+
                 text: Battery.pct + "%"
 
                 color: Theme.cream
@@ -168,8 +154,6 @@ Item {
                 font.pixelSize: 12 * battery.s
                 font.weight: 600
                 font.letterSpacing: 1.3 * battery.s
-
-                anchors.verticalCenter: parent.verticalCenter
             }
         }
 
@@ -177,24 +161,23 @@ Item {
             id: batteryInfo
 
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: 0 * battery.s
 
-            spacing: 14 * battery.s
+            spacing: 18 * battery.s
 
             opacity: battery.expanded ? 1 : 0
-            scale: battery.expanded ? 1 : 0.85
+            scale: battery.expanded ? 1 : 0.82
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 180
+                    duration: 220
                     easing.type: Easing.OutCubic
                 }
             }
 
             Behavior on scale {
                 NumberAnimation {
-                    duration: 260
-                    easing.type: Easing.OutCubic
+                    duration: 360
+                    easing.type: Easing.OutBack
                 }
             }
 
@@ -208,10 +191,10 @@ Item {
 
                     name: battery.icon
 
-                    color: Theme.cream
-
                     width: 72 * battery.s
                     height: 72 * battery.s
+
+                    color: Theme.cream
 
                     stroke: 1.8
                     opacity: 0.95
@@ -219,9 +202,9 @@ Item {
             }
 
             Column {
-                spacing: 4 * battery.s
-
                 anchors.verticalCenter: parent.verticalCenter
+
+                spacing: 4 * battery.s
 
                 Text {
                     text: Battery.charging ? "Charging" : "Battery"
@@ -266,20 +249,10 @@ Item {
 
         hoverEnabled: true
 
-        onPressed: {
-            battery.pressScale = 0.96;
-        }
+        onPressed: battery.pressScale = 0.96
+        onReleased: battery.pressScale = 1
+        onCanceled: battery.pressScale = 1
 
-        onReleased: {
-            battery.pressScale = 1;
-        }
-
-        onCanceled: {
-            battery.pressScale = 1;
-        }
-
-        onClicked: {
-            battery.expanded = !battery.expanded;
-        }
+        onClicked: battery.expanded = !battery.expanded
     }
 }
