@@ -177,7 +177,7 @@ Item {
             id: batteryInfo
 
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: -8 * battery.s
+            anchors.horizontalCenterOffset: 0 * battery.s
 
             spacing: 14 * battery.s
 

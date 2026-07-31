@@ -25,4 +25,11 @@ Singleton {
     readonly property color placeholder: dyn ? Dyn.faint : "#606079"
     readonly property color capsule: dyn ? Dyn.surface : "rgba(20,20,21,0.85)"
     readonly property color capsuleBorder: dyn ? Qt.rgba(Dyn.outlineVariant.r, Dyn.outlineVariant.g, Dyn.outlineVariant.b, 0.5) : "rgba(96,96,121,0.55)"
+
+    readonly property color faint: dyn ? Dyn.faint : "#6b7176"
+    readonly property color subtle: dyn ? Qt.alpha(cream, 0.5) : "rgba(230, 214, 203, 0.5)"
+    readonly property color iconDim: dim
+    readonly property color frameBg: Qt.alpha(bright, 0.05)
+    readonly property color hairSoft: Qt.alpha(cream, 0.1)
+    readonly property string fontJp: "Noto Sans JP"
 }

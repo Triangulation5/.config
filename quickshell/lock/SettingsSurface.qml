@@ -4,214 +4,262 @@ import QtQuick
 import QtQuick.Effects
 import "Singletons"
 
-Item {
+/**
+ * Lockscreen Settings Surface: Morphs from the collapsed bottom-right button position
+ * into a screen-connected notch style surface attached flush to the bottom-right
+ * screen corner using RoundCorner.qml notch ears.
+ *
+ * Fully keyboard navigable (Arrow keys, Return, Space, Escape) and mouse interactive.
+ */
+Rectangle {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property bool open: false
-    property var focusRowItem: null
+    readonly property real progress: animProgress.value
+    readonly property bool animating: animProgress.running
 
+    property string backSurface: ""
+    signal requestSurface(string name)
     signal closeRequested()
 
-    function reportRowHover(row, hovered) {
-        if (hovered)
-            focusRowItem = row;
+    property Item focusRowItem: null
+    property int kbIndex: -1
+    property var rows: []
+
+    default property alias contentData: contentArea.data
+
+    // Target dimensions
+    readonly property real targetWidth: 340 * root.s
+    readonly property real targetHeight: Math.min(540 * root.s, Math.max(180 * root.s, contentArea.childrenRect.height + 36 * root.s))
+
+    // Collapsed size matching SettingsButton.qml
+    readonly property real collapsedSize: 42 * root.s
+
+    // Anchors & positioning: shifts flush to bottom-right corner when expanding
+    anchors.right: parent ? parent.right : undefined
+    anchors.bottom: parent ? parent.bottom : undefined
+
+    anchors.rightMargin: (1 - progress) * (parent ? parent.width * 0.045 : 24 * root.s)
+    anchors.bottomMargin: (1 - progress) * (parent ? parent.height * 0.055 : 24 * root.s)
+
+    width: collapsedSize + progress * (targetWidth - collapsedSize)
+    height: collapsedSize + progress * (targetHeight - collapsedSize)
+
+    // Main surface corner rounding
+    topLeftRadius: (collapsedSize / 2) * (1 - progress) + (22 * root.s) * progress
+    topRightRadius: 0
+    bottomLeftRadius: (collapsedSize / 2) * (1 - progress) + (22 * root.s) * progress
+    bottomRightRadius: 0
+
+    color: Theme.capsule
+    border.width: 1
+    border.color: Theme.capsuleBorder
+    clip: false
+
+    visible: open || progress > 0
+    focus: open
+
+    QtObject {
+        id: animProgress
+        property real value: root.open ? 1.0 : 0.0
+
+        Behavior on value {
+            NumberAnimation {
+                duration: 380
+                easing.type: root.open ? Easing.OutCubic : Easing.BezierSpline
+                easing.bezierCurve: [0.16, 1, 0.3, 1, 1, 1]
+            }
+        }
     }
 
-    function activateRow(row) {
-        if (row === closeRow) {
-            closeRequested();
+    onOpenChanged: {
+        if (open) {
+            root.forceActiveFocus();
+            if (rows.length > 0 && kbIndex < 0) {
+                kbIndex = 0;
+                focusRowItem = rows[0].item;
+            }
+        } else {
+            focusRowItem = null;
+            kbIndex = -1;
+        }
+    }
+
+    // --- KEYBOARD NAVIGATION ---
+    Keys.onPressed: event => {
+        if (!open)
             return;
-        }
 
-        if (row.name === "Music Visualizer")
-            Flags.musicVisualizer = !Flags.musicVisualizer;
-
-        if (row.name === "24 Hour Time")
-            Flags.time12h = !Flags.time12h;
-    }
-
-    width: 330 * s
-    height: panelContent.height + 28 * s
-
-    visible: open
-    opacity: open ? 1 : 0
-
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-
-    anchors.rightMargin: 32 * s
-    anchors.bottomMargin: 90 * s
-
-    Behavior on opacity {
-        NumberAnimation {
-            duration: 160
-            easing.type: Easing.OutCubic
+        if (event.key === Qt.Key_Escape) {
+            root.closeRequested();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Up) {
+            kbMove(-1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Down) {
+            kbMove(1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Left) {
+            kbAdjust(-1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Right) {
+            kbAdjust(1);
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            kbActivate();
+            event.accepted = true;
         }
     }
 
-    Rectangle {
-        anchors.fill: parent
+    function reportRowHover(item, hovered) {
+        if (hovered) {
+            focusRowItem = item;
+            kbIndex = rowIndexOf(item);
+        }
+    }
 
-        radius: 22 * s
+    function rowIndexOf(item) {
+        for (var i = 0; i < rows.length; i++)
+            if (rows[i].item === item)
+                return i;
+        return -1;
+    }
 
+    function kbMove(dir) {
+        if (!rows || !rows.length)
+            return;
+        var next = kbIndex < 0 ? 0 : kbIndex + dir;
+        kbIndex = Math.max(0, Math.min(rows.length - 1, next));
+        focusRowItem = rows[kbIndex].item;
+    }
+
+    function kbAdjust(dir) {
+        if (!rows || !rows.length)
+            return;
+        if (kbIndex < 0) {
+            kbIndex = 0;
+            focusRowItem = rows[0].item;
+        }
+        var r = rows[kbIndex];
+        if (!r)
+            return;
+        if (r.kind === "seg") {
+            var n = r.vals.length;
+            var cur = r.get();
+            var idx = r.vals.indexOf(cur);
+            var nextIdx = (((idx < 0 ? 0 : idx) + dir) % n + n) % n;
+            r.set(r.vals[nextIdx]);
+        } else if (r.kind === "toggle") {
+            r.set(dir > 0);
+        } else if (r.kind === "scrub") {
+            r.bump(dir);
+        }
+    }
+
+    function kbActivate() {
+        if (!rows || !rows.length || kbIndex < 0)
+            return;
+        var r = rows[kbIndex];
+        if (!r)
+            return;
+        if (r.kind === "toggle")
+            r.set(!r.get());
+        else if (r.kind === "seg") {
+            var n = r.vals.length;
+            var cur = r.get();
+            var idx = r.vals.indexOf(cur);
+            var nextIdx = (idx + 1) % n;
+            r.set(r.vals[nextIdx]);
+        } else if (r.kind === "action")
+            r.run();
+        else if (r.kind === "nav")
+            root.requestSurface(r.surface);
+    }
+
+    function activateRow(item) {
+        var idx = rowIndexOf(item);
+        if (idx < 0)
+            return;
+        kbIndex = idx;
+        focusRowItem = item;
+        var r = rows[idx];
+        if (!r)
+            return;
+        if (r.kind === "toggle")
+            r.set(!r.get());
+        else if (r.kind === "seg") {
+            var n = r.vals.length;
+            var cur = r.get();
+            var i = r.vals.indexOf(cur);
+            r.set(r.vals[(i + 1) % n]);
+        } else if (r.kind === "action")
+            r.run();
+        else if (r.kind === "nav")
+            root.requestSurface(r.surface);
+    }
+
+    readonly property bool rowFocused: focusRowItem !== null && open
+
+    // --- SCREENCORNER NOTCH EARS (Top-Right & Bottom-Left Junctions) ---
+    // Top-Right Ear Border (junction with right screen edge)
+    RoundCorner {
+        visible: root.progress > 0.05
+        anchors.left: root.right
+        anchors.top: root.top
+        anchors.leftMargin: -1
+        size: Math.round(16 * root.s * root.progress) + 1
+        corner: RoundCorner.CornerEnum.BottomRight
+        color: Theme.capsuleBorder
+        z: 0
+    }
+
+    // Top-Right Ear Fill
+    RoundCorner {
+        visible: root.progress > 0.05
+        anchors.left: root.right
+        anchors.top: root.top
+        anchors.leftMargin: -1
+        size: Math.round(16 * root.s * root.progress)
+        corner: RoundCorner.CornerEnum.BottomRight
         color: Theme.capsule
-
-        border.width: 1
-        border.color: Theme.capsuleBorder
-
-        layer.enabled: true
-
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowBlur: 0.7
-            shadowVerticalOffset: 6
-            shadowColor: Qt.rgba(0,0,0,0.3)
-        }
+        z: 1
     }
 
-    Column {
-        id: panelContent
+    // Bottom-Left Ear Border (junction with bottom screen edge)
+    RoundCorner {
+        visible: root.progress > 0.05
+        anchors.right: root.left
+        anchors.bottom: root.bottom
+        anchors.bottomMargin: -1
+        size: Math.round(16 * root.s * root.progress) + 1
+        corner: RoundCorner.CornerEnum.BottomRight
+        color: Theme.capsuleBorder
+        z: 0
+    }
 
-        width: parent.width
+    // Bottom-Left Ear Fill
+    RoundCorner {
+        visible: root.progress > 0.05
+        anchors.right: root.left
+        anchors.bottom: root.bottom
+        anchors.bottomMargin: -1
+        size: Math.round(16 * root.s * root.progress)
+        corner: RoundCorner.CornerEnum.BottomRight
+        color: Theme.capsule
+        z: 1
+    }
 
-        anchors.top: parent.top
-        anchors.left: parent.left
+    // Content container fading and sliding smoothly during notch expansion
+    Item {
+        id: contentArea
+        anchors.fill: parent
+        anchors.margins: 18 * root.s
 
-        anchors.margins: 14 * s
+        opacity: Math.max(0, (progress - 0.20) / 0.80)
 
-        spacing: 4 * s
-
-
-        SettingsHeader {
-            width: parent.width
-            s: root.s
-            title: "Settings"
-        }
-
-
-        SettingsRow {
-            id: visualizerRow
-
-            surface: root
-
-            icon: "eye"
-            name: "Music Visualizer"
-
-            sub: Flags.musicVisualizer
-                ? "Enabled"
-                : "Disabled"
-
-            Item {
-                width: 38 * root.s
-                height: 18 * root.s
-
-                Rectangle {
-                    anchors.fill: parent
-
-                    radius: height / 2
-
-                    color: Flags.musicVisualizer
-                        ? Theme.verm
-                        : Theme.fieldBorder
-
-
-                    Rectangle {
-                        width: 12 * root.s
-                        height: width
-
-                        radius: width / 2
-
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        x: Flags.musicVisualizer
-                            ? parent.width - width - 3 * root.s
-                            : 3 * root.s
-
-                        color: Theme.cream
-                    }
-                }
-            }
-        }
-
-
-        SettingsRow {
-            id: timeRow
-
-            surface: root
-
-            icon: "clock"
-            name: "24 Hour Time"
-
-            sub: Flags.time12h
-                ? "12 hour clock"
-                : "24 hour clock"
-
-            Item {
-                width: 38 * root.s
-                height: 18 * root.s
-
-                Text {
-                    anchors.centerIn: parent
-
-                    text: Flags.time12h
-                        ? "12"
-                        : "24"
-
-                    color: Theme.cream
-
-                    font.family: Theme.font
-                    font.pixelSize: 10 * root.s
-                    font.weight: Font.DemiBold
-                }
-            }
-        }
-
-
-        SettingsRow {
-            surface: root
-
-            icon: "cog"
-            name: "Display"
-            sub: "Appearance"
-        }
-
-
-        SettingsRow {
-            surface: root
-
-            icon: "wifi"
-            name: "Network"
-            sub: "Connection"
-        }
-
-
-        SettingsRow {
-            surface: root
-
-            icon: "lock"
-            name: "Power"
-            sub: "System actions"
-        }
-
-
-        Rectangle {
-            width: parent.width
-            height: 1
-
-            color: Theme.hairSoft
-        }
-
-
-        SettingsRow {
-            id: closeRow
-
-            surface: root
-
-            icon: "chevron-left"
-            name: "Close"
-
-            last: true
+        transform: Translate {
+            y: (1 - progress) * 14 * root.s
         }
     }
 }

@@ -1,70 +1,51 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import "Singletons"
 
+/**
+ * Settings surface header bar.
+ */
 Item {
     id: head
 
     property real s: 1
-    property string glyph: ""
-    property string title: "Settings"
+    property string title: "SETTINGS"
+    property bool showBack: false
+    signal backClicked()
 
     width: parent ? parent.width : 0
-    height: 24 * s
-
+    height: 24 * head.s
 
     Row {
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
-
-        spacing: 8 * s
-
+        spacing: 8 * head.s
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-
-            visible: Flags.showGlyphs && head.glyph.length > 0
-
-            text: head.glyph
-
-            color: Theme.cream
-
-            font.family: Theme.fontJp
-            font.pixelSize: 15 * s
-            font.weight: Font.Medium
-        }
-
-
-        GlyphIcon {
-            anchors.verticalCenter: parent.verticalCenter
-
-            visible: !head.glyph.length
-
-            width: 16 * s
-            height: 16 * s
-
-            name: "cog"
-
-            color: Theme.iconDim
-            stroke: 1.7
-        }
-
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-
             text: head.title
-
-            color: Theme.subtle
-
+            color: Theme.cream
             font.family: Theme.font
-
-            font.pixelSize: 10 * s
-            font.weight: Font.DemiBold
-
+            font.pixelSize: 11 * head.s
+            font.weight: Font.Bold
             font.capitalization: Font.AllUppercase
-            font.letterSpacing: 1.5 * s
+            font.letterSpacing: 1.6 * head.s
+        }
+    }
+
+    GlyphIcon {
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: 16 * head.s
+        height: 16 * head.s
+        name: head.showBack ? "chevron-left" : "cog"
+        color: Theme.iconDim
+        stroke: head.showBack ? 2.2 : 1.7
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: head.showBack
+            cursorShape: Qt.PointingHandCursor
+            onClicked: head.backClicked()
         }
     }
 }

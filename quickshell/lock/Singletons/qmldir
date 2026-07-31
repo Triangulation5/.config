@@ -4,3 +4,8 @@ singleton Flags Flags.qml
 singleton Cava Cava.qml
 singleton Pw Pw.qml
 singleton Battery Battery.qml
+singleton Backlight Backlight.qml
+singleton NightLight NightLight.qml
+singleton Network Network.qml
+singleton Bluetooth Bluetooth.qml
+singleton System System.qml
