@@ -13,6 +13,8 @@ Item {
     property bool isMain: true
 
     property bool clockExpanded: false
+    property bool revealPassword: false
+    property bool settingsOpen: false
 
     readonly property bool authenticating: auth ? auth.authenticating : false
     property bool showError: false
@@ -23,6 +25,7 @@ Item {
 
         onActivated: {
             content.clockExpanded = false;
+            content.settingsOpen = false;
         }
     }
 
@@ -117,6 +120,43 @@ Item {
         s: content.s
     }
 
+    Item {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+
+        width: 20 * content.s
+        height: 20 * content.s
+
+        anchors.rightMargin: parent.width * 0.055
+        anchors.bottomMargin: parent.height * 0.065
+
+        z: 100
+
+        GlyphIcon {
+            anchors.fill: parent
+
+            name: "cog"
+
+            color: settingsMouse.containsMouse
+                ? Theme.cream
+                : Theme.placeholder
+        }
+
+        MouseArea {
+            id: settingsMouse
+
+            anchors.fill: parent
+            anchors.margins: -10 * content.s
+
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+
+            onClicked: {
+                content.settingsOpen = !content.settingsOpen;
+            }
+        }
+    }
+
     Clock {
         id: mainClock
 
@@ -129,6 +169,17 @@ Item {
 
         onClockClicked: {
             content.clockExpanded = !content.clockExpanded;
+        }
+    }
+
+    SettingsSurface {
+        id: settingsSurface
+
+        s: content.s
+        open: content.settingsOpen
+
+        onCloseRequested: {
+            content.settingsOpen = false;
         }
     }
 
@@ -264,8 +315,8 @@ Item {
             verticalAlignment: TextInput.AlignVCenter
             horizontalAlignment: TextInput.AlignHCenter
 
-            echoMode: TextInput.NoEcho
-            color: "transparent"
+            echoMode: revealPassword ? TextInput.Normal : TextInput.NoEcho
+            color: revealPassword ? Theme.bright : "transparent"
 
             font.family: Theme.font
             font.pixelSize: 15 * content.s
@@ -314,7 +365,7 @@ Item {
             Row {
                 anchors.centerIn: parent
                 spacing: 7 * content.s
-                visible: input.text.length > 0
+                visible: input.text.length > 0 && !content.revealPassword
 
                 ListModel {
                     id: passwordDots
@@ -439,6 +490,23 @@ Item {
                 font.family: Theme.font
                 font.pixelSize: 14 * content.s
                 font.letterSpacing: 1 * content.s
+            }
+        }
+
+        GlyphIcon {
+            anchors.right: parent.right
+            anchors.rightMargin: 16 * content.s
+            anchors.verticalCenter: parent.verticalCenter
+            width: 20 * content.s
+            height: 20 * content.s
+            name: content.revealPassword ? "eye-off" : "eye"
+            color: Theme.placeholder
+            stroke: 1.8
+
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -8 * content.s
+                onClicked: content.revealPassword ^= true
             }
         }
     }
