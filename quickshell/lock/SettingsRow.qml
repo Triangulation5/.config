@@ -3,158 +3,106 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import "Singletons"
 
+/**
+ * Reusable setting row: icon, name, optional subtitle, and control slot on the right.
+ */
 Item {
-    id: row
+    id: srow
 
     property var surface: null
-
+    property real s: 1.1
     property string icon: ""
     property string name: ""
     property string sub: ""
-
     property bool last: false
-
-    readonly property real s: surface ? surface.s : 1
-    readonly property bool focused:
-        surface ? surface.focusRowItem === row : false
-
+    signal clicked()
     default property alias control: controlSlot.data
 
     width: parent ? parent.width : 0
-    height: Math.max(
-        textColumn.implicitHeight,
-        controlSlot.childrenRect.height
-    ) + 18 * s
-
+    height: Math.max(textCol.implicitHeight, controlSlot.childrenRect.height) + 16 * srow.s
 
     HoverHandler {
-        id: hover
-
-        onHoveredChanged: {
-            if (row.surface)
-                row.surface.reportRowHover(row, hovered)
-        }
+        id: srowHover
     }
-
 
     Rectangle {
         anchors.fill: parent
-
-        anchors.topMargin: 2 * s
-        anchors.bottomMargin: 2 * s
-
-        radius: 9 * s
-
-        color: (hover.hovered || row.focused)
-            ? Theme.frameBg
-            : "transparent"
-
-        Behavior on color {
-            ColorAnimation {
-                duration: 120
-            }
-        }
+        anchors.topMargin: 2 * srow.s
+        anchors.bottomMargin: 2 * srow.s
+        radius: 8 * srow.s
+        color: srowHover.hovered ? Theme.frameBg : "transparent"
+        Behavior on color { ColorAnimation { duration: 150 } }
     }
-
-
-    MouseArea {
-        anchors.fill: parent
-
-        cursorShape: Qt.PointingHandCursor
-
-        onClicked: {
-            if (row.surface)
-                row.surface.activateRow(row)
-        }
-    }
-
 
     GlyphIcon {
+        id: ri
         anchors.left: parent.left
-        anchors.leftMargin: 12 * s
-
+        anchors.leftMargin: 10 * srow.s
         anchors.verticalCenter: parent.verticalCenter
-
-        width: 17 * s
-        height: 17 * s
-
-        visible: row.icon.length > 0
-
-        name: row.icon
-
-        color: row.focused
-            ? Theme.cream
-            : Theme.subtle
-
+        visible: srow.icon.length > 0
+        width: 16 * srow.s
+        height: 16 * srow.s
+        name: srow.icon
+        color: srowHover.hovered ? Theme.cream : Theme.dim
         stroke: 1.8
-    }
 
+        Behavior on color { ColorAnimation { duration: 150 } }
+    }
 
     Column {
-        id: textColumn
-
-        anchors.left: parent.left
-        anchors.leftMargin: 40 * s
-
+        id: textCol
+        anchors.left: ri.visible ? ri.right : parent.left
+        anchors.leftMargin: ri.visible ? 10 * srow.s : 10 * srow.s
         anchors.right: controlSlot.left
-        anchors.rightMargin: 10 * s
-
+        anchors.rightMargin: 10 * srow.s
         anchors.verticalCenter: parent.verticalCenter
-
-        spacing: 3 * s
-
+        spacing: 2 * srow.s
 
         Text {
-            text: row.name
-
+            text: srow.name
             color: Theme.cream
-
             font.family: Theme.font
-            font.pixelSize: 12 * s
+            font.pixelSize: 11.5 * srow.s
             font.weight: Font.DemiBold
-
-            elide: Text.ElideRight
         }
-
-
         Text {
-            visible: row.sub.length > 0
-
-            text: row.sub
-
+            width: parent.width
+            visible: srow.sub.length > 0
+            text: srow.sub
             color: Theme.faint
-
             font.family: Theme.font
-            font.pixelSize: 10 * s
-
-            elide: Text.ElideRight
-            maximumLineCount: 1
+            font.pixelSize: 9.5 * srow.s
+            wrapMode: Text.WordWrap
+            lineHeight: 1.1
         }
     }
-
 
     Item {
         id: controlSlot
-
         anchors.right: parent.right
-        anchors.rightMargin: 12 * s
-
+        anchors.rightMargin: 10 * srow.s
         anchors.verticalCenter: parent.verticalCenter
-
         width: childrenRect.width
         height: childrenRect.height
     }
 
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: {
+            srow.clicked();
+            if (srow.surface) srow.surface.activateRow(srow);
+        }
+    }
 
     Rectangle {
+        anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-
+        anchors.leftMargin: 10 * srow.s
+        anchors.rightMargin: 10 * srow.s
         height: 1
-
         color: Theme.hairSoft
-
-        visible: !row.last
+        visible: !srow.last
     }
 }
