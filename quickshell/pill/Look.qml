@@ -613,7 +613,7 @@ SettingsSurface {
             FieldRow {
                 id: layoutRow
                 label: "Layout"
-                caption: "Tiling layout for new windows"
+                caption: "Window tiling layout"
                 icon: "mixer"
                 SettingsSeg {
                     s: root.s
@@ -633,7 +633,7 @@ SettingsSurface {
             FieldRow {
                 id: nlModeRow
                 label: "Mode"
-                caption: "Off, always warm, or auto by time"
+                caption: "Off, warm, or auto"
                 icon: "moon"
                 SettingsSeg {
                     s: root.s
@@ -892,7 +892,7 @@ SettingsSurface {
             FieldRow {
                 id: pillGapRow
                 label: "Pill gap"
-                caption: "Distance from the screen top. Lower squeezes the pill up and pulls windows with it."
+                caption: "Space above pill. Lower moves it up."
                 icon: "chevron-up"
                 ScrubValue {
                     id: pillGapScrub
@@ -907,7 +907,7 @@ SettingsSurface {
             FieldRow {
                 id: appGapRow
                 label: "App gap"
-                caption: "Distance between the pill and the windows below it. Lower pulls them up under the pill."
+                caption: "Space under pill. Lower moves view up."
                 icon: "chevron-down"
                 ScrubValue {
                     id: appGapScrub
@@ -937,7 +937,7 @@ SettingsSurface {
             FieldRow {
                 id: pillBlurRow
                 label: "Pill blur"
-                caption: "Frosts what is behind the pill. Needs opacity below 100%."
+                caption: "Frosts pill. Needs opacity under 100%."
                 icon: "sparkles"
                 LinkToggle {
                     s: root.s
