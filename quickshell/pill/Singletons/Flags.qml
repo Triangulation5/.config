@@ -30,6 +30,7 @@ Singleton {
     property alias pillBlur: adapter.pillBlur
     property alias topGap: adapter.topGap
     property alias appGap: adapter.appGap
+    property alias notchStyle: adapter.notchStyle
     property alias recordCountdown: adapter.recordCountdown
     property alias recordDir: adapter.recordDir
     property alias recordFps: adapter.recordFps
@@ -88,6 +89,8 @@ Singleton {
             property real topGap: 1.0
             /** Pill-to-window band as a fraction of the shipped 12px. 0 tucks the windows flush under the pill. */
             property real appGap: 1.0
+            /** Custom made notch style bar. */
+            property bool notchStyle: false
             property int recordCountdown: 5
             property string recordDir: ""
             property int recordFps: 60

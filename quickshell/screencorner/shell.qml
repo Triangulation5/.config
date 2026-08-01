@@ -26,7 +26,7 @@ PanelWindow {
         right: true
     }
 
-    readonly property int cornerSize: 18
+    readonly property int cornerSize: 12
 
     // Always match the current pill/lockscreen surface.
     readonly property color cornerColor: Theme.capsule

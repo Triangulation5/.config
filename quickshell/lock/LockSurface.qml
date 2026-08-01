@@ -10,7 +10,6 @@ Item {
     property real s: 1.1
     property var auth: null
     property string screenName: ""
-    property bool notchStyle: false
 
     /**
      * Drives the lock-open morph. A pill-shaped hole grows from the pill's resting
@@ -308,7 +307,7 @@ Item {
 
             readonly property real pillW: 176 * surface.s
             readonly property real pillH: 42 * surface.s
-            readonly property real pillY: (surface.notchStyle ? 0 : 8 * Flags.topGap) * surface.s
+            readonly property real pillY: (Flags.notchStyle ? 0 : 8 * Flags.topGap) * surface.s
 
             readonly property real gameFlat: Flags.gameMode ? 1 : 0
 
@@ -320,8 +319,8 @@ Item {
 
             /** Normal mode keeps the rounded stadium shape.
                 Game mode removes corner rounding for the full-width bar. */
-            topLeftRadius: surface.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
-            topRightRadius: surface.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
+            topLeftRadius: Flags.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
+            topRightRadius: Flags.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
             bottomLeftRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
             bottomRightRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
         }
