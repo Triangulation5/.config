@@ -248,7 +248,7 @@ Item {
                 width: parent.width
                 height: 1
 
-                color: Theme.capsuleBorder
+                color: Theme.cream
                 opacity: expanded ? 0.4 : 0
 
                 Behavior on opacity {
