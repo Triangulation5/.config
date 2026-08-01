@@ -57,7 +57,11 @@ set wildmode=longest:full,full
 set clipboard=unnamed
 
 " --- netrw ---
-let g:netrw_banner=0
+let g:netrw_banner = 0
+let g:netrw_liststyle = 3
+let g:netrw_browse_split = 4
+let g:netrw_altv = 1
+let g:netrw_winsize = 25
 
 " --- leader ---
 let mapleader=" "
@@ -70,7 +74,7 @@ command! -nargs=1 Ngrep vimgrep <args> **
 nnoremap <leader>[ :Ngrep<Space>
 nnoremap <leader>fb :ls<CR>:buffer<Space>
 nnoremap <leader>h :h<Space>
-nnoremap <leader>e :Explore<CR>
+nnoremap <leader>e :Lexplore<CR>
 
 " --- basic mappings ---
 nnoremap <leader>w :%s/\s\+$//e<CR>:write<CR>
