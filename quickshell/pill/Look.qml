@@ -899,7 +899,7 @@ SettingsSurface {
                     s: root.s
                     value: Flags.topGap
                     openValue: root.base.topGap
-                    from: 0; to: 2; step: 0.1; decimals: 1
+                    from: -1; to: 2; step: 0.1; decimals: 1
                     onEdited: v => Flags.topGap = v
                 }
             }
