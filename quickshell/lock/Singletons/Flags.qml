@@ -11,7 +11,7 @@ Singleton {
     property alias time12h: adapter.time12h
     property alias topGap: adapter.topGap
     property alias gameMode: adapter.gameMode
-    readonly property bool notchStyle: true
+    readonly property bool notchStyle: false
 
     property alias visualizerEnabled: adapter.visualizerEnabled
     property alias showSeconds: adapter.showSeconds
