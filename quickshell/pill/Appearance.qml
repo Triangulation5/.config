@@ -86,6 +86,7 @@ SettingsSurface {
         { item: secRow, kind: "toggle", get: function () { return Flags.clockSeconds; }, set: function (v) { Flags.clockSeconds = v; } },
         { item: glyphRow, kind: "toggle", get: function () { return Flags.showGlyphs; }, set: function (v) { Flags.showGlyphs = v; } },
         { item: vizRow, kind: "toggle", get: function () { return Flags.musicViz; }, set: function (v) { Flags.musicViz = v; } },
+        { item: notchRow, kind: "toggle", get: function () { return Flags.notchStyle; }, set: function (v) { Flags.notchStyle = v; } },
         { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
         { item: motionRow, kind: "toggle", get: function () { return Flags.reduceMotion; }, set: function (v) { Flags.reduceMotion = v; } },
@@ -158,6 +159,19 @@ SettingsSurface {
                 s: root.s
                 on: Flags.musicViz
                 onToggled: Flags.musicViz = !Flags.musicViz
+            }
+        }
+
+        SettingsRow {
+            id: notchRow
+            surface: root
+            name: "Show as notch"
+            icon: "dynamic-island"
+
+            LinkToggle {
+                s: root.s
+                on: Flags.notchStyle
+                onToggled: Flags.notchStyle = !Flags.notchStyle
             }
         }
 

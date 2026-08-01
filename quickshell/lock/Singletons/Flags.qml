@@ -6,12 +6,13 @@ import Quickshell.Io
 /**
  * Shared flags & settings adapter reading/writing to flags.json.
  */
+
 Singleton {
     property alias paletteMode: adapter.paletteMode
     property alias time12h: adapter.time12h
     property alias topGap: adapter.topGap
     property alias gameMode: adapter.gameMode
-    readonly property bool notchStyle: false
+    property alias notchStyle: adapter.notchStyle
 
     property alias visualizerEnabled: adapter.visualizerEnabled
     property alias showSeconds: adapter.showSeconds
@@ -28,6 +29,7 @@ Singleton {
 
     FileView {
         id: fileView
+
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/flags.json"
         blockLoading: true
         watchChanges: true
@@ -37,8 +39,10 @@ Singleton {
 
         JsonAdapter {
             id: adapter
+
             property string paletteMode: "static"
             property bool time12h: true
+            property bool notchStyle: false
             property real topGap: notchStyle ? 0 : 0.7
             property bool gameMode: false
 
