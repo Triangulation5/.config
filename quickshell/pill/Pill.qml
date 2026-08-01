@@ -32,7 +32,7 @@ Item {
     property bool forcePinned: false
 
     // Custom made notch style bar
-    property bool notchStyle: true
+    property bool notchStyle: false
 
     readonly property bool held: pinned || forcePinned
     readonly property bool mixerOpen: surface === "mixer"
