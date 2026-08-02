@@ -887,7 +887,7 @@ SettingsSurface {
 
             }
 
-            Group { id: pillGrp; title: "Pill"
+            Group { id: pillGrp; title: "Pill"; open: true
 
             FieldRow {
                 id: pillGapRow
