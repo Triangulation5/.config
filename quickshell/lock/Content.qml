@@ -483,7 +483,19 @@ Item {
             }
         }
 
+        MouseArea {
+            anchors.fill: parent
+            enabled: !content.authenticating
+
+            onClicked: {
+                input.forceActiveFocus();
+            }
+
+            z: 1
+        }
+
         GlyphIcon {
+            z: 2
             anchors.right: parent.right
             anchors.rightMargin: 16 * content.s
             anchors.verticalCenter: parent.verticalCenter
