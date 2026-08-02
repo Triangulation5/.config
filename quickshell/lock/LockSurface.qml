@@ -271,9 +271,12 @@ Item {
 
     Content {
         anchors.fill: parent
+
         s: surface.s
         auth: surface.auth
         isMain: surface.isMain
+
+        enabled: surface.maskP >= 1
     }
 
     /**
