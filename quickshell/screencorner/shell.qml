@@ -58,7 +58,7 @@ PanelWindow {
     /**
      * Animation tuning.
      */
-    readonly property int morphDuration: 700
+    readonly property int morphDuration: 1500
 
     /**
      * Inner bezel shadow only.

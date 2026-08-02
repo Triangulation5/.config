@@ -17,7 +17,7 @@ Item {
     // Animation controls from ScreenCorners.qml
     property bool evaporating: false
     property string edgeDirection: "topLeft"
-    property int morphDuration: 700
+    property int morphDuration: 1500
 
     // Inner shadow controls
     property bool innerShadow: false
@@ -123,7 +123,7 @@ Item {
 
     Behavior on opacity {
         NumberAnimation {
-            duration: 450
+            duration: 1500
             easing.type: Easing.OutCubic
         }
     }
