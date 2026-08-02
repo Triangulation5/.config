@@ -167,7 +167,11 @@ PillSurface {
 
     ClippingRectangle {
         anchors.fill: parent
-        radius: 22 * root.s
+        topLeftRadius: Flags.notchStyle ? 0 : 22 * root.s
+        topRightRadius: Flags.notchStyle ? 0 : 22 * root.s
+        bottomLeftRadius: 22 * root.s
+        bottomRightRadius: 22 * root.s
+
         color: "transparent"
 
         Image {
