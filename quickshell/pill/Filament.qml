@@ -12,7 +12,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property string kind: "signal"
     property real level: 0
 

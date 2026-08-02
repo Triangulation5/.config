@@ -15,7 +15,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property real level: 0
     property bool on: true
 

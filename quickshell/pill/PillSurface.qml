@@ -13,7 +13,7 @@ import "Singletons"
 Item {
     id: surface
 
-    property real s: 1
+    property real s: 1.1
     property bool open: false
     property real morphCloseness: 1
 

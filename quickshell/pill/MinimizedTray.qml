@@ -12,7 +12,7 @@ import "Singletons"
 Row {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property string screenName: ""
     spacing: 8 * s
 

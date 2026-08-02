@@ -19,7 +19,7 @@ import "Singletons"
 Item {
     id: pick
 
-    property real s: 1
+    property real s: 1.1
     property string label: ""
     property var options: []
     property var value

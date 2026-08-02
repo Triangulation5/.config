@@ -23,7 +23,7 @@ Item {
     property real step: 1
     property int decimals: 0
     property string unit: ""
-    property real s: 1
+    property real s: 1.1
     signal edited(real value)
 
     /** Optional value-to-text mapper. When set it owns the label, so the raw number and unit step aside (used for the HH:MM schedule scrubs). */

@@ -32,7 +32,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property point point: Qt.point(0, 0)
     property string form: "rest"
     property real heat: 0
