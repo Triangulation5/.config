@@ -302,6 +302,8 @@ Item {
         layer.smooth: true
 
         Rectangle {
+            id: pillMask
+
             color: "white"
             antialiasing: true
 
@@ -317,27 +319,38 @@ Item {
             x: Flags.gameMode ? 0 : (surface.width - width) / 2
             y: Flags.gameMode ? pillY : pillY * (1 - surface.maskP)
 
-            /** Normal mode keeps the rounded stadium shape.
-                Game mode removes corner rounding for the full-width bar. */
             topLeftRadius: Flags.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
             topRightRadius: Flags.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
             bottomLeftRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
             bottomRightRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
         }
 
-        Rectangle {
-            id: burnerMask
-            visible: notchStyle
-            color: "red"
-            antialiasing: true
+        // Left notch ear.
+        RoundCorner {
+            visible: Flags.notchStyle && surface.maskP < 1
 
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.right: pillMask.left
+            anchors.top: pillMask.top
+            anchors.rightMargin: -1
 
-            width: parent.width * 1.5
-            height: pill.morphRadius * 5
-            y: -pill.morphRadius * 3
+            size: pillMask.height / 2
+            corner: RoundCorner.CornerEnum.TopRight
 
-            radius: pill.morphRadius * 2.5
+            color: "white"
+        }
+
+        // Right notch ear.
+        RoundCorner {
+            visible: Flags.notchStyle && surface.maskP < 1
+
+            anchors.left: pillMask.right
+            anchors.top: pillMask.top
+            anchors.leftMargin: -1
+
+            size: pillMask.height / 2
+            corner: RoundCorner.CornerEnum.TopLeft
+
+            color: "white"
         }
     }
 
