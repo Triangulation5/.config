@@ -17,7 +17,7 @@ Singleton {
 
     readonly property int fast:     Math.round(140 * mult)
     readonly property int standard: Math.round(300 * mult)
-    readonly property int morph:    Math.round((liquidMotion ? 700 : 420) * mult)
+    readonly property int morph:    Math.round((liquidMotion ? 750 : 420) * mult)
     readonly property int shapeshift: Math.round((liquidMotion ? 950 : 820) * mult)
     readonly property int glide:    Math.round((liquidMotion ? 360 : 260) * mult)
     readonly property int heat:     Math.round(1100 * mult)
@@ -38,7 +38,7 @@ Singleton {
      * - original curve is preserved.
      */
     readonly property var morphCurve: liquidMotion ? [
-        0.22, 1.28,
+        0.22, 1.26,
         0.36, 1,
         1, 1
     ] : [
