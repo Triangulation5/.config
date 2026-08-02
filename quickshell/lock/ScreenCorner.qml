@@ -4,7 +4,6 @@ import Quickshell.Wayland
 import qs.modules.services
 import qs.config
 import qs.modules.bar.workspaces // For CompositorData
-import "Singletons"
 
 PanelWindow {
     id: screenCorners
@@ -14,8 +13,9 @@ PanelWindow {
 
     function updateFullscreen() {
         const mon = AxctlService.monitorFor(screen);
-        if (mon)
+        if (mon) {
             monitor = mon;
+        }
 
         if (!monitor) {
             activeWindowFullscreen = false;
@@ -27,10 +27,7 @@ PanelWindow {
 
         // Check active toplevel first (fast path)
         const toplevel = ToplevelManager.activeToplevel;
-        if (toplevel
-                && toplevel.fullscreen
-                && AxctlService.focusedMonitor
-                && AxctlService.focusedMonitor.id === monId) {
+        if (toplevel && toplevel.fullscreen && AxctlService.focusedMonitor && AxctlService.focusedMonitor.id === monId) {
             activeWindowFullscreen = true;
             return;
         }
@@ -38,14 +35,11 @@ PanelWindow {
         // Check all windows on this monitor (robust path)
         const wins = CompositorData.windowList;
         for (let i = 0; i < wins.length; i++) {
-            if (wins[i].monitor === monId
-                    && wins[i].fullscreen
-                    && wins[i].workspace.id === activeWorkspaceId) {
+            if (wins[i].monitor === monId && wins[i].fullscreen && wins[i].workspace.id === activeWorkspaceId) {
                 activeWindowFullscreen = true;
                 return;
             }
         }
-
         activeWindowFullscreen = false;
     }
 
@@ -66,17 +60,12 @@ PanelWindow {
 
     Component.onCompleted: updateFullscreen()
 
-    visible: Config.theme.enableCorners
-             && Config.roundness > 0
-             && !activeWindowFullscreen
+    visible: Config.theme.enableCorners && Config.roundness > 0 && !activeWindowFullscreen
 
     color: "transparent"
-
     exclusionMode: ExclusionMode.Ignore
-
-    WlrLayershell.namespace: "quickshell:screenCorners"
+    WlrLayershell.namespace: "ambxst:screenCorners"
     WlrLayershell.layer: WlrLayer.Overlay
-
     mask: Region {
         item: null
     }
@@ -90,12 +79,7 @@ PanelWindow {
 
     ScreenCornersContent {
         id: cornersContent
-
         anchors.fill: parent
-
         hasFullscreenWindow: screenCorners.activeWindowFullscreen
-
-        // Match the pill/lockscreen surface.
-        cornerColor: Theme.capsule
     }
 }

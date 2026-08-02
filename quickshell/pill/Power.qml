@@ -36,7 +36,7 @@ PillSurface {
 
     Timer {
         id: lockDelay
-        interval: 500
+        interval: 650
         repeat: false
         onTriggered: {
             Quickshell.execDetached([
