@@ -196,34 +196,110 @@ Item {
 
         anchors.horizontalCenter: parent.horizontalCenter
 
-        y: clock.expanded
-            ? parent.height * 0.38
-            : parent.height * 0.24
+        y: clock.expanded ? parent.height * 0.38 : parent.height * 0.24
 
         color: Theme.bright
 
         font.family: "FiraCode Nerd Font Mono"
         font.weight: 500
 
-        font.pixelSize: clock.expanded
-            ? 160 * clock.s
-            : 143 * clock.s
+        font.pixelSize: clock.expanded ? 160 * clock.s : 143 * clock.s
 
-        text: clock.expanded || Flags.showSeconds
-            ? clock.secondsText
-            : clock.timeText
+        text: clock.expanded || Flags.showSeconds ? clock.secondsText : clock.timeText
 
-        Behavior on y {
-            NumberAnimation {
-                duration: 360
-                easing.type: Easing.OutBack
+        transform: [
+            Translate {
+                id: clockLift
+                y: 0
+            },
+            Scale {
+                id: clockPop
+
+                origin.x: clockText.width / 2
+                origin.y: clockText.height / 2
+
+                xScale: 1
+                yScale: 1
+            }
+        ]
+
+        property bool introPlayed: false
+
+        onVisibleChanged: {
+            if (visible && !introPlayed) {
+                introPlayed = true
+                clockIntro.restart()
+            }
+        }
+
+        ParallelAnimation {
+            id: clockIntro
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: clockLift
+                    property: "y"
+                    from: 4 * clock.s
+                    to: -1.5 * clock.s
+                    duration: 700
+                    easing.type: Easing.OutCubic
+                }
+
+                NumberAnimation {
+                    target: clockLift
+                    property: "y"
+                    from: -1.5 * clock.s
+                    to: 0
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: clockPop
+                    property: "xScale"
+                    from: 0.996
+                    to: 1.008
+                    duration: 700
+                    easing.type: Easing.OutCubic
+                }
+
+                NumberAnimation {
+                    target: clockPop
+                    property: "xScale"
+                    from: 1.008
+                    to: 1
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: clockPop
+                    property: "yScale"
+                    from: 0.996
+                    to: 1.008
+                    duration: 700
+                    easing.type: Easing.OutCubic
+                }
+
+                NumberAnimation {
+                    target: clockPop
+                    property: "yScale"
+                    from: 1.008
+                    to: 1
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
             }
         }
 
         Behavior on font.pixelSize {
             NumberAnimation {
-                duration: 360
-                easing.type: Easing.OutBack
+                duration: 600
+                easing.type: Easing.OutCubic
             }
         }
 

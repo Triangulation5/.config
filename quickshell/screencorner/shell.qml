@@ -39,7 +39,7 @@ PanelWindow {
      * Normal mode keeps a subtle screen corner rounding
      * instead of removing the corners entirely.
      */
-    readonly property real notchCornerSize: 14
+    readonly property real notchCornerSize: 12
     readonly property real normalCornerSize: 8
 
     /**
