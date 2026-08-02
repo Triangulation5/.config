@@ -6,14 +6,14 @@ Singleton {
     readonly property real mult: Flags.reduceMotion ? 0.4 : 1
 
     /**
-     * Enables liquid physical motion:
+     * Liquid physical motion is enabled automatically for notch style:
      * - slight overshoot
      * - heavier settle
      * - more organic pill movement
      *
-     * Disabled keeps the original motion system.
+     * Standard motion is preserved for the normal pill style.
      */
-    readonly property bool liquidMotion: true
+    readonly property bool liquidMotion: Flags.notchStyle
 
     readonly property int fast:     Math.round(140 * mult)
     readonly property int standard: Math.round(300 * mult)
@@ -30,11 +30,11 @@ Singleton {
      * exponential chase but with a long, visible settle tail. Use with
      * easeMorph (BezierSpline).
      *
-     * When liquidMotion is enabled:
+     * When notchStyle is enabled:
      * - slight overshoot
      * - controlled settle
      *
-     * When disabled:
+     * When notchStyle is disabled:
      * - original curve is preserved.
      */
     readonly property var morphCurve: liquidMotion ? [
