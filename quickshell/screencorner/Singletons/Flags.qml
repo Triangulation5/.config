@@ -17,9 +17,7 @@ Singleton {
     readonly property bool time12h: adapter.time12h
     readonly property real topGap: adapter.topGap
     readonly property bool gameMode: adapter.gameMode
-
-    // Local override.
-    readonly property bool notchStyle: true
+    readonly property bool notchStyle: adapter.notchStyle
 
     FileView {
         id: flagsFile
@@ -40,7 +38,8 @@ Singleton {
 
             property string paletteMode: "static"
             property bool time12h: true
-            property real topGap: root.notchStyle ? 0 : 0.7
+            property bool notchStyle: true
+            property real topGap: notchStyle ? 0 : 0.7
             property bool gameMode: false
         }
     }
