@@ -16,7 +16,7 @@ import "lib/fuzzy.js" as Fuzzy
 Column {
     id: picker
 
-    property real s: 1
+    property real s: 1.1
     property bool addOpen: false
     property string query: ""
     property int selectedIndex: 0

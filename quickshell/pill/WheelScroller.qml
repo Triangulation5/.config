@@ -8,7 +8,7 @@ import QtQuick
 MouseArea {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     required property Flickable flick
 
     acceptedButtons: Qt.NoButton

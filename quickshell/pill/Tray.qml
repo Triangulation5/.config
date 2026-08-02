@@ -18,7 +18,7 @@ import "Singletons"
 Item {
     id: tray
 
-    property real s: 1
+    property real s: 1.1
     property var barWindow
 
     visible: SystemTray.items.values.length > 0
