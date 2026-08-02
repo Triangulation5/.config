@@ -32,7 +32,32 @@ PanelWindow {
         right: true
     }
 
-    readonly property int cornerSize: 14
+    /**
+     * Corner radius modes.
+     *
+     * Notch style uses a larger bezel-like rounding.
+     * Normal mode keeps a subtle screen corner rounding
+     * instead of removing the corners entirely.
+     */
+    readonly property real notchCornerSize: 14
+    readonly property real normalCornerSize: 8
+
+    /**
+     * Active corner radius.
+     *
+     * Smoothly transitions between notch mode and
+     * standard screen corner rounding.
+     */
+    property real cornerSize: notchStyle
+        ? notchCornerSize
+        : normalCornerSize
+
+    Behavior on cornerSize {
+        NumberAnimation {
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+    }
 
     /**
      * Match the pill surface color.
@@ -46,14 +71,15 @@ PanelWindow {
     readonly property bool notchStyle: Flags.notchStyle
 
     /**
-     * The corner disappears when either:
+     * The corner disappears only when:
      *
      * - game mode activates
-     * - notch style is disabled
      *
-     * This keeps both transitions using the same morph animation.
+     * Disabling notch style no longer removes the
+     * corners. Instead, it reduces them to a smaller
+     * standard screen rounding.
      */
-    readonly property bool evaporating: gameMode || !notchStyle
+    readonly property bool evaporating: gameMode
 
     /**
      * Animation tuning.
@@ -105,7 +131,9 @@ PanelWindow {
             /**
              * Shared collapse animation.
              *
-             * Used for both game mode and notch toggle changes.
+             * Used only for game mode transitions.
+             * Notch style changes use corner radius
+             * interpolation instead.
              */
             evaporating: corners.evaporating
             edgeDirection: modelData.edge
