@@ -774,18 +774,11 @@ Item {
             }
         }
 
-        /**
-         * Left notch ear border.
-         *
-         * Provides the outer edge connection between the ear
-         * and the main pill body.
-         */
+        // Left notch ear border.
         RoundCorner {
             visible: notchStyle
-
             anchors.right: body.left
             anchors.top: body.top
-
             anchors.rightMargin: -1
 
             size: pill.morphRadius + 1
@@ -795,18 +788,11 @@ Item {
             z: 0
         }
 
-        /**
-         * Left notch ear fill.
-         *
-         * Uses the shared top surface color so it follows
-         * the same opacity/theme source as the pill.
-         */
+        // Left notch ear fill.
         RoundCorner {
             visible: notchStyle
-
             anchors.right: body.left
             anchors.top: body.top
-
             anchors.rightMargin: -1
 
             size: pill.morphRadius
@@ -816,15 +802,11 @@ Item {
             z: 1
         }
 
-        /**
-         * Right notch ear border.
-         */
+        // Right notch ear border.
         RoundCorner {
             visible: notchStyle
-
             anchors.left: body.right
             anchors.top: body.top
-
             anchors.leftMargin: -1
 
             size: pill.morphRadius + 1
@@ -834,17 +816,11 @@ Item {
             z: 0
         }
 
-        /**
-         * Right notch ear fill.
-         *
-         * Mirrors the left ear and shares the same surface color.
-         */
+        // Right notch ear fill.
         RoundCorner {
             visible: notchStyle
-
             anchors.left: body.right
             anchors.top: body.top
-
             anchors.leftMargin: -1
 
             size: pill.morphRadius
