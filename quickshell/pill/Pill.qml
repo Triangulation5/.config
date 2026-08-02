@@ -676,26 +676,100 @@ Item {
         /**
          * Shared pill surface colors.
          *
-         * These values are centralized so the body and notch ears
-         * always inherit the same theme colors and opacity source.
+         * Colors stay unmodified here because opacity is applied
+         * once to the complete surface stack.
          */
-        readonly property color surfaceTop: Qt.alpha(Theme.cardTop, Flags.pillOpacity)
-        readonly property color surfaceBottom: Qt.alpha(Theme.cardBot, Flags.pillOpacity)
+        readonly property color surfaceTop: Theme.cardTop
+        readonly property color surfaceBottom: Theme.cardBot
 
         /**
-         * Apply opacity to the complete pill surface.
+         * Complete surface opacity.
          *
-         * This keeps the body and notch elements synchronized
-         * when the pill opacity changes.
+         * Applies consistently to body, media bleed, and ears.
          */
         opacity: Flags.pillOpacity
 
+
+        /**
+         * Media/content layer.
+         *
+         * Anything placed here can bleed into the notch ears.
+         * The body and ears provide the final surface treatment.
+         */
+        Item {
+            id: contentLayer
+            anchors.fill: parent
+            z: 0
+        }
+
+        /**
+         * Left notch ear border.
+         */
+        RoundCorner {
+            visible: notchStyle
+            anchors.right: body.left
+            anchors.top: body.top
+            anchors.rightMargin: -1
+
+            size: pill.morphRadius + 1
+            corner: RoundCorner.CornerEnum.TopRight
+            color: Theme.border
+            z: 1
+        }
+
+        /**
+         * Left notch ear fill.
+         *
+         * Transparent so media/content can bleed through.
+         */
+        RoundCorner {
+            visible: notchStyle
+            anchors.right: body.left
+            anchors.top: body.top
+            anchors.rightMargin: -1
+
+            size: pill.morphRadius
+            corner: RoundCorner.CornerEnum.TopRight
+            color: "transparent"
+            z: 1
+        }
+
+        /**
+         * Right notch ear border.
+         */
+        RoundCorner {
+            visible: notchStyle
+            anchors.left: body.right
+            anchors.top: body.top
+            anchors.leftMargin: -1
+
+            size: pill.morphRadius + 1
+            corner: RoundCorner.CornerEnum.TopLeft
+            color: Theme.border
+            z: 1
+        }
+
+        /**
+         * Right notch ear fill.
+         *
+         * Transparent so media/content can bleed through.
+         */
+        RoundCorner {
+            visible: notchStyle
+            anchors.left: body.right
+            anchors.top: body.top
+            anchors.leftMargin: -1
+
+            size: pill.morphRadius
+            corner: RoundCorner.CornerEnum.TopLeft
+            color: "transparent"
+            z: 1
+        }
+
         Rectangle {
             id: body
-
             anchors.fill: parent
             z: 2
-
             property real gameFlat: pill.mode === "game" ? 1 : 0
 
             Behavior on gameFlat {
@@ -707,46 +781,25 @@ Item {
             }
 
             radius: pill.morphRadius
-
-            /**
-             * Flat top when docked.
-             *
-             * The notch ears extend the top shape while normal
-             * mode keeps the rounded pill geometry.
-             */
             topLeftRadius: notchStyle ? 0 : pill.morphRadius * (1 - gameFlat)
             topRightRadius: notchStyle ? 0 : pill.morphRadius * (1 - gameFlat)
-
             bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
             bottomRightRadius: pill.morphRadius * (1 - gameFlat)
 
             border.width: 1
             border.color: Theme.border
 
-            /**
-             * Main pill surface gradient.
-             *
-             * Uses the shared surface colors so theme and opacity
-             * changes propagate consistently.
-             */
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
                     color: pillSurface.surfaceTop
                 }
-
                 GradientStop {
                     position: 1.0
                     color: pillSurface.surfaceBottom
                 }
             }
 
-            /**
-             * Shadow applied to the pill body.
-             *
-             * Kept on the body to preserve the existing rendering
-             * behavior and depth effect.
-             */
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
@@ -755,79 +808,16 @@ Item {
                 shadowVerticalOffset: 3 * pill.s
             }
 
-            /**
-             * Top sheen highlight.
-             *
-             * Provides the subtle reflective edge on the pill surface.
-             */
             Rectangle {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-
                 anchors.topMargin: 1
                 anchors.leftMargin: body.radius * 0.6
                 anchors.rightMargin: body.radius * 0.6
-
                 height: 1
                 color: Theme.sheen
             }
-        }
-
-        // Left notch ear border.
-        RoundCorner {
-            visible: notchStyle
-            anchors.right: body.left
-            anchors.top: body.top
-            anchors.rightMargin: -1
-
-            size: pill.morphRadius + 1
-            corner: RoundCorner.CornerEnum.TopRight
-
-            color: Theme.border
-            z: 0
-        }
-
-        // Left notch ear fill.
-        RoundCorner {
-            visible: notchStyle
-            anchors.right: body.left
-            anchors.top: body.top
-            anchors.rightMargin: -1
-
-            size: pill.morphRadius
-            corner: RoundCorner.CornerEnum.TopRight
-
-            color: pillSurface.surfaceTop
-            z: 1
-        }
-
-        // Right notch ear border.
-        RoundCorner {
-            visible: notchStyle
-            anchors.left: body.right
-            anchors.top: body.top
-            anchors.leftMargin: -1
-
-            size: pill.morphRadius + 1
-            corner: RoundCorner.CornerEnum.TopLeft
-
-            color: Theme.border
-            z: 0
-        }
-
-        // Right notch ear fill.
-        RoundCorner {
-            visible: notchStyle
-            anchors.left: body.right
-            anchors.top: body.top
-            anchors.leftMargin: -1
-
-            size: pill.morphRadius
-            corner: RoundCorner.CornerEnum.TopLeft
-
-            color: pillSurface.surfaceTop
-            z: 1
         }
     }
 
