@@ -327,7 +327,7 @@ Item {
 
         // Left notch ear.
         RoundCorner {
-            visible: Flags.notchStyle && surface.maskP < 1
+            visible: Flags.notchStyle
 
             anchors.right: pillMask.left
             anchors.top: pillMask.top
@@ -337,11 +337,30 @@ Item {
             corner: RoundCorner.CornerEnum.TopRight
 
             color: "white"
+
+            /**
+             * Keep the ear visible through most of the opening animation,
+             * then let it fade out as the pill finishes expanding.
+             */
+            opacity: surface.maskP < 0.8 ? 1 : (1 - surface.maskP) / 0.2
+
+            /**
+             * Slightly enlarge the ear as the pill grows to better sell
+             * the liquid morph without changing the mask geometry.
+             */
+            scale: 1 + surface.maskP * 0.15
+
+            antialiasing: true
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 60
+                }
+            }
         }
 
         // Right notch ear.
         RoundCorner {
-            visible: Flags.notchStyle && surface.maskP < 1
+            visible: Flags.notchStyle
 
             anchors.left: pillMask.right
             anchors.top: pillMask.top
@@ -351,6 +370,19 @@ Item {
             corner: RoundCorner.CornerEnum.TopLeft
 
             color: "white"
+
+            // Match the left ear's timing.
+            opacity: surface.maskP < 0.8 ? 1 : (1 - surface.maskP) / 0.2
+
+            // Match the left ear's subtle growth.
+            scale: 1 + surface.maskP * 0.15
+
+            antialiasing: true
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 60
+                }
+            }
         }
     }
 
