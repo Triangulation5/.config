@@ -1386,6 +1386,7 @@ Item {
 
                 GlyphIcon {
                     anchors.centerIn: parent
+                    anchors.verticalCenterOffset: -0.7
                     opacity: (!Flags.showGlyphs && !restKanji.barsOn) ? 1 : 0
                     width: 17 * pill.s
                     height: 17 * pill.s
