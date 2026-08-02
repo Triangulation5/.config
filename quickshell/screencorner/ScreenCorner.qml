@@ -51,17 +51,26 @@ PanelWindow {
 
     Connections {
         target: AxctlService.monitors
-        function onValuesChanged() { screenCorners.updateFullscreen(); }
+
+        function onValuesChanged() {
+            screenCorners.updateFullscreen();
+        }
     }
 
     Connections {
         target: CompositorData
-        function onWindowListChanged() { screenCorners.updateFullscreen(); }
+
+        function onWindowListChanged() {
+            screenCorners.updateFullscreen();
+        }
     }
 
     Connections {
         target: AxctlService
-        function onFocusedMonitorChanged() { screenCorners.updateFullscreen(); }
+
+        function onFocusedMonitorChanged() {
+            screenCorners.updateFullscreen();
+        }
     }
 
     Component.onCompleted: updateFullscreen()
@@ -88,6 +97,20 @@ PanelWindow {
         bottom: true
     }
 
+    // Shared corner state
+    readonly property bool gameMode: Flags.gameMode
+
+    // Match the pill/lockscreen surface.
+    readonly property color cornerColor: Theme.capsule
+
+    // Morph tuning
+    readonly property int morphDuration: 700
+
+    // Inside bezel shadow only
+    readonly property bool innerShadow: true
+    readonly property color innerShadowColor: Qt.rgba(0, 0, 0, 0.28)
+    readonly property real innerShadowSize: 8
+
     ScreenCornersContent {
         id: cornersContent
 
@@ -95,7 +118,17 @@ PanelWindow {
 
         hasFullscreenWindow: screenCorners.activeWindowFullscreen
 
-        // Match the pill/lockscreen surface.
-        cornerColor: Theme.capsule
+        cornerColor: screenCorners.cornerColor
+
+        // Game mode evaporation
+        gameMode: screenCorners.gameMode
+
+        // Morph timing
+        morphDuration: screenCorners.morphDuration
+
+        // Inner edge shadow
+        innerShadow: screenCorners.innerShadow
+        innerShadowColor: screenCorners.innerShadowColor
+        innerShadowSize: screenCorners.innerShadowSize
     }
 }
