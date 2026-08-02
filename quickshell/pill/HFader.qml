@@ -12,7 +12,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property real value: 0.5
     property bool focused: false
     property bool on: true

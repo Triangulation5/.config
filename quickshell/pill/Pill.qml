@@ -22,7 +22,7 @@ import "Singletons"
 Item {
     id: pill
 
-    property real s: 1
+    property real s: 1.1
     property string screenName: ""
     property var barWindow
     property string surface: ""

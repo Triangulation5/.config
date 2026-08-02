@@ -12,7 +12,7 @@ import "Singletons"
 Rectangle {
     id: seg
 
-    property real s: 1
+    property real s: 1.1
     property var options: []
     property var value
     signal picked(var value)

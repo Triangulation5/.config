@@ -9,7 +9,7 @@ import "Singletons"
 Rectangle {
     id: toggle
 
-    property real s: 1
+    property real s: 1.1
     property bool on: false
     signal toggled()
 

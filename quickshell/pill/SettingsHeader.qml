@@ -11,7 +11,7 @@ import "Singletons"
 Item {
     id: head
 
-    property real s: 1
+    property real s: 1.1
     property string glyph: ""
     property string title: ""
     property bool showBack: false

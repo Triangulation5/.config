@@ -11,7 +11,7 @@ import "Singletons"
 Row {
     id: lbl
 
-    property real s: 1
+    property real s: 1.1
     property string text: ""
     property color color: Theme.cream
     property int weight: Font.DemiBold

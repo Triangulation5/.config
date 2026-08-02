@@ -15,7 +15,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property bool live: true
     required property var notif
 

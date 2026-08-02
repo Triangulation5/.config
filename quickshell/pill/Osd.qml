@@ -7,7 +7,7 @@ import "Singletons"
 Item {
     id: root
 
-    property real s: 1
+    property real s: 1.1
     property string screenName: ""
     property bool suppressed: false
     property bool expanded: false
