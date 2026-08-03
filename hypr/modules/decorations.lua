@@ -1,13 +1,8 @@
------------------------
----- LOOK AND FEEL ----
------------------------
-
--- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
+-- See https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
         gaps_in  = 5,
         gaps_out = 10,
-
         border_size = 1,
 
         col = {
@@ -17,8 +12,7 @@ hl.config({
 
         -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
         resize_on_border = false,
-
-        -- Please see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
+        -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
         allow_tearing = false,
     },
 
@@ -31,17 +25,17 @@ hl.config({
         inactive_opacity = 0.95,
 
         shadow = {
-            enabled      = true, -- false for minimalism
+            enabled      = true,
             range        = 20,
             render_power = 3,
             color        = 0xee121212,
         },
 
         blur = {
-            enabled   = true, -- false for minimalism
-            size      = 6, -- 3 default, 8 for decent amount, 20
-            passes    = 2, -- 1 default, 2 for decent amount, 3 for frosted glass
-            vibrancy  = 0.17, -- 0.1696,
+            enabled   = true,
+            size      = 6, -- 3, 8, 20
+            passes    = 2, -- 1, 2, 3 for frosted glass
+            vibrancy  = 0.17,
             new_optimizations = true,
         },
     },
@@ -51,7 +45,7 @@ hl.config({
     },
 })
 
--- Curves and animations, see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
+-- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
 -- Pill style animations
 hl.curve("pillMorph",      { type = "bezier", points = { { 0.16, 1.00 },    { 0.30, 1.00 } } })
 hl.curve("quick",          { type = "bezier", points = { { 0.15, 0 },    { 0.1, 1 } } })

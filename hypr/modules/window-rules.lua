@@ -1,12 +1,7 @@
---------------------------------
----- WINDOWS AND WORKSPACES ----
---------------------------------
-
 -- See https://wiki.hypr.land/Configuring/Basics/Window-Rules/
 -- and https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
 
 -- Example window rules that are useful
-
 hl.window_rule({
     -- Ignore maximize requests from all apps. You'll probably like this.
     name  = "suppress-maximize-events",
@@ -28,13 +23,4 @@ hl.window_rule({
     },
 
     no_focus = true,
-})
-
-hl.layer_rule({
-    name = "rofi-popup",
-    match = { namespace = "rofi" },
-    animation = "slide bottom",
-    dim_around = true,
-    blur = true,
-    ignore_alpha = 0.5,
 })

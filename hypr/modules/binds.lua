@@ -1,8 +1,4 @@
----------------------
----- MY PROGRAMS ----
----------------------
-
--- Set programs that you use
+-- Programs that you use
 local terminal    = "kitty"
 local fileManager = "nautilus"
 local browser     = "firefox"
@@ -10,13 +6,9 @@ local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
 local locker      = "sh ~/.config/hypr/scripts/lock.sh"
 local screenshots = "~/.local/bin/rishot"
 
----------------------
----- KEYBINDINGS ----
----------------------
+local mainMod = "SUPER" -- "Windows" key
 
-local mainMod = "SUPER" -- Sets "Windows" key as main modifier
-
--- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
+-- Examples, see https://wiki.hypr.land/Configuring/Basics/Binds/
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
 hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
@@ -26,7 +18,6 @@ hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 
--- Quickshell
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
@@ -43,7 +34,6 @@ hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
--- Private and Scratchpad
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
 -- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
 -- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
@@ -52,17 +42,16 @@ hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
 hl.bind(mainMod .. " + bracketleft", hl.dsp.layout("addmaster"))
 hl.bind(mainMod .. " + bracketright", hl.dsp.layout("removemaster"))
 
--- rishot (screenshot tool)
 hl.bind("Print", hl.dsp.exec_cmd(screenshots))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
 
--- Move focus with mainMod + HJKL keys
+-- Move focus HJKL keys
 hl.bind(mainMod .. " + H",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + K",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + J",  hl.dsp.focus({ direction = "down" }))
 
--- Nudge floating widows by pixels using mainMod + ALT + HJKL
+-- Nudge floating widows by pixels mainMod + ALT + HJKL
 hl.bind(mainMod .. " + ALT + H", hl.dsp.window.move({ x = -20, y = 0, relative = true }))
 hl.bind(mainMod .. " + ALT + J", hl.dsp.window.move({ x = 0, y = 20, relative = true }))
 hl.bind(mainMod .. " + ALT + K", hl.dsp.window.move({ x = 0, y = -20, relative = true }))
@@ -76,7 +65,7 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }))
 end
 
--- Example special workspace (scratchpad)
+-- Special workspace (scratchpad)
 hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
