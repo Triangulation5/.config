@@ -509,10 +509,11 @@ Item {
         id: clock
         readonly property var loc: Qt.locale("en_US")
         readonly property var now: sysClock.date
-        readonly property string timeFormat: (Flags.time12h ? "h:mm" : "HH:mm")
-            + (Flags.clockSeconds ? ":ss" : "")
-            // + (Flags.time12h ? " AP" : "")
-        readonly property string hhmm: Qt.formatTime(now, timeFormat)
+
+        readonly property string timeFormat: (Flags.time12h ? "h:mm AP" : "HH:mm") + (Flags.clockSeconds ? ":ss" : "")
+        readonly property string hhmm: Flags.time12h
+            ? Qt.formatTime(now, timeFormat).replace(" AM", "").replace(" PM", "")
+            : Qt.formatTime(now, timeFormat)
         readonly property string date: loc.toString(now, "ddd d MMM")
     }
 
