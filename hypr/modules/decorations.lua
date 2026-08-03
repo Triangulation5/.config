@@ -23,8 +23,8 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 6, -- 2, 5, 8, 15
-        rounding_power = 4,
+        rounding       = 0, -- 2, 5, 8, 15
+        rounding_power = 2,
 
         -- Change transparency of focused and unfocused windows
         active_opacity   = 1.0,
