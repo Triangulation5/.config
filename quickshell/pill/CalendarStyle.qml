@@ -8,6 +8,9 @@ Item {
     width: 320
     height: 64
 
+    property bool ameEnabled: false
+    property var pillRef: null
+
     property int selectedIndex: 7
     property date selectedDate: new Date()
 
@@ -219,6 +222,13 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
+
+                hoverEnabled: true
+
+                onContainsMouseChanged: {
+                    if (containsMouse && root.pillRef)
+                        root.pillRef.soulTarget = "calendar"
+                }
 
                 onClicked: {
                     wheel.currentIndex = index
