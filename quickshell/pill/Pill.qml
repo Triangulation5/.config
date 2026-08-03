@@ -1364,7 +1364,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.horizontalCenterOffset: -20 * pill.s
-            spacing: 0 * pill.s
+            spacing: 40 * pill.s
 
             Row {
                 id: statusRow
@@ -1402,105 +1402,61 @@ Item {
                     enabled: hover.live
                     visible: count > 0
                 }
-
-                Item {
-                    id: dndIcon
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Flags.dnd
-                    width: 16 * pill.s
-                    height: 16 * pill.s
-
-                    Shape {
-                        id: dndShape
-
-                        width: 16
-                        height: 16
-                        scale: pill.s
-                        transformOrigin: Item.TopLeft
-                        x: dndShape.boundingRect.width > 0
-                           ? dndIcon.width / 2 - (dndShape.boundingRect.x + dndShape.boundingRect.width / 2) * pill.s
-                           : (dndIcon.width - 16 * pill.s) / 2
-                        y: dndShape.boundingRect.height > 0
-                           ? dndIcon.height / 2 - (dndShape.boundingRect.y + dndShape.boundingRect.height / 2) * pill.s
-                           : (dndIcon.height - 16 * pill.s) / 2
-                        preferredRendererType: Shape.CurveRenderer
-
-                        ShapePath {
-                            strokeColor: Theme.vermLit
-                            strokeWidth: 1.5
-                            fillColor: "transparent"
-                            capStyle: ShapePath.RoundCap
-                            joinStyle: ShapePath.RoundJoin
-                            startX: 5.2; startY: 12.2
-                            PathLine { x: 12.2; y: 12.2 }
-                            PathLine { x: 12.2; y: 7.2 }
-                            PathCubic {
-                                control1X: 12.2; control1Y: 5.4
-                                control2X: 11.2; control2Y: 4.0
-                                x: 9.5; y: 3.5
-                            }
-                        }
-
-                        ShapePath {
-                            strokeColor: Theme.vermLit
-                            strokeWidth: 1.5
-                            fillColor: "transparent"
-                            capStyle: ShapePath.RoundCap
-                            startX: 6.8; startY: 13.6
-                            PathLine { x: 9.2; y: 13.6 }
-                        }
-
-                        ShapePath {
-                            strokeColor: Theme.vermLit
-                            strokeWidth: 1.6
-                            fillColor: "transparent"
-                            capStyle: ShapePath.RoundCap
-                            startX: 3.2; startY: 2.8
-                            PathLine { x: 13.0; y: 13.4 }
-                        }
-                    }
-                }
             }
 
             Item {
                 anchors.verticalCenter: parent.verticalCenter
-                width: hoverClock.implicitWidth
-                height: hoverClock.implicitHeight
+
+                implicitWidth: hoverClock.implicitWidth
+                implicitHeight: hoverClock.implicitHeight
 
                 Column {
                     id: hoverClock
+
                     anchors.centerIn: parent
-                    spacing: 4 * pill.s
+                    spacing: 8 * pill.s
+
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: 20 * pill.s
+
                         text: clock.hhmm
+
                         color: Theme.cream
+
                         font.family: Theme.font
                         font.pixelSize: 26 * pill.s
                         font.weight: Font.DemiBold
-                        font.features: { "tnum": 1 }
+                        font.features: {
+                            "tnum": 1
+                        }
                     }
-                    Text {
+
+                    CalendarStyle {
+                        id: calendarStyle
+
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: 20 * pill.s
-                        text: clock.date
-                        color: Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 11.5 * pill.s
-                        font.weight: Font.Medium
-                        font.capitalization: Font.AllUppercase
-                        font.letterSpacing: 1.6 * pill.s
+
+                        width: 220 * pill.s
+                        height: 48 * pill.s
+
+                        scale: pill.s
                     }
                 }
 
                 MouseArea {
                     anchors.centerIn: parent
+
                     width: hoverClock.implicitWidth + 22 * pill.s
                     height: hoverClock.implicitHeight + 10 * pill.s
+
                     enabled: hover.live
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: pill.requestSurface("calendar")
+
+                    onClicked: {
+                        pill.requestSurface("calendar")
+                    }
                 }
             }
         }
