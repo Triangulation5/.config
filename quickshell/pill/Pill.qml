@@ -133,7 +133,7 @@ Item {
     readonly property real restH: 38 * s
     readonly property real hoverPad: 20 * s
     readonly property real hoverW: hoverRow.implicitWidth + 4 * hoverPad
-    readonly property real hoverH: 152 * s
+    readonly property real hoverH: 182 * s
     readonly property real mixerH: 214 * s
     readonly property real launcherW: 360 * s
     readonly property real launcherH: 332 * s
@@ -1364,7 +1364,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.horizontalCenterOffset: -20 * pill.s
-            spacing: 40 * pill.s
+            spacing: 20 * pill.s
 
             Row {
                 id: statusRow
