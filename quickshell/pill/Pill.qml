@@ -1383,7 +1383,6 @@ Item {
                     visible: active
                     width: pill.mediaW
                     height: pill.mediaH
-
                     sourceComponent: Media {
                         s: pill.s
                         open: true
@@ -1407,54 +1406,41 @@ Item {
 
             Item {
                 anchors.verticalCenter: parent.verticalCenter
-
                 implicitWidth: hoverClock.implicitWidth
                 implicitHeight: hoverClock.implicitHeight
 
                 Column {
                     id: hoverClock
-
                     anchors.centerIn: parent
                     spacing: 8 * pill.s
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: 20 * pill.s
-
                         text: clock.hhmm
-
                         color: Theme.cream
-
                         font.family: Theme.font
                         font.pixelSize: 26 * pill.s
                         font.weight: Font.DemiBold
-                        font.features: {
-                            "tnum": 1
-                        }
+                        font.features: { "tnum": 1 }
                     }
 
                     CalendarStyle {
                         id: calendarStyle
-
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: 20 * pill.s
-
                         width: 220 * pill.s
                         height: 48 * pill.s
-
                         scale: pill.s
                     }
                 }
 
                 MouseArea {
                     anchors.centerIn: parent
-
                     width: hoverClock.implicitWidth + 22 * pill.s
                     height: hoverClock.implicitHeight + 10 * pill.s
-
                     enabled: hover.live
                     cursorShape: Qt.PointingHandCursor
-
                     onClicked: {
                         pill.requestSurface("calendar")
                     }

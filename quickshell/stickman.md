@@ -18,6 +18,7 @@
   - [Performance](#performance)
   - [Code Quality](#code-quality)
   - [Design Goal](#design-goal)
+- [Second Prompt](#second-prompt)
 <!--toc:end-->
 
 ## Overview
@@ -170,3 +171,45 @@ The motion should evoke classic Disney animation
 principles—anticipation, squash, and stretch, follow-through,
 overlapping action, arcs, and appeal—while remaining minimal, elegant,
 and suitable for a modern desktop shell.
+
+# Second Prompt
+
+It is perfect. Refine `Stickman.qml` into a production-quality animation component.
+Use `Ame.qml` as an architectural and animation reference only. Do **not** copy its visuals or implementation directly. Preserve its design philosophy: procedural animation, smooth state transitions, separation of motion and rendering, and efficient repaint behavior.
+Improve the animation quality rather than rewriting the component.
+Goals:
+- Make every movement feel fluid, continuous, and intentional.
+- Eliminate any mechanical or robotic motion.
+- Increase anticipation, follow-through, overlap, easing, and secondary motion.
+- Blend between poses smoothly without abrupt changes.
+- Vary body language naturally based on travel distance and speed.
+Expand the animation vocabulary with subtle procedural behaviors such as:
+- A slightly larger anticipation for long jumps.
+- Dynamic squash-and-stretch during launch and landing.
+- Arm and leg drag caused by inertia.
+- Head inertia and slight delayed rotation.
+- Small overshoot before settling.
+- Different behavior for short hops versus long flights.
+- Tiny mid-flight adjustments as the destination moves.
+- A more organic collapse back into the resting state.
+The resting state should be as unobtrusive as `Ame.qml`.
+- Rest as a tiny glowing bead rather than a visible stickman.
+- Very subtle breathing only.
+- No distracting idle motion.
+- Only unfold into the stickman when movement begins.
+- Collapse cleanly back into the bead after landing.
+Replace the current white appearance with the warm ember palette used by `Ame.qml`.
+- Deep ember core.
+- Warm vermilion body.
+- Soft orange-red highlights.
+- Gentle molten-glass appearance.
+- Subtle inner glow.
+- Small glossy highlight.
+- Keep the stickman minimal and readable.
+Maintain procedural rendering using only Canvas primitives.
+Preserve performance characteristics:
+- Render only while animating.
+- Low idle repaint rate.
+- No unnecessary allocations.
+- No sprites, SVGs, textures, particles, or frame-by-frame animation.
+Favor polish over new features. Every change should make the character feel more alive, expressive, and effortless while remaining minimal enough to fit naturally within a desktop shell.
