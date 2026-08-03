@@ -1371,7 +1371,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 12 * pill.s
                 transform: Translate {
-                    x: -20 * pill.s
+                    x: -10 * pill.s
                 }
 
                 Loader {
