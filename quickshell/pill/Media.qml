@@ -42,6 +42,13 @@ PillSurface {
     property bool everReady: false
     onCoverSourceChanged: if (coverSource.length === 0) everReady = false
 
+    readonly property real lengthSec: Players.lengthSec
+    readonly property real positionSec: hasPlayer ? player.position : 0
+    readonly property real playFrac: lengthSec > 0 ? Math.max(0, Math.min(1, positionSec / lengthSec)) : 0
+    property real dragFrac: 0
+    property bool dragging: false
+    readonly property real frac: dragging ? dragFrac : playFrac
+
     /** Source picker is open; only reachable when more than one player runs. */
     property bool picking: false
     readonly property bool canPick: Players.pickable.length > 1
@@ -49,10 +56,33 @@ PillSurface {
     onCanPickChanged: if (!canPick) picking = false
     onPickingChanged: if (picking) pickFlick.contentX = 0
 
-    readonly property real textX: 136 * s
+    readonly property real textX: 134 * s
     readonly property real edgePad: 18 * s
     readonly property color washMid: mix(Theme.cardTop, Theme.cardBot, 0.5)
     property real sealPulse: 0
+
+    readonly property point seamHead: {
+        void root.width;
+        void root.height;
+        void root.frac;
+        void stroke.x;
+        void stroke.width;
+        return stroke.mapToItem(root, stroke.headX, stroke.headY);
+    }
+    readonly property real seamHeadX: seamHead.x
+    readonly property real seamHeadY: seamHead.y
+
+    ameForm: "seam"
+    amePoint: Qt.point(seamHeadX, seamHeadY)
+
+    function fmt(sec) {
+        if (!(sec > 0))
+            return "0:00";
+        var t = Math.floor(sec);
+        var m = Math.floor(t / 60);
+        var ss = t % 60;
+        return m + ":" + (ss < 10 ? "0" + ss : ss);
+    }
 
     function mix(a, b, t) {
         return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1);
@@ -156,6 +186,16 @@ PillSurface {
             visible: false
         }
 
+        MultiEffect {
+            anchors.fill: parent
+            source: bleedSrc
+            scale: 1.12
+            visible: root.active && bleedSrc.status === Image.Ready
+            blurEnabled: true
+            blur: 0.95
+            blurMax: 64
+        }
+
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
@@ -164,18 +204,13 @@ PillSurface {
             }
         }
 
-        ClippingRectangle {
+        Item {
             id: coverBox
-
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: 16 * root.s
-
-            width: parent.height - 42 * root.s
-            height: width
-
-            radius: 16 * root.s
-            color: Theme.tileBg
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 118 * root.s
+            clip: true
 
             Rectangle {
                 anchors.fill: parent
@@ -192,11 +227,7 @@ PillSurface {
                 asynchronous: true
                 retainWhileLoading: true
                 cache: String(source).indexOf("file:") !== 0
-
-                onStatusChanged: {
-                    if (status === Image.Ready)
-                        root.everReady = true
-                }
+                onStatusChanged: if (status === Image.Ready) root.everReady = true
             }
 
             GlyphIcon {
@@ -206,6 +237,20 @@ PillSurface {
                 name: "music"
                 color: Theme.subtle
                 visible: !root.everReady
+            }
+        }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.leftMargin: 62 * root.s
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 56 * root.s
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: Qt.alpha(root.washMid, 0) }
+                GradientStop { position: 0.7; color: Qt.alpha(root.washMid, 0.8) }
+                GradientStop { position: 1.0; color: root.washMid }
             }
         }
     }
@@ -224,19 +269,206 @@ PillSurface {
             anchors.right: parent.right
             text: root.title
             color: Theme.cream
-            pixelSize: 21 * root.s
+            pixelSize: 17 * root.s
             weight: Font.DemiBold
             active: root.active
         }
-
         Marquee {
             anchors.left: parent.left
             anchors.right: parent.right
             text: root.artist
             color: Theme.dim
-            pixelSize: 16 * root.s
+            pixelSize: 11.5 * root.s
             active: root.active
             visible: text.length > 0
+        }
+    }
+
+    Item {
+        id: srcLine
+        anchors.left: parent.left
+        anchors.leftMargin: root.textX
+        anchors.right: root.picking ? parent.right : transport.left
+        anchors.rightMargin: root.picking ? root.edgePad : 10 * root.s
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 36 * root.s
+        height: 34 * root.s
+
+        readonly property string tail: root.live
+            ? " - Live"
+            : " / " + root.fmt(root.dragging ? root.dragFrac * root.lengthSec : root.positionSec)
+                + " - " + root.fmt(root.lengthSec)
+
+        Item {
+            id: infoRow
+            anchors.fill: parent
+            visible: opacity > 0.01
+            opacity: root.picking ? 0 : 1
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+            Text {
+                id: plainSource
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !root.canPick && root.serviceLabel.length > 0
+                text: root.serviceLabel
+                color: Theme.dim
+                font.family: Theme.font
+                font.pixelSize: 9.5 * root.s
+            }
+
+            Rectangle {
+                id: srcBubble
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.canPick
+                height: 18 * root.s
+                width: bubbleRow.width + 14 * root.s
+                radius: height / 2
+                color: Qt.alpha(Theme.verm, 0.16)
+                border.width: 1
+                border.color: Qt.alpha(Theme.vermLit, 0.45 + 0.35 * glow)
+
+                property real glow: 0
+                SequentialAnimation on glow {
+                    running: srcBubble.visible && !root.picking
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 1; duration: 1300; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0; duration: 1300; easing.type: Easing.InOutSine }
+                }
+
+                Row {
+                    id: bubbleRow
+                    anchors.centerIn: parent
+                    spacing: 5 * root.s
+                    ArtDot {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 12 * root.s
+                        height: 12 * root.s
+                        url: Players.artUrlFor(root.player)
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.serviceLabel
+                        color: Theme.cream
+                        font.family: Theme.font
+                        font.pixelSize: 10 * root.s
+                        font.weight: Font.DemiBold
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "▾"
+                        color: Theme.vermLit
+                        font.pixelSize: 8 * root.s
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -5 * root.s
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.picking = true
+                }
+            }
+
+            Text {
+                anchors.left: root.canPick ? srcBubble.right : plainSource.right
+                anchors.leftMargin: 3 * root.s
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: srcLine.tail
+                elide: Text.ElideRight
+                color: Theme.dim
+                font.family: Theme.font
+                font.pixelSize: 9.5 * root.s
+                font.features: { "tnum": 1 }
+            }
+        }
+
+        Flickable {
+            id: pickFlick
+            anchors.fill: parent
+            clip: true
+            visible: opacity > 0.01
+            opacity: root.picking ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+            contentWidth: pickRow.width
+            contentHeight: height
+            flickableDirection: Flickable.HorizontalFlick
+            boundsBehavior: Flickable.StopAtBounds
+
+            WheelHandler {
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                onWheel: (e) => {
+                    var step = e.angleDelta.y !== 0 ? e.angleDelta.y : e.angleDelta.x;
+                    var max = Math.max(0, pickFlick.contentWidth - pickFlick.width);
+                    pickFlick.contentX = Math.max(0, Math.min(max, pickFlick.contentX - step));
+                }
+            }
+
+            Row {
+                id: pickRow
+                height: pickFlick.height
+                spacing: 7 * root.s
+
+                Repeater {
+                    model: root.picking ? Players.pickable : []
+                    delegate: Rectangle {
+                        id: bub
+                        required property var modelData
+                        readonly property bool isActive: modelData === Players.active
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 32 * root.s
+                        width: bubInner.width + 18 * root.s
+                        radius: 11 * root.s
+                        color: isActive ? Qt.alpha(Theme.verm, 0.2) : Qt.alpha(Theme.cream, 0.045)
+                        border.width: 1
+                        border.color: isActive ? Theme.vermLit : Qt.alpha(Theme.cream, 0.12)
+
+                        Row {
+                            id: bubInner
+                            anchors.centerIn: parent
+                            spacing: 7 * root.s
+                            ArtDot {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 16 * root.s
+                                height: 16 * root.s
+                                url: Players.artUrlFor(bub.modelData)
+                            }
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 0
+                                Text {
+                                    text: Players.labelOf(bub.modelData)
+                                    color: bub.isActive ? Theme.bright : Theme.dim
+                                    font.family: Theme.font
+                                    font.pixelSize: 11 * root.s
+                                    font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    text: Players.nowPlayingFor(bub.modelData)
+                                    color: bub.isActive ? Theme.subtle : Theme.faint
+                                    font.family: Theme.font
+                                    font.pixelSize: 8.5 * root.s
+                                    elide: Text.ElideRight
+                                    width: Math.min(implicitWidth, 150 * root.s)
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                Players.select(bub.modelData);
+                                root.picking = false;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -245,151 +477,166 @@ PillSurface {
         anchors.right: parent.right
         anchors.rightMargin: root.edgePad
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 24 * root.s
+        anchors.bottomMargin: 38 * root.s
         spacing: 14 * root.s
         opacity: root.picking ? 0 : 1
         enabled: !root.picking
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
-        transform: Translate {
-            x: -146 * root.s
-        }
-
         KanjiSkip {
             kanjiText: "前"
             icon: "prev"
-
-            can: root.hasPlayer &&
-                 root.player.canGoPrevious
-
-            onActivated: {
-                if (root.player)
-                    root.player.previous()
-            }
+            can: root.hasPlayer && root.player.canGoPrevious
+            onActivated: if (root.player) root.player.previous()
         }
 
         Rectangle {
             id: seal
-
             anchors.verticalCenter: parent.verticalCenter
-
             width: 30 * root.s
             height: 30 * root.s
-
             radius: 7 * root.s
-
             rotation: -1.5
             scale: 1 + 0.08 * root.sealPulse
 
-            property real sat:
-                root.playing ? 1 : 0
+            property real sat: root.playing ? 1 : 0
+            Behavior on sat { NumberAnimation { duration: Motion.fast; easing.type: Motion.easeStandard } }
 
-            Behavior on sat {
-                NumberAnimation {
-                    duration: Motion.fast
-                    easing.type: Motion.easeStandard
-                }
-            }
-
-            opacity:
-                (sealArea.enabled ? 1 : 0.4) *
-                (0.75 + 0.25 * sat)
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: Motion.fast
-                }
-            }
+            opacity: (sealArea.enabled ? 1 : 0.4) * (0.75 + 0.25 * sat)
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
             border.width: 1
-
-            border.color:
-                Qt.alpha(
-                    Theme.vermLit,
-                    0.4 + 0.4 * root.sealPulse
-                )
-
+            border.color: Qt.alpha(Theme.vermLit, 0.4 + 0.4 * root.sealPulse)
             gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: root.mix(
-                        Theme.verm,
-                        Theme.tileBg,
-                        0.55 - 0.27 * seal.sat
-                    )
-                }
-
-                GradientStop {
-                    position: 1.0
-                    color: root.mix(
-                        Theme.vermDeep,
-                        Theme.tileBg,
-                        0.55 - 0.27 * seal.sat
-                    )
-                }
+                GradientStop { position: 0.0; color: root.mix(Theme.verm, Theme.tileBg, 0.55 - 0.27 * seal.sat) }
+                GradientStop { position: 1.0; color: root.mix(Theme.vermDeep, Theme.tileBg, 0.55 - 0.27 * seal.sat) }
             }
 
             Text {
                 visible: Flags.showGlyphs
-
                 anchors.centerIn: parent
-
-                text: root.playing
-                      ? "奏"
-                      : "休"
-
-                color: "#ffffff"
-
+                text: root.playing ? "奏" : "休"
+                color: Theme.bright
                 font.family: Theme.fontJp
                 font.pixelSize: 16 * root.s
-                font.weight: Font.Bold
+                font.weight: Font.DemiBold
             }
 
             GlyphIcon {
                 visible: !Flags.showGlyphs
-
                 anchors.centerIn: parent
-
                 width: 15 * root.s
                 height: 15 * root.s
-
-                name: root.playing
-                      ? "pause"
-                      : "play"
-
-                color: "#ffffff"
+                name: root.playing ? "pause" : "play"
+                color: Theme.bright
             }
 
             MouseArea {
                 id: sealArea
-
                 anchors.fill: parent
                 anchors.margins: -4 * root.s
-
                 hoverEnabled: true
-
-                enabled: root.hasPlayer &&
-                         root.player.canTogglePlaying
-
+                enabled: root.hasPlayer && root.player.canTogglePlaying
                 cursorShape: Qt.PointingHandCursor
-
-                onClicked: {
-                    if (root.player)
-                        root.player.togglePlaying()
-                }
+                onClicked: if (root.player) root.player.togglePlaying()
             }
         }
 
         KanjiSkip {
             kanjiText: "次"
             icon: "next"
+            can: root.hasPlayer && root.player.canGoNext
+            onActivated: if (root.player) root.player.next()
+        }
+    }
 
-            can: root.hasPlayer &&
-                 root.player.canGoNext
+    Canvas {
+        id: stroke
+        anchors.left: parent.left
+        anchors.leftMargin: root.textX
+        anchors.right: parent.right
+        anchors.rightMargin: root.edgePad
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 10 * root.s
+        height: 18 * root.s
 
-            onActivated: {
+        readonly property real inset: 3 * root.s
+        readonly property real usable: Math.max(1, width - 2 * inset)
+        property real targetF: root.frac
+        property real lastFrac: 0
+        property real drawF: targetF
+        readonly property real headX: inset + drawF * usable
+        readonly property real headY: waveY(drawF)
+
+        Behavior on drawF {
+            enabled: Math.abs(root.frac - stroke.lastFrac) < 0.02
+            NumberAnimation { duration: Math.round(500 * Motion.mult); easing.type: Easing.Linear }
+        }
+        onTargetFChanged: Qt.callLater(() => { stroke.lastFrac = root.frac; })
+
+        onDrawFChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onVisibleChanged: if (visible) requestPaint()
+
+        function waveY(u) {
+            return height / 2 - 2.6 * Math.sin(3 * Math.PI * u) * Math.exp(-2.5 * u) * root.s;
+        }
+
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.reset();
+            if (width <= 0 || height <= 0)
+                return;
+            const n = 48;
+            ctx.strokeStyle = Theme.border;
+            ctx.lineWidth = 2.5 * root.s;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(inset, waveY(0));
+            for (let i = 1; i <= n; i++)
+                ctx.lineTo(inset + (i / n) * usable, waveY(i / n));
+            ctx.stroke();
+
+            if (drawF <= 0.002)
+                return;
+            const hTail = 2.5 * root.s;
+            const hHead = 1.75 * root.s;
+            const m = Math.max(2, Math.ceil(n * drawF));
+            ctx.fillStyle = Theme.verm;
+            ctx.beginPath();
+            ctx.arc(inset, waveY(0), hTail, Math.PI / 2, 3 * Math.PI / 2);
+            for (let i = 0; i <= m; i++) {
+                const u = (i / m) * drawF;
+                ctx.lineTo(inset + u * usable, waveY(u) - (hTail + (hHead - hTail) * (i / m)));
+            }
+            ctx.arc(headX, headY, hHead, -Math.PI / 2, Math.PI / 2);
+            for (let i = m; i >= 0; i--) {
+                const u = (i / m) * drawF;
+                ctx.lineTo(inset + u * usable, waveY(u) + (hTail + (hHead - hTail) * (i / m)));
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        MouseArea {
+            id: seekArea
+            anchors.fill: parent
+            anchors.margins: -8 * root.s
+            enabled: root.hasPlayer && root.player.canSeek && root.player.positionSupported && root.lengthSec > 0 && !root.live
+            cursorShape: Qt.PointingHandCursor
+            function fracAt(mx) {
+                return Math.max(0, Math.min(1, (mx - 8 * root.s - stroke.inset) / stroke.usable));
+            }
+            onPressed: (e) => {
+                root.dragFrac = fracAt(e.x);
+                root.dragging = true;
+            }
+            onPositionChanged: (e) => { if (pressed) root.dragFrac = fracAt(e.x); }
+            onReleased: {
                 if (root.player)
-                    root.player.next()
+                    root.player.position = root.dragFrac * root.lengthSec;
+                root.dragging = false;
             }
         }
     }
