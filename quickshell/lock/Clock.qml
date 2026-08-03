@@ -200,23 +200,29 @@ Item {
 
         color: Theme.bright
 
-        font.family: "FiraCode Nerd Font Mono"
-        font.weight: 500
-
-        font.pixelSize: clock.expanded ? 160 * clock.s : 143 * clock.s
+        font {
+            family: "FiraCode Nerd Font Mono"
+            weight: 500
+            pixelSize: clock.expanded ? 160 * clock.s : 143 * clock.s
+        }
 
         text: clock.expanded || Flags.showSeconds ? clock.secondsText : clock.timeText
+
+        opacity: 1
 
         transform: [
             Translate {
                 id: clockLift
                 y: 0
             },
-            Scale {
-                id: clockPop
 
-                origin.x: clockText.width / 2
-                origin.y: clockText.height / 2
+            Scale {
+                id: clockScale
+
+                origin {
+                    x: clockText.width / 2
+                    y: clockText.height / 2
+                }
 
                 xScale: 1
                 yScale: 1
@@ -239,76 +245,70 @@ Item {
                 NumberAnimation {
                     target: clockLift
                     property: "y"
-                    from: 4 * clock.s
-                    to: -1.5 * clock.s
-                    duration: 700
-                    easing.type: Easing.OutCubic
-                }
-
-                NumberAnimation {
-                    target: clockLift
-                    property: "y"
-                    from: -1.5 * clock.s
+                    from: 10 * clock.s
                     to: 0
-                    duration: 500
+                    duration: 650
                     easing.type: Easing.OutCubic
                 }
             }
 
             SequentialAnimation {
                 NumberAnimation {
-                    target: clockPop
+                    target: clockScale
                     property: "xScale"
-                    from: 0.996
-                    to: 1.008
-                    duration: 700
-                    easing.type: Easing.OutCubic
-                }
-
-                NumberAnimation {
-                    target: clockPop
-                    property: "xScale"
-                    from: 1.008
+                    from: 0.97
                     to: 1
-                    duration: 500
+                    duration: 650
                     easing.type: Easing.OutCubic
                 }
             }
 
             SequentialAnimation {
                 NumberAnimation {
-                    target: clockPop
+                    target: clockScale
                     property: "yScale"
-                    from: 0.996
-                    to: 1.008
-                    duration: 700
-                    easing.type: Easing.OutCubic
-                }
-
-                NumberAnimation {
-                    target: clockPop
-                    property: "yScale"
-                    from: 1.008
+                    from: 0.97
                     to: 1
-                    duration: 500
+                    duration: 650
                     easing.type: Easing.OutCubic
                 }
+            }
+
+            SequentialAnimation {
+                NumberAnimation {
+                    target: clockText
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 260
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
+        Behavior on y {
+            NumberAnimation {
+                duration: 550
+                easing.type: Easing.OutCubic
             }
         }
 
         Behavior on font.pixelSize {
             NumberAnimation {
-                duration: 600
+                duration: 550
                 easing.type: Easing.OutCubic
             }
         }
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 1
-            shadowVerticalOffset: 2
+        layer {
+            enabled: true
+
+            effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                shadowBlur: 1.5
+                shadowVerticalOffset: 3
+            }
         }
     }
 
