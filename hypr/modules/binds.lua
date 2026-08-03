@@ -2,7 +2,7 @@
 local terminal    = "kitty"
 local fileManager = "nautilus"
 local browser     = "firefox"
-local quickshell  = "sh ~/.config/quickshell/scripts/open-surface.sh"
+local quickshell  = "sh ~/.config/hypr/scripts/open-surface.sh"
 local locker      = "sh ~/.config/hypr/scripts/lock.sh"
 local screenshots = "~/.local/bin/rishot"
 
@@ -12,7 +12,7 @@ local mainMod = "SUPER" -- "Windows" key
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C", hl.dsp.window.close())
 hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/quickshell/scripts/reload.sh"))
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/reload.sh"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
