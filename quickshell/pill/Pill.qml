@@ -511,7 +511,7 @@ Item {
         readonly property var now: sysClock.date
         readonly property string timeFormat: (Flags.time12h ? "h:mm" : "HH:mm")
             + (Flags.clockSeconds ? ":ss" : "")
-            + (Flags.time12h ? " AP" : "")
+            // + (Flags.time12h ? " AP" : "")
         readonly property string hhmm: Qt.formatTime(now, timeFormat)
         readonly property string date: loc.toString(now, "ddd d MMM")
     }
@@ -1334,7 +1334,7 @@ Item {
                 text: clock.hhmm
                 color: Theme.cream
                 font.family: Theme.font
-                font.pixelSize: 16 * pill.s
+                font.pixelSize: 18 * pill.s
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
             }
