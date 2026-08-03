@@ -1494,7 +1494,7 @@ Item {
                     spacing: 4 * pill.s
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: 15 * pill.s
+                        anchors.horizontalCenterOffset: 20 * pill.s
                         text: clock.hhmm
                         color: Theme.cream
                         font.family: Theme.font
@@ -1504,7 +1504,7 @@ Item {
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: 15 * pill.s
+                        anchors.horizontalCenterOffset: 20 * pill.s
                         text: clock.date
                         color: Theme.dim
                         font.family: Theme.font
