@@ -171,7 +171,7 @@ PillSurface {
             anchors.verticalCenter: parent.verticalCenter
             anchors.leftMargin: 16 * root.s
 
-            width: parent.height - 42 * root.s
+            width: parent.height - 40 * root.s
             height: width
 
             radius: 16 * root.s

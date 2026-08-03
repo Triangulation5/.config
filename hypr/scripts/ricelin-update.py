@@ -86,11 +86,13 @@ def apply(minimal=False):
     for cmd in commands:
         code, output = run(cmd)
 
-        results.append({
-            "command": " ".join(cmd),
-            "success": code == 0,
-            "output": output,
-        })
+        results.append(
+            {
+                "command": " ".join(cmd),
+                "success": code == 0,
+                "output": output,
+            }
+        )
 
         if code != 0:
             break
