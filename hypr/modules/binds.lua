@@ -1,61 +1,53 @@
--- Programs that you use
 local terminal    = "kitty"
 local fileManager = "nautilus"
 local browser     = "firefox"
-local quickshell  = "sh ~/.config/hypr/scripts/open-surface.sh"
-local locker      = "sh ~/.config/hypr/scripts/lock.sh"
+local quickshell  = "~/.config/hypr/scripts/open-surface.sh"
+local locker      = "~/.config/hypr/scripts/lock.sh"
 local screenshots = "~/.local/bin/rishot"
 
 local mainMod = "SUPER" -- "Windows" key
 
--- Examples, see https://wiki.hypr.land/Configuring/Basics/Binds/
-hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + C", hl.dsp.window.close())
-hl.bind(mainMod .. " + O", hl.dsp.exec_cmd(locker))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/reload.sh"))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
+hl.bind(mainMod .. " + Return",    hl.dsp.exec_cmd(terminal))
+hl.bind(mainMod .. " + C",         hl.dsp.window.close())
+hl.bind(mainMod .. " + O",         hl.dsp.exec_cmd(locker))
+hl.bind(mainMod .. " + R",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/reload.sh"))
+hl.bind(mainMod .. " + E",         hl.dsp.exec_cmd(fileManager))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(browser))
+hl.bind(mainMod .. " + F",         hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + SHIFT + F",         hl.dsp.window.pseudo())
 
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(quickshell .. " launcher"))
-hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(quickshell .. " link"))
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(quickshell .. " wallpaper"))
-hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(quickshell .. " record"))
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(quickshell .. " power"))
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
-hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(quickshell .. " sysmon"))
-hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
-hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(quickshell .. " media"))
-hl.bind(mainMod .. " + I", hl.dsp.exec_cmd(quickshell .. " keybinds"))
-hl.bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd(quickshell .. " settings"))
-hl.bind(mainMod .. " + G", hl.dsp.exec_cmd(quickshell .. " gameMode"))
+hl.bind(mainMod .. " + SPACE",     hl.dsp.exec_cmd(quickshell .. " launcher"))
+hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
-hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/minimize-toggle.sh"))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(quickshell .. " clipboard"))
+hl.bind(mainMod .. " + B",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/record.sh"))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(quickshell .. " record"))
+hl.bind(mainMod .. " + M",         hl.dsp.exec_cmd(quickshell .. " power"))
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
+hl.bind(mainMod .. " + T",         hl.dsp.exec_cmd(quickshell .. " sysmon"))
+hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
+hl.bind(mainMod .. " + I",         hl.dsp.exec_cmd(quickshell .. " keybinds"))
+hl.bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd(quickshell .. " settings"))
+hl.bind(mainMod .. " + A",         hl.dsp.exec_cmd(quickshell .. " media"))
+hl.bind(mainMod .. " + W",         hl.dsp.exec_cmd(quickshell .. " wallpaper"))
+hl.bind(mainMod .. " + G",         hl.dsp.exec_cmd(quickshell .. " gameMode"))
+hl.bind(mainMod .. " + X",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/minimize-toggle.sh"))
+hl.bind(mainMod .. " + V",         hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
--- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
--- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
--- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
--- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
-
-hl.bind(mainMod .. " + bracketleft", hl.dsp.layout("addmaster"))
-hl.bind(mainMod .. " + bracketright", hl.dsp.layout("removemaster"))
-
-hl.bind("Print", hl.dsp.exec_cmd(screenshots))
+hl.bind("Print",         hl.dsp.exec_cmd(screenshots))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
 
--- Move focus HJKL keys
-hl.bind(mainMod .. " + H",  hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + K",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + J",  hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
+hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
 
--- Nudge floating widows by pixels mainMod + ALT + HJKL
-hl.bind(mainMod .. " + ALT + H", hl.dsp.window.move({ x = -20, y = 0, relative = true }))
-hl.bind(mainMod .. " + ALT + J", hl.dsp.window.move({ x = 0, y = 20, relative = true }))
-hl.bind(mainMod .. " + ALT + K", hl.dsp.window.move({ x = 0, y = -20, relative = true }))
-hl.bind(mainMod .. " + ALT + L", hl.dsp.window.move({ x = 20, y = 0, relative = true }))
+-- Nudge floating widows
+hl.bind(mainMod .. " + ALT + H",      hl.dsp.window.move({ x = -20, y = 0, relative = true }))
+hl.bind(mainMod .. " + ALT + J",      hl.dsp.window.move({ x = 0, y = 20, relative = true }))
+hl.bind(mainMod .. " + ALT + K",      hl.dsp.window.move({ x = 0, y = -20, relative = true }))
+hl.bind(mainMod .. " + ALT + L",      hl.dsp.window.move({ x = 20, y = 0, relative = true }))
+hl.bind(mainMod .. " + bracketleft",  hl.dsp.layout("addmaster"))
+hl.bind(mainMod .. " + bracketright", hl.dsp.layout("removemaster"))
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
@@ -68,6 +60,10 @@ end
 -- Special workspace (scratchpad)
 hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+-- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
+-- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
+-- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
+-- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
 
 -- Scroll through existing workspaces with mainMod + scroll
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
@@ -80,8 +76,8 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 -- Keyboard resizing
 local step = 50
 hl.bind(mainMod .. " + CTRL + H",  hl.dsp.window.resize({ x = -step, y = 0, relative = true }))
-hl.bind(mainMod .. " + CTRL + L", hl.dsp.window.resize({ x =  step, y = 0, relative = true }))
-hl.bind(mainMod .. " + CTRL + K",    hl.dsp.window.resize({ x = 0, y = -step, relative = true }))
+hl.bind(mainMod .. " + CTRL + L",  hl.dsp.window.resize({ x =  step, y = 0, relative = true }))
+hl.bind(mainMod .. " + CTRL + K",  hl.dsp.window.resize({ x = 0, y = -step, relative = true }))
 hl.bind(mainMod .. " + CTRL + J",  hl.dsp.window.resize({ x = 0, y =  step, relative = true }))
 
 -- Move the active window in the layout
@@ -91,12 +87,12 @@ hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
 
 -- Laptop multimedia keys for volume and LCD brightness
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
-hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown",hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
 
 -- Requires playerctl
 hl.bind("ALT + RIGHT", hl.dsp.exec_cmd("playerctl next"),       { locked = true })
