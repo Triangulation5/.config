@@ -49,7 +49,7 @@ PillSurface {
     onCanPickChanged: if (!canPick) picking = false
     onPickingChanged: if (picking) pickFlick.contentX = 0
 
-    readonly property real textX: 146 * s
+    readonly property real textX: 144 * s
     readonly property real edgePad: 18 * s
     readonly property color washMid: mix(Theme.cardTop, Theme.cardBot, 0.5)
     property real sealPulse: 0
