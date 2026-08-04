@@ -1,4 +1,4 @@
--- See https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/
+-- https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/
 hl.config({
     general = {
         layout = "master" -- "master", "scrolling", "dwindle", "monocle"
@@ -9,7 +9,7 @@ hl.config({
     },
 })
 
--- See https://wiki.hypr.land/Configuring/Layouts/Master-Layout/
+-- https://wiki.hypr.land/Configuring/Layouts/Master-Layout/
 hl.config({
     master = {
         new_status = "slave", -- "master", "slave", "inherit"
@@ -19,7 +19,7 @@ hl.config({
     },
 })
 
--- See https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/
+-- https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/
 hl.config({
     scrolling = {
         fullscreen_on_one_column = true,
