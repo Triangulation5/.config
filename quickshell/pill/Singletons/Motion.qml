@@ -34,7 +34,7 @@ Singleton {
      *   overly elastic.
      */
     readonly property var morphCurve: liquidMotion ? [
-        0.20, 1.08,
+        0.20, 1.10,
         0.36, 1,
         1,    1
     ] : [
