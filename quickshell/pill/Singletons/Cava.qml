@@ -14,7 +14,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property int bars: 4 // 5, 7
+    readonly property int bars: 5 // 5, 7
 
     property var levels: [0, 0, 0, 0, 0]
     property bool active: false
