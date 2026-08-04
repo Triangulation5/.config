@@ -14,7 +14,7 @@ hl.bind(mainMod .. " + R",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.confi
 hl.bind(mainMod .. " + E",         hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F",         hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + SHIFT + F",         hl.dsp.window.pseudo())
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.pseudo())
 
 hl.bind(mainMod .. " + SPACE",     hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd(quickshell .. " link"))

@@ -10,7 +10,6 @@ hl.config({
             inactive_border = "rgba(205, 205, 205, 0.08)", -- 0.12
         },
 
-        -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
         resize_on_border = false,
         -- https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
         allow_tearing = false,
@@ -20,7 +19,6 @@ hl.config({
         rounding       = 5, -- 2, 5, 8, 15
         rounding_power = 2,
 
-        -- Change transparency of focused and unfocused windows
         active_opacity   = 1.0,
         inactive_opacity = 0.95,
 
@@ -44,7 +42,6 @@ hl.config({
         enabled = true,
     },
 })
-
 
 -- https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
 local liquidMotion = true
