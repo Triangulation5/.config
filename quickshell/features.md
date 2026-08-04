@@ -1,0 +1,56 @@
+- app launcher
+- lockscreen
+- pill/dynamic island/notch
+- calendar
+- clipboard (cliphist)
+- display switcher
+- music string line visualizer
+- font picker
+- hand drawn svg icons
+- idle lock
+- input
+- keybinds
+- calculator (inside launcher)
+- link bluetooth
+- link wifi
+- media
+- minimized tray
+- mixer menu
+- music bars (cava)
+- volume, brightness, mute osd's
+- expanded pill
+- power menu (lock, idlelock, sleep, logout, restart, reboot, shutdown)
+- recorder
+- screen recording
+- builtin settings menu
+- bluetooth devices
+- live wallpaper dynamic colors
+- events inside calendar
+- gamemode (removes all animations, spacing, etc)
+- custom motion (animation style)
+- night light control
+- notification daemon
+- active players (play/pause)
+- special workspace toggles
+- system monitor (cpu, mem, gpu, swap, disk)
+- static, dynamic, and manually made theme
+- wallpaper cache for fast switcher loading
+- weather tracking and for week days
+- workspace rules switcher (from inside settings)
+- space apps
+- stash
+- toast (notification previews)
+- tooltip's for things inside the pill
+- tray
+- custom updater (from inside settings)
+- Ame, the shapeshifter, one molten glass bead, that breaths, moves, and is the pill's pointer/caret
+- custom designed wifi icon
+- workspace switcher (dynamicly transforms into five lines when in movement)
+- custom rounded screencorner (that auto updates when pill changes states, gamemode removes it, notch mode makes them more rounded, dynamic island mode makes them half the rounding)
+
+- app image installer (drag an appimage file over the pill and it installs it)
+- cliphist image thumbnails
+- recorder thumbnails
+- wallpaper search (typing inside the wallpaper switcher, pulls up duckduckgo, moewalls, and my personal wallpaper repo)
+- quickrecord
+- persistent config system via json
