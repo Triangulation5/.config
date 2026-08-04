@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
 import "Singletons"
+import "lib/setLiquid.js" as SetLiquid
 
 /**
  * 相 APPEARANCE sub-surface: the clock format and seconds, the Japanese-glyph
@@ -47,6 +48,60 @@ SettingsSurface {
             applyManual();
         else if (v === "dynamic")
             dynamicProc.running = true;
+    }
+
+    readonly property string decorationsPath: Quickshell.env("HOME") + "/.config/hypr/modules/decorations.lua"
+    property string decorationsText: ""
+
+    FileView {
+        id: decorationsFile
+        path: root.decorationsPath
+        blockLoading: true
+        printErrors: false
+    }
+    FileView {
+        id: decorationsWriter
+        path: root.decorationsPath
+        atomicWrites: true
+        printErrors: false
+    }
+
+    Timer {
+        id: reloadTimer
+        interval: 250
+        repeat: false
+        onTriggered: reloadProc.running = true
+    }
+
+    Process {
+        id: reloadProc
+        command: ["sh", "-c", "hyprctl reload"]
+    }
+
+    onActiveChanged: {
+        if (active)
+            root.loadDecorations();
+    }
+
+    function loadDecorations() {
+        decorationsFile.reload();
+        root.decorationsText = decorationsFile.text();
+    }
+
+    /**
+     * Switches the `local liquidMotion = <bool>` flag in decorations.lua to
+     * match the current notch style, writes the updated file and reloads
+     * Hyprland so the matching animation preset takes effect immediately.
+     */
+    function applyLiquidMotion() {
+        var res = SetLiquid.setLiquidMotion(root.decorationsText, Flags.notchStyle);
+
+        if (!res.ok)
+            return;
+
+        root.decorationsText = res.text;
+        decorationsWriter.setText(res.text);
+        reloadTimer.restart();
     }
 
     Timer {
@@ -171,7 +226,12 @@ SettingsSurface {
             LinkToggle {
                 s: root.s
                 on: Flags.notchStyle
-                onToggled: Flags.notchStyle = !Flags.notchStyle
+
+                onToggled: {
+                    var enabled = !Flags.notchStyle;
+                    Flags.notchStyle = enabled;
+                    root.applyLiquidMotion();
+                }
             }
         }
 
