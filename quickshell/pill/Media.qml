@@ -49,7 +49,7 @@ PillSurface {
     onCanPickChanged: if (!canPick) picking = false
     onPickingChanged: if (picking) pickFlick.contentX = 0
 
-    readonly property real textX: 136 * s
+    readonly property real textX: 146 * s
     readonly property real edgePad: 18 * s
     readonly property color washMid: mix(Theme.cardTop, Theme.cardBot, 0.5)
     property real sealPulse: 0
@@ -171,7 +171,7 @@ PillSurface {
             anchors.verticalCenter: parent.verticalCenter
             anchors.leftMargin: 16 * root.s
 
-            width: parent.height - 40 * root.s
+            width: parent.height - 32 * root.s
             height: width
 
             radius: 16 * root.s
@@ -252,7 +252,7 @@ PillSurface {
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
         transform: Translate {
-            x: -146 * root.s
+            x: -136 * root.s
         }
 
         KanjiSkip {
