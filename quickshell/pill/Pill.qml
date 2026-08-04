@@ -654,7 +654,7 @@ Item {
             anchors.top: body.top
             anchors.rightMargin: -1
 
-            size: pill.morphRadius + -1
+            size: pill.morphRadius + -2
             corner: RoundCorner.CornerEnum.TopRight
             color: Theme.border
             z: 1
@@ -686,7 +686,7 @@ Item {
             anchors.top: body.top
             anchors.leftMargin: -1
 
-            size: pill.morphRadius + -1
+            size: pill.morphRadius + -2
             corner: RoundCorner.CornerEnum.TopLeft
             color: Theme.border
             z: 1
