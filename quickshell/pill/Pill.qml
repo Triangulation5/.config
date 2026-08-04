@@ -1420,7 +1420,7 @@ Item {
                         text: clock.hhmm
                         color: Theme.cream
                         font.family: Theme.font
-                        font.pixelSize: 26 * pill.s
+                        font.pixelSize: 28 * pill.s
                         font.weight: Font.DemiBold
                         font.features: { "tnum": 1 }
                     }
