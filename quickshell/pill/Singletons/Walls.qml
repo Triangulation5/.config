@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Wallpaper bridge: keeps a warm in-memory snapshot of ~/Ricelin/wallpapers so
+ * Wallpaper bridge: keeps a warm in-memory snapshot of ~/Pictures so
  * the wallpaper strip opens instantly without shelling out on demand. A
  * refresh first runs the thumbnail script (generating missing 512px previews
  * and pruning ones whose source is gone), then re-lists the directory
