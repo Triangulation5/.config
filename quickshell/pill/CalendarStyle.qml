@@ -105,8 +105,7 @@ Item {
         spacing: 10
 
         readonly property real delegateWidth: 40
-        readonly property real centerPadding:
-            (width - delegateWidth) / 2
+        readonly property real centerPadding: (width - delegateWidth) / 2
 
         leftMargin: centerPadding
         rightMargin: centerPadding
@@ -116,6 +115,14 @@ Item {
 
         preferredHighlightBegin: centerPadding
         preferredHighlightEnd: centerPadding
+
+        Behavior on currentIndex {
+            NumberAnimation {
+                duration: 450
+                easing.type: Easing.OutBack
+                easing.overshoot: 0.8
+            }
+        }
 
         delegate: Item {
             id: dayDelegate
@@ -141,22 +148,20 @@ Item {
                 }
             }
 
+
             Column {
                 anchors.centerIn: parent
 
-                // Current date stays centered.
-                // All side dates share the same lowered baseline.
-                anchors.verticalCenterOffset:
-                    dayDelegate.selected ? 0 : 6
-
+                /**
+                 * Current date stays centered.
+                 * All side dates share the same lowered baseline.
+                 */
+                anchors.verticalCenterOffset: dayDelegate.selected ? 0 : 6
                 spacing: 2
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-
-                    text: dayDelegate.selected
-                          ? model.weekday
-                          : model.weekday.charAt(0)
+                    text: dayDelegate.selected ? model.weekday : model.weekday.charAt(0)
 
                     color: {
                         if (dayDelegate.selected)
