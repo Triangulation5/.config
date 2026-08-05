@@ -59,6 +59,7 @@ Singleton {
         ready = true;
         resolveTwitch();
         resolveNetflix();
+        resolveSpotify();
     }
 
     onListChanged: {
@@ -213,6 +214,9 @@ Singleton {
         var nid = netflixIdOf(u);
         if (nid.length > 0 && nid === netflixId && netflixArt.length > 0)
             return netflixArt;
+        var sid = spotifyIdOf(u);
+        if (sid.length > 0 && sid === spotifyId && spotifyArt.length > 0)
+            return spotifyArt;
         return derivedThumb(u);
     }
 
@@ -309,6 +313,46 @@ Singleton {
         xhr.send();
     }
 
+    /**
+     * Spotify's web player (open.spotify.com in a browser tab) reports an
+     * xesam:url pointing at the track page but, unlike the native app, never
+     * fills in trackArtUrl. The public oEmbed endpoint gives back cover art
+     * (and a title) for any track id with no auth needed, so resolve it async
+     * and slot it in wherever trackArtUrl would otherwise be empty.
+     */
+    property string spotifyArt: ""
+    property string spotifyId: ""
+
+    function spotifyIdOf(url) {
+        var m = url.match(/^https?:\/\/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        return m ? m[1] : "";
+    }
+
+    function resolveSpotify() {
+        var id = spotifyIdOf(trackUrl);
+        if (id === spotifyId)
+            return;
+        spotifyId = id;
+        spotifyArt = "";
+        if (id.length === 0)
+            return;
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 8000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE || xhr.status !== 200 || root.spotifyId !== id)
+                return;
+            try {
+                var data = JSON.parse(xhr.responseText);
+                if (data.thumbnail_url && data.thumbnail_url.indexOf("https:") === 0)
+                    root.spotifyArt = data.thumbnail_url;
+            } catch (e) {
+                // malformed/unexpected response, leave spotifyArt empty
+            }
+        };
+        xhr.open("GET", "https://open.spotify.com/oembed?url=" + encodeURIComponent("https://open.spotify.com/track/" + id));
+        xhr.send();
+    }
+
     /** Swaps a stub browser title for the resolved show name where one exists. */
     function refineTitle(p, raw) {
         if (p && netflixId.length > 0 && netflixName.length > 0
@@ -324,6 +368,7 @@ Singleton {
     onTrackUrlChanged: {
         resolveTwitch();
         resolveNetflix();
+        resolveSpotify();
     }
 
     function resolveTwitch() {

@@ -1442,19 +1442,19 @@ Item {
                     }
                 }
 
-                Workspaces {
-                    id: ws
-
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    s: pill.s
-                    screenName: pill.screenName
-
-                    enabled: hover.live
-
-                    opacity: hover.trayMorph
-                    scale: 0.9 + 0.1 * hover.trayMorph
-                }
+                // Workspaces {
+                //     id: ws
+                //
+                //     anchors.verticalCenter: parent.verticalCenter
+                //
+                //     s: pill.s
+                //     screenName: pill.screenName
+                //
+                //     enabled: hover.live
+                //
+                //     opacity: hover.trayMorph
+                //     scale: 0.9 + 0.1 * hover.trayMorph
+                // }
 
                 MinimizedTray {
                     id: minimized
