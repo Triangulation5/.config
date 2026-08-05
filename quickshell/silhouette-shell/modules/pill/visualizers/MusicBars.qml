@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 
-
 /**
  * Rest-pill spectrum: one rounded ember bar per cava band, packed into the
  * clock-glyph slot so the cluster never widens the pill. Heights chase
