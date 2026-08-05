@@ -9,92 +9,158 @@
 
 function tokenize(src) {
     var tokens = [];
+    var len = src.length;
     var i = 0;
-    while (i < src.length) {
-        var c = src[i];
-        if (c === ' ' || c === '\t') { i++; continue; }
-        if ((c >= '0' && c <= '9') || c === '.') {
-            var j = i, dots = 0;
-            while (j < src.length && ((src[j] >= '0' && src[j] <= '9') || src[j] === '.')) {
-                if (src[j] === '.') dots++;
-                j++;
-            }
-            if (dots > 1) return null;
-            tokens.push({ t: 'num', v: parseFloat(src.slice(i, j)) });
-            i = j;
-            continue;
-        }
-        if ('+-*/^%()'.indexOf(c) >= 0) {
-            tokens.push({ t: c });
+    while (i < len) {
+        var c = src.charCodeAt(i);
+        if (c === 32 || c === 9) {
             i++;
             continue;
         }
-        return null;
+        if ((c >= 48 && c <= 57) || c === 46) {
+            var start = i;
+            var dots = 0;
+            while (i < len) {
+                c = src.charCodeAt(i);
+                if (c === 46) {
+                    dots++;
+                    if (dots > 1)
+                        return null;
+                } else if (c < 48 || c > 57) {
+                    break;
+                }
+                i++;
+            }
+            tokens.push(0);
+            tokens.push(parseFloat(src.slice(start, i)));
+            continue;
+        }
+
+        switch (src[i]) {
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+            case '^':
+            case '%':
+            case '(':
+            case ')':
+                tokens.push(src[i]);
+                i++;
+                continue;
+            default:
+                return null;
+        }
     }
     return tokens;
 }
 
 function evaluate(src) {
-    var fail = { ok: false, value: NaN, display: "", ops: 0 };
-    if (!src || !src.trim()) return fail;
+    var fail = {
+        ok: false,
+        value: NaN,
+        display: "",
+        ops: 0
+    };
+    if (!src)
+        return fail;
+    src = src.trim();
+    if (!src)
+        return fail;
     var tokens = tokenize(src);
-    if (!tokens || tokens.length === 0) return fail;
-
-    var pos = 0;
+    if (!tokens || tokens.length === 0)
+        return fail;
+    var index = 0;
     var ops = 0;
-
-    function peek() { return tokens[pos]; }
-
+    function peek() {
+        return tokens[index];
+    }
     function parseExpr() {
-        var v = parseTerm();
-        for (; ;) {
+        var value = parseTerm();
+        while (true) {
             var tok = peek();
-            if (tok && tok.t === '+') { pos++; v = v + parseTerm(); ops++; }
-            else if (tok && tok.t === '-') { pos++; v = v - parseTerm(); ops++; }
-            else break;
+            if (tok === '+') {
+                index++;
+                value += parseTerm();
+                ops++;
+            } else if (tok === '-') {
+                index++;
+                value -= parseTerm();
+                ops++;
+            } else {
+                return value;
+            }
         }
-        return v;
     }
+
     function parseTerm() {
-        var v = parsePower();
-        for (; ;) {
+        var value = parsePower();
+        while (true) {
             var tok = peek();
-            if (tok && tok.t === '*') { pos++; v = v * parsePower(); ops++; }
-            else if (tok && tok.t === '/') { pos++; v = v / parsePower(); ops++; }
-            else break;
+            if (tok === '*') {
+                index++;
+                value *= parsePower();
+                ops++;
+            } else if (tok === '/') {
+                index++;
+                value /= parsePower();
+                ops++;
+            } else {
+                return value;
+            }
         }
-        return v;
     }
+
     function parsePower() {
-        var base = parseUnary();
-        var tok = peek();
-        if (tok && tok.t === '^') { pos++; ops++; return Math.pow(base, parsePower()); }
-        return base;
+        var value = parseUnary();
+        if (peek() === '^') {
+            index++;
+            ops++;
+            return Math.pow(value, parsePower());
+        }
+        return value;
     }
+
     function parseUnary() {
         var tok = peek();
-        if (tok && tok.t === '-') { pos++; return -parseUnary(); }
-        if (tok && tok.t === '+') { pos++; return parseUnary(); }
+        if (tok === '-') {
+            index++;
+            return -parseUnary();
+        }
+        if (tok === '+') {
+            index++;
+            return parseUnary();
+        }
         return parsePostfix();
     }
+
     function parsePostfix() {
-        var v = parsePrimary();
-        var tok = peek();
-        if (tok && tok.t === '%') { pos++; ops++; v = v / 100; }
-        return v;
+        var value = parsePrimary();
+        if (peek() === '%') {
+            index++;
+            ops++;
+            value /= 100;
+        }
+        return value;
     }
+
     function parsePrimary() {
         var tok = peek();
-        if (!tok) throw "eof";
-        if (tok.t === 'num') { pos++; return tok.v; }
-        if (tok.t === '(') {
-            pos++;
-            var v = parseExpr();
-            if (!(peek() && peek().t === ')')) throw "paren";
-            pos++;
-            return v;
+        if (tok === undefined)
+            throw 0;
+        if (tok === 0) {
+            index += 2;
+            return tokens[index - 1];
         }
-        throw "unexpected";
+        if (tok === '(') {
+            index++;
+            var value = parseExpr();
+            if (peek() !== ')')
+                throw 0;
+            index++;
+            return value;
+        }
+        throw 0;
     }
 
     var value;
@@ -103,11 +169,20 @@ function evaluate(src) {
     } catch (e) {
         return fail;
     }
-    if (pos !== tokens.length) return fail;
-    if (typeof value !== 'number' || !isFinite(value)) return fail;
-    if (ops < 1) return fail;
+    if (index !== tokens.length)
+        return fail;
+    if (typeof value !== "number" || !isFinite(value))
+        return fail;
+    if (ops < 1)
+        return fail;
+    value = parseFloat(value.toPrecision(12));
+    if (value === 0)
+        value = 0;
 
-    var rounded = parseFloat(value.toPrecision(12));
-    if (rounded === 0) rounded = 0;
-    return { ok: true, value: rounded, display: String(rounded), ops: ops };
+    return {
+        ok: true,
+        value: value,
+        display: String(value),
+        ops: ops
+    };
 }

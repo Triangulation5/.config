@@ -4,14 +4,16 @@
  * while `raw` keeps the original entry for reference. Returns null when the
  * entry does not match the WxH@HZHz shape.
  */
+var MODE_RE = /^(\d+)x(\d+)@([\d.]+)Hz$/;
+
 function parseMode(raw) {
-    var m = raw.match(/^(\d+)x(\d+)@([\d.]+)Hz$/);
+    var m = MODE_RE.exec(raw);
     if (!m)
         return null;
     return {
-        w: parseInt(m[1], 10),
-        h: parseInt(m[2], 10),
-        hz: Math.round(parseFloat(m[3])),
+        w: Number(m[1]),
+        h: Number(m[2]),
+        hz: Math.round(Number(m[3])),
         raw: raw
     };
 }
@@ -33,11 +35,20 @@ function parse(jsonText) {
     if (!Array.isArray(data))
         return [];
 
-    return data.map(function (mon) {
-        var modes = (mon.availableModes || [])
-            .map(parseMode)
-            .filter(function (m) { return m !== null; });
-        return {
+    var result = new Array(data.length);
+
+    for (var i = 0; i < data.length; i++) {
+        var mon = data[i];
+        var available = mon.availableModes || [];
+        var modes = [];
+
+        for (var j = 0; j < available.length; j++) {
+            var mode = parseMode(available[j]);
+            if (mode)
+                modes.push(mode);
+        }
+
+        result[i] = {
             name: mon.name,
             width: mon.width,
             height: mon.height,
@@ -47,7 +58,9 @@ function parse(jsonText) {
             y: mon.y,
             modes: modes
         };
-    });
+    }
+
+    return result;
 }
 
 /**
@@ -81,9 +94,11 @@ function setMonitor(luaText, output, mode, position, scale) {
     var r1 = replaceField(block, "mode", '"' + mode + '"');
     if (!r1.ok)
         return { text: luaText, ok: false, error: "mode field not found for " + output };
+
     var r2 = replaceField(r1.text, "position", '"' + position + '"');
     if (!r2.ok)
         return { text: luaText, ok: false, error: "position field not found for " + output };
+
     var r3 = replaceField(r2.text, "scale", String(scale));
     if (!r3.ok)
         return { text: luaText, ok: false, error: "scale field not found for " + output };
@@ -98,10 +113,17 @@ function setMonitor(luaText, output, mode, position, scale) {
  * comma inside the quotes is not mistaken for the field end), otherwise the run
  * up to the next comma or the block's closing brace. Returns `{ text, ok }`.
  */
+var FIELD_RES = {};
+
 function replaceField(block, name, value) {
-    var re = new RegExp("(" + name + "\\s*=\\s*)(\"[^\"]*\"|[^,}\\n]*)");
+    var re = FIELD_RES[name];
+
+    if (!re)
+        re = FIELD_RES[name] = new RegExp("(" + name + "\\s*=\\s*)(\"[^\"]*\"|[^,}\\n]*)");
+
     if (!re.test(block))
         return { text: block, ok: false };
+
     return { text: block.replace(re, "$1" + value), ok: true };
 }
 
