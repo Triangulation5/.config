@@ -35,5 +35,4 @@ nvim/startup.log.log
 *.log.*
 *.cache
 .cache/
-manicode/freebuff
-manicode/freebuff
+manicode/
