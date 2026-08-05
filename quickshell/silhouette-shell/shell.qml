@@ -12,21 +12,10 @@ import qs.modules.launcher
 ShellRoot {
     id: shell
 
-    PillRoot {
-        id: pillRoot
-    }
-
-    LockRoot {
-        id: lockRoot
-    }
-
-    ScreenCornerRoot {
-        id: cornerRoot
-    }
-
-    LauncherRoot {
-        id: launcherRoot
-    }
+    PillRoot { id: pillRoot }
+    LockRoot { id: lockRoot }
+    ScreenCornerRoot { id: cornerRoot }
+    LauncherRoot { id: launcherRoot }
 
     IpcHandler {
         target: "pill"
@@ -55,7 +44,7 @@ ShellRoot {
                 ScreenRec.quickChoosing = true;
             }
         }
-        function gameMode(mon: string): void { Flags.gameMode = !Flags.gameMode; }
+        function gameMode(_mon: string): void { Flags.gameMode = !Flags.gameMode; }
         function sysmon(mon: string): void { pillRoot.toggleSurface(mon, "sysmon"); }
         function system(mon: string): void { pillRoot.toggleSurface(mon, "sysmon"); }
         function clipboard(mon: string): void { pillRoot.toggleSurface(mon, "clipboard"); }
