@@ -16,11 +16,11 @@ Row {
     property real s: 1.1
     property real span: 10
     property bool centeredVisualizer: false
-    property bool stringVisualizer: true
+    property bool stringVisualizer: false
 
     height: span * s
-    width: stringVisualizer ? 80 * s : Cava.bars * (1.8 * s + 1.4 * s)
-    spacing: stringVisualizer ? 0 : 1.4 * s
+    width: stringVisualizer ? 80 * s : Cava.bars * (2.8 * s + 1.4 * s)
+    spacing: stringVisualizer ? 0 : 1.8 * s
     y: 2 * s
 
     Loader {
