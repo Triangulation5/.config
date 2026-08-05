@@ -1,4 +1,7 @@
 #!/bin/sh
 
 mon=$(hyprctl activeworkspace -j | jq -r '.monitor')
-qs -c pill ipc call pill "$1" "$mon"
+qs -c silhouette-shell ipc call pill "$1" "$mon"
+
+# Old monolithic pill
+# qs -c pill ipc call pill "$1" "$mon"
