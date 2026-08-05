@@ -1,0 +1,3 @@
+module Modules.ScreenCorner
+
+ScreenCornerRoot 1.0 ScreenCornerRoot.qml
