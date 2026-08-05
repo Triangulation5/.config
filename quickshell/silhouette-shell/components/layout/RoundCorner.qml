@@ -13,6 +13,12 @@ Item {
     property int corner: RoundCorner.CornerEnum.TopLeft
     property real size: 40
     property color color: "white"
+    property bool evaporating: false
+    property string edgeDirection: ""
+    property int morphDuration: 1500
+    property bool innerShadow: false
+    property color innerShadowColor: Qt.rgba(0, 0, 0, 0)
+    property real innerShadowSize: 0
 
     implicitWidth: size
     implicitHeight: size

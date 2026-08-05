@@ -2,6 +2,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import qs.services
 
 Singleton {
     readonly property bool dyn: Flags.paletteMode !== "static"
@@ -52,6 +53,12 @@ Singleton {
     readonly property color todayWarm: dyn ? onGlow : "#f3be7c"
 
     readonly property color ghost: dyn ? Dyn.surfaceContainerHighest : "rgba(37,37,48,0.85)"
+
+    readonly property color capsule: dyn ? Dyn.surfaceContainerHigh : "rgba(34,34,44,0.92)"
+    readonly property color capsuleBorder: dyn ? Qt.rgba(Dyn.outline.r, Dyn.outline.g, Dyn.outline.b, 0.35) : "rgba(96,96,121,0.4)"
+    readonly property color error: "#e0533f"
+    readonly property color placeholder: dyn ? Dyn.dim : "#6a6a7a"
+    readonly property color trackBg: Qt.alpha(cream, 0.10)
 
     readonly property color frameBg: Qt.alpha(cream, 0.055)
     readonly property color frameBorder: Qt.alpha(cream, 0.10)

@@ -1,7 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 Item {
     id: battery

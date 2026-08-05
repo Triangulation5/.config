@@ -1,7 +1,12 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.modules.launcher
+import qs.components.animation
+import qs.components.controls
+import qs.modules.pill.surfaces
+import qs.components.icons
 
 /**
  * Clipboard surface: search field over the cliphist history, drawn as one of

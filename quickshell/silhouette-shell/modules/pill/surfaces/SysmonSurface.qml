@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
 
 /**
  * 系 SYSTEM surface: a flat washi card of live machine vitals fed by the Sysmon

@@ -5,7 +5,9 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
-import "Singletons"
+import qs.services
+import qs.components.icons
+import qs.components.controls
 
 /**
  * WLAN drill-in for the link surface: back chevron, wifi enable toggle and the

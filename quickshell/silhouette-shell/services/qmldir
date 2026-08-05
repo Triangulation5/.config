@@ -1,4 +1,4 @@
-module Services
+module qs.services
 
 singleton Backlight       1.0 Backlight.qml
 singleton Battery         1.0 Battery.qml

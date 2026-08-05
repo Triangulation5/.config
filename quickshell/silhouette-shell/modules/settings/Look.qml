@@ -3,8 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "lib/setDeco.js" as SetDeco
-import "Singletons"
+import "../../utils/setDeco.js" as SetDeco
+import qs.services
+import qs.modules.controlcenter
+import qs.components.icons
+import qs.components.controls
 
 /**
  * 飾 LOOK sub-surface: edits the window-decoration knobs that live in

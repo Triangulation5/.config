@@ -1,7 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 /**
  * Numeric value control for the settings tabs. At rest it is just the number, so

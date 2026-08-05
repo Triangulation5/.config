@@ -3,7 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
-import "Singletons"
+import qs.services
+import qs.modules.controlcenter
+import qs.components.icons
 
 /**
  * 相 APPEARANCE sub-surface: the clock format and seconds, the Japanese-glyph

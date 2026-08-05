@@ -5,7 +5,11 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
-import "Singletons"
+import qs.services
+import qs.modules.launcher
+import qs.components.animation
+import qs.modules.pill.surfaces
+import qs.components.icons
 
 /**
  * Wallpaper surface: a filmstrip over the wallpaper directory, rendered as one

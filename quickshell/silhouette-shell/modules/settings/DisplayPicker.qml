@@ -2,7 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 /**
  * Labelled dropdown for the display surface: a left caption, a value chip styled

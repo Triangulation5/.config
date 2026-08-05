@@ -3,7 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "Singletons"
+import qs.services
+import qs.modules.launcher
+import qs.modules.settings
+import qs.components.icons
+import qs.modules.pill.surfaces
 
 /**
  * 蔵 STASH surface: the window classes that auto-route into the special:stash

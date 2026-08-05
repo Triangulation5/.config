@@ -4,7 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Networking
 import Quickshell.Bluetooth
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 Item {
     id: link

@@ -1,7 +1,7 @@
-module Components.Animation
+module qs.components.animation
 
 AnimationSurface 1.0 AnimationSurface.qml
-HeatHold          1.0 HeatHold.qml
-HFader            1.0 HFader.qml
-Marquee           1.0 Marquee.qml
-VFader            1.0 VFader.qml
+HeatHold 1.0 HeatHold.qml
+HFader 1.0 HFader.qml
+Marquee 1.0 Marquee.qml
+VFader 1.0 VFader.qml

@@ -1,7 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 /**
  * One settings line: an optional leading kanji, a name and an optional faint sub

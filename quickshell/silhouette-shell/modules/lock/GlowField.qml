@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
 
 Item {
     id: glow
@@ -45,6 +45,6 @@ Item {
         property vector4d band0: Qt.vector4d(glow.levels[0], glow.levels[1], glow.levels[2], glow.levels[3])
         property vector4d band1: Qt.vector4d(glow.levels[4], glow.levels[5], glow.levels[6], glow.levels[7])
         property vector4d band2: Qt.vector4d(glow.levels[8], glow.levels[9], glow.levels[10], glow.levels[11])
-        fragmentShader: "shaders/glow.frag.qsb"
+        fragmentShader: "../../assets/shaders/glow.frag.qsb"
     }
 }

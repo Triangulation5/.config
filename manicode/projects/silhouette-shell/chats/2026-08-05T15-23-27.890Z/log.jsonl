@@ -1,0 +1,5 @@
+{"level":"WARN","timestamp":"2026-08-05T15:23:27.893Z","pid":2738596,"hostname":"core","msg":"[ads] No auth token available"}
+{"level":"INFO","timestamp":"2026-08-05T15:23:27.895Z","pid":2738596,"hostname":"core","msg":"[chat-runtime] Freebuff session over; holding queued messages until rejoin"}
+{"level":"WARN","timestamp":"2026-08-05T15:23:27.895Z","pid":2738596,"hostname":"core","msg":"[freebuff-session] No auth token; skipping free-session admission"}
+{"level":"DEBUG","timestamp":"2026-08-05T15:23:27.959Z","pid":2738596,"hostname":"core","data":{"fingerprintType":"enhanced_cli","fingerprintId":"enhanced-BLQ4c_8iAyF..."},"msg":"Enhanced CLI fingerprint generated successfully"}
+{"level":"INFO","timestamp":"2026-08-05T15:23:59.841Z","pid":2738596,"hostname":"core","userId":"0fd987a9-b393-4108-b7d2-966dc613a8e9","userEmail":"triangulation74@gmail.com","msg":"[chat-runtime] Freebuff session over; holding queued messages until rejoin"}

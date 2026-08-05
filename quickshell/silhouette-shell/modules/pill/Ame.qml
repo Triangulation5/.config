@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
-import "Singletons"
+import qs.services
 
 /**
  * 飴 Ame, the shapeshifter. One molten-glass bead, the shell's only glowing

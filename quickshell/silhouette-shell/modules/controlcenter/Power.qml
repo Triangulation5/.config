@@ -4,7 +4,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Widgets
-import "Singletons"
+import qs.services
+import qs.modules.pill.surfaces
+import qs.components.animation
+import qs.components.icons
 
 /**
  * Power surface: a row of hand-drawn session glyphs split by a hairline into a

@@ -2,8 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
-import "lib/fuzzy.js" as Fuzzy
+import qs.services
+import qs.modules.launcher
+import "../../utils/fuzzy.js" as Fuzzy
 
 ShellRoot {
     id: root
@@ -12,20 +13,6 @@ ShellRoot {
     property var usage: ({})
     property bool shown: false
     property string targetMonitor: ""
-
-    IpcHandler {
-        target: "launcher"
-        function show(mon: string): void {
-            root.targetMonitor = mon;
-            root.shown = true;
-        }
-        function hide(): void { root.shown = false; }
-        function toggle(mon: string): void {
-            if (root.shown) { root.shown = false; return; }
-            root.targetMonitor = mon;
-            root.shown = true;
-        }
-    }
 
     FileView {
         id: usageStore

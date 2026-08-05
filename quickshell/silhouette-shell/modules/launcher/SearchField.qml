@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import "Singletons"
+import qs.services
 
 Item {
     id: root
