@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
-import "Singletons"
+import qs.services
 
 /**
  * Self-contained vector glyph drawn from baked SVG path data, so the pill never
@@ -87,6 +87,14 @@ Item {
         "record": { d: "M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16z", fill: true },
         "gamepad": { d: "M7 11h4 M9 9v4 M15.5 10h.01 M17.5 13h.01 M17 7H7a5 5 0 0 0-5 5l-.9 4.5A2.4 2.4 0 0 0 5.7 18L8 15h8l2.3 3a2.4 2.4 0 0 0 4.6-1.5L22 12a5 5 0 0 0-5-5z", fill: false },
         "dynamic-island": { d: "M7 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z M9 5a3 3 0 0 0 6 0", fill: false },
+        "battery-full": { d: "M6 8h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 16 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3 M6.5 10h9", fill: false },
+        "battery-charging": { d: "M6 8h7a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 13 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3 M11 13l-2.3-2.5H11L9.5 9.5", fill: false },
+        "battery-high": { d: "M6 8h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 16 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3 M6.5 10h8", fill: false },
+        "battery-medium": { d: "M6 8h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 16 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3 M6.5 10h5.5", fill: false },
+        "battery-low": { d: "M6 8h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 16 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3 M6.5 10h3.5", fill: false },
+        "battery-warning": { d: "M6 8h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 16 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3 M12 12.5v0", fill: false },
+        "battery-empty": { d: "M6 8h10a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 16 16H6a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 6 8z M18.5 10.5v3", fill: false },
+        "network-off": { d: "M4 9.5C9 4.8 15 4.8 20 9.5 M7 13c3-2.8 7-2.8 10 0 M3 3l18 18", fill: false },
     })
 
     readonly property var g: glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false })

@@ -2,7 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import "Singletons"
+import qs.services
+import qs.modules.launcher
+import qs.modules.pill.surfaces
+import qs.components.icons
 
 /**
  * App manager for a user-defined special workspace (the one named by

@@ -1,9 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.modules.services
-import qs.config
-import qs.modules.bar.workspaces // For CompositorData
+import qs.services
 
 PanelWindow {
     id: screenCorners

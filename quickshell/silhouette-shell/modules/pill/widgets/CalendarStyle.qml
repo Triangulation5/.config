@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
-import "Singletons"
+import qs.services
+import qs.components.animation
 
 Item {
     id: root

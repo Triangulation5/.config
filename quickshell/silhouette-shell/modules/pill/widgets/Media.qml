@@ -3,7 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell.Widgets
-import "Singletons"
+import qs.services
+import qs.modules.pill.surfaces
+import qs.components.animation
+import qs.components.icons
+import qs.modules.pill.surfaces
 
 /**
  * Now-playing card. Album art bleeds edge-to-edge on the left, faded into the

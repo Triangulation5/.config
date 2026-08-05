@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import qs.services
 
 Singleton {
     readonly property real mult: Flags.reduceMotion ? 0.45 : 1

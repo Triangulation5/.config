@@ -1,5 +1,6 @@
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 /**
  * Single-line text that ping-pong scrolls when wider than the available width,

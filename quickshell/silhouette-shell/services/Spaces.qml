@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../lib/binds.js" as Binds
+import "../utils/binds.js" as Binds
 
 /**
  * 場 SPACES store: the single read/writer of ~/.config/hypr/modules/spaces.lua,

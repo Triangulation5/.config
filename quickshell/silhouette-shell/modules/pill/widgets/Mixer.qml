@@ -2,7 +2,12 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell.Io
 import Quickshell.Services.Pipewire
-import "Singletons"
+import qs.services
+import qs.modules.settings
+import qs.modules.pill.surfaces
+import qs.components.controls
+import qs.components.icons
+import qs.components.animation
 
 /**
  * Mixer surface: header with DND / Keep-Awake chips and a row of four vertical

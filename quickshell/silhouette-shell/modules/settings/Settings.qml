@@ -1,7 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.modules.pill.widgets
+import qs.components.icons
 
 /**
  * 設 SETTINGS index: a short list of categories grouped into Shell and Control.

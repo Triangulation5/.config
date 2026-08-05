@@ -3,12 +3,14 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import "Singletons"
+import qs.services
+import qs.components.layout
 
 Item {
     id: surface
     property real s: 1.1
     property var auth: null
+    property var pw: null
     property string screenName: ""
 
     /**
@@ -133,7 +135,7 @@ Item {
                 property vector2d resolution: surface.eighthVec
                 property vector2d blurDir: Qt.vector2d(1, 0)
                 property real spread: surface.spread
-                fragmentShader: "shaders/blur.frag.qsb"
+                fragmentShader: "../../assets/shaders/blur.frag.qsb"
             }
 
             ShaderEffectSource {
@@ -154,7 +156,7 @@ Item {
                 property vector2d resolution: surface.eighthVec
                 property vector2d blurDir: Qt.vector2d(0, 1)
                 property real spread: surface.spread
-                fragmentShader: "shaders/blur.frag.qsb"
+                fragmentShader: "../../assets/shaders/blur.frag.qsb"
             }
 
             ShaderEffectSource {
@@ -175,7 +177,7 @@ Item {
                 property vector2d resolution: surface.eighthVec
                 property vector2d blurDir: Qt.vector2d(1, 0)
                 property real spread: surface.spread
-                fragmentShader: "shaders/blur.frag.qsb"
+                fragmentShader: "../../assets/shaders/blur.frag.qsb"
             }
 
             ShaderEffectSource {
@@ -196,7 +198,7 @@ Item {
                 property vector2d resolution: surface.eighthVec
                 property vector2d blurDir: Qt.vector2d(0, 1)
                 property real spread: surface.spread
-                fragmentShader: "shaders/blur.frag.qsb"
+                fragmentShader: "../../assets/shaders/blur.frag.qsb"
             }
 
             ShaderEffectSource {
@@ -217,7 +219,7 @@ Item {
                 property vector2d resolution: surface.eighthVec
                 property vector2d blurDir: Qt.vector2d(1, 0)
                 property real spread: surface.spread
-                fragmentShader: "shaders/blur.frag.qsb"
+                fragmentShader: "../../assets/shaders/blur.frag.qsb"
             }
 
             ShaderEffectSource {
@@ -238,7 +240,7 @@ Item {
                 property vector2d resolution: surface.eighthVec
                 property vector2d blurDir: Qt.vector2d(0, 1)
                 property real spread: surface.spread
-                fragmentShader: "shaders/blur.frag.qsb"
+                fragmentShader: "../../assets/shaders/blur.frag.qsb"
             }
 
             ShaderEffectSource {
@@ -256,7 +258,7 @@ Item {
                 property var source: blurV3Src
                 property vector2d srcSize: surface.eighthVec
                 property real darken: 0.62
-                fragmentShader: "shaders/grade.frag.qsb"
+                fragmentShader: "../../assets/shaders/grade.frag.qsb"
             }
           }
         }
@@ -274,6 +276,7 @@ Item {
 
         s: surface.s
         auth: surface.auth
+        pw: surface.pw
         isMain: surface.isMain
 
         enabled: surface.maskP >= 1

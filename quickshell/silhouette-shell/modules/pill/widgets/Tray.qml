@@ -6,7 +6,9 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.SystemTray
-import "Singletons"
+import qs.services
+import qs.components.controls
+import qs.components.icons
 
 /**
  * System tray. Draws StatusNotifier items as warm-tinted icons. Left-click

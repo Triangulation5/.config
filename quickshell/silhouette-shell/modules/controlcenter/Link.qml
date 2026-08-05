@@ -6,7 +6,11 @@ import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Bluetooth
 import Quickshell.Services.Notifications
-import "Singletons"
+import qs.services
+import qs.modules.pill.surfaces
+import qs.components.layout
+import qs.components.icons
+import qs.components.controls
 
 /**
  * 繋 LINK surface: connectivity rows (auto-detected Netz, Bluetooth) over the

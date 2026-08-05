@@ -3,7 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import "Singletons"
+import qs.services
+import qs.components.controls
+import qs.components.icons
 
 /**
  * Row of icon buttons for windows parked on Hyprland's `special:minimized`

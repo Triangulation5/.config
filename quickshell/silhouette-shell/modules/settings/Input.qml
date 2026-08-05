@@ -3,8 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "lib/setInput.js" as SetInput
-import "Singletons"
+import "../../utils/setInput.js" as SetInput
+import qs.services
+import qs.modules.controlcenter
+import qs.components.icons
+import qs.components.controls
 
 /**
  * 操 INPUT sub-surface: edits the pointer, keyboard and cursor settings that live

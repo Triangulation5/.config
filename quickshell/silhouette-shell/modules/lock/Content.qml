@@ -4,12 +4,14 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.Mpris
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 Item {
     id: content
     property real s: 1.1
     property var auth: null
+    property var pw: null
     property bool isMain: true
 
     property bool clockExpanded: false
@@ -318,15 +320,16 @@ Item {
             onTextChanged: {
                 if (text.length > 0)
                     content.showError = false;
-                if (Pw.text !== text)
-                    Pw.text = text;
+                if (content.pw && content.pw.text !== text)
+                    content.pw.text = text;
             }
 
             Connections {
-                target: Pw
+                target: content.pw
+                enabled: content.pw !== null
                 function onTextChanged() {
-                    if (input.text !== Pw.text)
-                        input.text = Pw.text;
+                    if (input.text !== content.pw.text)
+                        input.text = content.pw.text;
                 }
             }
 

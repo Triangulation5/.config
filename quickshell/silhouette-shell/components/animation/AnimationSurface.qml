@@ -4,8 +4,12 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
-import "lib/setAnim.js" as SetAnim
-import "Singletons"
+import "../../utils/setAnim.js" as SetAnim
+import qs.services
+import qs.modules.controlcenter
+import qs.modules.settings
+import qs.components.controls
+import qs.components.icons
 
 /**
  * 動 ANIMATION sub-surface: toggles Hyprland animations, sets one master speed

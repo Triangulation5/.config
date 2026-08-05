@@ -1,5 +1,5 @@
 import QtQuick
-import "Singletons"
+import qs.services
 
 /**
  * Single-line value label for the display picker. Splits a "WIDTH×HEIGHT" string on
