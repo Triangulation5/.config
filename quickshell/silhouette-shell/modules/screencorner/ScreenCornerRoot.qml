@@ -1,7 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import "Singletons"
+import qs.services
+import qs.components.layout
 
 PanelWindow {
     id: corners

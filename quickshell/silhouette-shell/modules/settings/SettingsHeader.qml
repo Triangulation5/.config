@@ -1,5 +1,6 @@
 import QtQuick
-import "Singletons"
+import qs.services
+import qs.components.icons
 
 /**
  * Settings surface header: the surface kanji (gated by Flags.showGlyphs) and its

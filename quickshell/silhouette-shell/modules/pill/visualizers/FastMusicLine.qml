@@ -6,7 +6,7 @@ import Quickshell.Hyprland
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import QtQuick.Shapes
-import "Singletons"
+import qs.services
 
 Rectangle {
     id: musicLineContainer

@@ -4,12 +4,18 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import "Singletons"
+import qs.services
+import qs.modules.lock
 
 ShellRoot {
     id: root
 
     readonly property string currentUser: Quickshell.env("USER") || Quickshell.env("LOGNAME") || ""
+
+    /** Shared password state bridged between the auth input and the lock root. */
+    property QtObject pw: QtObject {
+        property string text: ""
+    }
 
     /** Drives the pill-to-lock reveal. Kept off while the surface first mounts so the mask starts as the pill, then flipped on to grow it open; flipped back to collapse it before the session actually unlocks. */
     property bool revealed: false
@@ -29,7 +35,7 @@ ShellRoot {
         onTriggered: {
             sessionLock.locked = false;
             Cava.enabled = false;
-            Pw.text = "";
+            root.pw.text = "";
         }
     }
 
@@ -41,7 +47,7 @@ ShellRoot {
     }
 
     function doLock(): void {
-        Pw.text = "";
+        root.pw.text = "";
         root.revealed = false;
         sessionLock.locked = true;
         Cava.enabled = true;
@@ -93,15 +99,10 @@ ShellRoot {
                 s: lockSurface.screen ? lockSurface.screen.height / 1080 : 1
                 screenName: lockSurface.screen ? lockSurface.screen.name : ""
                 auth: pamAuth
+                pw: root.pw
                 active: root.revealed
             }
         }
     }
 
-    IpcHandler {
-        target: "lock"
-        function lock(): void {
-            root.doLock();
-        }
-    }
 }

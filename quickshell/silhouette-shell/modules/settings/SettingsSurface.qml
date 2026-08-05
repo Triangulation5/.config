@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.modules.pill.surfaces
 
 /**
  * Shared base for the morphing settings surfaces: the category index and each

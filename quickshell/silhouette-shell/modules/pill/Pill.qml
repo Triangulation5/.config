@@ -7,7 +7,17 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Hyprland
-import "Singletons"
+import qs.services
+import qs.modules.pill.widgets
+import qs.modules.settings
+import qs.modules.pill.surfaces
+import qs.modules.pill.visualizers
+import qs.components.icons
+import qs.components.controls
+import qs.components.layout
+import qs.components.animation
+import qs.modules.controlcenter
+import qs.modules.launcher
 
 /**
  * The pill body. One element carries every state. Width/height driven by `state`
@@ -847,7 +857,7 @@ Item {
      * bud)". That sidesteps the per-item hover flicker the child MouseAreas and
      * the centred width morph would otherwise cause.
      */
-    readonly property real inputPadRight: bud.shown ? bud.budR + 2 * s : 0
+    readonly property real inputPadRight: (hoverMedia.active && hoverMedia.item) ? (hoverMedia.item.shown ? hoverMedia.item.budR + 2 * s : 0) : 0
 
     onHoveredChanged: {
         if (hovered) {
@@ -1335,6 +1345,7 @@ Item {
                 }
             }
             Text {
+                id: restTime
                 visible: pill.specialView === ""
                 anchors.verticalCenter: parent.verticalCenter
                 text: clock.hhmm
@@ -1423,6 +1434,7 @@ Item {
                     height: pill.mediaH
 
                     sourceComponent: Media {
+                        id: bud
                         s: pill.s
                         open: true
                         morphCloseness: hover.mediaMorph
@@ -1431,6 +1443,20 @@ Item {
                             hoverMedia.active = false
                         }
                     }
+                }
+
+                Workspaces {
+                    id: ws
+
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    s: pill.s
+                    screenName: pill.screenName
+
+                    enabled: hover.live
+
+                    opacity: hover.trayMorph
+                    scale: 0.9 + 0.1 * hover.trayMorph
                 }
 
                 MinimizedTray {
@@ -1657,7 +1683,7 @@ Item {
             s: pill.s
             open: pill.settingsOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1670,7 +1696,7 @@ Item {
             s: pill.s
             open: pill.keybindsOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1683,7 +1709,7 @@ Item {
             s: pill.s
             open: pill.workspacesOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1696,7 +1722,7 @@ Item {
             s: pill.s
             open: pill.stashOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1709,7 +1735,7 @@ Item {
             s: pill.s
             open: pill.spaceappsOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1747,7 +1773,7 @@ Item {
             s: pill.s
             open: pill.appearanceOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1760,7 +1786,7 @@ Item {
             s: pill.s
             open: pill.updatesOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1773,7 +1799,7 @@ Item {
             s: pill.s
             open: pill.displayOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1786,7 +1812,7 @@ Item {
             s: pill.s
             open: pill.inputOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1799,7 +1825,7 @@ Item {
             s: pill.s
             open: pill.lookOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1812,7 +1838,7 @@ Item {
             s: pill.s
             open: pill.idlelockOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1825,7 +1851,7 @@ Item {
             s: pill.s
             open: pill.animationOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1838,7 +1864,7 @@ Item {
             s: pill.s
             open: pill.fontpickerOpen
             morphCloseness: pill.morphCloseness
-            onRequestClose: pill.requestClose()
+            
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }

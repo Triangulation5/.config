@@ -5,7 +5,13 @@ import QtQuick.Shapes
 import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Services.Pipewire
-import "Singletons"
+import qs.services
+import qs.modules.controlcenter
+import qs.modules.settings
+import qs.components.animation
+import qs.components.controls
+import qs.components.icons
+import qs.modules.pill.surfaces
 
 /**
  * 録 RECORD surface: drives gpu-screen-recorder through the ScreenRec singleton,

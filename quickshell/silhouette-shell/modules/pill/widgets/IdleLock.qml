@@ -3,7 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "Singletons"
+import qs.services
+import qs.modules.settings
 
 /**
  * 錠 IDLE / LOCK sub-surface: the three idle timeouts that drive hypridle, each

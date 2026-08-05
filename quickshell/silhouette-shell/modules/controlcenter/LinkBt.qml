@@ -3,7 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Io
 import Quickshell.Bluetooth
-import "Singletons"
+import qs.services
+import qs.components.layout
+import qs.components.icons
+import qs.components.controls
 
 /**
  * Bluetooth drill-in for the link surface: back chevron, scan with 25s

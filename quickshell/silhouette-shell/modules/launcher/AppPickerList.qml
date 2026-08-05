@@ -2,8 +2,11 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import "Singletons"
-import "lib/fuzzy.js" as Fuzzy
+import qs.services
+import qs.modules.pill.widgets
+import qs.components.icons
+import qs.components.controls
+import "../../utils/fuzzy.js" as Fuzzy
 
 /**
  * Shared add-app picker for the class-routing surfaces (Stash, SpaceApps).

@@ -6,9 +6,8 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
-import Services
-import Components
-import Modules
+import qs.services
+import qs.modules.pill
 
 /**
  * Washi pill top shell. Each monitor carries two layer-shell windows:
@@ -69,11 +68,6 @@ ShellRoot {
             + "Ricelin 0 '' 'Ricelin updated' \"$b\" '[]' '{}' 5000 >/dev/null 2>&1"]
     }
 
-    Binding {
-        target: Notifs
-        property: "dnd"
-        value: Flags.dnd
-    }
 
     PanelWindow {
         id: inhibitWin
@@ -151,74 +145,6 @@ ShellRoot {
 
     function peek(mon) {
         root.peekMon = root.peekMon === mon ? "" : mon;
-    }
-
-    IpcHandler {
-        target: "pill"
-        function mixer(mon: string): void { root.toggleSurface(mon, "mixer"); }
-        function calendar(mon: string): void { root.toggleSurface(mon, "calendar"); }
-        function launcher(mon: string): void { root.toggleSurface(mon, "launcher"); }
-        function power(mon: string): void { root.toggleSurface(mon, "power"); }
-        function link(mon: string): void { root.toggleSurface(mon, "link"); }
-        function battery(mon: string): void { root.toggleSurface(mon, "battery"); }
-        function settings(mon: string): void { root.toggleSurface(mon, "settings"); }
-        function keybinds(mon: string): void { root.toggleSurface(mon, "keybinds"); }
-        function recorder(mon: string): void { root.toggleSurface(mon, "recorder"); }
-        function screenrec(mon: string): void { root.toggleSurface(mon, "recorder"); }
-        function record(mon: string): void { root.toggleSurface(mon, "recorder"); }
-
-        /**
-         * Quick-record keybind (SUPER+D): one button cycles the whole flow with no
-         * surface. Recording → stop. Counting down → cancel. A chooser already up
-         * on this monitor → dismiss. Otherwise open the standalone source chooser on
-         * the focused monitor `mon`, so only that pill renders it.
-         */
-        function quickRecord(mon: string): void {
-            if (ScreenRec.recording) {
-                ScreenRec.stop();
-            } else if (ScreenRec.counting) {
-                ScreenRec.cancel();
-            } else if (ScreenRec.quickChoosing) {
-                ScreenRec.quickChoosing = false;
-                ScreenRec.quickScreenChoosing = false;
-            } else {
-                ScreenRec.quickMon = mon;
-                ScreenRec.quickScreenChoosing = false;
-                ScreenRec.quickChoosing = true;
-            }
-        }
-        function gameMode(mon: string): void { Flags.gameMode = !Flags.gameMode; }
-        function sysmon(mon: string): void { root.toggleSurface(mon, "sysmon"); }
-        function system(mon: string): void { root.toggleSurface(mon, "sysmon"); }
-        function clipboard(mon: string): void { root.toggleSurface(mon, "clipboard"); }
-        function wallpaper(mon: string): void { root.toggleSurface(mon, "wallpaper"); }
-        function media(mon: string): void {
-            if (Players.list.length > 0)
-                root.toggleSurface(mon, "media");
-        }
-        function peek(mon: string): void { root.peek(mon); }
-        function hide(): void { root.close(); }
-
-        /** Opens any surface by name, settings sub-pages included; dev and scripting door. */
-        function page(mon: string, name: string): void { root.toggleSurface(mon, name); }
-
-        /**
-         * The two halves of the SUPER+M minimize toggle, driven by the
-         * minimize-toggle script which has already read the focused window. A
-         * desktop window drops into the minimized stash; a window already stashed
-         * comes back to the workspace it is handed, so the same key hides and
-         * restores. Both target the window by address so they act on the one the
-         * user pressed on, not whatever the compositor calls active afterwards.
-         */
-        function minimizeWindow(addr: string): void {
-            Hyprland.dispatch('hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:' + addr + '" })');
-        }
-        function restoreWindow(arg: string): void {
-            var p = arg.split("|");
-            if (p.length < 2 || p[0].length === 0)
-                return;
-            Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + p[1] + ', window = "address:' + p[0] + '" })');
-        }
     }
 
     Variants {

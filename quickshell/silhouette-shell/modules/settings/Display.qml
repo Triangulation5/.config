@@ -3,8 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "lib/monitors.js" as Mon
-import "Singletons"
+import "../../utils/monitors.js" as Mon
+import qs.services
+import qs.modules.controlcenter
+import qs.components.icons
 
 /**
  * 画 DISPLAY sub-surface. A proportional mini-map of the monitor layout sits on

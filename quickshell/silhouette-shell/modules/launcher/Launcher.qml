@@ -3,9 +3,14 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "Singletons"
-import "lib/fuzzy.js" as Fuzzy
-import "lib/calc.js" as Calc
+import qs.services
+import qs.modules.settings
+import qs.modules.pill.widgets
+import qs.modules.pill.surfaces
+import qs.components.icons
+import qs.components.controls
+import "../../utils/fuzzy.js" as Fuzzy
+import "../../utils/calc.js" as Calc
 
 /**
  * Launcher surface: search field over a ranked application list, drawn as one
@@ -24,6 +29,11 @@ PillSurface {
     property string query: ""
     property int selectedIndex: 0
     property var usage: ({})
+    property var entries: []
+    property int total: 0
+
+    signal launch(var entry)
+    signal quit()
 
     /**
      * Calc mode: when the whole query parses as a real calculation (an
@@ -87,7 +97,7 @@ PillSurface {
         return out;
     }
     readonly property int totalCount: allEntries.length
-    readonly property var results: Fuzzy.rank(allEntries, query, usage)
+    readonly property var results: (entries && entries.length > 0) ? entries : Fuzzy.rank(allEntries, query, usage)
 
     function focusField() { search.input.forceActiveFocus(); }
 
@@ -122,12 +132,17 @@ PillSurface {
             return;
         var entry = results[selectedIndex];
         if (entry) {
-            if (entry.id) {
-                root.usage[entry.id] = (root.usage[entry.id] || 0) + 1;
-                usageStore.setText(JSON.stringify(root.usage));
+            if (root.entries && root.entries.length > 0) {
+                root.launch(entry);
+            } else {
+                if (entry.id) {
+                    root.usage[entry.id] = (root.usage[entry.id] || 0) + 1;
+                    usageStore.setText(JSON.stringify(root.usage));
+                }
+                entry.execute();
             }
-            entry.execute();
         }
+        root.quit();
         root.requestClose();
     }
 
@@ -177,7 +192,7 @@ PillSurface {
         }
         onMoved: (d) => root.move(d)
         onAccepted: root.activate()
-        onDismissed: root.requestClose()
+        onDismissed: { root.quit(); root.requestClose(); }
     }
 
     Rectangle {

@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Effects
-import "Singletons"
+import qs.services
 
 /**
  * Washi hint bubble for pill controls. Anchored to its parent control and

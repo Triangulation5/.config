@@ -1,4 +1,4 @@
-module Components.Icons
+module qs.components.icons
 
 GlyphIcon 1.0 GlyphIcon.qml
 WifiGlyph 1.0 WifiGlyph.qml

@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "Singletons"
+import qs.services
 
 /**
  * 蓄 BATTERY surface: a typographic read-out for the laptop battery. The

@@ -2,8 +2,11 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
-import "lib/keychord.js" as Chord
-import "Singletons"
+import "../../utils/keychord.js" as Chord
+import qs.services
+import qs.modules.pill.widgets
+import qs.modules.pill.surfaces
+import qs.components.icons
 
 /**
  * 場 WORKSPACES hub: a glance at Hyprland's special spaces and the keys that

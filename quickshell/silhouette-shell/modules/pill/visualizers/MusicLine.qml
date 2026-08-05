@@ -4,7 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import QtQuick.Layouts
-import "Singletons"
+import qs.services
 
 Rectangle {
     height: 150

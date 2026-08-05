@@ -3,7 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import Quickshell
-import "Singletons"
+import qs.services
+import qs.modules.settings
+import qs.modules.pill.surfaces
+import qs.components.icons
+import qs.components.icons
+import qs.components.controls
+import qs.components.icons
+import qs.components.controls
+import qs.modules.pill.widgets
 
 /**
  * Calendar surface: a weather glance, the month grid, and an event editor that

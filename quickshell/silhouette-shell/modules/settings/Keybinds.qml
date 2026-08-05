@@ -4,9 +4,11 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
-import "lib/binds.js" as Binds
-import "lib/keychord.js" as Chord
-import "Singletons"
+import "../../utils/binds.js" as Binds
+import "../../utils/keychord.js" as Chord
+import qs.services
+import qs.modules.pill.surfaces
+import qs.components.icons
 
 /**
  * 鍵 KEYBINDS surface: a searchable list of the keyboard shortcuts parsed from

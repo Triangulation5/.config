@@ -2,7 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
-import "Singletons"
+import qs.services
+import qs.components.controls
 
 /**
  * 字 FONT sub-surface: a searchable list of every installed family, each row
