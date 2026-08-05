@@ -1,0 +1,5 @@
+module Modules.Pill
+
+PillRoot 1.0 PillRoot.qml
+Pill     1.0 Pill.qml
+Ame      1.0 Ame.qml

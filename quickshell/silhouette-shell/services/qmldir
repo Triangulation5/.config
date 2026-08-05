@@ -1,0 +1,22 @@
+module Services
+
+singleton Backlight       1.0 Backlight.qml
+singleton Battery         1.0 Battery.qml
+singleton Cava            1.0 Cava.qml
+singleton Cliphist        1.0 Cliphist.qml
+singleton Devices         1.0 Devices.qml
+singleton Dyn             1.0 Dyn.qml
+singleton Events          1.0 Events.qml
+singleton Flags           1.0 Flags.qml
+singleton GameMode        1.0 GameMode.qml
+singleton Motion          1.0 Motion.qml
+singleton NightLight      1.0 NightLight.qml
+singleton Notifs          1.0 Notifs.qml
+singleton Players         1.0 Players.qml
+singleton ScreenRec       1.0 ScreenRec.qml
+singleton Spaces          1.0 Spaces.qml
+singleton Sysmon          1.0 Sysmon.qml
+singleton Theme           1.0 Theme.qml
+singleton Walls           1.0 Walls.qml
+singleton Weather         1.0 Weather.qml
+singleton Workspacerules  1.0 Workspacerules.qml

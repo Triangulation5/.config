@@ -1,0 +1,17 @@
+module Modules.Settings
+
+Appearance        1.0 Appearance.qml
+Display           1.0 Display.qml
+DisplayLabel      1.0 DisplayLabel.qml
+DisplayPicker     1.0 DisplayPicker.qml
+FontPicker        1.0 FontPicker.qml
+Input             1.0 Input.qml
+Keybinds          1.0 Keybinds.qml
+Look              1.0 Look.qml
+Settings          1.0 Settings.qml
+SettingsHeader    1.0 SettingsHeader.qml
+SettingsRow       1.0 SettingsRow.qml
+SettingsSeg       1.0 SettingsSeg.qml
+SettingsSurface   1.0 SettingsSurface.qml
+Updates           1.0 Updates.qml
+WorkspacesSurface 1.0 WorkspacesSurface.qml
