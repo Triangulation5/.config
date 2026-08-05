@@ -36,22 +36,42 @@ PanelWindow {
     /**
      * Corner radius modes.
      *
+     * Game mode removes the visible corner.
+     *
      * Notch style uses a larger bezel-like rounding.
+     *
      * Normal mode keeps a subtle screen corner rounding
      * instead of removing the corners entirely.
      */
     readonly property real notchCornerSize: 12
     readonly property real normalCornerSize: 8
+    readonly property real hiddenCornerSize: 0
+
+    /**
+     * Shared state.
+     */
+    readonly property bool gameMode: Flags.gameMode
+    readonly property bool notchStyle: Flags.notchStyle
 
     /**
      * Active corner radius.
      *
-     * Smoothly transitions between notch mode and
-     * standard screen corner rounding.
+     * Priority:
+     *
+     * 1. Game mode:
+     *    corners collapse away.
+     *
+     * 2. Notch style:
+     *    larger bezel-like rounding.
+     *
+     * 3. Normal:
+     *    subtle screen rounding.
      */
-    property real cornerSize: notchStyle
-        ? notchCornerSize
-        : normalCornerSize
+    property real cornerSize: gameMode
+        ? hiddenCornerSize
+        : notchStyle
+            ? notchCornerSize
+            : normalCornerSize
 
     Behavior on cornerSize {
         NumberAnimation {
@@ -66,19 +86,11 @@ PanelWindow {
     readonly property color cornerColor: Theme.capsule
 
     /**
-     * Shared state.
-     */
-    readonly property bool gameMode: Flags.gameMode
-    readonly property bool notchStyle: Flags.notchStyle
-
-    /**
-     * The corner disappears only when:
+     * The corner disappearance animation.
      *
-     * - game mode activates
-     *
-     * Disabling notch style no longer removes the
-     * corners. Instead, it reduces them to a smaller
-     * standard screen rounding.
+     * Geometry changes are handled by cornerSize.
+     * The RoundCorner component still receives the
+     * evaporating state for its collapse animation.
      */
     readonly property bool evaporating: gameMode
 
@@ -132,9 +144,10 @@ PanelWindow {
             /**
              * Shared collapse animation.
              *
-             * Used only for game mode transitions.
+             * Used for game mode transitions.
+             *
              * Notch style changes use corner radius
-             * interpolation instead.
+             * interpolation through cornerSize.
              */
             evaporating: corners.evaporating
             edgeDirection: modelData.edge
@@ -149,20 +162,20 @@ PanelWindow {
 
             anchors {
                 left: modelData.h === Qt.AlignLeft
-                      ? parent.left
-                      : undefined
+                    ? parent.left
+                    : undefined
 
                 right: modelData.h === Qt.AlignRight
-                       ? parent.right
-                       : undefined
+                    ? parent.right
+                    : undefined
 
                 top: modelData.v === Qt.AlignTop
-                     ? parent.top
-                     : undefined
+                    ? parent.top
+                    : undefined
 
                 bottom: modelData.v === Qt.AlignBottom
-                        ? parent.bottom
-                        : undefined
+                    ? parent.bottom
+                    : undefined
             }
         }
     }
