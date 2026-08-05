@@ -1,0 +1,5 @@
+module Modules.Pill.Surfaces
+
+BatterySurface 1.0 BatterySurface.qml
+PillSurface    1.0 PillSurface.qml
+SysmonSurface  1.0 SysmonSurface.qml

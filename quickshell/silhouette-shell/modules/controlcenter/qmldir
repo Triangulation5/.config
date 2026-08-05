@@ -1,0 +1,7 @@
+module Modules.ControlCenter
+
+Link       1.0 Link.qml
+LinkBt     1.0 LinkBt.qml
+LinkToggle 1.0 LinkToggle.qml
+LinkWifi   1.0 LinkWifi.qml
+Power      1.0 Power.qml
