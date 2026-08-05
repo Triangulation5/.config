@@ -1372,16 +1372,13 @@ Item {
         anchors.fill: parent
 
         readonly property bool live: pill.mode === "hover"
-
         readonly property real clockMorph: Math.min(1, pill.morphCloseness + 0.08)
-        readonly property real clockTextMorph: Math.pow(Math.max(0, (pill.contentMorph - 0.12) / 0.88), 1.2)
-        readonly property real mediaMorph: Math.max(0, (pill.contentMorph - 0.18) / 0.82)
-        readonly property real calendarMorph: Math.max(0, (pill.contentMorph - 0.55) / 0.45)
-        readonly property real trayMorph: Math.max(0, (pill.contentMorph - 0.45) / 0.55)
-
+        readonly property real clockTextMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return Math.min(1.03, ease * 1.05); }
+        readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.52) / 0.48)); return 1 - Math.pow(1 - t, 2.6); }
+        readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
+        readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
         readonly property real clockStartX: restTime.mapToItem(hover, restTime.width / 2, restTime.height / 2).x
         readonly property real clockStartY: restTime.mapToItem(hover, restTime.width / 2, restTime.height / 2).y
-
         readonly property real clockEndX: hoverTime.x + hoverTime.width / 2
         readonly property real clockEndY: hoverTime.y + hoverTime.height / 2
 
@@ -1683,7 +1680,7 @@ Item {
             s: pill.s
             open: pill.settingsOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1696,7 +1693,7 @@ Item {
             s: pill.s
             open: pill.keybindsOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1709,7 +1706,7 @@ Item {
             s: pill.s
             open: pill.workspacesOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1722,7 +1719,7 @@ Item {
             s: pill.s
             open: pill.stashOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1735,7 +1732,7 @@ Item {
             s: pill.s
             open: pill.spaceappsOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1773,7 +1770,7 @@ Item {
             s: pill.s
             open: pill.appearanceOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1786,7 +1783,7 @@ Item {
             s: pill.s
             open: pill.updatesOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1799,7 +1796,7 @@ Item {
             s: pill.s
             open: pill.displayOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1812,7 +1809,7 @@ Item {
             s: pill.s
             open: pill.inputOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1825,7 +1822,7 @@ Item {
             s: pill.s
             open: pill.lookOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1838,7 +1835,7 @@ Item {
             s: pill.s
             open: pill.idlelockOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1851,7 +1848,7 @@ Item {
             s: pill.s
             open: pill.animationOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
@@ -1864,7 +1861,7 @@ Item {
             s: pill.s
             open: pill.fontpickerOpen
             morphCloseness: pill.morphCloseness
-            
+
             onRequestSurface: (name) => pill.requestSurface(name)
         }
     }
