@@ -201,7 +201,7 @@ Item {
         color: Theme.bright
 
         font {
-            family: "SF Pro"
+            family: "FiraCode Nerd Font Mono"
             weight: 500
             pixelSize: clock.expanded ? 160 * clock.s : 143 * clock.s
         }
@@ -324,7 +324,7 @@ Item {
         color: Theme.bright
         opacity: 0.55
 
-        font.family: "SF Pro Text"
+        font.family: "FiraCode Nerd Font Mono"
         font.weight: 600
         font.pixelSize: 37 * clock.s
 
