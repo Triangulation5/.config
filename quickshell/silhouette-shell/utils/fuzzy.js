@@ -1,49 +1,50 @@
 function haystacks(e) {
     var parts = [];
-    if (e.name) parts.push(String(e.name));
-    if (e.genericName) parts.push(String(e.genericName));
-    if (e.keywords) {
-        for (var i = 0; i < e.keywords.length; i++)
-            parts.push(String(e.keywords[i]));
+    if (e.name)
+        parts.push(String(e.name));
+    if (e.genericName)
+        parts.push(String(e.genericName));
+    var keywords = e.keywords;
+    if (keywords) {
+        for (var i = 0; i < keywords.length; i++)
+            parts.push(String(keywords[i]));
     }
     return parts;
 }
 
 function prepareEntry(e) {
-    if (e._fuzzy)
-        return e._fuzzy;
-
+    var cached = e._fuzzy;
+    if (cached)
+        return cached;
     var fields = haystacks(e);
     var lower = new Array(fields.length);
-
     for (var i = 0; i < fields.length; i++)
         lower[i] = fields[i].toLowerCase();
-
     return e._fuzzy = {
-        name: (e.name || "").toLowerCase(),
+        name: e.name ? String(e.name).toLowerCase() : "",
         fields: lower
     };
 }
 
 function subsequence(needle, hay) {
     var j = 0;
-    for (var i = 0, n = needle.length; i < hay.length && j < n; i++)
-        if (hay[i] === needle[j]) j++;
-    return j === needle.length;
+    var n = needle.length;
+    for (var i = 0, len = hay.length; i < len && j < n; i++) {
+        if (hay[i] === needle[j])
+            j++;
+    }
+    return j === n;
 }
 
 function score(e, q) {
     var data = prepareEntry(e);
-
     if (data.name.indexOf(q) === 0)
         return 0;
-
-    for (var i = 0; i < data.fields.length; i++) {
-        var f = data.fields[i];
-
+    var fields = data.fields;
+    for (var i = 0; i < fields.length; i++) {
+        var f = fields[i];
         if (f.indexOf(q) !== -1)
             return 1;
-
         if (subsequence(q, f))
             return 2;
     }
@@ -54,9 +55,8 @@ function score(e, q) {
 function uses(usage, e) {
     if (!usage || !e || !e.id)
         return 0;
-
-    var c = usage[e.id];
-    return typeof c === "number" ? c : 0;
+    var count = usage[e.id];
+    return typeof count === "number" ? count : 0;
 }
 
 function nameOf(e) {
@@ -65,53 +65,55 @@ function nameOf(e) {
 
 function rank(entries, query, usage) {
     usage = usage || {};
-
     var visible = [];
-    for (var i = 0; i < entries.length; i++) {
-        if (!entries[i].noDisplay)
-            visible.push(entries[i]);
+    var length = entries.length;
+    for (var i = 0; i < length; i++) {
+        var e = entries[i];
+        if (!e.noDisplay)
+            visible.push(e);
     }
-
-    var q = (query || "").trim().toLowerCase();
-
+    var q = query ? query.trim().toLowerCase() : "";
     if (!q) {
-        return visible.sort(function (a, b) {
+        visible.sort(function (a, b) {
             var ua = uses(usage, a);
             var ub = uses(usage, b);
-
             if (ua !== ub)
                 return ub - ua;
-
-            return nameOf(a).localeCompare(nameOf(b));
+            return nameOf(a) < nameOf(b) ? -1 :
+                nameOf(a) > nameOf(b) ? 1 : 0;
         });
+
+        return visible;
     }
 
     var scored = [];
 
     for (var k = 0; k < visible.length; k++) {
-        var e = visible[k];
-        var s = score(e, q);
+        var entry = visible[k];
+        var s = score(entry, q);
 
         if (s !== 99) {
-            scored.push({
-                e: e,
-                s: s,
-                u: uses(usage, e),
-                n: nameOf(e)
-            });
+            scored.push([
+                entry,
+                s,
+                uses(usage, entry),
+                nameOf(entry)
+            ]);
         }
     }
 
     scored.sort(function (a, b) {
-        return a.s - b.s ||
-            b.u - a.u ||
-            a.n.localeCompare(b.n);
+        if (a[1] !== b[1])
+            return a[1] - b[1];
+        if (a[2] !== b[2])
+            return b[2] - a[2];
+        return a[3] < b[3] ? -1 :
+            a[3] > b[3] ? 1 : 0;
     });
 
     var result = new Array(scored.length);
-
     for (var x = 0; x < scored.length; x++)
-        result[x] = scored[x].e;
+        result[x] = scored[x][0];
 
     return result;
 }
