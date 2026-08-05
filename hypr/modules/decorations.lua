@@ -44,7 +44,7 @@ hl.config({
 })
 
 -- https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
-local liquidMotion = false
+local liquidMotion = true
 
 if liquidMotion then
     -- Liquid motion style
