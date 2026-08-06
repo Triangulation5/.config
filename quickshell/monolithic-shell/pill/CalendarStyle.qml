@@ -55,44 +55,6 @@ Item {
         }
     }
 
-    Rectangle {
-        anchors.left: parent.left
-        width: 32
-        height: parent.height
-        z: 0
-
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: Theme.tileBg
-            }
-
-            GradientStop {
-                position: 1
-                color: Qt.alpha(Theme.tileBg, 0)
-            }
-        }
-    }
-
-    Rectangle {
-        anchors.right: parent.right
-        width: 32
-        height: parent.height
-        z: 0
-
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: Qt.alpha(Theme.tileBg, 0)
-            }
-
-            GradientStop {
-                position: 1
-                color: Theme.tileBg
-            }
-        }
-    }
-
     ListView {
         id: wheel
 
