@@ -95,6 +95,8 @@ Item {
         "battery-charging": { d: "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M21 10v4 M13 8l-4 7h4l-1 4 5-8h-4z", fill: false },
         "battery-warning": { d: "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z M21 10v4 M12 10v4 M12 16v.1", fill: false },
         "network-off": { d: "M4 9.5C9 4.8 15 4.8 20 9.5 M7 13c3-2.8 7-2.8 10 0 M3 3l18 18", fill: false },
+        "eye": { d: "M2 12s3.5-6 10-6s10 6 10 6s-3.5 6-10 6S2 12 2 12z M12 15a3 3 0 1 0 0-6a3 3 0 0 0 0 6z", fill: false },
+        "eye-off": { d: "M3 3l18 18 M10.6 10.6a2 2 0 0 0 2.8 2.8 M9.9 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-4 4.8 M6.2 6.2C3.6 8 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 3.2-.5", fill: false },
     })
 
     readonly property var g: glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false })
