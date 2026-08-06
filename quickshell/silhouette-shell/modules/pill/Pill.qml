@@ -1374,7 +1374,7 @@ Item {
         readonly property bool live: pill.mode === "hover"
         readonly property real clockMorph: Math.min(1, pill.morphCloseness + 0.08)
         readonly property real clockTextMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return Math.min(1.03, ease * 1.05); }
-        readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.52) / 0.48)); return 1 - Math.pow(1 - t, 2.6); }
+        readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.975) / 0.025)); return Math.pow(t, 4); }
         readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
         readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
         readonly property real clockStartX: restTime.mapToItem(hover, restTime.width / 2, restTime.height / 2).x
@@ -1411,7 +1411,7 @@ Item {
                 opacity: hover.mediaMorph
 
                 transform: Translate {
-                    x: 42 * pill.s * (1 - hover.mediaMorph)
+                    x: 56 * pill.s * (1 - hover.mediaMorph)
                 }
 
                 Loader {
@@ -1419,10 +1419,10 @@ Item {
 
                     anchors.verticalCenter: parent.verticalCenter
 
-                    x: -64 * pill.s * (1 - hover.mediaMorph)
+                    x: -72 * pill.s * (1 - hover.mediaMorph)
 
                     opacity: hover.mediaMorph
-                    scale: 0.82 + 0.18 * hover.mediaMorph
+                    scale: 0.78 + 0.22 * hover.mediaMorph
 
                     active: pill.hasMedia
                     visible: active
@@ -1432,6 +1432,7 @@ Item {
 
                     sourceComponent: Media {
                         id: bud
+
                         s: pill.s
                         open: true
                         morphCloseness: hover.mediaMorph
@@ -1442,19 +1443,19 @@ Item {
                     }
                 }
 
-                // Workspaces {
-                //     id: ws
-                //
-                //     anchors.verticalCenter: parent.verticalCenter
-                //
-                //     s: pill.s
-                //     screenName: pill.screenName
-                //
-                //     enabled: hover.live
-                //
-                //     opacity: hover.trayMorph
-                //     scale: 0.9 + 0.1 * hover.trayMorph
-                // }
+                Workspaces {
+                    id: ws
+
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    s: pill.s
+                    screenName: pill.screenName
+
+                    enabled: hover.live
+
+                    opacity: hover.trayMorph
+                    scale: 0.9 + 0.1 * hover.trayMorph
+                }
 
                 MinimizedTray {
                     id: minimized
