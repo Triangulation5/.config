@@ -15,6 +15,17 @@ Item {
     property int selectedIndex: 7
     property date selectedDate: new Date()
 
+    function lerpColor(from, to, amount) {
+        const t = Math.max(0, Math.min(1, amount))
+
+        return Qt.rgba(
+            from.r + (to.r - from.r) * t,
+            from.g + (to.g - from.g) * t,
+            from.b + (to.b - from.b) * t,
+            from.a + (to.a - from.a) * t
+        )
+    }
+
     ListModel {
         id: calendarModel
 
@@ -68,6 +79,8 @@ Item {
         spacing: 10
 
         readonly property real delegateWidth: 40
+        readonly property real slotWidth: delegateWidth + spacing
+
         readonly property real centerPadding: (width - delegateWidth) / 2
 
         leftMargin: centerPadding
@@ -93,63 +106,80 @@ Item {
             width: wheel.delegateWidth
             height: wheel.height
 
-            readonly property bool selected:
-                index === wheel.currentIndex
+            // Actual physical position during scrolling.
+            readonly property real centerOffset:
+                (x + width / 2) -
+                (wheel.contentX + wheel.width / 2)
 
             readonly property real distance:
-                Math.abs(wheel.currentIndex - index)
+                Math.abs(
+                    centerOffset / wheel.slotWidth
+                )
+
+            readonly property real proximity:
+                Math.max(
+                    0,
+                    1 -
+                    Math.min(distance, 1.5) / 1.5
+                )
 
             readonly property bool nextDay:
                 index > wheel.currentIndex &&
-                distance === 1
+                index === wheel.currentIndex + 1
 
-            scale: selected ? 1.0 : 0.9
+            readonly property color baseTint:
+                nextDay
+                ? Theme.vermLit
+                : Theme.dim
 
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 150
-                }
-            }
+            readonly property bool expanded:
+                proximity > 0.5
 
+            scale:
+                0.88 +
+                (0.12 * proximity)
 
             Column {
                 anchors.centerIn: parent
 
-                /**
-                 * Current date stays centered.
-                 * All side dates share the same lowered baseline.
-                 */
-                anchors.verticalCenterOffset: dayDelegate.selected ? 0 : 6
+                anchors.verticalCenterOffset:
+                    6 -
+                    (6 * dayDelegate.proximity)
+
+                opacity:
+                    0.6 +
+                    (0.4 * dayDelegate.proximity)
+
                 spacing: 2
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: dayDelegate.selected ? model.weekday : model.weekday.charAt(0)
 
-                    color: {
-                        if (dayDelegate.selected)
-                            return Theme.cream
+                    text:
+                        dayDelegate.expanded
+                        ? model.weekday
+                        : model.weekday.charAt(0)
 
-                        if (dayDelegate.nextDay)
-                            return Theme.vermLit
-
-                        if (dayDelegate.distance === 1)
-                            return Theme.subtle
-
-                        return Theme.dim
-                    }
+                    color:
+                        root.lerpColor(
+                            dayDelegate.baseTint,
+                            Theme.cream,
+                            dayDelegate.proximity
+                        )
 
                     font.family: Theme.font
 
-                    font.pixelSize: dayDelegate.selected
-                                     ? 11
-                                     : 10
+                    font.pixelSize:
+                        10 +
+                        dayDelegate.proximity
 
-                    font.weight: dayDelegate.selected
-                                  ? Font.Bold
-                                  : Font.Medium
+                    font.weight:
+                        dayDelegate.proximity > 0.55
+                        ? Font.Bold
+                        : Font.Medium
 
-                    horizontalAlignment: Text.AlignHCenter
+                    horizontalAlignment:
+                        Text.AlignHCenter
                 }
 
                 Text {
@@ -157,34 +187,30 @@ Item {
 
                     text: model.day
 
-                    color: {
-                        if (dayDelegate.selected)
-                            return Theme.bright
-
-                        if (dayDelegate.nextDay)
-                            return Theme.vermLit
-
-                        if (dayDelegate.distance === 1)
-                            return Theme.subtle
-
-                        return Theme.dim
-                    }
+                    color:
+                        root.lerpColor(
+                            dayDelegate.baseTint,
+                            Theme.bright,
+                            dayDelegate.proximity
+                        )
 
                     font.family: Theme.font
 
-                    font.pixelSize: dayDelegate.selected
-                                     ? 18
-                                     : 15
+                    font.pixelSize:
+                        15 +
+                        (3 * dayDelegate.proximity)
 
-                    font.weight: dayDelegate.selected
-                                  ? Font.Black
-                                  : Font.DemiBold
+                    font.weight:
+                        dayDelegate.proximity > 0.55
+                        ? Font.Black
+                        : Font.DemiBold
 
                     font.features: {
                         "tnum": 1
                     }
 
-                    horizontalAlignment: Text.AlignHCenter
+                    horizontalAlignment:
+                        Text.AlignHCenter
                 }
             }
 
