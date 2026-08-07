@@ -111,13 +111,14 @@ Item {
             }
         }
 
-        // Border ring painted above the image so it stays crisp at the edge.
+        // Border ring in the capsule's own surface color, so the avatar reads
+        // as one piece with the password capsule sitting beneath it.
         Rectangle {
             anchors.fill: parent
             radius: width / 2
             color: "transparent"
-            border.width: 1
-            border.color: Theme.capsuleBorder
+            border.width: 2 * profile.s
+            border.color: Theme.capsule
         }
 
         GlyphIcon {
