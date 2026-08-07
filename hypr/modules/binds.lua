@@ -1,4 +1,4 @@
-local terminal    = "kitty"
+local terminal    = "ghostty"
 local fileManager = "nautilus"
 local browser     = "firefox"
 local quickshell  = "~/.config/hypr/scripts/open-surface.sh"
