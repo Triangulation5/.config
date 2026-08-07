@@ -71,7 +71,20 @@ Item {
     readonly property bool fontpickerOpen: surface === "fontpicker"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
-    readonly property bool hasMedia: Players.list.length > 0
+    /**
+     * True only while something is actually playing. Gates the hover media
+     * bud, so a paused, stopped, closed, or vanished player hides the widget
+     * instead of leaving a stale card on screen.
+     */
+    readonly property bool hasMedia: Players.playing
+
+    /**
+     * Playback stopped (pause, stop, exit, kill) while the media surface owned
+     * the pill: drop the surface so the pill morphs back to its normal state
+     * instead of parking on a stale card. Driven purely by state changes - no
+     * timers or timeouts.
+     */
+    onHasMediaChanged: if (!hasMedia && mediaOpen) pill.requestClose()
 
     /**
      * Subview the link surface should land on when next opened. The wifi glance
@@ -669,7 +682,7 @@ Item {
             anchors.top: body.top
             anchors.rightMargin: -1
 
-            size: pill.morphRadius + -3.45
+            size: pill.morphRadius + -2.45
             corner: RoundCorner.CornerEnum.TopRight
             color: Theme.border
             z: 1
@@ -701,7 +714,7 @@ Item {
             anchors.top: body.top
             anchors.leftMargin: -1
 
-            size: pill.morphRadius + -3.45
+            size: pill.morphRadius + -2.45
             corner: RoundCorner.CornerEnum.TopLeft
             color: Theme.border
             z: 1
@@ -1193,7 +1206,7 @@ Item {
             anchors.leftMargin: 18 * pill.s
             anchors.verticalCenter: parent.verticalCenter
             spacing: 9 * pill.s
-            opacity: Players.has ? 1 : 0
+            opacity: Players.playing ? 1 : 0
             visible: opacity > 0.01
             Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
 
@@ -1427,8 +1440,11 @@ Item {
                     active: pill.hasMedia
                     visible: active
 
-                    width: pill.mediaW
-                    height: pill.mediaH
+                    // Collapse to 0×0 when nothing plays: an invisible-but-sized
+                    // loader still counts toward hoverRow's implicitWidth, which
+                    // would leave a gap inside the expanded pill.
+                    width: pill.hasMedia ? pill.mediaW : 0
+                    height: pill.hasMedia ? pill.mediaH : 0
 
                     sourceComponent: Media {
                         id: bud
