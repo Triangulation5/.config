@@ -6,6 +6,13 @@ import Quickshell
 import qs.services
 import qs.components.layout
 
+/**
+ * One monitor's lock surface. Blurs a grab of the desktop behind a frozen sharp
+ * overlay, then wipes the lock open by growing a pill-shaped mask from the pill's
+ * resting spot to the full screen. Carries the glow field and, on the primary
+ * monitor, the main Content.
+ */
+
 Item {
     id: surface
     property real s: 1.1

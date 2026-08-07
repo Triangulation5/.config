@@ -586,8 +586,17 @@ Item {
         const d = Math.max(Math.abs(width - targetW), Math.abs(height - targetH));
         return 1 - Math.min(1, d / (110 * s));
     }
+    /**
+     * How present the hover face's content is: the clock, media bud and tray
+     * render at full strength whenever the pill is in hover mode, no matter how
+     * far the morph has travelled. That includes the rest-to-hover hop (via
+     * hoverHop) and a menu closing back into the pill (surface-to-hover) - the
+     * media card returns the moment the close starts instead of waiting for the
+     * pill to finish shrinking. Only non-hover modes gate content on the morph,
+     * so surfaces still fade in as the pill grows to their size.
+     */
     readonly property real contentMorph: {
-        if (mode === "hover" && hoverHop)
+        if (mode === "hover")
             return 1;
         return morphCloseness;
     }
@@ -1326,18 +1335,29 @@ Item {
                 id: restKanji
                 visible: pill.specialView === ""
 
-                /** Audio leaving the speakers flips the left slot into the live waveform. */
+                /**
+                 * Audio leaving the speakers flips the left slot into the live
+                 * waveform. The slot takes the visualizer's explicit size, not its
+                 * implicit one: MusicBars is a Row whose implicitWidth collapses to
+                 * zero in string mode (FastMusicLine is a transparent Rectangle),
+                 * which would park the string on a point and let it overlap the
+                 * clock. The explicit width keeps the slot stable for both the
+                 * bars and the string renderer.
+                 */
                 readonly property bool barsOn: Flags.musicViz && Cava.active
 
                 anchors.verticalCenter: parent.verticalCenter
 
-                width: barsOn ? musicBars.implicitWidth : 0
-                height: barsOn ? musicBars.implicitHeight : 0
+                width: barsOn ? musicBars.width : 0
+                height: barsOn ? musicBars.height : 0
 
                 MusicBars {
                     id: musicBars
                     anchors.centerIn: parent
                     s: pill.s
+
+                    centeredVisualizer: Flags.vizStyle === "centered"
+                    stringVisualizer: Flags.vizStyle === "string"
 
                     opacity: restKanji.barsOn ? 1 : 0
                     scale: restKanji.barsOn ? 1 : 0.7
@@ -1387,7 +1407,13 @@ Item {
         readonly property bool live: pill.mode === "hover"
         readonly property real clockMorph: Math.min(1, pill.morphCloseness + 0.08)
         readonly property real clockTextMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return Math.min(1.03, ease * 1.05); }
-        readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.975) / 0.025)); return Math.pow(t, 4); }
+        /**
+         * The media bud fades in on the clock's schedule, not its own: both
+         * start at the same morph closeness and ride the same smoothstep, so
+         * the now-playing card and the clock appear together instead of the
+         * card popping in after the pill is already fully grown.
+         */
+        readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return ease; }
         readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
         readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
         readonly property real clockStartX: restTime.mapToItem(hover, restTime.width / 2, restTime.height / 2).x

@@ -1,4 +1,11 @@
 #version 440
+
+/**
+ * Backdrop grade. Bicubic-upscales the blurred low-resolution lock grab back to
+ * screen size, darkens it, adds a soft vignette and a hint of film grain so the
+ * lock reads as one heavy cinematic layer.
+ */
+
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {

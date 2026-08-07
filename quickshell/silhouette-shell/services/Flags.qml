@@ -45,6 +45,7 @@ Singleton {
     property alias idleSuspendMin: adapter.idleSuspendMin
     property alias weatherCity: adapter.weatherCity
     property alias musicViz: adapter.musicViz
+    property alias vizStyle: adapter.vizStyle
     property alias gameMode: adapter.gameMode
     property alias gamePrevDnd: adapter.gamePrevDnd
     property alias gamePrevViz: adapter.gamePrevViz
@@ -105,6 +106,8 @@ Singleton {
             property int idleSuspendMin: 0
             property string weatherCity: ""
             property bool musicViz: true
+            /** Rest-pill spectrum renderer: bars, centered bars, or the flowing string. */
+            property string vizStyle: "bars"
             property bool gameMode: false
             property bool gamePrevDnd: false
             property bool gamePrevViz: true

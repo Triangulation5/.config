@@ -2,6 +2,13 @@ import QtQuick
 import QtQuick.Controls
 import qs.services
 
+/**
+ * Launcher query field. Carries the kanji glyph, the counter, and the underline
+ * that lights on focus; routes Up/Down to result navigation, Return to accept,
+ * Escape to dismiss, and Left/Right to page a horizontal result strip when
+ * horizontalNav is set.
+ */
+
 Item {
     id: root
 

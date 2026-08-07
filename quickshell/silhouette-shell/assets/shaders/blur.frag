@@ -1,4 +1,11 @@
 #version 440
+
+/**
+ * Separable 9-tap Gaussian blur. Samples the source along blurDir at spread
+ * texels with fixed kernel weights; the lock backdrop chains horizontal and
+ * vertical passes at shrinking resolutions for a cheap heavy blur.
+ */
+
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {

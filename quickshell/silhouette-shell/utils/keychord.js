@@ -1,3 +1,10 @@
+/**
+ * Captured-key to combo mapping for the keybinds editor. Turns a Qt key code and
+ * modifier bitmask into the "SUPER + K" text Binds.rebind expects - naming
+ * navigation keys, the F-row, and punctuation - and returns null for a bare
+ * modifier press so chord capture keeps waiting for the real key.
+ */
+
 var NAMED_KEYS = {
     0x01000009: "Print",
     0x01001007: "Print",

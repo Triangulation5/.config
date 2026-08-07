@@ -1,6 +1,13 @@
 import QtQuick
 import Quickshell
 
+/**
+ * One result row in the launcher picker: app icon, name, and a secondary line
+ * (generic name or first category), with a flame gradient behind the selected row
+ * and an enter-glyph affordance. Mouse hover drives selection and a click
+ * activates the entry.
+ */
+
 Item {
     id: row
 

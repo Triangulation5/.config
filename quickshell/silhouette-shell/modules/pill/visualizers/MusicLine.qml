@@ -6,6 +6,12 @@ import Quickshell.Hyprland
 import QtQuick.Layouts
 import qs.services
 
+/**
+ * Canvas string visualizer. Runs its own cava process and paints three bezier
+ * sections across a canvas, each stroked in a flame color with a glow that
+ * thickens with its level.
+ */
+
 Rectangle {
     height: 150
     width: 500
