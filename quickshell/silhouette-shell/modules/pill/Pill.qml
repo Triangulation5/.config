@@ -44,6 +44,22 @@ Item {
     // Custom made notch style bar
     property bool notchStyle: Flags.notchStyle
 
+    /**
+     * Notch <-> pill style transition progress: 1 renders the notch look (ears
+     * out, square top corners), 0 the pill look. Toggling the style animates
+     * this on the same quick, decisive glide the screen corners use (a touch
+     * faster) so the ears deflate downward and the top corners re-round in one
+     * crisp motion - mirrored when returning to notch.
+     */
+    property real notchProgress: notchStyle ? 1 : 0
+
+    Behavior on notchProgress {
+        NumberAnimation {
+            duration: 380
+            easing.type: Motion.easeStandard
+        }
+    }
+
     readonly property bool held: pinned || forcePinned
     readonly property bool mixerOpen: surface === "mixer"
     readonly property bool calendarOpen: surface === "calendar"
@@ -663,6 +679,23 @@ Item {
         readonly property color surfaceBottom: Theme.cardBot
 
         /**
+         * Single-wave melt for the notch <-> pill style swap, driven by the
+         * pill's notchProgress (1 = notch look). The ears deflate downward and
+         * fade while the top corners round on the same broad, overlapping band,
+         * so the rounding body progressively absorbs the shrinking ear - one
+         * continuous gesture with no staged handoff. Mirrored when entering
+         * notch.
+         */
+        readonly property real earRise: {
+            var t = Math.max(0, Math.min(1, (pill.notchProgress - 0.38) / 0.42));
+            return t * t * (3 - 2 * t);
+        }
+        readonly property real cornerRound: {
+            var t = Math.max(0, Math.min(1, (0.62 - pill.notchProgress) / 0.42));
+            return t * t * (3 - 2 * t);
+        }
+
+        /**
          * Complete surface opacity.
          *
          * Applies consistently to body, media bleed, and ears.
@@ -686,7 +719,12 @@ Item {
          * Left notch ear border.
          */
         RoundCorner {
-            visible: notchStyle
+            visible: pillSurface.earRise > 0.01
+            opacity: pillSurface.earRise
+            scale: pillSurface.earRise
+            transformOrigin: Item.TopRight
+            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
+
             anchors.right: body.left
             anchors.top: body.top
             anchors.rightMargin: -1
@@ -703,7 +741,12 @@ Item {
          * Transparent so media/content can bleed through.
          */
         RoundCorner {
-            visible: notchStyle
+            visible: pillSurface.earRise > 0.01
+            opacity: pillSurface.earRise
+            scale: pillSurface.earRise
+            transformOrigin: Item.TopRight
+            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
+
             anchors.right: body.left
             anchors.top: body.top
             anchors.rightMargin: -1
@@ -718,7 +761,12 @@ Item {
          * Right notch ear border.
          */
         RoundCorner {
-            visible: notchStyle
+            visible: pillSurface.earRise > 0.01
+            opacity: pillSurface.earRise
+            scale: pillSurface.earRise
+            transformOrigin: Item.TopLeft
+            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
+
             anchors.left: body.right
             anchors.top: body.top
             anchors.leftMargin: -1
@@ -735,7 +783,12 @@ Item {
          * Transparent so media/content can bleed through.
          */
         RoundCorner {
-            visible: notchStyle
+            visible: pillSurface.earRise > 0.01
+            opacity: pillSurface.earRise
+            scale: pillSurface.earRise
+            transformOrigin: Item.TopLeft
+            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
+
             anchors.left: body.right
             anchors.top: body.top
             anchors.leftMargin: -1
@@ -761,8 +814,8 @@ Item {
             }
 
             radius: pill.morphRadius
-            topLeftRadius: notchStyle ? 0 : pill.morphRadius * (1 - gameFlat)
-            topRightRadius: notchStyle ? 0 : pill.morphRadius * (1 - gameFlat)
+            topLeftRadius: pill.morphRadius * pillSurface.cornerRound * (1 - gameFlat)
+            topRightRadius: pill.morphRadius * pillSurface.cornerRound * (1 - gameFlat)
             bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
             bottomRightRadius: pill.morphRadius * (1 - gameFlat)
 
@@ -1466,9 +1519,11 @@ Item {
                     active: pill.hasMedia
                     visible: active
 
-                    // Collapse to 0×0 when nothing plays: an invisible-but-sized
-                    // loader still counts toward hoverRow's implicitWidth, which
-                    // would leave a gap inside the expanded pill.
+                    /**
+                     * Collapse to 0×0 when nothing plays: an invisible-but-sized
+                     * loader still counts toward hoverRow's implicitWidth, which
+                     * would leave a gap inside the expanded pill.
+                     */
                     width: pill.hasMedia ? pill.mediaW : 0
                     height: pill.hasMedia ? pill.mediaH : 0
 
@@ -1484,20 +1539,6 @@ Item {
                         }
                     }
                 }
-
-                // Workspaces {
-                //     id: ws
-                //
-                //     anchors.verticalCenter: parent.verticalCenter
-                //
-                //     s: pill.s
-                //     screenName: pill.screenName
-                //
-                //     enabled: hover.live
-                //
-                //     opacity: hover.trayMorph
-                //     scale: 0.9 + 0.1 * hover.trayMorph
-                // }
 
                 MinimizedTray {
                     id: minimized
