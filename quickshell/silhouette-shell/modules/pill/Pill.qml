@@ -691,7 +691,7 @@ Item {
             anchors.top: body.top
             anchors.rightMargin: -1
 
-            size: pill.morphRadius + -2.45
+            size: pill.morphRadius + Flags.notchFlare
             corner: RoundCorner.CornerEnum.TopRight
             color: Theme.border
             z: 1
@@ -723,7 +723,7 @@ Item {
             anchors.top: body.top
             anchors.leftMargin: -1
 
-            size: pill.morphRadius + -2.45
+            size: pill.morphRadius + Flags.notchFlare
             corner: RoundCorner.CornerEnum.TopLeft
             color: Theme.border
             z: 1

@@ -32,6 +32,7 @@ Singleton {
     property alias topGap: adapter.topGap
     property alias appGap: adapter.appGap
     property alias notchStyle: adapter.notchStyle
+    property alias notchFlare: adapter.notchFlare
     property alias recordCountdown: adapter.recordCountdown
     property alias recordDir: adapter.recordDir
     property alias recordFps: adapter.recordFps
@@ -93,6 +94,8 @@ Singleton {
             property real appGap: 1.0
             /** Custom made notch style bar. */
             property bool notchStyle: false
+            /** Notch ear flare offset (px). Higher flares both notch ears out. */
+            property real notchFlare: -2.45
             property int recordCountdown: 5
             property string recordDir: ""
             property int recordFps: 60
