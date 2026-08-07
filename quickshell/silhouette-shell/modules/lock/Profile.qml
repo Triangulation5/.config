@@ -111,8 +111,10 @@ Item {
             }
         }
 
-        // Border ring in the capsule's own surface color, so the avatar reads
-        // as one piece with the password capsule sitting beneath it.
+        /**
+         * Border ring in the capsule's own surface color, so the avatar reads
+         * as one piece with the password capsule sitting beneath it.
+         */
         Rectangle {
             anchors.fill: parent
             radius: width / 2

@@ -97,8 +97,10 @@ Item {
                 return
             }
 
-            // Retry the PAM conversation once. This helps recover from
-            // transient fingerprint initialization failures.
+            /**
+             * Retry the PAM conversation once. This helps recover from
+             * transient fingerprint initialization failures.
+             */
             if (!auth.retryingWithoutFingerprint && auth.pendingPassword.length > 0) {
                 auth.retryingWithoutFingerprint = true
                 pam.start()

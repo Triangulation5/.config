@@ -966,7 +966,7 @@ SettingsSurface {
                     s: root.s
                     value: Flags.notchFlare
                     openValue: root.base.notchFlare
-                    from: -10; to: 10; step: 0.25; decimals: 2; unit: "px"
+                    from: -7; to: 10; step: 0.25; decimals: 2; unit: "px"
                     onEdited: v => Flags.notchFlare = v
                 }
             }
