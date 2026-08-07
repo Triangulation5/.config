@@ -169,7 +169,7 @@ SettingsSurface {
             id: vizStyleRow
             surface: root
             name: "Visualizer style"
-            icon: "waves"
+            icon: "sparkles"
 
             SettingsSeg {
                 s: root.s

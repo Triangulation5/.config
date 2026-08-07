@@ -75,6 +75,8 @@ SettingsSurface {
             r.push({ item: appGapRow, kind: "scrub", bump: function (d) { appGapScrub.bump(d); } });
             r.push({ item: pillOpRow, kind: "scrub", bump: function (d) { pillOpScrub.bump(d); } });
             r.push({ item: pillBlurRow, kind: "toggle", get: function () { return Flags.pillBlur; }, set: function (v) { Flags.pillBlur = v; root.applyPillBlur(v); } });
+            if (Flags.notchStyle)
+                r.push({ item: notchFlareRow, kind: "scrub", bump: function (d) { notchFlareScrub.bump(d); } });
         }
         return r;
     }
@@ -188,7 +190,8 @@ SettingsSurface {
             appGap: Flags.appGap,
             nlTemp: Flags.nightLightTemp,
             nlOnMin: Flags.nightLightOnMin,
-            nlOffMin: Flags.nightLightOffMin
+            nlOffMin: Flags.nightLightOffMin,
+            notchFlare: Flags.notchFlare
         };
     }
 
@@ -949,6 +952,22 @@ SettingsSurface {
                         Flags.pillBlur = !Flags.pillBlur;
                         root.applyPillBlur(Flags.pillBlur);
                     }
+                }
+            }
+
+            FieldRow {
+                id: notchFlareRow
+                label: "Notch flare"
+                caption: "Flare of both notch ears."
+                icon: "bolt"
+                collapsed: !Flags.notchStyle
+                ScrubValue {
+                    id: notchFlareScrub
+                    s: root.s
+                    value: Flags.notchFlare
+                    openValue: root.base.notchFlare
+                    from: -10; to: 10; step: 0.25; decimals: 2; unit: "px"
+                    onEdited: v => Flags.notchFlare = v
                 }
             }
 
