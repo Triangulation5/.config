@@ -14,9 +14,9 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property int bars: 4 // 5, 7
+    readonly property int bars: Flags.vizStyle === "centered" ? 7 : 4
 
-    property var levels: [0, 0, 0, 0, 0]
+    property var levels: Array(bars).fill(0)
     property bool active: false
 
     property bool available: false
@@ -48,7 +48,7 @@ Singleton {
         cavaProc.running = wanted
 
         if (!wanted) {
-            levels = [0, 0, 0, 0, 0]
+            levels = Array(bars).fill(0)
             active = false
         }
     }
