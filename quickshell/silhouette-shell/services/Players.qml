@@ -22,6 +22,12 @@ Singleton {
     function isIdle(p) {
         if (!p || isProxy(p))
             return true;
+        // A Stopped player is not a valid source even when it keeps its metadata:
+        // most players never clear xesam:title on Stop, so without this a stopped
+        // player would stay `active` forever with stale state. Paused players with
+        // a title stay valid - the UI shows them paused.
+        if (p.playbackState === MprisPlaybackState.Stopped)
+            return true;
         return !p.isPlaying && (!p.trackTitle || p.trackTitle.length === 0);
     }
 
@@ -89,7 +95,11 @@ Singleton {
         for (var j = 0; j < l.length; j++)
             if (!isIdle(l[j]) && l[j].trackTitle)
                 return l[j];
-        return l[0];
+        // Nothing valid left: no playing player, no preferred, nothing with
+        // metadata. Returning null lets `active`/`has` fall to false so an
+        // idle player still on the bus (paused tab, dying process, closed
+        // Spotify) can't keep the media UI alive.
+        return null;
     }
 
     readonly property var active: (manualActive && list.indexOf(manualActive) >= 0 && !isIdle(manualActive)) ? manualActive : autoPick

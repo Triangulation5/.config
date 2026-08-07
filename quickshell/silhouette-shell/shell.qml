@@ -50,7 +50,7 @@ ShellRoot {
         function clipboard(mon: string): void { pillRoot.toggleSurface(mon, "clipboard"); }
         function wallpaper(mon: string): void { pillRoot.toggleSurface(mon, "wallpaper"); }
         function media(mon: string): void {
-            if (Players.list.length > 0)
+            if (Players.playing)
                 pillRoot.toggleSurface(mon, "media");
         }
         function peek(mon: string): void { pillRoot.peek(mon); }
