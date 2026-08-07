@@ -85,8 +85,8 @@ PillSurface {
         signal activated()
 
         anchors.verticalCenter: parent.verticalCenter
-        implicitWidth: Flags.showGlyphs ? kanjiLabel.implicitWidth : 15 * root.s
-        implicitHeight: Flags.showGlyphs ? kanjiLabel.implicitHeight : 15 * root.s
+        implicitWidth: Flags.showGlyphs ? kanjiLabel.implicitWidth : 18 * root.s
+        implicitHeight: Flags.showGlyphs ? kanjiLabel.implicitHeight : 18 * root.s
         opacity: skip.can ? 1 : 0.4
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
@@ -96,7 +96,7 @@ PillSurface {
             anchors.centerIn: parent
             text: skip.kanjiText
             font.family: Theme.fontJp
-            font.pixelSize: 13 * root.s
+            font.pixelSize: 16 * root.s
             color: skipArea.containsMouse ? Theme.cream : Theme.dim
             Behavior on color { ColorAnimation { duration: Motion.fast } }
         }
@@ -104,8 +104,8 @@ PillSurface {
         GlyphIcon {
             visible: !Flags.showGlyphs
             anchors.centerIn: parent
-            width: 15 * root.s
-            height: 15 * root.s
+            width: 17 * root.s
+            height: 17 * root.s
             name: skip.icon
             color: skipArea.containsMouse ? Theme.cream : Theme.dim
             Behavior on color { ColorAnimation { duration: Motion.fast } }
@@ -249,13 +249,18 @@ PillSurface {
         anchors.rightMargin: root.edgePad
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 24 * root.s
-        spacing: 14 * root.s
+        spacing: 16 * root.s
         opacity: root.picking ? 0 : 1
         enabled: !root.picking
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
+        /**
+         * The transport is right-anchored then nudged left so it sits under the
+         * title/artist column; the offset is tuned to the bigger controls so the
+         * row's left edge stays clear of the cover art next to it.
+         */
         transform: Translate {
-            x: -136 * root.s
+            x: -126 * root.s
         }
 
         KanjiSkip {
@@ -276,10 +281,10 @@ PillSurface {
 
             anchors.verticalCenter: parent.verticalCenter
 
-            width: 30 * root.s
-            height: 30 * root.s
+            width: 36 * root.s
+            height: 36 * root.s
 
-            radius: 7 * root.s
+            radius: 9 * root.s
 
             rotation: -1.5
             scale: 1 + 0.08 * root.sealPulse
@@ -344,7 +349,7 @@ PillSurface {
                 color: "#ffffff"
 
                 font.family: Theme.fontJp
-                font.pixelSize: 16 * root.s
+                font.pixelSize: 19 * root.s
                 font.weight: Font.Bold
             }
 
@@ -353,8 +358,8 @@ PillSurface {
 
                 anchors.centerIn: parent
 
-                width: 15 * root.s
-                height: 15 * root.s
+                width: 18 * root.s
+                height: 18 * root.s
 
                 name: root.playing
                       ? "pause"

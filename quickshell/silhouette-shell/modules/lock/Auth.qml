@@ -1,6 +1,13 @@
 import QtQuick
 import Quickshell.Services.Pam
 
+/**
+ * PAM authentication for the lock. Submits the typed password through a
+ * quickshell-lock PamContext, exposes failed/succeeded and the last error, and
+ * retries the conversation once when a fingerprint reader fails to initialize so
+ * a transient hiccup doesn't lock the user out.
+ */
+
 Item {
     id: auth
 

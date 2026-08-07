@@ -9,6 +9,13 @@ import qs.modules.lock
 import qs.modules.screencorner
 import qs.modules.launcher
 
+/**
+ * Shell entry point. One ShellRoot hosts every daemon - the pill, the session lock,
+ * the screen corners and the launcher - plus the IPC handler that routes `qs ipc`
+ * calls into per-monitor pill surfaces (mixer, calendar, launcher, power, link,
+ * battery, settings, keybinds, recorder, ...).
+ */
+
 ShellRoot {
     id: shell
 

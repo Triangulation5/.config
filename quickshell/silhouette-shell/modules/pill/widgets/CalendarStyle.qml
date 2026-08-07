@@ -3,6 +3,12 @@ import QtQuick.Controls
 import qs.services
 import qs.components.animation
 
+/**
+ * Hover date strip on the pill. A horizontal snapping wheel of days around today
+ * where each delegate scales and brightens with its proximity to the center; the
+ * centered day feeds the calendar surface's selected date.
+ */
+
 Item {
     id: root
 

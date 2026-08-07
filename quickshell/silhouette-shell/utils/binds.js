@@ -1,3 +1,11 @@
+/**
+ * hl.bind parser and editor for the keybinds surface. Walks the hyprland lua
+ * config line by line and turns each `hl.bind(...)` into a { combo, label, action,
+ * cmd } entry - resolving `mod .. " + X` combos, trailing `-- name` comments, and
+ * exec_cmd dispatches - and exposes rebind, editCmd, editAction, add, and del so
+ * the editor rewrites the file without touching anything else.
+ */
+
 function readMod(luaText) {
     var m = luaText.match(/^\s*local\s+mod\s*=\s*"([^"]*)"/m);
     return m ? m[1] : "SUPER";

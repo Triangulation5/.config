@@ -5,6 +5,12 @@ import QtQuick.Effects
 import Quickshell
 import qs.services
 
+/**
+ * Lock screen clock. Renders the time (12/24-hour, optional seconds) and date in
+ * the Flags-driven formats, plays a lift-and-scale intro on first paint, and
+ * reports clockClicked so the main lock can expand into the full date layout.
+ */
+
 Item {
     id: clock
 

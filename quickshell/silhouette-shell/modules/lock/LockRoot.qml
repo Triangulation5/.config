@@ -7,6 +7,13 @@ import Quickshell.Wayland
 import qs.services
 import qs.modules.lock
 
+/**
+ * Lock daemon root. Owns the WlSessionLock surface, the PAM auth, the shared
+ * password state, and the pill-to-lock reveal. A touch file (ricelin-lock-trigger)
+ * fires the lock fast off the critical path, debounced and primed so the daemon
+ * never locks itself on startup.
+ */
+
 ShellRoot {
     id: root
 

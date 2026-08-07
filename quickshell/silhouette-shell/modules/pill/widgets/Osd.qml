@@ -5,6 +5,12 @@ import Quickshell.Services.Pipewire
 import qs.services
 import qs.components.icons
 
+/**
+ * Pill OSD face. Morphs the pill open for a flash of volume, brightness, battery,
+ * now-playing, workspace, or record status, throttled and cooled so preview churn
+ * can't spam it; the track flash holds open until a late cover decodes.
+ */
+
 Item {
     id: root
 

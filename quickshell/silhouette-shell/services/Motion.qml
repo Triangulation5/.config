@@ -3,6 +3,12 @@ import QtQuick
 import Quickshell
 import qs.services
 
+/**
+ * Shared motion language. One singleton owns the animation durations, easing
+ * types, and the morph bezier curve every surface morph rides, all scaled by the
+ * reduce-motion flag; notch style swaps in a quicker, Apple-inspired profile.
+ */
+
 Singleton {
     readonly property real mult: Flags.reduceMotion ? 0.45 : 1
 

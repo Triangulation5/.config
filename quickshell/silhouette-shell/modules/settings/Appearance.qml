@@ -88,6 +88,7 @@ SettingsSurface {
         { item: secRow, kind: "toggle", get: function () { return Flags.clockSeconds; }, set: function (v) { Flags.clockSeconds = v; } },
         { item: glyphRow, kind: "toggle", get: function () { return Flags.showGlyphs; }, set: function (v) { Flags.showGlyphs = v; } },
         { item: vizRow, kind: "toggle", get: function () { return Flags.musicViz; }, set: function (v) { Flags.musicViz = v; } },
+        { item: vizStyleRow, kind: "seg", vals: ["bars", "centered", "string"], get: function () { return Flags.vizStyle; }, set: function (v) { Flags.vizStyle = v; } },
         { item: notchRow, kind: "toggle", get: function () { return Flags.notchStyle; }, set: function (v) { Flags.notchStyle = v; } },
         { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
@@ -161,6 +162,24 @@ SettingsSurface {
                 s: root.s
                 on: Flags.musicViz
                 onToggled: Flags.musicViz = !Flags.musicViz
+            }
+        }
+
+        SettingsRow {
+            id: vizStyleRow
+            surface: root
+            name: "Visualizer style"
+            icon: "waves"
+
+            SettingsSeg {
+                s: root.s
+                options: [
+                    { label: "Bars", value: "bars" },
+                    { label: "Center", value: "centered" },
+                    { label: "String", value: "string" }
+                ]
+                value: Flags.vizStyle
+                onPicked: (v) => Flags.vizStyle = v
             }
         }
 
