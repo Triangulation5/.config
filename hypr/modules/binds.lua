@@ -94,8 +94,8 @@ hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
 
--- Requires playerctl
-hl.bind("ALT + RIGHT", hl.dsp.exec_cmd("playerctl next"),       { locked = true })
-hl.bind("ALT + LEFT",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
-hl.bind("ALT + DOWN",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("ALT + UP",    hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+-- Requires playerctl and quickshell config
+hl.bind("ALT + RIGHT", hl.dsp.global("quickshell:mediaNext"),   { locked = true })
+hl.bind("ALT + LEFT",  hl.dsp.global("quickshell:mediaPrev"),   { locked = true })
+hl.bind("ALT + DOWN",  hl.dsp.global("quickshell:mediaToggle"), { locked = true })
+hl.bind("ALT + UP",    hl.dsp.global("quickshell:mediaToggle"), { locked = true })
