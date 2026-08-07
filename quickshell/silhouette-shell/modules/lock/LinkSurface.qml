@@ -7,6 +7,12 @@ import Quickshell.Bluetooth
 import qs.services
 import qs.components.icons
 
+/**
+ * Lock screen connectivity glance. A compact capsule shows the wifi network (or
+ * Bluetooth/offline state) and expands on click into rows with wifi and bluetooth
+ * status toggles.
+ */
+
 Item {
     id: link
 

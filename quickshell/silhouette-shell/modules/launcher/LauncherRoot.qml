@@ -6,6 +6,13 @@ import qs.services
 import qs.modules.launcher
 import "../../utils/fuzzy.js" as Fuzzy
 
+/**
+ * Launcher window root. Shows the launcher on the target monitor with a
+ * full-screen overlay, backed by the fuzzy-ranked desktop entries and a persisted
+ * usage map (launcher-usage.json) so frequent apps rise to the top; launching an
+ * entry executes it and closes.
+ */
+
 ShellRoot {
     id: root
 

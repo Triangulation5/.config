@@ -1,4 +1,11 @@
 #version 440
+
+/**
+ * Audio glow band. Interpolates the twelve smoothed cava levels into a
+ * continuous value, then paints a flame whose height follows the level and whose
+ * color fades from deep accent to warm tip; powers the lock's GlowField.
+ */
+
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
 layout(std140, binding = 0) uniform buf {

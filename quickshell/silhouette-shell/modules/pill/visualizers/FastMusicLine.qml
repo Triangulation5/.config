@@ -8,6 +8,13 @@ import Qt5Compat.GraphicalEffects
 import QtQuick.Shapes
 import qs.services
 
+/**
+ * String audio visualizer. Runs its own cava process and draws one flowing cubic
+ * string across the pill from per-segment levels, with colored end dots and a
+ * soft glow. Drawn in a 200x200 space so the pill can scale it freely; powers
+ * MusicBars' string style.
+ */
+
 Rectangle {
     id: musicLineContainer
 

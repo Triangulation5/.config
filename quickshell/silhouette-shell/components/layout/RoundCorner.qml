@@ -1,5 +1,12 @@
 import QtQuick
 
+/**
+ * One rounded corner segment drawn on a canvas. Used wherever a pill-like corner
+ * is needed: the pill's notch ears, the screen corners, and the lock mask's
+ * growing pill. Supports an inner bezel shadow and an evaporating collapse for
+ * game mode.
+ */
+
 Item {
     id: root
 

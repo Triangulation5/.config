@@ -3,6 +3,12 @@ import Quickshell
 import Quickshell.Wayland
 import qs.services
 
+/**
+ * Fullscreen-aware corner overlay. Tracks the active workspace and toplevels on
+ * each monitor and collapses the rounded corners whenever a window is truly
+ * fullscreen, so the rounding only shows over the desktop.
+ */
+
 PanelWindow {
     id: screenCorners
 

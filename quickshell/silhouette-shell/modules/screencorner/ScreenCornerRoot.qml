@@ -4,6 +4,12 @@ import Quickshell.Wayland
 import qs.services
 import qs.components.layout
 
+/**
+ * Screen corner layer. One overlay PanelWindow paints the four rounded corners
+ * over the desktop with RoundCorner, morphing their radius between notch, normal,
+ * and game (collapsed) modes and evaporating them in game mode.
+ */
+
 PanelWindow {
     id: corners
 

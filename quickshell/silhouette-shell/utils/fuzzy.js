@@ -1,3 +1,10 @@
+/**
+ * Launcher ranking. Scores each desktop entry against the query as a prefix (best),
+ * substring, or subsequence match across its name, generic name, and keywords, then
+ * ranks by score, launch usage, and name. An empty query sorts purely by usage so
+ * the apps you actually open float to the top.
+ */
+
 function haystacks(e) {
     var parts = [];
     if (e.name)

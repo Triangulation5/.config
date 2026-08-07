@@ -3,6 +3,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 
+/**
+ * Notification service. Wraps the NotificationServer into the grouped live and
+ * history lists the tray and inbox render, tracks arrival times, unread counts,
+ * and popups, and offers dismiss/activate helpers that raise the notifying app's
+ * window.
+ */
+
 Singleton {
     id: root
 

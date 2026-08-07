@@ -4,6 +4,12 @@ import QtQuick
 import qs.services
 import qs.components.icons
 
+/**
+ * Lock screen battery glance. A compact capsule showing the charge icon and
+ * percent expands on click into a card with a large glyph, percentage, and time
+ * remaining, sharing the pill's press-scale and expand morphs.
+ */
+
 Item {
     id: battery
 

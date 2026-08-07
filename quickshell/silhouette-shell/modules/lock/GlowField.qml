@@ -3,6 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 
+/**
+ * Live audio glow behind the lock. Smoothes cava levels with an asymmetric
+ * attack/release and feeds them to the glow shader, painting a soft flame band
+ * across the bottom of the lock while audio plays.
+ */
+
 Item {
     id: glow
     property color accent: Theme.verm

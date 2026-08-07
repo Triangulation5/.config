@@ -7,6 +7,13 @@ import Quickshell.Services.Mpris
 import qs.services
 import qs.components.icons
 
+/**
+ * The lock screen's main face. Carries the profile block, the password capsule
+ * with its idle "press any key" morph into the armed field, the now-playing media
+ * card and progress, and the battery and link glances. The first key lands
+ * straight in the input; ten seconds of silence returns the capsule to idle.
+ */
+
 Item {
     id: content
     property real s: 1.1
@@ -21,11 +28,59 @@ Item {
     property bool showError: false
     property bool showCursor: false
 
+    /**
+     * The password field starts disarmed so the lock screen idles on a "press
+     * any key to enter password" hint: the capsule chrome and eye are hidden and
+     * only the bare prompt floats over the backdrop. Any printable key lands
+     * straight in the input (the field keeps focus the whole time, so the very
+     * first keystroke is captured, never swallowed), flips this on, and the
+     * capsule fades back in around the text. Ten seconds without a key or click
+     * while armed resets to idle again.
+     */
+    property bool passwordArmed: false
+
+    /**
+     * Morph progress for the capsule wake/return: 0 while the lock idles on the
+     * bare hint, 1 once the field is armed. Every chrome and prompt transition
+     * derives from this single value and rides the pill's own motion curve, so
+     * the idle -> armed -> idle transformation is one continuous gesture in
+     * both directions instead of a hard swap.
+     */
+    property real lockMorph: 0
+
+    Behavior on lockMorph {
+        NumberAnimation {
+            duration: Motion.glide
+            easing.type: Motion.easeMorph
+            easing.bezierCurve: Motion.morphCurve
+        }
+    }
+
+    onPasswordArmedChanged: lockMorph = content.passwordArmed ? 1 : 0
+
     Shortcut {
         sequence: "Escape"
 
         onActivated: {
             content.clockExpanded = false;
+        }
+    }
+
+    /**
+     * Idle is timed, not focus-driven: 10 seconds of silence while the field is
+     * armed wipes a half-typed password and returns the lock to the bare "press
+     * any key" prompt. Activity while armed (typing, any key, a click) restarts
+     * the countdown; authenticating pauses it so a slow auth never disarms
+     * mid-flight.
+     */
+    Timer {
+        id: idleTimer
+        interval: 10000
+        running: content.isMain && content.passwordArmed && !content.authenticating
+        onTriggered: {
+            content.passwordArmed = false;
+            content.showError = false;
+            input.text = "";
         }
     }
 
@@ -270,7 +325,6 @@ Item {
     Rectangle {
         id: capsule
         visible: !content.clockExpanded
-        opacity: content.clockExpanded ? 0 : 1
         Behavior on opacity {
             NumberAnimation {
                 duration: 220
@@ -283,9 +337,15 @@ Item {
         width: 340 * content.s
         height: 50 * content.s
         radius: height / 2
-        color: Theme.capsule
-        border.width: 1
-        border.color: Theme.capsuleBorder
+        /**
+         * The capsule stays as the layout anchor for the prompt text and the
+         * profile block; its chrome lives in capsuleChrome below so the text
+         * never scales with it. While idle the chrome is gone entirely - just the
+         * bare "press any key" text floating over the backdrop - and the first
+         * key inflates it back in around the field.
+         */
+        color: "transparent"
+        border.width: 0
         opacity: content.isMain ? (content.authenticating ? 0.6 : 1) : 0
 
         transform: Translate { id: capsuleShift }
@@ -297,6 +357,52 @@ Item {
             NumberAnimation { target: capsuleShift; property: "x"; to: 6 * content.s; duration: 50 }
             NumberAnimation { target: capsuleShift; property: "x"; to: -6 * content.s; duration: 50 }
             NumberAnimation { target: capsuleShift; property: "x"; to: 0; duration: 50 }
+        }
+
+        /**
+         * The capsule's material: fill, hairline border, and a soft drop shadow,
+         * rendered behind the input. It inflates around the prompt on the pill's
+         * morph curve - growing from the centre as it fades in - so the idle text
+         * is handed off to a formed capsule instead of a flat colour blink. The
+         * scale rides lockMorph while the fill and border animate on the same
+         * curve, keeping one in sync with the other.
+         */
+        Rectangle {
+            id: capsuleChrome
+            anchors.fill: parent
+            radius: height / 2
+
+            color: content.passwordArmed ? Theme.capsule : "transparent"
+            border.width: content.passwordArmed ? 1 : 0
+            border.color: Theme.capsuleBorder
+
+            scale: 0.90 + 0.10 * content.lockMorph
+            transformOrigin: Item.Center
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Motion.glide
+                    easing.type: Motion.easeMorph
+                    easing.bezierCurve: Motion.morphCurve
+                }
+            }
+
+            Behavior on border.width {
+                NumberAnimation {
+                    duration: Motion.glide
+                    easing.type: Motion.easeMorph
+                    easing.bezierCurve: Motion.morphCurve
+                }
+            }
+
+            layer.enabled: content.lockMorph > 0.01
+            layer.smooth: true
+            layer.effect: MultiEffect {
+                shadowEnabled: content.lockMorph > 0.01
+                shadowColor: Qt.rgba(0, 0, 0, 0.35)
+                shadowBlur: 0.7
+                shadowVerticalOffset: 2 * content.s
+            }
         }
 
         TextInput {
@@ -318,10 +424,18 @@ Item {
             enabled: !content.authenticating
 
             onTextChanged: {
-                if (text.length > 0)
+                if (text.length > 0) {
                     content.showError = false;
+                    content.passwordArmed = true;
+                    idleTimer.restart();
+                }
                 if (content.pw && content.pw.text !== text)
                     content.pw.text = text;
+            }
+
+            Keys.onPressed: {
+                if (content.passwordArmed)
+                    idleTimer.restart();
             }
 
             Connections {
@@ -467,22 +581,85 @@ Item {
                 }
             }
 
-            Text {
+            Item {
                 anchors.centerIn: parent
                 visible: input.text.length === 0
 
-                text: {
-                    if (!content.showError)
-                        return "<i>enter password</i>"
-                    var pamMsg = content.auth ? content.auth.lastError : "";
-                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
+                /**
+                 * The two prompts morph into each other on the pill's motion
+                 * curve: as the field arms, the idle hint scales and drifts up
+                 * out while "enter password" rises in from below. Returning to
+                 * idle plays the same morph back, so waking and settling read as
+                 * one continuous gesture. The soft shadow keeps whichever prompt
+                 * floats over the wallpaper readable, like the clock and name.
+                 */
+                Text {
+                    id: idlePrompt
+                    anchors.centerIn: parent
+                    text: "<i>press any key to enter password</i>"
+                    textFormat: Text.RichText
+                    color: Theme.placeholder
+                    font.family: Theme.font
+                    font.pixelSize: 14 * content.s
+                    font.letterSpacing: 1 * content.s
+
+                    visible: !content.showError
+                    opacity: 1 - content.lockMorph
+                    scale: 1 - 0.12 * content.lockMorph
+                    transform: Translate {
+                        y: -6 * content.s * content.lockMorph
+                    }
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                        shadowBlur: 0.7
+                        shadowVerticalOffset: 1.5
+                    }
                 }
 
-                textFormat: Text.RichText
-                color: content.showError ? Theme.error : Theme.placeholder
-                font.family: Theme.font
-                font.pixelSize: 14 * content.s
-                font.letterSpacing: 1 * content.s
+                Text {
+                    id: armedPrompt
+                    anchors.centerIn: parent
+                    text: "<i>enter password</i>"
+                    textFormat: Text.RichText
+                    color: Theme.placeholder
+                    font.family: Theme.font
+                    font.pixelSize: 14 * content.s
+                    font.letterSpacing: 1 * content.s
+
+                    visible: !content.showError
+                    opacity: content.lockMorph
+                    scale: 0.88 + 0.12 * content.lockMorph
+                    transform: Translate {
+                        y: 6 * content.s * (1 - content.lockMorph)
+                    }
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                        shadowBlur: 0.7
+                        shadowVerticalOffset: 1.5
+                    }
+                }
+
+                Text {
+                    id: errorPrompt
+                    anchors.centerIn: parent
+                    text: {
+                        var pamMsg = content.auth ? content.auth.lastError : "";
+                        return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
+                    }
+                    textFormat: Text.RichText
+                    color: Theme.error
+                    font.family: Theme.font
+                    font.pixelSize: 14 * content.s
+                    font.letterSpacing: 1 * content.s
+
+                    visible: content.showError
+                }
             }
         }
 
@@ -491,7 +668,9 @@ Item {
             enabled: !content.authenticating
 
             onClicked: {
+                content.passwordArmed = true;
                 input.forceActiveFocus();
+                idleTimer.restart();
             }
 
             z: 1
@@ -508,10 +687,40 @@ Item {
             color: Theme.placeholder
             stroke: 1.8
 
+            opacity: content.lockMorph
+            visible: opacity > 0.01
+            scale: 0.85 + 0.15 * content.lockMorph
+
             MouseArea {
                 anchors.fill: parent
                 anchors.margins: -8 * content.s
-                onClicked: content.revealPassword ^= true
+                onClicked: {
+                    content.passwordArmed = true;
+                    input.forceActiveFocus();
+                    content.revealPassword ^= true;
+                    idleTimer.restart();
+                }
+            }
+        }
+    }
+
+    Profile {
+        id: profile
+
+        s: content.s
+        user: content.auth ? content.auth.user : ""
+
+        anchors.horizontalCenter: capsule.horizontalCenter
+        anchors.bottom: capsule.top
+        anchors.bottomMargin: 26 * content.s
+
+        visible: !content.clockExpanded
+        opacity: content.isMain ? (content.authenticating ? 0.6 : 1) : 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
             }
         }
     }
