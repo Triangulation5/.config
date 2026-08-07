@@ -112,15 +112,15 @@ Item {
         }
 
         /**
-         * Border ring in the capsule's own surface color, so the avatar reads
-         * as one piece with the password capsule sitting beneath it.
+         * Border ring in the same hairline treatment as the password capsule
+         * beneath it, so the avatar reads as one piece with the capsule.
          */
         Rectangle {
             anchors.fill: parent
             radius: width / 2
             color: "transparent"
-            border.width: 2 * profile.s
-            border.color: Theme.capsule
+            border.width: 1
+            border.color: Theme.capsuleBorder
         }
 
         GlyphIcon {
