@@ -5,11 +5,13 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Live audio spectrum service for the rest-pill visualizer.
- * CAVA captures the default sink monitor and outputs normalized 0..1 levels.
+ * Live audio spectrum service for the rest-pill visualizer and the lock
+ * screen's glow. CAVA captures the default sink monitor and outputs
+ * normalized 0..1 levels.
  *
- * This service only handles audio data. The visual component is responsible
- * for rendering the centered pill bars.
+ * This service only handles audio data. The visual components (the pill bars
+ * and the lock GlowField) are responsible for rendering. `enabled` forces the
+ * capture on while the lock is up, independent of the pill visualizer flag.
  */
 Singleton {
     id: root
@@ -20,7 +22,14 @@ Singleton {
     property bool active: false
 
     property bool available: false
-    readonly property bool wanted: Flags.musicViz && available
+
+    /**
+     * Forced on while the lock screen is up, independent of the pill visualizer
+     * flag: the lock's GlowField needs live levels even when the pill bars are
+     * switched off, so `wanted` is the union of the two.
+     */
+    property bool enabled: false
+    readonly property bool wanted: (Flags.musicViz || enabled) && available
 
     readonly property string config:
         "[general]\n"
@@ -147,7 +156,7 @@ Singleton {
 
         onTriggered: {
             root.active = false
-            root.levels = [0, 0, 0, 0, 0]
+            root.levels = Array(root.bars).fill(0)
         }
     }
 }

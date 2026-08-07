@@ -16,8 +16,8 @@ import qs.modules.pill.widgets
  *
  * The centre is the month grid (header with month/year and prev/next nav, weekday
  * row, day cells sized to exactly the rows the month needs). Today keeps its warm
- * frame and the Ame ring; a day that holds a stored event marks its number warm
- * with a small ember dot. To the left, when Weather.ready, a slim panel shows the
+ * frame, with Ame resting just above it; a day that holds a stored event marks
+ * its number warm with a small ember dot. To the left, when Weather.ready, a slim panel shows the
  * current temperature, the condition kanji and city, and the next few hours. To
  * the right, selecting a day slides open an editor listing that day's events with
  * a delete tap and an add form (start, end, title).
@@ -118,11 +118,11 @@ PillSurface {
         && viewYear === today.getFullYear()
 
     /**
-     * Ame is the focus cursor: it rings the picked day, or today when this month
-     * is in view with nothing picked. Browsing another month with nothing picked
-     * leaves no focus, so the bead parks as a soul ember on the 暦 header glyph
-     * (the calendar's lantern, mirroring Sysmon) rather than floating over a
-     * random date cell — which is what read as Ame jumping somewhere random.
+     * Ame is the focus cursor: it rests as a soul ember just above the picked
+     * day, or today when this month is in view with nothing picked. Browsing
+     * another month with nothing picked leaves no focus, so the bead parks on
+     * the 暦 header glyph (the calendar's lantern, mirroring Sysmon) rather
+     * than floating over a random date cell.
      */
     readonly property bool selectedInView: selectedDate.length > 0
         && Number(selectedDate.split("-")[1]) === viewMonth + 1
@@ -144,8 +144,8 @@ PillSurface {
         return monthLabel.mapToItem(root, -8 * s, monthLabel.height / 2);
     }
 
-    ameForm: focused ? "ring" : "soul"
-    amePoint: focused ? Qt.point(focusX, focusY) : soulPoint
+    ameForm: "soul"
+    amePoint: focused ? Qt.point(focusX, focusY - root.cellH / 2 - 6 * s) : soulPoint
 
     SystemClock {
         id: sysClock
