@@ -81,16 +81,22 @@ function rank(entries, query, usage) {
     }
     var q = query ? query.trim().toLowerCase() : "";
     if (!q) {
-        visible.sort(function (a, b) {
-            var ua = uses(usage, a);
-            var ub = uses(usage, b);
-            if (ua !== ub)
-                return ub - ua;
-            return nameOf(a) < nameOf(b) ? -1 :
-                nameOf(a) > nameOf(b) ? 1 : 0;
+        // Decorate once (usage + cached name), sort, then unwrap — the sort
+        // never re-derives a key per comparison.
+        var byUsage = new Array(visible.length);
+        for (var vi = 0; vi < visible.length; vi++) {
+            var ve = visible[vi];
+            byUsage[vi] = { e: ve, u: uses(usage, ve), n: nameOf(ve) };
+        }
+        byUsage.sort(function (a, b) {
+            if (a.u !== b.u)
+                return b.u - a.u;
+            return a.n < b.n ? -1 : a.n > b.n ? 1 : 0;
         });
-
-        return visible;
+        var ranked = new Array(byUsage.length);
+        for (var wi = 0; wi < byUsage.length; wi++)
+            ranked[wi] = byUsage[wi].e;
+        return ranked;
     }
 
     var scored = [];

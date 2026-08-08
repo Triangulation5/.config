@@ -59,31 +59,39 @@ Column {
         if (want.length === 0)
             return null;
         var apps = picker.allApps;
+
+        // Normalize every candidate once; both scans below reuse this so a
+        // field is never normalized twice per call.
+        var norms = new Array(apps.length);
         for (var i = 0; i < apps.length; i++) {
             var e = apps[i];
-            if (!e)
-                continue;
-            var cands = [e.startupClass, e.id, e.name];
-            for (var j = 0; j < cands.length; j++)
-                if (cands[j] && picker.normalizeClass(cands[j]) === want)
-                    return e;
+            if (!e) { norms[i] = null; continue; }
+            norms[i] = [
+                e.startupClass ? picker.normalizeClass(e.startupClass) : "",
+                e.id ? picker.normalizeClass(e.id) : "",
+                e.name ? picker.normalizeClass(e.name) : ""
+            ];
         }
+
+        for (var j = 0; j < apps.length; j++) {
+            var cands = norms[j];
+            if (!cands) continue;
+            if (cands[0] === want || cands[1] === want || cands[2] === want)
+                return apps[j];
+        }
+
         var best = null;
         var bestLen = 0;
         for (var k = 0; k < apps.length; k++) {
-            var e2 = apps[k];
-            if (!e2)
-                continue;
-            var cands2 = [e2.startupClass, e2.id, e2.name];
+            var cands2 = norms[k];
+            if (!cands2) continue;
             for (var n = 0; n < cands2.length; n++) {
-                if (!cands2[n])
-                    continue;
-                var got = picker.normalizeClass(cands2[n]);
-                if (got.length < 4)
+                var got = cands2[n];
+                if (!got || got.length < 4)
                     continue;
                 var hit = (want.length >= 4 && got.indexOf(want) !== -1) || want.indexOf(got) !== -1;
                 if (hit && got.length > bestLen) {
-                    best = e2;
+                    best = apps[k];
                     bestLen = got.length;
                 }
             }

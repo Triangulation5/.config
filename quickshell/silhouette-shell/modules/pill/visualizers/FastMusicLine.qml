@@ -67,13 +67,11 @@ Rectangle {
 
         stdout: SplitParser {
             onRead: data => {
-
-                var bars = data.trim().split(";")
-                bars.pop()
-
-                cavaData = bars.map(function(bar) {
-                    return parseFloat(bar) / 1000
-                })
+                var parts = data.trim().split(";")
+                var out = new Array(parts.length - 1)
+                for (var i = 0; i < out.length; i++)
+                    out[i] = parseFloat(parts[i]) / 1000
+                cavaData = out
             }
         }
     }

@@ -1,5 +1,6 @@
 module qs.modules.settings
 
+AnimationSurface 1.0 AnimationSurface.qml
 Appearance 1.0 Appearance.qml
 Display 1.0 Display.qml
 DisplayLabel 1.0 DisplayLabel.qml
@@ -7,6 +8,7 @@ DisplayPicker 1.0 DisplayPicker.qml
 FontPicker 1.0 FontPicker.qml
 Input 1.0 Input.qml
 Keybinds 1.0 Keybinds.qml
+KeybindForm 1.0 KeybindForm.qml
 Look 1.0 Look.qml
 Settings 1.0 Settings.qml
 SettingsHeader 1.0 SettingsHeader.qml
