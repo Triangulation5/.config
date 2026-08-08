@@ -52,7 +52,7 @@ PillSurface {
     onCanPickChanged: if (!canPick) picking = false
     onPickingChanged: if (picking) pickFlick.contentX = 0
 
-    readonly property real textX: 144 * s
+    readonly property real textX: 148 * s
     readonly property real edgePad: 18 * s
     readonly property color washMid: mix(Theme.cardTop, Theme.cardBot, 0.5)
     property real sealPulse: 0
@@ -260,7 +260,7 @@ PillSurface {
          * row's left edge stays clear of the cover art next to it.
          */
         transform: Translate {
-            x: -126 * root.s
+            x: -116 * root.s
         }
 
         KanjiSkip {

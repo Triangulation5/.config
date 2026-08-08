@@ -112,4 +112,13 @@ ShellRoot {
         }
     }
 
+    /**
+     * IPC: the lock daemon owns its own trigger. The fast path is the touch
+     * file watch above; this handler stays as a fallback for any other caller.
+     */
+    IpcHandler {
+        target: "lock"
+        function lock(): void { root.doLock(); }
+    }
+
 }

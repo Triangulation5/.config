@@ -2,4 +2,3 @@ module qs.modules.pill.visualizers
 
 FastMusicLine 1.0 FastMusicLine.qml
 MusicBars 1.0 MusicBars.qml
-MusicLine 1.0 MusicLine.qml

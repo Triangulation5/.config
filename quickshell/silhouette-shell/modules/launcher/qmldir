@@ -3,5 +3,4 @@ module qs.modules.launcher
 LauncherRoot 1.0 LauncherRoot.qml
 Launcher 1.0 Launcher.qml
 AppPickerList 1.0 AppPickerList.qml
-AppRow 1.0 AppRow.qml
 SearchField 1.0 SearchField.qml

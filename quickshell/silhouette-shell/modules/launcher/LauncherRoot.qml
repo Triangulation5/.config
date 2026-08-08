@@ -83,32 +83,51 @@ ShellRoot {
                 onClicked: root.shown = false
             }
 
-            Launcher {
-                id: launcher
-                anchors.centerIn: parent
+            Loader {
+                id: launcherLoader
+                anchors.fill: parent
 
-                entries: root.results
-                total: root.totalCount
+                active: root.shown && root.targetMonitor === modelData.name
 
-                onLaunch: (entry) => root.run(entry)
-                onQuit: root.shown = false
+                /**
+                 * Focus once the item exists. The window's visible and the
+                 * loader's active flip from the same binding, so onVisibleChanged
+                 * can fire before the item is built; focusing here instead is
+                 * race-free. The item is recreated fresh per open, so query and
+                 * selection reset by construction.
+                 */
+                onItemChanged: if (item) Qt.callLater(item.focusField)
+
+                sourceComponent: Launcher {
+                    entries: root.results
+                    total: root.totalCount
+
+                    onLaunch: (entry) => root.run(entry)
+                    onQuit: root.shown = false
+                }
             }
 
             Connections {
-                target: launcher
+                target: launcherLoader.item
                 function onQueryChanged() {
-                    root.query = launcher.query;
-                    launcher.selectedIndex = 0;
+                    root.query = launcherLoader.item.query;
+                    launcherLoader.item.selectedIndex = 0;
                 }
             }
+        }
+    }
 
-            onVisibleChanged: {
-                if (visible) {
-                    launcher.query = "";
-                    launcher.selectedIndex = 0;
-                    launcher.focusField();
-                }
-            }
+    /**
+     * IPC: the standalone launcher owns its show/hide/toggle surface.
+     */
+    IpcHandler {
+        target: "launcher"
+        function show(mon: string): void { root.targetMonitor = mon; root.shown = true; }
+        function hide(): void { root.shown = false; }
+        function toggle(mon: string): void {
+            if (root.shown) { root.shown = false; return; }
+            root.targetMonitor = mon;
+            root.shown = true;
         }
     }
 }
