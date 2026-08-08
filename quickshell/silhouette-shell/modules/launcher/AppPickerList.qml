@@ -60,8 +60,10 @@ Column {
             return null;
         var apps = picker.allApps;
 
-        // Normalize every candidate once; both scans below reuse this so a
-        // field is never normalized twice per call.
+        /**
+         * Normalize every candidate once; both scans below reuse this so a
+         * field is never normalized twice per call.
+         */
         var norms = new Array(apps.length);
         for (var i = 0; i < apps.length; i++) {
             var e = apps[i];

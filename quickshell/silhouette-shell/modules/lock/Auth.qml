@@ -22,7 +22,7 @@ Item {
     property string lastError: ""
     property string statusMessage: ""
 
-    // Retry once if fingerprint initialization immediately fails.
+    /** Retry once if fingerprint initialization immediately fails. */
     property bool retryingWithoutFingerprint: false
 
     function clearState() {
@@ -75,7 +75,7 @@ Item {
 
                 for (let i = 0; i < fingerprintErrors.length; ++i) {
                     if (message.toLowerCase().indexOf(fingerprintErrors[i].toLowerCase()) !== -1) {
-                        // Ignore fingerprint availability errors.
+                        /** Ignore fingerprint availability errors. */
                         return
                     }
                 }

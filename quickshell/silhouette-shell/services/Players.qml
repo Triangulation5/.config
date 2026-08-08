@@ -360,7 +360,7 @@ Singleton {
                 if (data.thumbnail_url && data.thumbnail_url.indexOf("https:") === 0)
                     root.spotifyArt = data.thumbnail_url;
             } catch (e) {
-                // malformed/unexpected response, leave spotifyArt empty
+                /** Malformed/unexpected response; leave spotifyArt empty. */
             }
         };
         xhr.open("GET", "https://open.spotify.com/oembed?url=" + encodeURIComponent("https://open.spotify.com/track/" + id));

@@ -1,4 +1,4 @@
-// Custom Vague.nvim Pallete Overides
+/** Custom Vague.nvim Pallete Overides. */
 pragma Singleton
 import QtQuick
 import Quickshell

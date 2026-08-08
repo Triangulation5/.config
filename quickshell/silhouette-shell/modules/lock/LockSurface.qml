@@ -338,7 +338,7 @@ Item {
             bottomRightRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
         }
 
-        // Left notch ear.
+        /** Left notch ear. */
         RoundCorner {
             visible: Flags.notchStyle
 
@@ -371,7 +371,7 @@ Item {
             }
         }
 
-        // Right notch ear.
+        /** Right notch ear. */
         RoundCorner {
             visible: Flags.notchStyle
 
@@ -384,10 +384,10 @@ Item {
 
             color: "white"
 
-            // Match the left ear's timing.
+            /** Match the left ear's timing. */
             opacity: surface.maskP < 0.8 ? 1 : (1 - surface.maskP) / 0.2
 
-            // Match the left ear's subtle growth.
+            /** Match the left ear's subtle growth. */
             scale: 1 + surface.maskP * 0.15
 
             antialiasing: true
