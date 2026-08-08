@@ -24,12 +24,23 @@ Singleton {
     property bool available: false
 
     /**
-     * Forced on while the lock screen is up, independent of the pill visualizer
-     * flag: the lock's GlowField needs live levels even when the pill bars are
-     * switched off, so `wanted` is the union of the two.
+     * The pill pipeline only answers to the pill visualizer flag; the lock's
+     * forced capture is a separate process below.
+     */
+    readonly property bool wanted: Flags.musicViz && available
+
+    /**
+     * Lock-glow capture: its own cava run from assets/cava.conf (12 bars,
+     * ascii range 100), matching the 12 bands the glow shader interpolates.
+     * Forced on while the lock screen is up, independent of the pill
+     * visualizer flag.
      */
     property bool enabled: false
-    readonly property bool wanted: (Flags.musicViz || enabled) && available
+    readonly property int lockBars: 12
+    property var lockLevels: Array(lockBars).fill(0)
+    property bool lockActive: false
+
+    readonly property string lockConfigPath: Quickshell.shellPath("assets/cava.conf")
 
     readonly property string config:
         "[general]\n"
@@ -62,11 +73,24 @@ Singleton {
         }
     }
 
-    onAvailableChanged:
-        cavaProc.running = wanted
+    onEnabledChanged: {
+        lockProc.running = enabled && available
 
-    Component.onCompleted:
+        if (!enabled) {
+            lockLevels = Array(lockBars).fill(0)
+            lockActive = false
+        }
+    }
+
+    onAvailableChanged: {
         cavaProc.running = wanted
+        lockProc.running = enabled && available
+    }
+
+    Component.onCompleted: {
+        cavaProc.running = wanted
+        lockProc.running = enabled && available
+    }
 
 
     Process {
@@ -157,6 +181,75 @@ Singleton {
         onTriggered: {
             root.active = false
             root.levels = Array(root.bars).fill(0)
+        }
+    }
+
+    /**
+     * Lock-glow capture, driven straight from assets/cava.conf (12 bars,
+     * ascii range 100) so the glow shader's twelve bands get one real cava
+     * bar each instead of a spread-downsampled 4/7-bar feed.
+     */
+    Process {
+        id: lockProc
+
+        command: ["cava", "-p", root.lockConfigPath]
+
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!line)
+                    return
+
+                const parts = line.split(";")
+                const frame = []
+                let peak = 0
+
+                for (let i = 0; i < root.lockBars; i++) {
+                    const value = Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            Number(parseInt(parts[i])) / 100 || 0
+                        )
+                    )
+
+                    frame.push(value)
+
+                    if (value > peak)
+                        peak = value
+                }
+
+                root.lockLevels = frame
+
+                if (peak > 0.02) {
+                    root.lockActive = true
+                    lockIdle.restart()
+                }
+            }
+        }
+
+        onExited:
+            if (root.enabled && root.available)
+                lockRelaunch.restart()
+    }
+
+    Timer {
+        id: lockRelaunch
+
+        interval: 1500
+
+        onTriggered:
+            if (root.enabled && root.available)
+                lockProc.running = true
+    }
+
+    Timer {
+        id: lockIdle
+
+        interval: 450
+
+        onTriggered: {
+            root.lockActive = false
+            root.lockLevels = Array(root.lockBars).fill(0)
         }
     }
 }
