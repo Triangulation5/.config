@@ -44,16 +44,6 @@ Item {
 
     readonly property string dateText: {
         var d = sysClock.date;
-
-        if (Flags.dateFormat === "2026-07-30")
-            return Qt.formatDateTime(d, "yyyy-MM-dd");
-
-        if (Flags.dateFormat === "30/07/2026")
-            return Qt.formatDateTime(d, "dd/MM/yyyy");
-
-        if (Flags.dateFormat === "Jul 30, 2026")
-            return Qt.formatDateTime(d, "MMM dd, yyyy");
-
         return weekdays[d.getDay()] + " · " + months[d.getMonth()] + " " + d.getDate();
     }
 
@@ -102,7 +92,7 @@ Item {
     SystemClock {
         id: sysClock
 
-        precision: clock.expanded || Flags.showSeconds
+        precision: clock.expanded || Flags.clockSeconds
             ? SystemClock.Seconds
             : SystemClock.Minutes
     }
@@ -212,7 +202,7 @@ Item {
             pixelSize: clock.expanded ? 160 * clock.s : 143 * clock.s
         }
 
-        text: clock.expanded || Flags.showSeconds ? clock.secondsText : clock.timeText
+        text: clock.expanded || Flags.clockSeconds ? clock.secondsText : clock.timeText
 
         opacity: 1
 
