@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import Quickshell.Services.Mpris
 import qs.services
 import qs.components.icons
 
@@ -98,45 +97,21 @@ Item {
         }
     }
 
-    readonly property var player: {
-        var list = Mpris.players.values;
-        if (!list || list.length === 0)
-            return null;
-        var controllable = null;
-        for (var i = 0; i < list.length; i++) {
-            var p = list[i];
-            if (!p)
-                continue;
-            if (p.isPlaying)
-                return p;
-            if (!controllable && p.canControl)
-                controllable = p;
-        }
-        return controllable ? controllable : list[0];
-    }
+    /**
+     * The lock reads the same now-playing source as the pill's media surface and
+     * OSD: the shared Players service handles proxy filtering (playerctld), DRM
+     * browser fallbacks, and the manual/preferred pick, so the lock never shows a
+     * different "active" player than the pill.
+     */
+    readonly property var player: Players.active
+    readonly property bool hasPlayer: Players.has
+    readonly property bool playing: Players.playing
 
-    readonly property bool hasPlayer: player !== null
-    readonly property bool playing: hasPlayer && player.isPlaying
-
-    readonly property string trackTitle: {
-        if (!player)
-            return "";
-        return player.trackTitle ? player.trackTitle : "";
-    }
-    readonly property string trackArtist: {
-        if (!player)
-            return "";
-        if (player.trackArtists && player.trackArtists.length > 0)
-            return player.trackArtists;
-        return player.trackArtist ? player.trackArtist : "";
-    }
-    readonly property string artUrl: {
-        if (!player)
-            return "";
-        return player.trackArtUrl ? player.trackArtUrl : "";
-    }
-    readonly property real lengthSec: hasPlayer && player.length > 0 ? player.length : 0
-    readonly property real positionSec: hasPlayer ? player.position : 0
+    readonly property string trackTitle: Players.title
+    readonly property string trackArtist: Players.artist
+    readonly property string artUrl: Players.artUrl
+    readonly property real lengthSec: Players.lengthSec
+    readonly property real positionSec: hasPlayer && player ? player.position : 0
     readonly property real progress: lengthSec > 0 ? Math.max(0, Math.min(1, positionSec / lengthSec)) : 0
 
     function fmtTime(sec) {

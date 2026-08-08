@@ -13,7 +13,7 @@ Item {
     id: glow
     property color accent: Theme.verm
 
-    readonly property bool live: Cava.active
+    readonly property bool live: Cava.lockActive
     property var levels: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     opacity: live ? 0.62 : 0
@@ -31,15 +31,12 @@ Item {
     FrameAnimation {
         running: glow.visible
         onTriggered: {
-            var src = Cava.levels;
-            var nb = Cava.bars;
+            var src = Cava.lockLevels;
             var dt = Math.min(frameTime, 0.05);
             var next = [];
             for (var i = 0; i < 12; i++) {
-                // Spread the 4/7 cava bars evenly across the 12 shader bands.
-                var si = nb > 0 ? Math.min(nb - 1, Math.floor(i * nb / 12)) : 0;
                 var cur = glow.levels[i] !== undefined ? glow.levels[i] : 0;
-                var target = src && src[si] !== undefined ? src[si] : 0;
+                var target = src && src[i] !== undefined ? src[i] : 0;
                 var tau = target > cur ? 0.18 : 1.1;
                 var k = 1 - Math.exp(-dt / tau);
                 next.push(cur + (target - cur) * k);
