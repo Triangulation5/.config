@@ -97,7 +97,7 @@ Item {
             }
         }
 
-        // Round clip source for the avatar image.
+        /** Round clip source for the avatar image. */
         Item {
             id: avatarMask
 
