@@ -50,7 +50,7 @@ Item {
     property bool pinned: false
     property bool forcePinned: false
 
-    // Custom made notch style bar
+    /** Custom made notch style bar. */
     property bool notchStyle: Flags.notchStyle
 
     /**
@@ -910,8 +910,11 @@ Item {
             return recorderIcon.mapToItem(pill, recorderIcon.width / 2, recorderIcon.height + drop * 0.55);
         if (soulTarget === "sysmon")
             return sysmonIcon.mapToItem(pill, sysmonIcon.width / 2, sysmonIcon.height + drop * 0.55);
-        // Calendar strip or no focused target: rest under the strip's highlighted
-        // next-day (or under the hovered day, tracked by CalendarStyle's ameAnchor).
+        /**
+         * Calendar strip or no focused target: rest under the strip's
+         * highlighted next-day (or under the hovered day, tracked by
+         * CalendarStyle's ameAnchor).
+         */
         return calendarStyle.mapToItem(pill, calendarStyle.ameAnchor.x, calendarStyle.ameAnchor.y);
     }
 
@@ -1498,7 +1501,7 @@ Item {
         /**
          * The clock grows out of the rest clock's spot and shrinks back into
          * it: one continuous scale+slide driven by clockMorph. The morph leads
-         * the pill's hop slightly (1.12x) so the clock lands just before the
+         * the pill's hop slightly (1.08x) so the clock lands just before the
          * pill finishes growing, and a soft out-back settle gives a subtle,
          * barely-there overshoot as it arrives. The rest-to-hover handoff is a
          * separate quick crossfade (clockHandoff) in the first moments, while
@@ -1507,12 +1510,19 @@ Item {
          */
         readonly property real clockProgress: Math.max(0, Math.min(1, clockHop * 1.08))
         readonly property real clockMorph: {
-            const c1 = 0.8;          // subtle overshoot: peaks ~2.5% past 1, settles
+            /** Subtle overshoot: peaks ~2.5% past 1, settles. */
+            const c1 = 0.8;
             const c3 = c1 + 1;
             const x = clockProgress - 1;
             return 1 + c3 * x * x * x + c1 * x * x;
         }
-        readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockProgress / 0.15)); return t * t * (3 - 2 * t); }
+        /**
+         * Near-instant handoff tied to clockMorph: the hover clock is pixel-
+         * identical to the rest clock at morph=0, so the swap completes while
+         * the two are still coincident (the out-back front-loads, so a wider
+         * window would crossfade a clock already in motion).
+         */
+        readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.08)); return t * t * (3 - 2 * t); }
 
         /**
          * The media bud, tray and calendar strip render at full strength the
@@ -1528,26 +1538,36 @@ Item {
          * (while the pill is still at rest geometry) so the flight is a clean
          * straight line instead of chasing a live mapToItem mid-morph — the old
          * binding re-mapped an invisible hover target every frame and jumped.
+         * Measured in hoverClock's frame — the same frame the flight Translate
+         * lives in — so start and end are directly comparable.
          */
         property real clockStartX: 0
         property real clockStartY: 0
 
         function captureClockStart() {
-            const p = restTime.mapToItem(pill, restTime.width / 2, restTime.height / 2);
+            const p = restTime.mapToItem(hoverClock, restTime.width / 2, restTime.height / 2);
             clockStartX = p.x;
             clockStartY = p.y;
         }
 
-        // Fires on every rest-to-hover hop. The pill is still at rest geometry
-        // here (the height Behavior starts a tick later), so the capture is
-        // exact. The onCompleted guard covers the one path where live is true
-        // from birth — a monitor hotplug while its pill is peeked — so a
-        // collapse then still flies from the rest clock's real position.
+        /**
+         * Fires on every rest-to-hover hop. The pill is still at rest geometry
+         * here (the height Behavior starts a tick later), so the capture is
+         * exact. The onCompleted guard covers the one path where live is true
+         * from birth — a monitor hotplug while its pill is peeked — so a
+         * collapse then still flies from the rest clock's real position.
+         */
         onLiveChanged: if (live) captureClockStart()
         Component.onCompleted: if (live) captureClockStart()
 
-        readonly property real clockEndX: hoverTime.x + hoverTime.width / 2
-        readonly property real clockEndY: hoverTime.y + hoverTime.height / 2
+        /**
+         * The hover clock's settled centre in hoverClock's frame: the clock
+         * column's centre, offset by the same 20*s the clock is anchored with
+         * (the clock is the column's first row, so its vertical centre is half
+         * its own height down the column).
+         */
+        readonly property real clockEndX: hoverClock.width / 2 + 20 * pill.s
+        readonly property real clockEndY: hoverTime.height / 2
 
         opacity: live ? 1 : 0
         visible: opacity > 0.01
@@ -1667,28 +1687,44 @@ Item {
 
                     spacing: 8 * pill.s
 
-                    Text {
-                        id: hoverTime
-
+                    Item {
+                        /**
+                         * The flight lives on this wrapper: a Translate declared
+                         * on the scaled Text would itself be scaled (the
+                         * transform list applies in the item's local frame), so
+                         * the clock would sit short of the rest clock at the
+                         * start of the hop. Here the offset is in the column's
+                         * unscaled frame, and the Text below scales around its
+                         * own centre — position and size stay independent.
+                         */
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: 20 * pill.s
 
-                        text: clock.hhmm
-
-                        color: Theme.cream
-
-                        font.family: Theme.font
-                        font.pixelSize: 28 * pill.s
-                        font.weight: Font.DemiBold
-                        font.features: { "tnum": 1 }
-
-                        opacity: hover.clockHandoff
-                        // 18px rest clock scaled up to 28px, tracking the pill's hop.
-                        scale: (18 / 28) + (1 - 18 / 28) * hover.clockMorph
+                        implicitWidth: hoverTime.implicitWidth
+                        implicitHeight: hoverTime.implicitHeight
 
                         transform: Translate {
                             x: (hover.clockStartX - hover.clockEndX) * (1 - hover.clockMorph)
                             y: (hover.clockStartY - hover.clockEndY) * (1 - hover.clockMorph)
+                        }
+
+                        Text {
+                            id: hoverTime
+
+                            anchors.centerIn: parent
+
+                            text: clock.hhmm
+
+                            color: Theme.cream
+
+                            font.family: Theme.font
+                            font.pixelSize: 28 * pill.s
+                            font.weight: Font.DemiBold
+                            font.features: { "tnum": 1 }
+
+                            opacity: hover.clockHandoff
+                            /** 18px rest clock scaled up to 28px, tracking the pill's hop. */
+                            scale: (18 / 28) + (1 - 18 / 28) * hover.clockMorph
                         }
                     }
 
@@ -1717,9 +1753,11 @@ Item {
                     width: hoverClock.implicitWidth + 22 * pill.s
                     height: hoverClock.implicitHeight + 10 * pill.s
 
-                    // While a day cell is hovered the strip's delegates own the
-                    // click (they open the calendar focused on that day);
-                    // anywhere else opens it on the current date.
+                    /**
+                     * While a day cell is hovered the strip's delegates own the
+                     * click (they open the calendar focused on that day);
+                     * anywhere else opens it on the current date.
+                     */
                     enabled: hover.live && !calendarStyle.hovered
 
                     cursorShape: Qt.PointingHandCursor

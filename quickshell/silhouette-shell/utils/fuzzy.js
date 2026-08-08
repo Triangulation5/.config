@@ -81,8 +81,10 @@ function rank(entries, query, usage) {
     }
     var q = query ? query.trim().toLowerCase() : "";
     if (!q) {
-        // Decorate once (usage + cached name), sort, then unwrap — the sort
-        // never re-derives a key per comparison.
+        /**
+         * Decorate once (usage + cached name), sort, then unwrap — the sort
+         * never re-derives a key per comparison.
+         */
         var byUsage = new Array(visible.length);
         for (var vi = 0; vi < visible.length; vi++) {
             var ve = visible[vi];

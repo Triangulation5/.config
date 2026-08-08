@@ -18,7 +18,7 @@ Item {
     property bool ameEnabled: false
     property var pillRef: null
 
-    // Day under the pointer, -1 when the strip isn't hovered. Drives Ame.
+    /** Day under the pointer, -1 when the strip isn't hovered. Drives Ame. */
     property int hoveredIndex: -1
 
     /** True while a day cell is under the pointer; the pill uses it to hand
@@ -140,7 +140,7 @@ Item {
             width: wheel.delegateWidth
             height: wheel.height
 
-            // Actual physical position during scrolling.
+            /** Actual physical position during scrolling. */
             readonly property real centerOffset:
                 (x + width / 2) -
                 (wheel.contentX + wheel.width / 2)
@@ -166,11 +166,13 @@ Item {
                 ? Theme.vermLit
                 : Theme.dim
 
-            // How far the full weekday name has faded in. Only ramps when the
-            // day is essentially centred (distance < ~0.33 slot), so two
-            // adjacent days can never both show full titles while the wheel
-            // settles; the rest keep a single letter, cross-faded for a clean
-            // pass.
+            /**
+             * How far the full weekday name has faded in. Only ramps when the
+             * day is essentially centred (distance < ~0.33 slot), so two
+             * adjacent days can never both show full titles while the wheel
+             * settles; the rest keep a single letter, cross-faded for a clean
+             * pass.
+             */
             readonly property real nameFocus:
                 Math.max(
                     0,
@@ -197,8 +199,10 @@ Item {
 
                 spacing: 2
 
-                // Letter and full name overlay the same spot (a Column would
-                // stack them, shoving the day number down as the name fades in).
+                /**
+                 * Letter and full name overlay the same spot (a Column would
+                 * stack them, shoving the day number down as the name fades in).
+                 */
                 Item {
                     anchors.horizontalCenter: parent.horizontalCenter
 
