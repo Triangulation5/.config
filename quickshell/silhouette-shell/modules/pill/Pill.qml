@@ -1457,9 +1457,10 @@ Item {
                 font.features: { "tnum": 1 }
 
                 /**
-                 * Fades out exactly as the hover clock fades in at the same
-                 * spot and size (hover.clockHandoff), so the swap leaves no
-                 * ghost behind.
+                 * Hands off to the hover clock in the first moments of the hop
+                 * (hover.clockHandoff), while the hover clock still sits
+                 * exactly on this spot at this size — the swap is invisible
+                 * and the growing clock reads as one clock, never a ghost.
                  */
                 opacity: 1 - hover.clockHandoff
             }
@@ -1495,17 +1496,23 @@ Item {
         }
 
         /**
-         * Two-phase clock transition, both driven by clockHop:
-         *  - handoff (0→0.30): the rest clock fades out while the hover clock
-         *    fades in at the same spot and the same 18px size, so the swap is
-         *    invisible — one clock, never a ghost.
-         *  - flight (0.30→1.00): with the swap complete, the single clock
-         *    slides to its hover spot while growing to 28px. Phases never
-         *    overlap, so the hover clock is never moving while the rest clock
-         *    is still visible.
+         * The clock grows out of the rest clock's spot and shrinks back into
+         * it: one continuous scale+slide driven by clockMorph. The morph leads
+         * the pill's hop slightly (1.12x) so the clock lands just before the
+         * pill finishes growing, and a soft out-back settle gives a subtle,
+         * barely-there overshoot as it arrives. The rest-to-hover handoff is a
+         * separate quick crossfade (clockHandoff) in the first moments, while
+         * the hover clock still sits exactly on the rest clock at the same
+         * size — so the swap is invisible and the growth reads as one clock.
          */
-        readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockHop / 0.30)); return t * t * (3 - 2 * t); }
-        readonly property real clockFlight: { var t = Math.max(0, Math.min(1, (clockHop - 0.30) / 0.70)); return t * t * (3 - 2 * t); }
+        readonly property real clockProgress: Math.max(0, Math.min(1, clockHop * 1.08))
+        readonly property real clockMorph: {
+            const c1 = 0.8;          // subtle overshoot: peaks ~2.5% past 1, settles
+            const c3 = c1 + 1;
+            const x = clockProgress - 1;
+            return 1 + c3 * x * x * x + c1 * x * x;
+        }
+        readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockProgress / 0.15)); return t * t * (3 - 2 * t); }
 
         /**
          * The media bud, tray and calendar strip render at full strength the
@@ -1676,11 +1683,12 @@ Item {
                         font.features: { "tnum": 1 }
 
                         opacity: hover.clockHandoff
-                        scale: 0.64 + 0.36 * hover.clockFlight
+                        // 18px rest clock scaled up to 28px, tracking the pill's hop.
+                        scale: (18 / 28) + (1 - 18 / 28) * hover.clockMorph
 
                         transform: Translate {
-                            x: (hover.clockStartX - hover.clockEndX) * (1 - hover.clockFlight)
-                            y: (hover.clockStartY - hover.clockEndY) * (1 - hover.clockFlight)
+                            x: (hover.clockStartX - hover.clockEndX) * (1 - hover.clockMorph)
+                            y: (hover.clockStartY - hover.clockEndY) * (1 - hover.clockMorph)
                         }
                     }
 
