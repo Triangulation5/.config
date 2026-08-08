@@ -401,4 +401,59 @@ ShellRoot {
             }
         }
     }
+
+    /**
+     * IPC: the pill owns its own surface routing. `qs ipc call pill ...` lands
+     * here; an empty monitor argument resolves to the focused monitor inside
+     * toggleSurface, so the keybind scripts skip their hyprctl+jq round trip.
+     */
+    IpcHandler {
+        target: "pill"
+        function mixer(mon: string): void { root.toggleSurface(mon, "mixer"); }
+        function calendar(mon: string): void { root.toggleSurface(mon, "calendar"); }
+        function launcher(mon: string): void { root.toggleSurface(mon, "launcher"); }
+        function power(mon: string): void { root.toggleSurface(mon, "power"); }
+        function link(mon: string): void { root.toggleSurface(mon, "link"); }
+        function battery(mon: string): void { root.toggleSurface(mon, "battery"); }
+        function settings(mon: string): void { root.toggleSurface(mon, "settings"); }
+        function keybinds(mon: string): void { root.toggleSurface(mon, "keybinds"); }
+        function recorder(mon: string): void { root.toggleSurface(mon, "recorder"); }
+        function screenrec(mon: string): void { root.toggleSurface(mon, "recorder"); }
+        function record(mon: string): void { root.toggleSurface(mon, "recorder"); }
+        function quickRecord(mon: string): void {
+            if (ScreenRec.recording) {
+                ScreenRec.stop();
+            } else if (ScreenRec.counting) {
+                ScreenRec.cancel();
+            } else if (ScreenRec.quickChoosing) {
+                ScreenRec.quickChoosing = false;
+                ScreenRec.quickScreenChoosing = false;
+            } else {
+                ScreenRec.quickMon = mon;
+                ScreenRec.quickScreenChoosing = false;
+                ScreenRec.quickChoosing = true;
+            }
+        }
+        function gameMode(_mon: string): void { Flags.gameMode = !Flags.gameMode; }
+        function sysmon(mon: string): void { root.toggleSurface(mon, "sysmon"); }
+        function system(mon: string): void { root.toggleSurface(mon, "sysmon"); }
+        function clipboard(mon: string): void { root.toggleSurface(mon, "clipboard"); }
+        function wallpaper(mon: string): void { root.toggleSurface(mon, "wallpaper"); }
+        function media(mon: string): void {
+            if (Players.playing)
+                root.toggleSurface(mon, "media");
+        }
+        function peek(mon: string): void { root.peek(mon); }
+        function hide(): void { root.close(); }
+        function page(mon: string, name: string): void { root.toggleSurface(mon, name); }
+        function minimizeWindow(addr: string): void {
+            Hyprland.dispatch('hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:' + addr + '" })');
+        }
+        function restoreWindow(arg: string): void {
+            var p = arg.split("|");
+            if (p.length < 2 || p[0].length === 0)
+                return;
+            Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + p[1] + ', window = "address:' + p[0] + '" })');
+        }
+    }
 }

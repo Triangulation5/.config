@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Hyprland
+import Quickshell.Services.SystemTray
 import qs.services
 import qs.modules.pill.widgets
 import qs.modules.settings
@@ -15,7 +16,6 @@ import qs.modules.pill.visualizers
 import qs.components.icons
 import qs.components.controls
 import qs.components.layout
-import qs.components.animation
 import qs.modules.controlcenter
 import qs.modules.launcher
 
@@ -36,6 +36,15 @@ Item {
     property string screenName: ""
     property var barWindow
     property string surface: ""
+
+    /**
+     * Date a hover-strip click asked the calendar to open focused on, or null
+     * to open on the real today. Cleared whenever the calendar surface closes,
+     * so a later open from the clock, a keybind or IPC lands on today unless a
+     * fresh date click set it again.
+     */
+    property var calendarFocusDate: null
+    onCalendarOpenChanged: if (!calendarOpen) calendarFocusDate = null
 
     property bool hovered: false
     property bool pinned: false
@@ -282,6 +291,16 @@ Item {
 
     signal requestSurface(string name)
     signal requestClose()
+
+    /**
+     * Open the calendar surface, focused on `date` when non-null, or on the
+     * real today when null. Used by the hover strip (the clicked day) and the
+     * clock area (today).
+     */
+    function openCalendarAt(date) {
+        calendarFocusDate = date
+        requestSurface("calendar")
+    }
 
     /**
      * Forward an arrow-key nudge to the open mixer's targeted fader. Returns true
@@ -642,13 +661,12 @@ Item {
         if (mode !== "hover") {
             hoverSoulGate = false;
             soulTarget = "";
-            soulWsIndex = -1;
+            calendarStyle.hoveredIndex = -1;
         }
     }
     onHoverSoulGateChanged: if (hoverSoulGate) kanjiFlashAnim.restart()
 
     property string soulTarget: ""
-    property int soulWsIndex: -1
 
     property real kanjiFlash: 0
 
@@ -866,9 +884,10 @@ Item {
 
     /**
      * Bead target while hovered. soulTarget is a sticky key written by the hover
-     * sources: the bead parks on the last focused dot or icon and glides to the
-     * next, so crossing a gap between targets doesn't snap it back to the active
-     * workspace. Pill geometry is voided so the anchor follows the hover morph,
+     * sources: the bead parks on the last focused icon and glides to the next, so
+     * crossing a gap between targets doesn't snap it back. With no target it
+     * rests below the hover strip's highlighted next-day (or under the hovered
+     * day). Pill geometry is voided so the anchor follows the hover morph,
      * the point stays live.
      */
     readonly property point soulPoint: {
@@ -891,13 +910,9 @@ Item {
             return recorderIcon.mapToItem(pill, recorderIcon.width / 2, recorderIcon.height + drop * 0.55);
         if (soulTarget === "sysmon")
             return sysmonIcon.mapToItem(pill, sysmonIcon.width / 2, sysmonIcon.height + drop * 0.55);
-        if (soulTarget === "ws" && soulWsIndex >= 0) {
-            void ws.activeName;
-            void ws.width;
-            const p = ws.mapToItem(pill, ws.slotCenterX(soulWsIndex), ws.height / 2);
-            return Qt.point(p.x, p.y + drop);
-        }
-        return ws.mapToItem(pill, ws.activeDotPoint.x, ws.activeDotPoint.y + drop);
+        // Calendar strip or no focused target: rest under the strip's highlighted
+        // next-day (or under the hovered day, tracked by CalendarStyle's ameAnchor).
+        return calendarStyle.mapToItem(pill, calendarStyle.ameAnchor.x, calendarStyle.ameAnchor.y);
     }
 
     /**
@@ -1440,6 +1455,13 @@ Item {
                 font.pixelSize: 18 * pill.s
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
+
+                /**
+                 * Fades out exactly as the hover clock fades in at the same
+                 * spot and size (hover.clockHandoff), so the swap leaves no
+                 * ghost behind.
+                 */
+                opacity: 1 - hover.clockHandoff
             }
             Text {
                 visible: pill.specialView !== ""
@@ -1458,19 +1480,65 @@ Item {
         anchors.fill: parent
 
         readonly property bool live: pill.mode === "hover"
-        readonly property real clockMorph: Math.min(1, pill.morphCloseness + 0.08)
-        readonly property real clockTextMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return Math.min(1.03, ease * 1.05); }
+
         /**
-         * The media bud fades in on the clock's schedule, not its own: both
-         * start at the same morph closeness and ride the same smoothstep, so
-         * the now-playing card and the clock appear together instead of the
-         * card popping in after the pill is already fully grown.
+         * How far the pill has grown along the rest→hover hop, from the two
+         * constant heights. The clock rides this instead of contentMorph — which
+         * is 1 the instant hover mode begins and would pop the clock — so the
+         * flight tracks the pill's actual growth. Only the pill's own geometry
+         * is read, so it behaves identically on any monitor, at any scale, in
+         * any notch style.
+         */
+        readonly property real clockHop: {
+            const den = Math.max(1, pill.hoverH - pill.restH);
+            return Math.max(0, Math.min(1, (pill.height - pill.restH) / den));
+        }
+
+        /**
+         * Two-phase clock transition, both driven by clockHop:
+         *  - handoff (0→0.30): the rest clock fades out while the hover clock
+         *    fades in at the same spot and the same 18px size, so the swap is
+         *    invisible — one clock, never a ghost.
+         *  - flight (0.30→1.00): with the swap complete, the single clock
+         *    slides to its hover spot while growing to 28px. Phases never
+         *    overlap, so the hover clock is never moving while the rest clock
+         *    is still visible.
+         */
+        readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockHop / 0.30)); return t * t * (3 - 2 * t); }
+        readonly property real clockFlight: { var t = Math.max(0, Math.min(1, (clockHop - 0.30) / 0.70)); return t * t * (3 - 2 * t); }
+
+        /**
+         * The media bud, tray and calendar strip render at full strength the
+         * moment hover mode begins (contentMorph is 1 in hover); the clock is
+         * the one piece that moves, so it alone animates on clockHop above.
          */
         readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return ease; }
         readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
         readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
-        readonly property real clockStartX: restTime.mapToItem(hover, restTime.width / 2, restTime.height / 2).x
-        readonly property real clockStartY: restTime.mapToItem(hover, restTime.width / 2, restTime.height / 2).y
+
+        /**
+         * The rest clock's centre, captured once the moment hover mode begins
+         * (while the pill is still at rest geometry) so the flight is a clean
+         * straight line instead of chasing a live mapToItem mid-morph — the old
+         * binding re-mapped an invisible hover target every frame and jumped.
+         */
+        property real clockStartX: 0
+        property real clockStartY: 0
+
+        function captureClockStart() {
+            const p = restTime.mapToItem(pill, restTime.width / 2, restTime.height / 2);
+            clockStartX = p.x;
+            clockStartY = p.y;
+        }
+
+        // Fires on every rest-to-hover hop. The pill is still at rest geometry
+        // here (the height Behavior starts a tick later), so the capture is
+        // exact. The onCompleted guard covers the one path where live is true
+        // from birth — a monitor hotplug while its pill is peeked — so a
+        // collapse then still flies from the rest clock's real position.
+        onLiveChanged: if (live) captureClockStart()
+        Component.onCompleted: if (live) captureClockStart()
+
         readonly property real clockEndX: hoverTime.x + hoverTime.width / 2
         readonly property real clockEndY: hoverTime.y + hoverTime.height / 2
 
@@ -1554,6 +1622,27 @@ Item {
                     opacity: hover.trayMorph
                     scale: 0.9 + 0.1 * hover.trayMorph
                 }
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: minimized.count > 0 && SystemTray.items.values.length > 0
+                    width: 1
+                    height: 14 * pill.s
+                    color: Theme.hair
+                    opacity: 0.7 * hover.trayMorph
+                }
+
+                Tray {
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    s: pill.s
+                    barWindow: pill.barWindow
+
+                    enabled: hover.live
+
+                    opacity: hover.trayMorph
+                    scale: 0.9 + 0.1 * hover.trayMorph
+                }
             }
 
             Item {
@@ -1586,12 +1675,12 @@ Item {
                         font.weight: Font.DemiBold
                         font.features: { "tnum": 1 }
 
-                        opacity: hover.clockTextMorph
-                        scale: 0.92 + 0.08 * hover.clockTextMorph
+                        opacity: hover.clockHandoff
+                        scale: 0.64 + 0.36 * hover.clockFlight
 
                         transform: Translate {
-                            x: (hover.clockStartX - hover.clockEndX) * (1 - hover.clockMorph)
-                            y: (hover.clockStartY - hover.clockEndY) * (1 - hover.clockMorph)
+                            x: (hover.clockStartX - hover.clockEndX) * (1 - hover.clockFlight)
+                            y: (hover.clockStartY - hover.clockEndY) * (1 - hover.clockFlight)
                         }
                     }
 
@@ -1604,6 +1693,11 @@ Item {
                         width: 220 * pill.s
                         height: 48 * pill.s
 
+                        pillRef: pill
+                        ameEnabled: true
+
+                        onOpenCalendar: (date) => pill.openCalendarAt(date)
+
                         scale: pill.s
                         opacity: hover.calendarMorph
                     }
@@ -1615,13 +1709,14 @@ Item {
                     width: hoverClock.implicitWidth + 22 * pill.s
                     height: hoverClock.implicitHeight + 10 * pill.s
 
-                    enabled: hover.live
+                    // While a day cell is hovered the strip's delegates own the
+                    // click (they open the calendar focused on that day);
+                    // anywhere else opens it on the current date.
+                    enabled: hover.live && !calendarStyle.hovered
 
                     cursorShape: Qt.PointingHandCursor
 
-                    onClicked: {
-                        pill.requestSurface("calendar")
-                    }
+                    onClicked: pill.openCalendarAt(null)
                 }
             }
         }
@@ -1666,6 +1761,7 @@ Item {
             s: pill.s
             open: pill.calendarOpen
             morphCloseness: pill.morphCloseness
+            targetDate: pill.calendarFocusDate
         }
     }
 

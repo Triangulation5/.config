@@ -7,7 +7,6 @@ import Quickshell.Io
 import "../../utils/setAnim.js" as SetAnim
 import qs.services
 import qs.modules.controlcenter
-import qs.modules.settings
 import qs.components.controls
 import qs.components.icons
 

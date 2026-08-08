@@ -1,6 +1,7 @@
 module qs.modules.pill.widgets
 
 Calendar 1.0 Calendar.qml
+CalendarEditor 1.0 CalendarEditor.qml
 CalendarStyle 1.0 CalendarStyle.qml
 Clipboard 1.0 Clipboard.qml
 IdleLock 1.0 IdleLock.qml

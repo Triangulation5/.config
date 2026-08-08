@@ -18,9 +18,37 @@ Item {
     property bool ameEnabled: false
     property var pillRef: null
 
+    // Day under the pointer, -1 when the strip isn't hovered. Drives Ame.
+    property int hoveredIndex: -1
+
+    /** True while a day cell is under the pointer; the pill uses it to hand
+     *  clicks on the strip to the day delegates instead of the clock area. */
+    readonly property bool hovered: hoveredIndex >= 0
+
+    /** Emitted when a day cell is clicked, carrying that date. The pill opens
+     *  the calendar focused on it rather than the current day. */
+    signal openCalendar(var date)
+
     property int selectedIndex: 7
     property date selectedDate: new Date()
 
+    /**
+     * Ame anchors for the expanded pill, in widget-local coordinates (the pill
+     * maps them into pill space). The wheel is centre-locked
+     * (StrictlyEnforceRange), so the focused day sits at width/2 and every other
+     * day is exactly (index - currentIndex) * slotWidth away from it. Ame rests
+     * just below the strip: under the hovered day, or under the red-highlighted
+     * next-day when nothing is hovered.
+     */
+    readonly property point nextDayAnchor: Qt.point(width / 2 + wheel.slotWidth, height + 12)
+
+    readonly property point hoverAnchor: Qt.point(
+        width / 2 + (hoveredIndex - wheel.currentIndex) * wheel.slotWidth,
+        height + 12
+    )
+
+    readonly property point ameAnchor:
+        hoveredIndex >= 0 ? hoverAnchor : nextDayAnchor
     function lerpColor(from, to, amount) {
         const t = Math.max(0, Math.min(1, amount))
 
@@ -138,8 +166,19 @@ Item {
                 ? Theme.vermLit
                 : Theme.dim
 
-            readonly property bool expanded:
-                proximity > 0.5
+            // How far the full weekday name has faded in. Only ramps when the
+            // day is essentially centred (distance < ~0.33 slot), so two
+            // adjacent days can never both show full titles while the wheel
+            // settles; the rest keep a single letter, cross-faded for a clean
+            // pass.
+            readonly property real nameFocus:
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        (dayDelegate.proximity - 0.78) / 0.22
+                    )
+                )
 
             scale:
                 0.88 +
@@ -158,34 +197,69 @@ Item {
 
                 spacing: 2
 
-                Text {
+                // Letter and full name overlay the same spot (a Column would
+                // stack them, shoving the day number down as the name fades in).
+                Item {
                     anchors.horizontalCenter: parent.horizontalCenter
 
-                    text:
-                        dayDelegate.expanded
-                        ? model.weekday
-                        : model.weekday.charAt(0)
+                    width: wheel.delegateWidth
+                    height: 14
 
-                    color:
-                        root.lerpColor(
-                            dayDelegate.baseTint,
-                            Theme.cream,
+                    Text {
+                        anchors.centerIn: parent
+
+                        text: model.weekday.charAt(0)
+
+                        color:
+                            root.lerpColor(
+                                dayDelegate.baseTint,
+                                Theme.cream,
+                                dayDelegate.proximity
+                            )
+
+                        font.family: Theme.font
+
+                        font.pixelSize:
+                            10 +
                             dayDelegate.proximity
-                        )
 
-                    font.family: Theme.font
+                        font.weight:
+                            dayDelegate.proximity > 0.55
+                            ? Font.Bold
+                            : Font.Medium
 
-                    font.pixelSize:
-                        10 +
-                        dayDelegate.proximity
+                        horizontalAlignment:
+                            Text.AlignHCenter
 
-                    font.weight:
-                        dayDelegate.proximity > 0.55
-                        ? Font.Bold
-                        : Font.Medium
+                        opacity: 1 - dayDelegate.nameFocus
+                    }
 
-                    horizontalAlignment:
-                        Text.AlignHCenter
+                    Text {
+                        anchors.centerIn: parent
+
+                        text: model.weekday
+
+                        color:
+                            root.lerpColor(
+                                dayDelegate.baseTint,
+                                Theme.cream,
+                                dayDelegate.proximity
+                            )
+
+                        font.family: Theme.font
+
+                        font.pixelSize:
+                            10 +
+                            dayDelegate.proximity
+
+                        font.weight: Font.Bold
+
+                        horizontalAlignment:
+                            Text.AlignHCenter
+
+                        opacity: dayDelegate.nameFocus
+                        scale: 0.92 + 0.08 * dayDelegate.nameFocus
+                    }
                 }
 
                 Text {
@@ -226,12 +300,19 @@ Item {
                 hoverEnabled: true
 
                 onContainsMouseChanged: {
-                    if (containsMouse && root.pillRef)
-                        root.pillRef.soulTarget = "calendar"
+                    if (containsMouse) {
+                        root.hoveredIndex = index
+                        if (root.pillRef && root.ameEnabled)
+                            root.pillRef.soulTarget = "calendar"
+                    } else if (root.hoveredIndex === index) {
+                        root.hoveredIndex = -1
+                    }
                 }
 
                 onClicked: {
+                    root.hoveredIndex = index
                     wheel.currentIndex = index
+                    root.openCalendar(new Date(model.timestamp))
                 }
             }
         }

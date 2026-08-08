@@ -126,10 +126,10 @@ Singleton {
                     return
 
                 const parts = line.split(";")
-                const frame = []
+                const frame = new Array(root.bars)
                 let peak = 0
 
-                for (let i = 0; i < root.bars; i++) {
+                for (let i = 0; i < frame.length; i++) {
                     const value = Math.max(
                         0,
                         Math.min(
@@ -138,7 +138,7 @@ Singleton {
                         )
                     )
 
-                    frame.push(value)
+                    frame[i] = value
 
                     if (value > peak)
                         peak = value
@@ -200,10 +200,10 @@ Singleton {
                     return
 
                 const parts = line.split(";")
-                const frame = []
+                const frame = new Array(root.lockBars)
                 let peak = 0
 
-                for (let i = 0; i < root.lockBars; i++) {
+                for (let i = 0; i < frame.length; i++) {
                     const value = Math.max(
                         0,
                         Math.min(
@@ -212,7 +212,7 @@ Singleton {
                         )
                     )
 
-                    frame.push(value)
+                    frame[i] = value
 
                     if (value > peak)
                         peak = value
