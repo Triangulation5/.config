@@ -5,6 +5,7 @@ vim.pack.add({
     { src = "https://github.com/echasnovski/mini.nvim" },
     { src = "https://github.com/vague-theme/vague.nvim", version = "24cd29d" },
     { src = "https://github.com/chomosuke/typst-preview.nvim" },
+    { src = "https://github.com/nvim-tree/nvim-web-devicons" },
 })
 
 -- Eager: these are cheap and/or used immediately (pick, colorscheme, mason UI)
