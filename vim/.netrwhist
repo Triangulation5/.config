@@ -1,5 +1,7 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =3
+let g:netrw_dirhistcnt =5
+let g:netrw_dirhist_5='/home/josh/.config/nvim/lua'
+let g:netrw_dirhist_4='/home/josh/.config/nvim'
 let g:netrw_dirhist_3='/home/josh/.config/nvim/lua/util'
 let g:netrw_dirhist_2='/home/josh/.config/nvim/lua/plugins'
 let g:netrw_dirhist_1='/home/josh/.config/nvim/lua/config'
@@ -8,5 +10,3 @@ let g:netrw_dirhist_9='/home/josh/.config/nvim'
 let g:netrw_dirhist_8='/home/josh/Projects/guessing_game'
 let g:netrw_dirhist_7='/home/josh/Projects/hello_cargo'
 let g:netrw_dirhist_6='/home/josh/Projects/hello_cargo/target'
-let g:netrw_dirhist_5='/home/josh/Projects/hello_cargo/src'
-let g:netrw_dirhist_4='/home/josh/Projects/hello_cargo'
