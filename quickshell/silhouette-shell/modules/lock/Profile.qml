@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import qs.services
 import qs.components.icons
@@ -66,6 +67,7 @@ Item {
             id: avatarImg
 
             anchors.fill: parent
+            anchors.margins: 1
 
             fillMode: Image.PreserveAspectCrop
             smooth: true
@@ -91,8 +93,7 @@ Item {
             }
 
             layer.enabled: true
-            layer.effect: MultiEffect {
-                maskEnabled: true
+            layer.effect: OpacityMask {
                 maskSource: avatarMask
             }
         }
@@ -101,9 +102,8 @@ Item {
         Item {
             id: avatarMask
 
-            anchors.fill: parent
+            anchors.fill: avatarImg
             visible: false
-            layer.enabled: true
 
             Rectangle {
                 anchors.fill: parent
