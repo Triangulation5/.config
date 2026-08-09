@@ -6,8 +6,8 @@ hl.config({
         border_size = 1,
 
         col = {
-            active_border   = { colors = { "rgba(205, 205, 205, 0.15)" } }, -- 0.35
-            inactive_border = "rgba(205, 205, 205, 0.08)", -- 0.12
+            active_border   = { colors = { "rgba(205, 205, 205, 0.15)" } },
+            inactive_border = "rgba(205, 205, 205, 0.08)",
         },
 
         resize_on_border = false,
@@ -16,8 +16,8 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 5, -- 2, 5, 8, 15
-        rounding_power = 2,
+        rounding       = 8,
+        rounding_power = 3,
 
         active_opacity   = 1.0,
         inactive_opacity = 0.95,
@@ -31,8 +31,8 @@ hl.config({
 
         blur = {
             enabled   = true,
-            size      = 6, -- 3, 8, 20
-            passes    = 2, -- 1, 2, 3 for frosted glass
+            size      = 6,
+            passes    = 2, -- 3 for frosted glass
             vibrancy  = 0.17,
             new_optimizations = true,
         },
