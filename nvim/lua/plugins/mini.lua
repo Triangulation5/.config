@@ -1,9 +1,9 @@
-for _, module in ipairs({ "ai", "diff", "git", "icons", "move", "pairs", "pick", "surround" }) do
+for _, module in ipairs({ "ai", "diff", "git", "move", "pairs", "pick", "surround" }) do
     require("mini." .. module).setup()
 end
 
-MiniIcons.tweak_lsp_kind()
-MiniIcons.mock_nvim_web_devicons()
+-- MiniIcons.tweak_lsp_kind()
+-- MiniIcons.mock_nvim_web_devicons()
 
 -- Treat <> as a pair, but only greedily open next to non-whitespace
 MiniPairs.map("i", "<", {
