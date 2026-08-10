@@ -98,8 +98,8 @@
     },
     {
       "type": "colors",
-      "symbol": "circle",
-      "paddingLeft": 3
+      "key": "󰏘 ",
+      "symbol": "circle"
     },
     "break",
     "break",
