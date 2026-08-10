@@ -77,7 +77,7 @@ nnoremap <leader>h :h<Space>
 nnoremap <leader>e :Lexplore<CR>
 
 " --- basic mappings ---
-nnoremap <leader>w :%s/\s\+$//e<CR>:write<CR>
+nnoremap <leader>w :write<CR>
 nnoremap <leader>q :quit<CR>
 nnoremap <leader>wq :xa<CR>
 nnoremap <leader>n :norm<Space>
