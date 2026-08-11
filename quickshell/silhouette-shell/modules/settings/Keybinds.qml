@@ -4,8 +4,8 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
-import "../../utils/binds.js" as Binds
-import "../../utils/keychord.js" as Chord
+import "../../utils/keybinds/binds.js" as Binds
+import "../../utils/keybinds/keychord.js" as Chord
 import qs.services
 import qs.modules.pill.surfaces
 import qs.components.icons

@@ -25,6 +25,14 @@ Row {
      */
     property bool live: false
 
+    /**
+     * True only while the pill is actually at rest (vs expanded/hovered/game).
+     * The string's capture stays warm while hidden but only consumes frames
+     * when resting, so returning to rest resumes instantly without 60fps
+     * churn behind an open surface.
+     */
+    property bool resting: false
+
     height: span * s
     width: stringVisualizer ? 24 * s : Cava.bars * (2.8 * s + 1.4 * s)
     spacing: stringVisualizer ? 0 : 1.8 * s
@@ -44,14 +52,17 @@ Row {
             width: parent.width
             height: parent.height
             live: root.live
+            resting: root.resting
 
             /**
              * The string is drawn in a 200×200 coordinate space with its origin
-             * at the item's top-left. Scale it down to 0.12·s (≈26px) so it reads
-             * as a graceful line balanced against the clock instead of a band
-             * that nearly fills the pill, then recentre that footprint inside
-             * the slot. The slot (24·s) is exactly the string's width, so there
-             * is no dead space shoving the clock right - the gap to the clock
+             * at the item's top-left. Scale it down to 0.16·s (a ~32·s-wide
+             * path) so it reads as a graceful line balanced against the clock
+             * instead of a band that nearly fills the pill, then recentre that
+             * footprint inside the slot (x = (root.width − 280·scale)/2,
+             * y = root.height/2·(1−scale)). The scaled line is wider than the
+             * 24·s slot, so it breathes past it into the pill's empty space
+             * instead of shoving the clock right - the gap to the clock still
              * matches the bars mode and the string's middle lines up with the
              * clock's.
              */

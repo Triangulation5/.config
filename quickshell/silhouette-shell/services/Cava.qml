@@ -74,8 +74,23 @@ Singleton {
 
     onWantedChanged: {
         cavaProc.running = wanted
+        idle.stop()
 
-        if (!wanted) {
+        if (wanted) {
+            /**
+             * Fresh countdown on return: if the first frames are silence the
+             * idle timer drops the frozen bars within its interval instead of
+             * leaving them stuck.
+             */
+            idle.restart()
+        } else if (!Flags.musicViz || !root.available) {
+            /**
+             * Freeze, don't vanish, on expand: active and levels persist so
+             * returning to rest shows the bars immediately while cava respawns
+             * in the background - a killed-and-respawned capture would
+             * otherwise read as a visible reload. Only turning the visualizer
+             * off or losing cava actually zeroes them.
+             */
             levels = Array(bars).fill(0)
             active = false
         }

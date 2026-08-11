@@ -3,10 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../../utils/setDeco.js" as SetDeco
+import "../../utils/lua/setDeco.js" as SetDeco
 import qs.services
 import qs.modules.controlcenter
-import qs.components.icons
 import qs.components.controls
 
 /**
@@ -328,163 +327,6 @@ SettingsSurface {
         command: []
     }
 
-    component GroupLabel: Text {
-        topPadding: 16 * root.s
-        bottomPadding: 6 * root.s
-        color: Theme.faint
-        font.family: Theme.font
-        font.pixelSize: 8.5 * root.s
-        font.weight: Font.Bold
-        font.capitalization: Font.AllUppercase
-        font.letterSpacing: 1.2 * root.s
-    }
-
-    /**
-     * Collapsible settings group: a tappable header (the group label plus a
-     * chevron) over a body of rows that animates between zero and its content
-     * height, so a long tab shows only the group headers until one is opened.
-     * `open` is the initial state; tapping the header toggles it.
-     */
-    component Group: Column {
-        id: grp
-        property string title: ""
-        property bool open: false
-        default property alias rows: body.data
-
-        width: parent ? parent.width : 0
-        spacing: 0
-
-        Item {
-            width: parent.width
-            height: gl.implicitHeight
-
-            GroupLabel { id: gl; text: grp.title }
-
-            GlyphIcon {
-                anchors.right: parent.right
-                anchors.verticalCenter: gl.verticalCenter
-                width: 15 * root.s
-                height: 15 * root.s
-                name: "chevron-down"
-                color: Theme.faint
-                stroke: 2.0
-                rotation: grp.open ? 0 : -90
-                Behavior on rotation { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: grp.open = !grp.open
-            }
-        }
-
-        Item {
-            width: parent.width
-            height: grp.open ? body.implicitHeight : 0
-            clip: true
-            Behavior on height { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
-
-            Column {
-                id: body
-                width: parent.width
-            }
-        }
-    }
-
-    /**
-     * One settings line. At rest it is an icon + label + control row; hovering or
-     * keyboard-focusing the row folds its grey caption open below the label so a
-     * long tab stays compact by default. `collapsed` drops the whole row to zero
-     * height with the same height animation, used by the blur and shadow rows that
-     * depend on a toggle. The row feeds the surface registry: hover moves the soul
-     * seam and a click anywhere on the line drives its control via activateRow.
-     */
-    component FieldRow: Item {
-        id: frow
-        property string label: ""
-        property string caption: ""
-        property string icon: ""
-        property bool collapsed: false
-        default property alias control: ctrl.data
-
-        readonly property bool focused: root.focusRowItem === frow
-        readonly property bool expanded: !frow.collapsed && (fhover.hovered || frow.focused)
-        readonly property real rowH: 30 * root.s
-        readonly property real capH: 14 * root.s
-
-        width: parent ? parent.width : 0
-        height: frow.collapsed ? 0 : (frow.rowH + (frow.expanded ? frow.capH : 0))
-        clip: true
-        Behavior on height { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
-
-        HoverHandler {
-            id: fhover
-            onHoveredChanged: if (!frow.collapsed) root.reportRowHover(frow, hovered)
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.topMargin: 3 * root.s
-            anchors.bottomMargin: 3 * root.s
-            radius: 9 * root.s
-            color: (fhover.hovered || frow.focused) ? Theme.frameBg : "transparent"
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.activateRow(frow)
-        }
-
-        GlyphIcon {
-            id: rowIcon
-            anchors.left: parent.left
-            anchors.leftMargin: 9 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            visible: frow.icon.length > 0
-            width: 15 * root.s
-            height: 15 * root.s
-            name: frow.icon
-            color: frow.focused ? Theme.cream : Theme.subtle
-            stroke: 1.8
-        }
-
-        Column {
-            anchors.left: rowIcon.visible ? rowIcon.right : parent.left
-            anchors.leftMargin: 9 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 2 * root.s
-
-            Text {
-                text: frow.label
-                color: Theme.cream
-                font.family: Theme.font
-                font.pixelSize: 12.5 * root.s
-                font.weight: Font.Medium
-            }
-
-            Text {
-                visible: frow.expanded && frow.caption.length > 0
-                text: frow.caption
-                color: Theme.faint
-                font.family: Theme.font
-                font.pixelSize: 9 * root.s
-                font.weight: Font.Medium
-            }
-        }
-
-        Item {
-            id: ctrl
-            anchors.right: parent.right
-            anchors.rightMargin: 9 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
-        }
-    }
-
     Column {
         id: content
         z: 100
@@ -509,9 +351,10 @@ SettingsSurface {
             anchors.rightMargin: 12 * root.s
             spacing: 0
 
-            Group { id: winGrp; title: "Window"; open: true
+            Group { id: winGrp; s: root.s; title: "Window"; open: true
 
             FieldRow {
+                surface: root
                 id: gapsInRow
                 label: "Gaps inner"
                 caption: "Space between tiled windows"
@@ -530,6 +373,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: gapsOutRow
                 label: "Gaps outer"
                 caption: "Space to the screen edge"
@@ -548,6 +392,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: roundRow
                 label: "Rounding"
                 caption: "Corner radius in pixels"
@@ -566,6 +411,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: roundPowRow
                 label: "Rounding power"
                 caption: "Higher bends corners to a squircle"
@@ -584,6 +430,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: borderRow
                 label: "Border size"
                 caption: "Window outline thickness"
@@ -602,6 +449,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: resizeRow
                 label: "Resize on border"
                 caption: "Drag a window edge to resize"
@@ -617,6 +465,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: layoutRow
                 label: "Layout"
                 caption: "Window tiling layout"
@@ -634,9 +483,10 @@ SettingsSurface {
 
             }
 
-            Group { id: nightGrp; title: "Night light"
+            Group { id: nightGrp; s: root.s; title: "Night light"
 
             FieldRow {
+                surface: root
                 id: nlModeRow
                 label: "Mode"
                 caption: "Off, warm, or auto"
@@ -650,6 +500,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: nlTempRow
                 label: "Temperature"
                 caption: "Lower is warmer"
@@ -666,6 +517,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: nlOnRow
                 label: "On at"
                 caption: "Warm tint starts"
@@ -683,6 +535,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: nlOffRow
                 label: "Off at"
                 caption: "Back to neutral"
@@ -701,9 +554,10 @@ SettingsSurface {
 
             }
 
-            Group { id: shadowGrp; title: "Shadow"
+            Group { id: shadowGrp; s: root.s; title: "Shadow"
 
             FieldRow {
+                surface: root
                 id: shEnRow
                 label: "Enabled"
                 caption: "Drop shadow under windows"
@@ -719,6 +573,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: shRangeRow
                 label: "Range"
                 caption: "How far the shadow spreads"
@@ -738,6 +593,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: shPowRow
                 label: "Render power"
                 caption: "Shadow falloff sharpness"
@@ -758,9 +614,10 @@ SettingsSurface {
 
             }
 
-            Group { id: blurGrp; title: "Blur"
+            Group { id: blurGrp; s: root.s; title: "Blur"
 
             FieldRow {
+                surface: root
                 id: blEnRow
                 label: "Enabled"
                 caption: "Blur behind transparent windows"
@@ -776,6 +633,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: blSizeRow
                 label: "Strength"
                 caption: "Blur radius"
@@ -795,6 +653,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: blPassRow
                 label: "Passes"
                 caption: "More passes, smoother blur"
@@ -814,6 +673,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: blVibRow
                 label: "Vibrancy"
                 caption: "Color saturation behind the blur"
@@ -833,6 +693,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: blNoiseRow
                 label: "Noise"
                 caption: "Grain mixed into the blur"
@@ -853,9 +714,10 @@ SettingsSurface {
 
             }
 
-            Group { id: opGrp; title: "Opacity"
+            Group { id: opGrp; s: root.s; title: "Opacity"
 
             FieldRow {
+                surface: root
                 id: opActRow
                 label: "Active window"
                 caption: "Focused window transparency"
@@ -874,6 +736,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: opInactRow
                 label: "Inactive window"
                 caption: "Unfocused window transparency"
@@ -893,9 +756,10 @@ SettingsSurface {
 
             }
 
-            Group { id: pillGrp; title: "Pill"; open: true
+            Group { id: pillGrp; s: root.s; title: "Pill"; open: true
 
             FieldRow {
+                surface: root
                 id: pillGapRow
                 label: "Pill gap"
                 caption: "Space above pill. Lower moves it up."
@@ -911,6 +775,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: appGapRow
                 label: "App gap"
                 caption: "Space under pill. Lower moves view up."
@@ -926,6 +791,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: pillOpRow
                 label: "Pill opacity"
                 caption: "How see-through the pill sits"
@@ -941,6 +807,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: pillBlurRow
                 label: "Pill blur"
                 caption: "Frosts pill. Needs opacity under 100%."
@@ -956,6 +823,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: notchFlareRow
                 label: "Notch flare"
                 caption: "Flare of both notch ears."

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell
+import "../../utils/format.js" as Fmt
 import qs.services
 import qs.components.icons
 
@@ -114,14 +115,8 @@ Item {
     readonly property real positionSec: hasPlayer && player ? player.position : 0
     readonly property real progress: lengthSec > 0 ? Math.max(0, Math.min(1, positionSec / lengthSec)) : 0
 
-    function fmtTime(sec) {
-        var m = Math.floor(sec / 60);
-        var ss = Math.floor(sec % 60);
-        return m + ":" + (ss < 10 ? "0" : "") + ss;
-    }
-
     readonly property string metaLine: {
-        var t = lengthSec > 0 ? fmtTime(positionSec) + " / " + fmtTime(lengthSec) : "";
+        var t = lengthSec > 0 ? Fmt.fmtTime(positionSec) + " / " + Fmt.fmtTime(lengthSec) : "";
         if (trackArtist.length > 0 && t.length > 0)
             return trackArtist + " · " + t;
         return trackArtist.length > 0 ? trackArtist : t;

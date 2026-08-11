@@ -1,3 +1,11 @@
+.import "fields.js" as Fields
+
+/**
+ * Parses `hyprctl monitors -j` into the slim shape the Display surface needs
+ * and rewrites a named `hl.monitor({...})` block's mode/position/scale fields.
+ * escapeRe comes from fields.js.
+ */
+
 /**
  * Parses one availableModes entry like "2560x1440@279.96Hz" into its parts. The
  * Hz is rounded to a whole number for UI grouping and the apply mode string,
@@ -74,7 +82,7 @@ function parse(jsonText) {
  * any of the three fields cannot be found.
  */
 function setMonitor(luaText, output, mode, position, scale) {
-    var outRe = new RegExp('output\\s*=\\s*"' + escapeRe(output) + '"');
+    var outRe = new RegExp('output\\s*=\\s*"' + Fields.escapeRe(output) + '"');
     var outMatch = outRe.exec(luaText);
     if (!outMatch)
         return { text: luaText, ok: false, error: "output not found: " + output };
@@ -119,14 +127,10 @@ function replaceField(block, name, value) {
     var re = FIELD_RES[name];
 
     if (!re)
-        re = FIELD_RES[name] = new RegExp("(" + name + "\\s*=\\s*)(\"[^\"]*\"|[^,}\\n]*)");
+        re = FIELD_RES[name] = new RegExp("(" + name + "\\s*=\\s*)(\"[^\"]*\"|[^,}\\\\n]*)");
 
     if (!re.test(block))
         return { text: block, ok: false };
 
     return { text: block.replace(re, "$1" + value), ok: true };
-}
-
-function escapeRe(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

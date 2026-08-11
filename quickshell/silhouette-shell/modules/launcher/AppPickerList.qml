@@ -6,7 +6,7 @@ import qs.services
 import qs.modules.pill.widgets
 import qs.components.icons
 import qs.components.controls
-import "../../utils/fuzzy.js" as Fuzzy
+import "../../utils/launcher/fuzzy.js" as Fuzzy
 
 /**
  * Shared add-app picker for the class-routing surfaces (Stash, SpaceApps).
