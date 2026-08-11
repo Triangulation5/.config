@@ -3,14 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import qs.services
 import qs.modules.settings
-import qs.modules.pill.widgets
 import qs.modules.pill.surfaces
 import qs.components.icons
 import qs.components.controls
 import "../../utils/launcher/fuzzy.js" as Fuzzy
 import "../../utils/launcher/calc.js" as Calc
+import "../../utils/launcher/emojis.js" as EmojiData
 
 /**
  * Launcher surface: search field over a ranked application list, drawn as one
@@ -45,7 +46,8 @@ PillSurface {
     readonly property var calc: Calc.evaluate(query)
     readonly property bool calcActive: calc.ok
     property bool calcCopied: false
-    onQueryChanged: calcCopied = false
+    property bool emojiCopied: false
+    onQueryChanged: { calcCopied = false; emojiCopied = false; }
 
     function copyResult() {
         if (!root.calcActive)
@@ -81,6 +83,95 @@ PillSurface {
         if (!root.terminalActive || root.terminalCommand.length === 0)
             return;
         Quickshell.execDetached(["kitty", "--", "bash", "-c", root.terminalCommand + "; exec $SHELL"]);
+        root.quit();
+        root.requestClose();
+    }
+
+    /**
+     * Window switcher mode: a `:w` prefix shows open Hyprland windows filtered
+     * by title/class. Enter focuses the selected window and closes.
+     */
+    readonly property bool windowActive: query.length >= 2 && query[0] === ':' && query[1] === 'w'
+        && (query.length === 2 || query[2] === ' ')
+    readonly property string windowQuery: windowActive ? (query.length > 3 ? query.slice(3).trim() : "") : ""
+
+    /**
+     * Emoji picker mode: a `:` prefix (not `:w`) shows emojis filtered by name.
+     * Enter copies the selected emoji via wl-copy and closes.
+     */
+    readonly property bool emojiActive: query.length > 1 && query[0] === ':' && !root.windowActive
+    readonly property string emojiQuery: emojiActive ? query.slice(1).trim() : ""
+
+    readonly property var emojiResults: {
+        var q = root.emojiQuery.toLowerCase();
+        if (q.length === 0)
+            return EmojiData.Emojis;
+        var out = [];
+        for (var i = 0; i < EmojiData.Emojis.length; i++) {
+            if (EmojiData.Emojis[i].n.indexOf(q) !== -1)
+                out.push(EmojiData.Emojis[i]);
+        }
+        return out;
+    }
+
+    readonly property var windowResults: {
+        var tl = Hyprland.toplevels.values;
+        var out = [];
+        for (var i = 0; i < tl.length; i++) {
+            var t = tl[i];
+            if (!t || !t.address || !t.title)
+                continue;
+            var ipc = t.lastIpcObject;
+            out.push({
+                address: t.address,
+                title: t.title || "",
+                cls: (ipc && ipc.class) ? ipc.class : "",
+                workspace: (ipc && ipc.workspace) ? ipc.workspace.name : ""
+            });
+        }
+        var q = root.windowQuery.toLowerCase();
+        if (q.length === 0)
+            return out;
+        var filtered = [];
+        for (var j = 0; j < out.length; j++) {
+            var w = out[j];
+            if (w.title.toLowerCase().indexOf(q) !== -1 || w.cls.toLowerCase().indexOf(q) !== -1)
+                filtered.push(w);
+        }
+        return filtered;
+    }
+
+    function iconForWindow(cls) {
+        if (!cls || !cls.length)
+            return "";
+        var apps = DesktopEntries.applications.values;
+        for (var i = 0; i < apps.length; i++) {
+            var a = apps[i];
+            if (!a || !a.id)
+                continue;
+            var id = a.id.toLowerCase();
+            if (id === cls.toLowerCase() + ".desktop" || id.indexOf(cls.toLowerCase() + ".desktop") === 0)
+                return a.icon ? Quickshell.iconPath(a.icon, true) : "";
+        }
+        return "";
+    }
+
+    function copyEmoji() {
+        if (!root.emojiActive || root.emojiResults.length === 0 || selectedIndex < 0 || selectedIndex >= root.emojiResults.length)
+            return;
+        Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", root.emojiResults[selectedIndex].e]);
+        root.emojiCopied = true;
+        root.quit();
+        root.requestClose();
+    }
+
+    function focusWindow() {
+        if (!root.windowActive || root.windowResults.length === 0 || selectedIndex < 0 || selectedIndex >= root.windowResults.length)
+            return;
+        var addr = root.windowResults[selectedIndex].address;
+        if (addr.indexOf("0x") !== 0)
+            addr = "0x" + addr;
+        Hyprland.dispatch('hl.dsp.focus({ window = "address:' + addr + '" })');
         root.quit();
         root.requestClose();
     }
@@ -148,6 +239,20 @@ PillSurface {
     }
 
     function move(delta) {
+        if (root.windowActive) {
+            if (root.windowResults.length === 0)
+                return;
+            selectedIndex = Math.max(0, Math.min(root.windowResults.length - 1, selectedIndex + delta));
+            winList.positionViewAtIndex(selectedIndex, ListView.Contain);
+            return;
+        }
+        if (root.emojiActive) {
+            if (root.emojiResults.length === 0)
+                return;
+            selectedIndex = Math.max(0, Math.min(root.emojiResults.length - 1, selectedIndex + delta));
+            emojiGrid.positionViewAtIndex(selectedIndex, GridView.Contain);
+            return;
+        }
         if (results.length === 0)
             return;
         selectedIndex = Math.max(0, Math.min(results.length - 1, selectedIndex + delta));
@@ -161,6 +266,14 @@ PillSurface {
         }
         if (root.terminalActive) {
             root.runInTerminal();
+            return;
+        }
+        if (root.windowActive) {
+            root.focusWindow();
+            return;
+        }
+        if (root.emojiActive) {
+            root.copyEmoji();
             return;
         }
         if (root.calcActive) {
@@ -198,6 +311,14 @@ PillSurface {
             selectedIndex = 0;
         editIndex = -1;
     }
+    onEmojiResultsChanged: {
+        if (selectedIndex >= root.emojiResults.length)
+            selectedIndex = 0;
+    }
+    onWindowResultsChanged: {
+        if (selectedIndex >= root.windowResults.length)
+            selectedIndex = 0;
+    }
 
     FileView {
         id: usageStore
@@ -224,7 +345,7 @@ PillSurface {
         s: root.s
         kanji: "探"
         placeholder: "Search apps"
-        counterText: root.commandActive ? "⌘" : (root.terminalActive ? "$" : (root.results.length + " / " + root.totalCount))
+        counterText: root.commandActive ? "⌘" : (root.terminalActive ? "$" : (root.windowActive ? (root.windowResults.length + " windows") : (root.emojiActive ? ":" : (root.results.length + " / " + root.totalCount))))
         onTextChanged: {
             root.query = text;
             root.selectedIndex = 0;
@@ -468,16 +589,255 @@ PillSurface {
 
     Text {
         anchors.centerIn: list
-        visible: root.results.length === 0 && !root.calcActive && !root.commandActive && !root.terminalActive
+        visible: root.results.length === 0 && !root.calcActive && !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
         text: root.query.length ? "No matches" : "No apps found"
         color: Theme.faint
         font.family: Theme.font
         font.pixelSize: 10.5 * root.s
     }
 
+    /** ── Emoji grid ── */
+
+    GridView {
+        id: emojiGrid
+        visible: root.emojiActive
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        cellWidth: 40 * root.s
+        cellHeight: 40 * root.s
+        model: root.emojiResults.length
+        currentIndex: root.selectedIndex
+
+        delegate: Rectangle {
+            required property int index
+            width: emojiGrid.cellWidth - 2 * root.s
+            height: emojiGrid.cellHeight - 2 * root.s
+            radius: 8 * root.s
+            color: index === root.selectedIndex ? Theme.frameBg : (emoArea.containsMouse ? Qt.rgba(0.94, 0.88, 0.84, 0.04) : "transparent")
+            border.width: index === root.selectedIndex ? 1 : 0
+            border.color: Theme.frameBorder
+
+            readonly property var emoji: root.emojiResults[index]
+
+            Text {
+                anchors.centerIn: parent
+                text: parent.emoji ? parent.emoji.e : ""
+                font.pixelSize: 22 * root.s
+            }
+
+            MouseArea {
+                id: emoArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    root.selectedIndex = index;
+                    root.copyEmoji();
+                }
+                onEntered: root.selectedIndex = index
+            }
+        }
+
+        WheelScroller {
+            anchors.fill: parent
+            s: root.s
+            flick: emojiGrid
+        }
+    }
+
+    /** Emoji name label bar when emoji mode is active. */
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 2 * root.s
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: nameLabel.implicitWidth + 20 * root.s
+        height: visible ? 22 * root.s : 0
+        radius: 6 * root.s
+        color: Qt.rgba(0, 0, 0, 0.4)
+        visible: root.emojiActive && root.emojiResults.length > 0 && root.selectedIndex < root.emojiResults.length
+
+        Text {
+            id: nameLabel
+            anchors.centerIn: parent
+            text: root.emojiCopied ? "Copied!" : (root.emojiResults[root.selectedIndex] ? root.emojiResults[root.selectedIndex].n : "")
+            color: root.emojiCopied ? Theme.vermLit : Theme.cream
+            font.family: Theme.font
+            font.pixelSize: 10.5 * root.s
+        }
+    }
+
+    /** ── Window list ── */
+
+    Text {
+        anchors.centerIn: winList
+        visible: root.windowActive && root.windowResults.length === 0
+        text: root.windowQuery.length ? "No windows match" : "No windows open"
+        color: Theme.faint
+        font.family: Theme.font
+        font.pixelSize: 10.5 * root.s
+    }
+
+    ListView {
+        id: winList
+        visible: root.windowActive
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        spacing: 5 * root.s
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        model: root.windowResults.length
+
+        delegate: Item {
+            id: winRow
+            required property int index
+            width: winList.width
+            height: 38 * root.s
+
+            readonly property var win: root.windowResults[index]
+            readonly property bool selected: index === root.selectedIndex
+            readonly property string resolvedIcon: root.iconForWindow(winRow.win.cls)
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 9 * root.s
+                visible: winRow.selected || winArea.containsMouse
+                color: winRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03)
+                border.width: winRow.selected ? 1 : 0
+                border.color: Theme.frameBorder
+            }
+
+            MouseArea {
+                id: winArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onEntered: root.selectedIndex = winRow.index
+                onClicked: {
+                    root.selectedIndex = winRow.index;
+                    root.focusWindow();
+                }
+            }
+
+            Item {
+                anchors.fill: parent
+                anchors.leftMargin: 11 * root.s
+                anchors.rightMargin: 11 * root.s
+
+                Rectangle {
+                    id: winIconBg
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 22 * root.s
+                    height: 22 * root.s
+                    radius: 5 * root.s
+                    color: Qt.rgba(1, 1, 1, 0.05)
+                    visible: !(winIcon.status === Image.Ready && winIcon.source != "")
+                }
+                Image {
+                    id: winIcon
+                    anchors.fill: winIconBg
+                    sourceSize.width: Math.round(40 * root.s)
+                    sourceSize.height: Math.round(40 * root.s)
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    smooth: true
+                    visible: status === Image.Ready && source != ""
+                    source: winRow.resolvedIcon
+                }
+                GlyphIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.horizontalCenter: winIconBg.horizontalCenter
+                    width: 14 * root.s
+                    height: 14 * root.s
+                    name: "window"
+                    color: winRow.selected ? Theme.dim : Theme.faint
+                    stroke: 1.7
+                    visible: winRow.resolvedIcon.length === 0 || (winIcon.status !== Image.Ready)
+                }
+
+                Column {
+                    anchors.left: winIconBg.right
+                    anchors.leftMargin: 10 * root.s
+                    anchors.right: wsPill.left
+                    anchors.rightMargin: 8 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1 * root.s
+
+                    Text {
+                        width: parent.width
+                        text: winRow.win.title
+                        color: Theme.cream
+                        font.family: Theme.font
+                        font.pixelSize: 13 * root.s
+                        font.weight: winRow.selected ? Font.DemiBold : Font.Normal
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width
+                        visible: winRow.win.cls.length > 0
+                        text: winRow.win.cls
+                        color: winRow.selected ? Theme.dim : Theme.faint
+                        font.family: Theme.font
+                        font.pixelSize: 10.5 * root.s
+                        elide: Text.ElideRight
+                    }
+                }
+
+                Rectangle {
+                    id: wsPill
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: winRet.left
+                    anchors.rightMargin: winRow.selected ? 6 * root.s : 0
+                    width: visible ? wsLabel.implicitWidth + 10 * root.s : 0
+                    height: 18 * root.s
+                    radius: 4 * root.s
+                    color: winRow.selected ? Qt.rgba(0.94, 0.88, 0.84, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                    visible: winRow.win.workspace.length > 0 && winRow.win.workspace !== "special:minimized"
+
+                    Text {
+                        id: wsLabel
+                        anchors.centerIn: parent
+                        text: winRow.win.workspace
+                        color: winRow.selected ? Theme.dim : Theme.faint
+                        font.family: Theme.font
+                        font.pixelSize: 9.5 * root.s
+                        font.weight: Font.Medium
+                    }
+                }
+
+                Text {
+                    id: winRet
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right
+                    text: "↵"
+                    color: Theme.vermLit
+                    font.family: Theme.font
+                    font.pixelSize: 12 * root.s
+                    visible: winRow.selected
+                }
+            }
+        }
+    }
+
+    WheelScroller {
+        anchors.fill: winList
+        visible: root.windowActive
+        s: root.s
+        flick: winList
+    }
+
+    /** ── App list ── */
+
     ListView {
         id: list
-        visible: !root.commandActive && !root.terminalActive
+        visible: !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
         anchors.top: root.calcActive ? calcRow.bottom
             : (root.commandActive ? commandRow.bottom
             : (root.terminalActive ? terminalRow.bottom : divider.bottom))
@@ -714,7 +1074,7 @@ PillSurface {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 2 * root.s
         spacing: 5 * root.s
-        visible: root.query.length === 0 && root.editIndex === -1
+        visible: root.query.length === 0 && root.editIndex === -1 && !root.emojiActive && !root.windowActive
         opacity: 0.6
 
         GlyphIcon {

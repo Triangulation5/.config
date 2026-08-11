@@ -154,6 +154,64 @@ Singleton {
         root.persist();
     }
 
+    /**
+     * Set of event ids already fired today, cleared at midnight so yearly/
+     * monthly repeats re-fire on their next occurrence.
+     */
+    property var firedToday: ({});
+    property string lastDateChecked: ""
+
+    /** Zero-pad a number to two digits for HH:MM formatting. */
+    function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+
+    /**
+     * Check whether any timed event covering today has just reached its start
+     * time. Each event fires at most once per day; the fired-today set resets
+     * when the date changes. A matching event plays a chime and posts a desktop
+     * notification so it lands even when the calendar surface is closed.
+     */
+    function checkAlerts() {
+        var now = new Date();
+        var today = now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());
+        var hm = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+
+        if (today !== root.lastDateChecked) {
+            root.firedToday = ({});
+            root.lastDateChecked = today;
+        }
+
+        var todayEvents = root.forDate(today);
+        for (var i = 0; i < todayEvents.length; i++) {
+            var e = todayEvents[i];
+            if (!e.time || e.time.length === 0)
+                continue;
+            if (e.time !== hm)
+                continue;
+            if (root.firedToday[e.id])
+                continue;
+            root.firedToday[e.id] = true;
+
+            alertChime.running = true;
+            alertNotif.command = ["notify-send", "-a", "SilhouetteShell",
+                "⏰ " + e.text,
+                (e.endTime && e.endTime.length > 0 ? e.time + " – " + e.endTime : e.time) + " · tap to dismiss",
+                "-u", "normal"];
+            alertNotif.running = true;
+        }
+    }
+
+    Process { id: alertChime; command: ["paplay", "/usr/share/sounds/freedesktop/stereo/complete.oga"] }
+    Process { id: alertNotif }
+
+    Timer {
+        id: alertTimer
+        interval: 30000
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: root.checkAlerts()
+    }
+
     Component.onCompleted: reloadEvents()
 
     FileView {

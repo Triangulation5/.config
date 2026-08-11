@@ -18,9 +18,9 @@ import qs.components.icons
  * desaturate as they slide under it, so the strip reads as depth. Arrow keys
  * and wheel move focus, clicking a neighbour glides to it, Enter or a tap on
  * the focused thumb applies it via wallpaper.sh (strip stays open so you can
- * keep trying picks). Hold the focused thumb for the heat duration to trash the
- * file (press-and-hold confirm, same as the clipboard wipe); progress sweeps
- * along the thumb's lower edge and drains on early release.
+ * keep trying picks). Hold Enter (or press-and-hold the focused thumb) for the
+ * heat duration to trash the file; progress sweeps along the thumb's lower edge
+ * and drains on early release.
  *
  * Typing any printable character while the strip is open drops it into a
  * DuckDuckGo image search: a search field reveals at the top, the strip swaps
@@ -130,6 +130,13 @@ PillSurface {
         } else {
             Walls.apply(entry.path);
         }
+    }
+
+    /** Trigger the focused tile's HeatHold from a held Enter key. */
+    function holdPress() {
+        if (focusIndex < 0 || focusIndex >= itemCount) return;
+        var tile = tileRepeater.itemAt(focusIndex);
+        if (tile && tile.trashHeat) tile.trashHeat.press();
     }
 
     function centerOnCurrent() {
@@ -305,6 +312,7 @@ PillSurface {
     }
 
     Repeater {
+        id: tileRepeater
         model: root.items
 
         delegate: Item {
@@ -324,9 +332,10 @@ PillSurface {
             readonly property real sat: root.slotLerp(root.slotSat, ao)
             readonly property real corner: (8 + 2 * Math.max(0, 1 - ao)) * root.s
 
+            property alias trashHeat: trashHeat
             readonly property real hold: trashHeat.hold
-            readonly property bool committing: trashHeat.hold >= trashHeat.tapThreshold
-            readonly property real commitProgress: Math.max(0, (trashHeat.hold - trashHeat.tapThreshold) / (1 - trashHeat.tapThreshold))
+            readonly property bool committing: hold >= trashHeat.tapThreshold
+            readonly property real commitProgress: Math.max(0, (hold - trashHeat.tapThreshold) / (1 - trashHeat.tapThreshold))
 
             /**
              * Fade a tile out as its outer edge nears the clipped strip

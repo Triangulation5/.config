@@ -36,6 +36,8 @@ Item {
 
     /** A completed app install asked the pill to open the launcher. */
     signal launchRequested()
+    /** An image was dropped — share it via the Send surface. */
+    signal shareRequested(string filePath)
 
     property var installQueue: []
 
@@ -47,6 +49,7 @@ Item {
     }
 
     readonly property var dropExt: /\.(appimage|deb|rpm|flatpakref|zip|tgz|txz|tbz2|ttf|otf|png|jpe?g|webp)$|\.(pkg\.)?tar\.(gz|xz|bz2|zst)$/i
+    readonly property var imageExt: /\.(png|jpe?g|webp)$/i
 
     function droppablePaths(urls) {
         var out = [];
@@ -54,6 +57,10 @@ Item {
             if (root.dropExt.test(String(urls[i])))
                 out.push(root.localPath(urls[i]));
         return out;
+    }
+
+    function isImage(url) {
+        return root.imageExt.test(String(url));
     }
 
     function dropLabel(urls) {
@@ -195,6 +202,13 @@ Item {
                 dropBadTimer.restart();
                 return;
             }
+            /** Images share directly — no two-step choice. */
+            if (files.length === 1 && root.isImage(drop.urls[0])) {
+                root.shareRequested(files[0]);
+                root.dragActive = false;
+                root.dragStage = "";
+                return;
+            }
             root.dragActive = true;
             root.dragStage = "installing";
             root.installedAny = false;
@@ -223,7 +237,8 @@ Item {
 
         Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
 
-        readonly property color accent: (root.dragStage === "bad" || root.dragStage === "fail") ? "#e0533f" : Theme.vermLit
+        readonly property color accent: root.dragStage === "fail" ? "#e0533f"
+            : (root.dragStage === "bad" ? "#4ec9b0" : Theme.vermLit)
         readonly property real brLen: 15 * root.s
         readonly property real brThick: 2 * root.s
 
@@ -277,9 +292,10 @@ Item {
                     anchors.fill: parent
                     stroke: 2
                     color: dragOverView.accent
-                    name: (root.dragStage === "bad" || root.dragStage === "fail") ? "close"
+                    name: root.dragStage === "bad" ? "share"
+                        : (root.dragStage === "fail" ? "close"
                         : (root.dragStage === "installing" ? "reboot"
-                        : (root.dragStage === "done" ? "check" : "download"))
+                        : (root.dragStage === "done" ? "check" : "download")))
 
                     RotationAnimation on rotation {
                         running: root.dragStage === "installing"
@@ -294,7 +310,7 @@ Item {
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: root.dragStage === "bad" ? "Can't install this"
+                text: root.dragStage === "bad" ? "Not installable"
                     : (root.dragStage === "fail" ? "Install failed"
                     : (root.dragStage === "installing" ? ("Installing"
                         + (root.installPct.length > 0 ? " " + root.installPct : "")
@@ -315,8 +331,9 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
-                text: root.dragStage === "installing" && root.installLine.length > 0 ? root.installLine : root.dragName
-                color: Theme.subtle
+                text: root.dragStage === "bad" ? "Use Send surface to share"
+                    : (root.dragStage === "installing" && root.installLine.length > 0 ? root.installLine : root.dragName)
+                color: root.dragStage === "bad" ? dragOverView.accent : Theme.subtle
                 font.family: Theme.font
                 font.pixelSize: 11 * root.s
                 elide: Text.ElideMiddle
