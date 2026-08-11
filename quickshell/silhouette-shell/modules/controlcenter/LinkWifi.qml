@@ -52,9 +52,9 @@ Item {
     property string revealedPw: ""
     property bool revealResolved: false
 
-    readonly property string hsCon: "RicelinHotspot"
+    readonly property string hsCon: "silhouette-shell"
     readonly property string hsIface: wifiDev ? (wifiDev.name || "wlan0") : "wlan0"
-    property string hsName: "Ricelin"
+    property string hsName: "SilhouetteShell"
     property string hsPw: ""
     property bool hsActive: false
     property bool hsBusy: false
@@ -72,6 +72,33 @@ Item {
     property bool attemptWasKnown: false
 
     implicitHeight: hsBlock.y + hsBlock.height
+
+    /**
+     * Keyboard focus over the network rows; -1 until the first arrow so the
+     * first press lands on the top network.
+     */
+    property int kbIndex: -1
+
+    function kbMove(dir) {
+        var n = root.netsSorted.length;
+        if (n === 0)
+            return false;
+        if (kbIndex < 0 || kbIndex >= n)
+            kbIndex = 0;
+        kbIndex = (kbIndex + dir + n) % n;
+        return true;
+    }
+
+    /** Return on the wifi list: activate (expand / connect) the focused network. */
+    function kbActivate() {
+        var n = root.netsSorted.length;
+        if (n === 0)
+            return false;
+        if (kbIndex < 0 || kbIndex >= n)
+            kbIndex = 0;
+        root.activateNetwork(root.netsSorted[kbIndex]);
+        return true;
+    }
 
     function isSecured(ssid) {
         var sec = securityMap[ssid];
@@ -630,6 +657,7 @@ Item {
                     Column {
                         id: netItem
                         required property var modelData
+                        required property int index
                         readonly property string ssid: (modelData && modelData.name) ? modelData.name : ""
                         readonly property bool isActive: modelData ? modelData.connected === true : false
                         readonly property bool secured: root.isSecured(ssid)
@@ -637,6 +665,7 @@ Item {
                         readonly property bool expanded: ssid.length > 0 && root.expandedSsid === ssid
                         readonly property bool confirming: expanded && (isActive || known)
                         readonly property bool asking: expanded && !confirming
+                        readonly property bool focused: root.kbIndex === index
                         width: netCol.width
                         spacing: 2 * root.s
 
@@ -654,9 +683,12 @@ Item {
                             height: 30 * root.s
                             radius: 9 * root.s
                             color: netItem.isActive ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.14)
-                                : (rowHover.hovered ? Theme.frameBg : "transparent")
+                                : ((rowHover.hovered || netItem.focused) ? Theme.frameBg : "transparent")
 
-                            HoverHandler { id: rowHover }
+                            HoverHandler {
+                                id: rowHover
+                                onHoveredChanged: if (hovered) root.kbIndex = netItem.index
+                            }
 
                             MouseArea {
                                 anchors.fill: parent

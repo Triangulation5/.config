@@ -93,6 +93,7 @@ SettingsSurface {
         { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
         { item: motionRow, kind: "toggle", get: function () { return Flags.reduceMotion; }, set: function (v) { Flags.reduceMotion = v; } },
+        { item: autoHideRow, kind: "toggle", get: function () { return Flags.autoHide; }, set: function (v) { Flags.autoHide = v; } },
         { item: fontRow, kind: "nav", surface: "fontpicker" }
     ]
 
@@ -429,6 +430,19 @@ SettingsSurface {
                 s: root.s
                 on: Flags.reduceMotion
                 onToggled: Flags.reduceMotion = !Flags.reduceMotion
+            }
+        }
+
+        SettingsRow {
+            id: autoHideRow
+            surface: root
+            name: "Auto hide"
+            icon: "eye-off"
+
+            LinkToggle {
+                s: root.s
+                on: Flags.autoHide
+                onToggled: Flags.autoHide = !Flags.autoHide
             }
         }
 

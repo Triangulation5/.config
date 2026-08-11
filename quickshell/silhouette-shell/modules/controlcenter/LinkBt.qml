@@ -248,6 +248,33 @@ Item {
         }
     }
 
+    /**
+     * Keyboard focus over the device rows; -1 until the first arrow so the
+     * first press lands on the top device.
+     */
+    property int kbIndex: -1
+
+    function kbMove(dir) {
+        var n = root.devicesSorted.length;
+        if (n === 0)
+            return false;
+        if (kbIndex < 0 || kbIndex >= n)
+            kbIndex = 0;
+        kbIndex = (kbIndex + dir + n) % n;
+        return true;
+    }
+
+    /** Return on the bt list: activate (connect / pair / manage) the focused device. */
+    function kbActivate() {
+        var n = root.devicesSorted.length;
+        if (n === 0)
+            return false;
+        if (kbIndex < 0 || kbIndex >= n)
+            kbIndex = 0;
+        root.activateDevice(root.devicesSorted[kbIndex]);
+        return true;
+    }
+
     Rectangle {
         id: divider
         anchors.top: header.bottom
@@ -294,6 +321,7 @@ Item {
                     Column {
                         id: devItem
                         required property var modelData
+                        required property int index
                         readonly property bool isConnected: modelData ? modelData.connected === true : false
                         readonly property bool isPaired: modelData ? modelData.paired === true : false
                         readonly property string addr: (modelData && modelData.address) ? modelData.address : ""
@@ -304,6 +332,7 @@ Item {
                                 || modelData.state === BluetoothDeviceState.Disconnecting)
                             : false
                         readonly property bool confirming: addr.length > 0 && root.expandedAddress === addr
+                        readonly property bool focused: root.kbIndex === index
                         readonly property int battery: root.batteryLevel(modelData)
                         width: devCol.width
                         spacing: 2 * root.s
@@ -312,9 +341,12 @@ Item {
                             width: parent.width
                             height: 38 * root.s
                             radius: 9 * root.s
-                            color: rowHover.hovered ? Theme.frameBg : "transparent"
+                            color: rowHover.hovered || devItem.focused ? Theme.frameBg : "transparent"
 
-                            HoverHandler { id: rowHover }
+                            HoverHandler {
+                                id: rowHover
+                                onHoveredChanged: if (hovered) root.kbIndex = devItem.index
+                            }
 
                             MouseArea {
                                 anchors.fill: parent

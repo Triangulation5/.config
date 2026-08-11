@@ -136,6 +136,63 @@ PillSurface {
     }
 
     /**
+     * Keyboard focus inside the inline source chooser: 0 = Screen, 1 = Window /
+     * Region; once the monitor sub-chooser is open it walks the monitor tiles
+     * instead. Returns true when a chooser consumed the move.
+     */
+    property int chooserFocus: -1
+    property int monFocus: -1
+    readonly property int monCount: ScreenRec.monitors.length
+
+    function chooserMove(dir) {
+        if (!root.chooserOpen)
+            return false;
+        if (root.screenChooserOpen) {
+            if (monCount === 0)
+                return false;
+            if (monFocus < 0 || monFocus >= monCount)
+                monFocus = 0;
+            monFocus = (monFocus + dir + monCount) % monCount;
+            monList.positionViewAtIndex(monFocus, ListView.Contain);
+            return true;
+        }
+        if (chooserFocus < 0 || chooserFocus > 1)
+            chooserFocus = 0;
+        chooserFocus = (chooserFocus + dir + 2) % 2;
+        return true;
+    }
+
+    /** Return on the inline source chooser: pick the focused tile. */
+    function chooserActivate() {
+        if (!root.chooserOpen)
+            return false;
+        if (root.screenChooserOpen) {
+            if (monFocus >= 0 && monFocus < monCount)
+                root.pickMonitor(ScreenRec.monitors[monFocus].name);
+            return true;
+        }
+        var idx = chooserFocus < 0 ? 0 : chooserFocus;
+        root.chooseSource(idx === 0 ? "screen" : "window");
+        return true;
+    }
+
+    /**
+     * Backspace on the inline source chooser: the monitor sub-chooser returns
+     * to the source tiles, the source tiles close the chooser. Returns true
+     * when a chooser consumed it.
+     */
+    function chooserBack() {
+        if (!root.chooserOpen)
+            return false;
+        if (root.screenChooserOpen) {
+            root.screenChooserOpen = false;
+            return true;
+        }
+        root.chooserOpen = false;
+        return true;
+    }
+
+    /**
      * Step the focused audio fader by `deltaPct`; returns true when an enabled
      * fader consumed it. Mirrors the mixer's stepFocused so the host can route
      * scroll-wheel and arrow keys here.
@@ -161,10 +218,14 @@ PillSurface {
         if (active) {
             ScreenRec.refreshRecent();
             faderFocus = -1;
+            chooserFocus = 0;
+            monFocus = 0;
             drawerOpen = false;
             chooserOpen = false;
             screenChooserOpen = false;
         } else {
+            chooserFocus = -1;
+            monFocus = -1;
             chooserOpen = false;
             screenChooserOpen = false;
         }
@@ -822,13 +883,19 @@ PillSurface {
                         Rectangle {
                             id: srcTile
                             required property var modelData
+                            required property int index
+                            readonly property bool focused: !root.screenChooserOpen && root.chooserFocus === index
                             width: (chooser.width - 12 * root.s - 6 * root.s) / 2
                             height: parent.height
                             radius: 9 * root.s
-                            color: srcArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
+                            color: srcArea.containsMouse || srcTile.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
                             border.width: 1
-                            border.color: srcArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
+                            border.color: srcArea.containsMouse || srcTile.focused ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
                             Behavior on color { ColorAnimation { duration: Motion.fast } }
+
+                            HoverHandler {
+                                onHoveredChanged: if (hovered) root.chooserFocus = index
+                            }
 
                             Row {
                                 anchors.centerIn: parent
@@ -892,13 +959,19 @@ PillSurface {
                     delegate: Rectangle {
                         id: monTile
                         required property var modelData
+                        required property int index
+                        readonly property bool focused: root.monFocus === index
                         width: 152 * root.s
                         height: monList.height
                         radius: 9 * root.s
-                        color: monArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
+                        color: monArea.containsMouse || monTile.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
                         border.width: 1
-                        border.color: monArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
+                        border.color: monArea.containsMouse || monTile.focused ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
                         Behavior on color { ColorAnimation { duration: Motion.fast } }
+
+                        HoverHandler {
+                            onHoveredChanged: if (hovered) root.monFocus = index
+                        }
 
                         Column {
                             anchors.centerIn: parent

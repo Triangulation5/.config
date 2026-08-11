@@ -37,6 +37,38 @@ Item {
         menu.open = true;
     }
 
+    /**
+     * Keyboard per-slot focus, driven by the hover face while its ring sits on
+     * the tray (faceActive). Left/right walks the slots, Return activates
+     * (opening the native menu for menu-only items).
+     */
+    property int focusIndex: -1
+    property bool faceActive: false
+
+    function moveFocus(dir) {
+        var items = SystemTray.items.values;
+        if (items.length === 0)
+            return false;
+        if (focusIndex < 0 || focusIndex >= items.length)
+            focusIndex = 0;
+        focusIndex = (focusIndex + dir + items.length) % items.length;
+        return true;
+    }
+
+    /** Return on the focused tray slot: activate it, or open its menu when it is menu-only. */
+    function activate() {
+        var items = SystemTray.items.values;
+        if (focusIndex < 0 || focusIndex >= items.length)
+            return false;
+        var item = items[focusIndex];
+        if (item.onlyMenu) {
+            tray.showMenu(item, tray);
+        } else {
+            item.activate();
+        }
+        return true;
+    }
+
     QsMenuOpener {
         id: opener
     }
@@ -53,6 +85,9 @@ Item {
                 id: slot
 
                 required property var modelData
+                required property int index
+
+                readonly property bool faceFocused: tray.faceActive && tray.focusIndex === index
 
                 Layout.preferredWidth: 24 * tray.s
                 Layout.preferredHeight: 24 * tray.s
@@ -63,8 +98,18 @@ Item {
                     color: Theme.frameBg
                     border.width: 1
                     border.color: Theme.frameBorder
-                    opacity: area.containsMouse ? 1 : 0
+                    opacity: (area.containsMouse || slot.faceFocused) ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: -3 * tray.s
+                    radius: 9 * tray.s
+                    visible: slot.faceFocused
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: Qt.alpha(Theme.vermLit, 0.65)
                 }
 
                 Image {
@@ -86,6 +131,7 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                    onEntered: tray.focusIndex = index
                     onClicked: (mouse) => {
                         if (mouse.button === Qt.MiddleButton) {
                             slot.modelData.secondaryActivate();

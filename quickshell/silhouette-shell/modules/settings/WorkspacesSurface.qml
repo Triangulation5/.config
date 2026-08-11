@@ -48,6 +48,40 @@ PillSurface {
         { name: "Minimized", key: "Super + Shift + M", note: "Minimized windows", surface: "" }
     ]
 
+    /**
+     * Keyboard focus covers only actionable rows: the Stash nav row (index 0),
+     * then one row per user space, then the dashed add bar as the final row.
+     * The dead Private/Minimized captions are skipped so Enter is never a
+     * no-op.
+     */
+    property int focusIndex: 0
+    readonly property int rowCount: 1 + Spaces.list.length + 1
+
+    /** Slide the focused row by `dir` (+1 down, -1 up). No-op while the form is open. */
+    function move(dir) {
+        if (root.formOpen)
+            return;
+        root.focusIndex = Math.max(0, Math.min(root.rowCount - 1, root.focusIndex + dir));
+    }
+
+    /**
+     * Enter on the focused row: the Stash row opens the stash, a user space
+     * opens its app manager, and the add bar opens the create form.
+     */
+    function activate() {
+        if (root.formOpen)
+            return;
+        if (root.focusIndex === 0) {
+            root.requestSurface("stash");
+        } else if (root.focusIndex < 1 + Spaces.list.length) {
+            var sp = Spaces.list[root.focusIndex - 1];
+            Spaces.editing = sp.id;
+            root.requestSurface("spaceapps");
+        } else {
+            root.openForm();
+        }
+    }
+
     function openForm() {
         root.formName = "";
         root.formDesc = "";
@@ -110,6 +144,7 @@ PillSurface {
         formOpen = false;
         listening = false;
         conflict = "";
+        focusIndex = 0;
     }
 
     onFormOpenChanged: if (formOpen) Qt.callLater(nameField.forceActiveFocus)
@@ -192,6 +227,7 @@ PillSurface {
                     required property var modelData
 
                     readonly property bool nav: modelData.surface.length > 0
+                    readonly property bool focused: wrow.nav && root.focusIndex === 0
 
                     width: parent.width
                     height: 50 * root.s
@@ -201,9 +237,9 @@ PillSurface {
                         anchors.topMargin: 3 * root.s
                         anchors.bottomMargin: 3 * root.s
                         radius: 10 * root.s
-                        color: (wrow.nav && navHover.hovered) ? Theme.frameBg : "transparent"
+                        color: (wrow.nav && navHover.hovered) || wrow.focused ? Theme.frameBg : "transparent"
                         border.width: 1
-                        border.color: (wrow.nav && navHover.hovered) ? Theme.frameBorder : "transparent"
+                        border.color: (wrow.nav && navHover.hovered) || wrow.focused ? Theme.frameBorder : "transparent"
                         Behavior on color { ColorAnimation { duration: Motion.fast } }
                     }
 
@@ -301,6 +337,7 @@ PillSurface {
                     required property var modelData
 
                     readonly property bool last: crow.index === Spaces.list.length - 1
+                    readonly property bool focused: root.focusIndex === 1 + crow.index
 
                     width: parent.width
                     height: 50 * root.s
@@ -310,9 +347,9 @@ PillSurface {
                         anchors.topMargin: 3 * root.s
                         anchors.bottomMargin: 3 * root.s
                         radius: 10 * root.s
-                        color: cHover.hovered ? Theme.frameBg : "transparent"
+                        color: cHover.hovered || crow.focused ? Theme.frameBg : "transparent"
                         border.width: 1
-                        border.color: cHover.hovered ? Theme.frameBorder : "transparent"
+                        border.color: cHover.hovered || crow.focused ? Theme.frameBorder : "transparent"
                         Behavior on color { ColorAnimation { duration: Motion.fast } }
                     }
 
@@ -445,7 +482,8 @@ PillSurface {
                     anchors.fill: parent
                     anchors.topMargin: 4 * root.s
                     anchors.bottomMargin: 4 * root.s
-                    property color stroke: Qt.alpha(Theme.vermLit, addArea.containsMouse ? 0.7 : 0.36)
+                    property color stroke: Qt.alpha(Theme.vermLit, (addArea.containsMouse || root.focusIndex === root.rowCount - 1) ? 0.7 : 0.36)
+
                     onStrokeChanged: requestPaint()
                     onWidthChanged: requestPaint()
                     onHeightChanged: requestPaint()

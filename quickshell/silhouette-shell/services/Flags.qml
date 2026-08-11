@@ -33,6 +33,8 @@ Singleton {
     property alias appGap: adapter.appGap
     property alias notchStyle: adapter.notchStyle
     property alias notchFlare: adapter.notchFlare
+    property alias autoHide: adapter.autoHide
+    property alias vimKeys: adapter.vimKeys
     property alias recordCountdown: adapter.recordCountdown
     property alias recordDir: adapter.recordDir
     property alias recordFps: adapter.recordFps
@@ -96,6 +98,10 @@ Singleton {
             property bool notchStyle: false
             /** Notch ear flare offset (px). Higher flares both notch ears out. */
             property real notchFlare: -2.45
+            /** Retract the pill off the top edge until the pointer touches it. */
+            property bool autoHide: false
+            /** hjkl navigation instead of arrow keys in the pill menus. */
+            property bool vimKeys: false
             property int recordCountdown: 5
             property string recordDir: ""
             property int recordFps: 60
