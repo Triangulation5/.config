@@ -90,6 +90,11 @@ SettingsSurface {
         root.pick(root.families[root.focusIndex].family);
     }
 
+    /** Refocus the search field for a forward-slash keypress. */
+    function focusSearch() {
+        searchField.forceActiveFocus();
+    }
+
     onActiveChanged: {
         if (active) {
             focusIndex = 0;
@@ -163,6 +168,9 @@ SettingsSurface {
                         e.accepted = true;
                     } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
                         root.activate();
+                        e.accepted = true;
+                    } else if (e.key === Qt.Key_Backspace && text.length === 0 && selectedText.length === 0) {
+                        root.requestSurface("appearance");
                         e.accepted = true;
                     }
                 }

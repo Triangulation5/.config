@@ -74,6 +74,7 @@ SettingsSurface {
             r.push({ item: appGapRow, kind: "scrub", bump: function (d) { appGapScrub.bump(d); } });
             r.push({ item: pillOpRow, kind: "scrub", bump: function (d) { pillOpScrub.bump(d); } });
             r.push({ item: pillBlurRow, kind: "toggle", get: function () { return Flags.pillBlur; }, set: function (v) { Flags.pillBlur = v; root.applyPillBlur(v); } });
+            r.push({ item: vimKeysRow, kind: "toggle", get: function () { return Flags.vimKeys; }, set: function (v) { Flags.vimKeys = v; } });
             if (Flags.notchStyle)
                 r.push({ item: notchFlareRow, kind: "scrub", bump: function (d) { notchFlareScrub.bump(d); } });
         }
@@ -819,6 +820,19 @@ SettingsSurface {
                         Flags.pillBlur = !Flags.pillBlur;
                         root.applyPillBlur(Flags.pillBlur);
                     }
+                }
+            }
+
+            FieldRow {
+                surface: root
+                id: vimKeysRow
+                label: "Vim keys"
+                caption: "hjkl navigation. Disables arrow keys."
+                icon: "keyboard"
+                LinkToggle {
+                    s: root.s
+                    on: Flags.vimKeys
+                    onToggled: Flags.vimKeys = !Flags.vimKeys
                 }
             }
 

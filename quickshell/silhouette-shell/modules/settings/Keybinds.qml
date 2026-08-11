@@ -88,8 +88,23 @@ PillSurface {
 
     function refresh() {
         root.binds = Binds.parse(bindsFile.text());
-        if (root.focusIndex >= root.filtered.length)
-            root.focusIndex = Math.max(0, root.filtered.length - 1);
+        if (root.focusIndex > root.filtered.length)
+            root.focusIndex = Math.max(0, root.filtered.length);
+    }
+
+    /**
+     * Focus the search field for a forward-slash keypress. With the form open
+     * there is no search bar, so the slash lands in the form's name field
+     * instead; while a chord capture is live the catcher owns the keys.
+     */
+    function focusSearch() {
+        if (root.formOpen) {
+            form.focusName();
+            return;
+        }
+        if (root.listening)
+            return;
+        searchField.forceActiveFocus();
     }
 
     /**
@@ -100,10 +115,10 @@ PillSurface {
     function move(dir) {
         if (root.listening || root.formOpen)
             return;
-        if (root.filtered.length === 0)
-            return;
-        root.focusIndex = Math.max(0, Math.min(root.filtered.length - 1, root.focusIndex + dir));
-        list.positionViewAtIndex(root.focusIndex, ListView.Contain);
+        /** `filtered.length` is the dashed add bar, so focus can reach it. */
+        root.focusIndex = Math.max(0, Math.min(root.filtered.length, root.focusIndex + dir));
+        if (root.filtered.length > 0)
+            list.positionViewAtIndex(Math.min(root.focusIndex, root.filtered.length - 1), ListView.Contain);
     }
 
     /**
@@ -111,7 +126,14 @@ PillSurface {
      * from the bind so Save can diff against the originals.
      */
     function activate() {
-        if (root.listening || root.focusIndex < 0 || root.focusIndex >= root.filtered.length)
+        if (root.listening)
+            return;
+        /** The dashed bar is the last focusable row: Enter on it adds a bind. */
+        if (root.focusIndex >= root.filtered.length) {
+            root.openAdd();
+            return;
+        }
+        if (root.focusIndex < 0 || root.focusIndex >= root.filtered.length)
             return;
         openEdit(root.filtered[root.focusIndex]);
     }
@@ -417,6 +439,9 @@ PillSurface {
                     } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
                         root.activate();
                         e.accepted = true;
+                    } else if (e.key === Qt.Key_Backspace && text.length === 0 && selectedText.length === 0) {
+                        root.requestSurface("settings");
+                        e.accepted = true;
                     }
                 }
             }
@@ -555,7 +580,7 @@ PillSurface {
                 radius: 9 * root.s
                 color: addArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.1) : "transparent"
                 border.width: 1
-                border.color: Qt.alpha(Theme.vermLit, addArea.containsMouse ? 0.6 : 0.32)
+                border.color: Qt.alpha(Theme.vermLit, (addArea.containsMouse || root.focusIndex === root.filtered.length) ? 0.6 : 0.32)
 
                 Row {
                     anchors.centerIn: parent
@@ -613,7 +638,7 @@ PillSurface {
                 anchors.left: parent.left
                 anchors.leftMargin: 4 * root.s
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.formOpen ? "save · delete · esc back" : "tap edit · + add · esc close"
+                text: root.formOpen ? "↵ save · esc back" : "↑↓ move · ↵ edit · + add · / search · esc close"
                 color: Theme.faint
                 font.family: Theme.font
                 font.pixelSize: 9.5 * root.s

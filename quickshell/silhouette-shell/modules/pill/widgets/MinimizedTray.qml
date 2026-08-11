@@ -44,6 +44,39 @@ Row {
     readonly property int count: items.length
 
     /**
+     * Keyboard per-icon focus, driven by the hover face while its ring sits on
+     * this row (faceActive). Left/right walks the chips, Return restores.
+     */
+    property int focusIndex: -1
+    property bool faceActive: false
+
+    function restore(t) {
+        if (!t)
+            return;
+        var addr = t.address;
+        if (addr.indexOf("0x") !== 0)
+            addr = "0x" + addr;
+        Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + root.restoreWorkspace() + ', window = "address:' + addr + '" })');
+    }
+
+    function moveFocus(dir) {
+        if (root.count === 0)
+            return false;
+        if (focusIndex < 0 || focusIndex >= root.count)
+            focusIndex = 0;
+        focusIndex = (focusIndex + dir + root.count) % root.count;
+        return true;
+    }
+
+    /** Return on the focused chip: move that window back to the active workspace. */
+    function activate() {
+        if (focusIndex < 0 || focusIndex >= root.count)
+            return false;
+        root.restore(root.items[focusIndex]);
+        return true;
+    }
+
+    /**
      * Resolve an icon path for a toplevel by matching its window class to a
      * desktop entry id (the class often differs from the icon-theme name), with
      * a direct icon-theme lookup as fallback.
@@ -68,10 +101,21 @@ Row {
         delegate: Item {
             id: chip
             required property var modelData
+            required property int index
             width: 18 * root.s
             height: 18 * root.s
 
             readonly property string iconSrc: root.iconFor(chip.modelData)
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -3 * root.s
+                radius: 6 * root.s
+                visible: root.faceActive && root.focusIndex === index
+                color: "transparent"
+                border.width: 1.5
+                border.color: Qt.alpha(Theme.vermLit, 0.65)
+            }
 
             Image {
                 anchors.fill: parent
@@ -81,7 +125,7 @@ Row {
                 asynchronous: true
                 smooth: true
                 source: chip.iconSrc
-                opacity: area.containsMouse ? 1 : 0.78
+                opacity: (area.containsMouse || (root.faceActive && root.focusIndex === index)) ? 1 : 0.78
                 Behavior on opacity { NumberAnimation { duration: Motion.fast } }
             }
 
@@ -91,12 +135,8 @@ Row {
                 anchors.margins: -3 * root.s
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    var addr = chip.modelData.address;
-                    if (addr.indexOf("0x") !== 0)
-                        addr = "0x" + addr;
-                    Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + root.restoreWorkspace() + ', window = "address:' + addr + '" })');
-                }
+                onEntered: root.focusIndex = index
+                onClicked: root.restore(chip.modelData)
             }
 
             Tooltip {

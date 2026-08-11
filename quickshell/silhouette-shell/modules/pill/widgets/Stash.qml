@@ -82,6 +82,39 @@ PillSurface {
         root.commit(next);
     }
 
+    /**
+     * Keyboard focus over the list view: the stashed-app rows then the dashed
+     * add bar. The add view owns its own focus through the picker's search
+     * field, so these are no-ops while addOpen.
+     */
+    property int focusIndex: -1
+    readonly property int focusCount: root.entries.length + (picker.addOpen ? 0 : 1)
+
+    function move(dir) {
+        if (picker.addOpen || focusCount <= 1)
+            return;
+        if (focusIndex < 0 || focusIndex >= focusCount)
+            focusIndex = 0;
+        focusIndex = (focusIndex + dir + focusCount) % focusCount;
+        if (root.entries.length > 0)
+            list.positionViewAtIndex(Math.min(focusIndex, root.entries.length - 1), ListView.Contain);
+    }
+
+    /**
+     * Enter on the focused row removes that app (its only action); on the add
+     * bar it opens the picker.
+     */
+    function activate() {
+        if (picker.addOpen)
+            return;
+        if (focusIndex < 0)
+            focusIndex = root.entries.length;
+        if (focusIndex === root.entries.length)
+            picker.openAdd();
+        else if (focusIndex >= 0 && focusIndex < root.entries.length)
+            root.removeAt(focusIndex);
+    }
+
     function addClass(cls) {
         if (!cls || cls.length === 0)
             return;
@@ -101,8 +134,18 @@ PillSurface {
         if (active) {
             stashFile.reload();
             refresh();
+        } else {
+            focusIndex = -1;
         }
         picker.closeAdd();
+    }
+
+    Connections {
+        target: picker
+        function onAddOpenChanged() {
+            if (!picker.addOpen)
+                root.focusIndex = -1;
+        }
     }
 
     ameForm: "off"
@@ -224,6 +267,7 @@ PillSurface {
                 }
                 readonly property string title: resolved && resolved.name ? resolved.name : modelData
                 readonly property bool named: resolved && resolved.name && resolved.name !== modelData
+                readonly property bool focused: root.focusIndex === index
 
                 width: ListView.view.width
                 height: 46 * root.s
@@ -233,9 +277,9 @@ PillSurface {
                     anchors.topMargin: 3 * root.s
                     anchors.bottomMargin: 3 * root.s
                     radius: 10 * root.s
-                    color: rowHover.hovered ? Theme.frameBg : "transparent"
+                    color: rowHover.hovered || erow.focused ? Theme.frameBg : "transparent"
                     border.width: 1
-                    border.color: rowHover.hovered ? Theme.frameBorder : "transparent"
+                    border.color: rowHover.hovered || erow.focused ? Theme.frameBorder : "transparent"
                     Behavior on color { ColorAnimation { duration: Motion.fast } }
                 }
 
@@ -343,6 +387,7 @@ PillSurface {
             id: picker
             width: parent.width
             s: root.s
+            barFocused: !picker.addOpen && root.focusIndex === root.entries.length
             onPicked: (entry) => root.addClass(entry.startupClass || entry.id)
         }
 

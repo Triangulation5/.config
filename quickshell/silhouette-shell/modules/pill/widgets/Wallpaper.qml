@@ -169,6 +169,23 @@ PillSurface {
         Qt.callLater(searchField.input.forceActiveFocus);
     }
 
+    /**
+     * Open (or refocus) the search field for a forward-slash keypress. Unlike
+     * startSearch no character is seeded, so the field starts clean and ready
+     * to type.
+     */
+    function focusSearch() {
+        if (!root.searching) {
+            searching = true;
+            focusIndex = 0;
+            pos = 0;
+            searchField.text = "";
+            Qt.callLater(searchField.input.forceActiveFocus);
+        } else {
+            searchField.input.forceActiveFocus();
+        }
+    }
+
     onActiveChanged: if (active) {
         searching = false;
         query = "";
@@ -496,7 +513,7 @@ PillSurface {
         anchors.bottomMargin: 11 * root.s
         visible: root.itemCount > 0 && !root.searching
         opacity: root.hintShown ? 1 : 0
-        text: "tap to set · hold to delete"
+        text: "← → move · ↵ set · hold delete · / search"
         color: Theme.subtle
         font.family: Theme.font
         font.pixelSize: 10 * root.s

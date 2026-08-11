@@ -71,7 +71,11 @@ Item {
             root.keyPressed(e);
             if (e.accepted)
                 return;
-            if (root.horizontalNav && (e.key === Qt.Key_Left || e.key === Qt.Key_Right)) {
+            /** Backspace on an already-empty field goes back, like a palette. */
+            if (e.key === Qt.Key_Backspace && field.text.length === 0 && field.selectedText.length === 0) {
+                root.dismissed();
+                e.accepted = true;
+            } else if (root.horizontalNav && (e.key === Qt.Key_Left || e.key === Qt.Key_Right)) {
                 root.moved(e.key === Qt.Key_Right ? 1 : -1);
                 e.accepted = true;
             } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {

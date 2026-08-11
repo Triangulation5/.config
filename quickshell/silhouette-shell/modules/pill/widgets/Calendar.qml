@@ -76,6 +76,44 @@ PillSurface {
     property bool pickingEnd: false
     property int hoverDay: 0
 
+    /**
+     * Keyboard-focused day in the viewed month (1..monthLen, 0 = none). Arrows
+     * walk it inside the month, Return selects it; the grid's existing sel /
+     * today frames still take precedence visually.
+     */
+    property int keyDay: 0
+    readonly property bool keyed: keyDay > 0
+
+    function kbMove(axis, dir) {
+        if (keyDay < 1 || keyDay > monthLen)
+            keyDay = focusDay > 0 ? focusDay : today.getDate();
+        var next = axis === "h" ? keyDay + dir : keyDay + dir * 7;
+        if (next >= 1 && next <= monthLen) {
+            keyDay = next;
+            return;
+        }
+        /** Crossed an edge: page the neighbouring month, keeping the column. */
+        var d = new Date(viewYear, viewMonth, keyDay);
+        d.setDate(d.getDate() + (axis === "h" ? dir : dir * 7));
+        shiftMonth((d.getFullYear() - viewYear) * 12 + (d.getMonth() - viewMonth));
+        keyDay = d.getDate();
+    }
+
+    /** Return on the grid: select (or toggle) the keyboard-focused day. */
+    function kbActivate() {
+        if (keyDay < 1 || keyDay > monthLen)
+            keyDay = focusDay > 0 ? focusDay : today.getDate();
+        selectDay(keyDay);
+    }
+
+    /** Dismiss the event editor and any pending span, for Backspace. */
+    function closeEditor() {
+        selectedDate = "";
+        selEndDate = "";
+        pickingEnd = false;
+        hoverDay = 0;
+    }
+
     /** Span end the grid paints: the live hover while arming, else the set end. */
     readonly property string rangeEndKey: pickingEnd && hoverDay > 0 ? dateKey(hoverDay) : selEndDate
     readonly property string rangeLo: {
@@ -190,6 +228,7 @@ PillSurface {
         viewMonth = m;
         viewYear = y;
         hoverDay = 0;
+        keyDay = 0;
         if (!pickingEnd) {
             selectedDate = "";
             selEndDate = "";
@@ -203,6 +242,7 @@ PillSurface {
         selEndDate = "";
         pickingEnd = false;
         hoverDay = 0;
+        keyDay = 0;
     }
 
     /**
@@ -248,6 +288,7 @@ PillSurface {
             viewYear = t.getFullYear();
             viewMonth = t.getMonth();
             selectDay(t.getDate());
+            keyDay = t.getDate();
         }
     }
 
@@ -664,6 +705,18 @@ PillSurface {
                             : (cell.sel ? Qt.alpha(Theme.vermLit, 0.22) : Theme.frameBorder)
                     }
 
+                    /** Keyboard cursor ring: only on a plain day, so it never fights the sel / today frames. */
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 26 * root.s
+                        height: 26 * root.s
+                        radius: Motion.rSmall * root.s
+                        visible: cell.inMonth && root.keyDay === cell.dayNum && !cell.current && !cell.sel
+                        color: "transparent"
+                        border.width: 1.5
+                        border.color: Qt.alpha(Theme.vermLit, 0.55)
+                    }
+
                     Text {
                         anchors.centerIn: parent
                         text: cell.inMonth ? cell.dayNum : cell.ghostNum
@@ -696,7 +749,10 @@ PillSurface {
                         hoverEnabled: true
                         enabled: cell.inMonth
                         cursorShape: cell.inMonth ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: if (cell.inMonth) root.selectDay(cell.dayNum)
+                        onClicked: if (cell.inMonth) {
+                            root.keyDay = cell.dayNum;
+                            root.selectDay(cell.dayNum);
+                        }
                         onContainsMouseChanged: if (root.pickingEnd && cell.inMonth && containsMouse)
                             root.hoverDay = cell.dayNum
                     }

@@ -122,6 +122,37 @@ PillSurface {
         return false;
     }
 
+    /**
+     * Keyboard row focus for the main view: 0 = Network, 1 = Bluetooth. The
+     * wifi and bt subviews hand off to their own pages, which keep their own
+     * row focus. Returns true when the surface consumed the move.
+     */
+    property int kbIndex: -1
+    readonly property int kbCount: 2
+
+    function kbMove(dir) {
+        if (subview === "wifi")
+            return wifiPage.kbMove(dir);
+        if (subview === "bt")
+            return btPage.kbMove(dir);
+        if (kbIndex < 0 || kbIndex >= kbCount)
+            kbIndex = 0;
+        kbIndex = (kbIndex + dir + kbCount) % kbCount;
+        focusRowItem = kbIndex === 0 ? netzRow : btRow;
+        return true;
+    }
+
+    /** Return on the link surface: drill into the focused row, or activate the focused subview row. */
+    function kbActivate() {
+        if (subview === "wifi")
+            return wifiPage.kbActivate();
+        if (subview === "bt")
+            return btPage.kbActivate();
+        var idx = kbIndex < 0 ? 0 : kbIndex;
+        subview = idx === 0 ? "wifi" : "bt";
+        return true;
+    }
+
     function batteryLevel(d) {
         if (!d || d.battery === undefined || d.battery === null) return -1;
         var b = d.battery;
@@ -137,6 +168,7 @@ PillSurface {
         } else {
             seenTimer.stop();
             focusRowItem = null;
+            kbIndex = -1;
         }
     }
 
@@ -433,11 +465,14 @@ PillSurface {
                 width: parent.width
                 height: 44 * root.s
                 radius: 10 * root.s
-                color: netzHover.hovered ? Theme.frameBg : "transparent"
+                color: netzHover.hovered || root.kbIndex === 0 ? Theme.frameBg : "transparent"
 
                 HoverHandler {
                     id: netzHover
-                    onHoveredChanged: root.reportRowHover(netzRow, hovered)
+                    onHoveredChanged: {
+                        root.reportRowHover(netzRow, hovered);
+                        if (hovered) root.kbIndex = 0;
+                    }
                 }
 
                 MouseArea {
@@ -528,11 +563,14 @@ PillSurface {
                 width: parent.width
                 height: 44 * root.s
                 radius: 10 * root.s
-                color: btHover.hovered ? Theme.frameBg : "transparent"
+                color: btHover.hovered || root.kbIndex === 1 ? Theme.frameBg : "transparent"
 
                 HoverHandler {
                     id: btHover
-                    onHoveredChanged: root.reportRowHover(btRow, hovered)
+                    onHoveredChanged: {
+                        root.reportRowHover(btRow, hovered);
+                        if (hovered) root.kbIndex = 1;
+                    }
                 }
 
                 MouseArea {

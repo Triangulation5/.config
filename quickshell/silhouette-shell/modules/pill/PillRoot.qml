@@ -12,9 +12,11 @@ import qs.modules.pill
 /**
  * Washi pill top shell. Each monitor carries two layer-shell windows:
  *
- *  - `reserve` is a zero-content strip that only claims an exclusive zone the
- *    height of the rest pill, so tiled windows always sit below the pill even
- *    while it is expanded or a surface is open.
+ *  - `reserve` is a zero-content strip that claims an exclusive zone the
+ *    height of the rest pill, so tiled windows sit below the pill even while
+ *    it is expanded or a surface is open — except under auto-hide, where the
+ *    band stays collapsed (zone 0) so a retracted pill, transient hover
+ *    reveal, or open surface floats over windows without shifting them.
  *  - `overlay` is a full-screen transparent Overlay layer hosting the single
  *    morphing pill anchored at top-centre. The pill never moves windows and is
  *    never re-parented; it just grows in place, so every surface grows out of
@@ -32,6 +34,21 @@ ShellRoot {
     property string openMon: ""
     property string openSurface: ""
     property string peekMon: ""
+
+    /**
+     * Per-monitor auto-hide reserve collapse (retracted or floating), bridged
+     * from each overlay delegate to its reserve window so the reserved band
+     * stays at zero while the pill hides or floats. Written by reassigning a
+     * fresh object so the reserve's binding re-evaluates.
+     */
+    property var pillCollapsed: ({})
+    function setPillCollapsed(mon, v) {
+        var m = {};
+        for (var k in root.pillCollapsed)
+            m[k] = root.pillCollapsed[k];
+        m[mon] = v;
+        root.pillCollapsed = m;
+    }
 
     function refresh() {
         Hyprland.refreshMonitors();
@@ -165,7 +182,7 @@ ShellRoot {
             screen: modelData
             color: "transparent"
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: Flags.gameMode ? gameBarH : reservedH
+            exclusiveZone: Flags.gameMode ? gameBarH : (root.pillCollapsed[modelData.name] ? 0 : reservedH)
             aboveWindows: true
 
             anchors { top: true; left: true; right: true }
@@ -187,6 +204,34 @@ ShellRoot {
             readonly property string surface: root.openMon === modelData.name ? root.openSurface : ""
             readonly property bool surfaceOpen: surface.length > 0
             readonly property bool modal: pill.authPending ? false : (surfaceOpen || pill.held || pill.quickChoosing)
+
+            /**
+             * Auto-hide: with the flag on, the rest pill retracts off the top
+             * edge and the band mask collapses to a thin strip, so a pointer
+             * touch anywhere along the top edge wakes it. Anything that needs
+             * the pill (an open surface, pin, peek, OSD/toast, special
+             * workspace) keeps it down.
+             */
+            readonly property bool autoRetracted: Flags.autoHide && !monFullscreen
+                && pill.specialView === "" && pill.mode === "rest"
+
+            /**
+             * True while auto-hide keeps the reserved band collapsed: the pill
+             * is either retracted off-screen or floating over windows in a
+             * transient hover, an open surface, OSD, toast or quick-record. The
+             * band is only reclaimed once the pill is held (pin/peek) or a
+             * special workspace forces the pill on, so windows never shift
+             * from a glance at the bar or an auto-hidden surface.
+             */
+            readonly property bool autoCollapsed: Flags.autoHide && !monFullscreen
+                && pill.specialView === "" && !pill.held
+
+            /** The wake strip and the growing hover band, shared by the mask. */
+            readonly property real autoStripH: 5 * s
+            readonly property real autoBandH: Math.max(autoStripH, pill.y + pill.height + autoStripH)
+
+            onAutoCollapsedChanged: root.setPillCollapsed(modelData.name, autoCollapsed)
+            Component.onCompleted: root.setPillCollapsed(modelData.name, autoCollapsed)
 
             /**
              * True while this monitor's active workspace holds a real
@@ -222,8 +267,13 @@ ShellRoot {
 
             anchors { top: true; left: true; right: true; bottom: true }
 
-            mask: monFullscreen ? hiddenRegion : (modal ? fullRegion : pillRegion)
+            mask: monFullscreen ? hiddenRegion : (modal ? fullRegion : (Flags.autoHide ? autoRegion : pillRegion))
             Region { id: hiddenRegion }
+            Region {
+                id: autoRegion
+                width: overlay.width
+                height: overlay.autoBandH
+            }
             Region {
                 id: pillRegion
                 readonly property real baseW: Math.max(pill.width, pill.targetW)
@@ -263,7 +313,16 @@ ShellRoot {
             FocusScope {
                 id: focusScope
                 anchors.fill: parent
+                /**
+                 * Keyboard ownership follows the pointer. Hovering the pill is
+                 * already an OnDemand keyboard grab (Hyprland focuses on-demand
+                 * layers under the cursor), so with the flag below the shell
+                 * actually uses those keys for the hover face instead of
+                 * dropping them. A surface or the quick-record chooser takes
+                 * the keys exclusively.
+                 */
                 focus: overlay.surfaceOpen || pill.quickChoosing
+                    || (pill.mode === "hover" && pill.hovered)
 
                 HoverHandler {
                     onHoveredChanged: pill.hovered = hovered
@@ -272,31 +331,30 @@ ShellRoot {
                     if (pill.quickChoosing) {
                         ScreenRec.quickChoosing = false;
                         ScreenRec.quickScreenChoosing = false;
-                    } else if (!pill.linkBack() && !pill.keybindsBack()) {
+                    } else if (!pill.recorderChooserBack() && !pill.faceBack() && !pill.linkBack() && !pill.keybindsBack()) {
                         root.close();
                     }
                 }
+                /**
+                 * Arrow keys: with the vim flag on they go dead in the menus and
+                 * h/j/k/l take over (below). Inside a focused search field they
+                 * still work — that is insert mode.
+                 */
                 Keys.onUpPressed: (e) => {
-                    if (pill.keybindsOpen && !pill.keybindsListening) { pill.keybindsMove(-1); e.accepted = true; return; }
-                    e.accepted = pill.mixerStep(1) || pill.recorderStep(5) || pill.settingsMove(-1);
+                    if (Flags.vimKeys) return;
+                    e.accepted = pill.navUp();
                 }
                 Keys.onDownPressed: (e) => {
-                    if (pill.keybindsOpen && !pill.keybindsListening) { pill.keybindsMove(1); e.accepted = true; return; }
-                    e.accepted = pill.mixerStep(-1) || pill.recorderStep(-5) || pill.settingsMove(1);
+                    if (Flags.vimKeys) return;
+                    e.accepted = pill.navDown();
                 }
                 Keys.onLeftPressed: (e) => {
-                    if (pill.mixerOpen) { pill.mixerFocusMove(-1); e.accepted = true; }
-                    else if (pill.wallpaperOpen) { pill.wallpaperMove(-1); e.accepted = true; }
-                    else if (pill.powerOpen) { pill.powerMove(-1); e.accepted = true; }
-                    else if (pill.recorderOpen) { e.accepted = pill.recorderStep(-5); }
-                    else if (pill.settingsLike) { pill.settingsAdjust(-1); e.accepted = true; }
+                    if (Flags.vimKeys) return;
+                    e.accepted = pill.navLeft();
                 }
                 Keys.onRightPressed: (e) => {
-                    if (pill.mixerOpen) { pill.mixerFocusMove(1); e.accepted = true; }
-                    else if (pill.wallpaperOpen) { pill.wallpaperMove(1); e.accepted = true; }
-                    else if (pill.powerOpen) { pill.powerMove(1); e.accepted = true; }
-                    else if (pill.recorderOpen) { e.accepted = pill.recorderStep(5); }
-                    else if (pill.settingsLike) { pill.settingsAdjust(1); e.accepted = true; }
+                    if (Flags.vimKeys) return;
+                    e.accepted = pill.navRight();
                 }
 
                 /**
@@ -307,6 +365,79 @@ ShellRoot {
                  * is swallowed for everything else so a held key never re-fires.
                  */
                 Keys.onPressed: (e) => {
+                    /**
+                     * Forward-slash focuses the open picker's search field (the
+                     * keybind search, font picker, clipboard, launcher or
+                     * wallpaper strip). A focused field consumes it as text, so
+                     * this only fires while browsing the list.
+                     */
+                    if (e.key === Qt.Key_Slash && pill.focusSearch()) {
+                        e.accepted = true;
+                        return;
+                    }
+                    /**
+                     * Vim navigation: with the flag on, h/j/k/l drive the same
+                     * menu moves as the arrows (which are disabled above). h/l
+                     * select and deselect — they flip toggles and cycle
+                     * segments in the settings rows. A focused search field
+                     * still consumes them as text, so this only fires while
+                     * browsing. The wallpaper strip is covered too: h/l page
+                     * it instead of seeding a search.
+                     */
+                    if (Flags.vimKeys && e.text.length === 1) {
+                        var c = e.text;
+                        if (c === "h") {
+                            /**
+                             * Vim `h`: move left where a menu has horizontal
+                             * navigation (calendar days, mixer faders, settings
+                             * values). In a vertical list (link rows, launcher,
+                             * clipboard, settings index) nothing consumes it, so
+                             * fall back to backing out — the same chain as
+                             * Backspace. Always accepted so the key never leaks
+                             * into a search.
+                             */
+                            if (!pill.navLeft() && !e.isAutoRepeat)
+                                pill.vimBack();
+                            e.accepted = true;
+                            return;
+                        }
+                        if (c === "j") { e.accepted = pill.navDown(); return; }
+                        if (c === "k") { e.accepted = pill.navUp(); return; }
+                        if (c === "l") {
+                            /**
+                             * Vim `l`: move right where a menu has horizontal
+                             * navigation, otherwise enter — the same chain as
+                             * Return/Enter (drill into a link subview, activate
+                             * the focused row). Autorepeat is swallowed so a
+                             * held key never re-fires an activate. Always
+                             * accepted.
+                             */
+                            if (!pill.navRight() && !e.isAutoRepeat)
+                                pill.vimEnter();
+                            e.accepted = true;
+                            return;
+                        }
+                    }
+                    /**
+                     * Backspace is the shell-wide "back": it cancels a quick-
+                     * record chooser, steps the recorder's inline chooser back,
+                     * pops a link subview, collapses the hover face, then runs
+                     * the surface's own back navigation (a settings sub-surface
+                     * returns to its index, a form closes, anything else
+                     * dismisses). Handled in the general onPressed because this
+                     * build's Keys exposes no named onBackspacePressed handler.
+                     * A focused search field consumes its own Backspace, so this
+                     * only fires while browsing.
+                     */
+                    if (e.key === Qt.Key_Backspace) {
+                        if (pill.quickChoosing) {
+                            pill.quickChooseBack();
+                        } else if (!pill.recorderChooserBack() && !pill.linkBack() && !pill.faceBack()) {
+                            pill.surfaceBack();
+                        }
+                        e.accepted = true;
+                        return;
+                    }
                     if (pill.wallpaperOpen && !pill.wallpaperSearching
                         && e.text.length === 1 && e.text > " ") {
                         pill.wallpaperType(e.text);
@@ -315,20 +446,69 @@ ShellRoot {
                     }
                     if (e.key !== Qt.Key_Return && e.key !== Qt.Key_Enter && e.key !== Qt.Key_Space)
                         return;
-                    if (pill.wallpaperOpen) {
+                    /**
+                     * Order matters only where branches overlap: the quick-
+                     * record chooser is not a surface so it must be claimed
+                     * first; the recorder's inline source chooser must be
+                     * claimed before the plain recorder press; the font picker
+                     * before the settingsLike branch (whose rows are empty
+                     * there and would swallow the key).
+                     */
+                    if (pill.quickChoosing) {
+                        if (!e.isAutoRepeat) pill.quickChooseActivate();
+                        e.accepted = true;
+                    } else if (pill.wallpaperOpen) {
                         if (!e.isAutoRepeat) pill.wallpaperActivate();
                         e.accepted = true;
                     } else if (pill.powerOpen) {
                         if (!e.isAutoRepeat) pill.powerPress();
                         e.accepted = true;
-                    } else if (pill.settingsLike) {
-                        if (!e.isAutoRepeat) pill.settingsActivate();
+                    } else if (pill.recorderChooserOpen) {
+                        if (!e.isAutoRepeat) pill.recorderChooserActivate();
+                        e.accepted = true;
+                    } else if (pill.recorderOpen) {
+                        if (!e.isAutoRepeat) pill.recorderPress();
+                        e.accepted = true;
+                    } else if (pill.calendarOpen) {
+                        if (!e.isAutoRepeat) pill.calendarActivate();
+                        e.accepted = true;
+                    } else if (pill.linkOpen) {
+                        if (!e.isAutoRepeat) pill.linkActivate();
+                        e.accepted = true;
+                    } else if (pill.clipboardOpen) {
+                        if (!e.isAutoRepeat) pill.clipboardActivate();
+                        e.accepted = true;
+                    } else if (pill.fontpickerOpen) {
+                        if (!e.isAutoRepeat) pill.fontpickerActivate();
+                        e.accepted = true;
+                    } else if (pill.launcherOpen) {
+                        if (!e.isAutoRepeat) pill.launcherActivate();
+                        e.accepted = true;
+                    } else if (pill.workspacesOpen) {
+                        if (!e.isAutoRepeat) pill.workspacesActivate();
+                        e.accepted = true;
+                    } else if (pill.stashOpen) {
+                        if (!e.isAutoRepeat) pill.stashActivate();
+                        e.accepted = true;
+                    } else if (pill.spaceappsOpen) {
+                        if (!e.isAutoRepeat) pill.spaceappsActivate();
                         e.accepted = true;
                     } else if (pill.keybindsOpen && !pill.keybindsListening) {
                         if (!e.isAutoRepeat) pill.keybindsActivate();
                         e.accepted = true;
+                    } else if (pill.settingsLike) {
+                        if (!e.isAutoRepeat) pill.settingsActivate();
+                        e.accepted = true;
+                    } else if (pill.mode === "hover" && !pill.surfaceOpen) {
+                        if (!e.isAutoRepeat) pill.faceActivate();
+                        e.accepted = true;
                     }
                 }
+
+                /**
+                 * Backspace travels through the general onPressed handler above
+                 * (this build has no named Keys.onBackspacePressed).
+                 */
                 Keys.onReleased: (e) => {
                     if (e.isAutoRepeat)
                         return;
@@ -358,7 +538,7 @@ ShellRoot {
                     surface: overlay.surface
                     forcePinned: root.peekMon === overlay.modelData.name
 
-                    opacity: overlay.monFullscreen ? 0 : 1
+                    opacity: (overlay.monFullscreen || overlay.autoRetracted) ? 0 : 1
                     Behavior on opacity {
                         NumberAnimation {
                             duration: Motion.morph
@@ -367,7 +547,7 @@ ShellRoot {
                         }
                     }
                     transform: Translate {
-                        y: overlay.monFullscreen ? -(pill.height + overlay.topGap) : 0
+                        y: (overlay.monFullscreen || overlay.autoRetracted) ? -(pill.height + overlay.topGap) : 0
                         Behavior on y {
                             NumberAnimation {
                                 duration: Motion.morph
@@ -388,6 +568,10 @@ ShellRoot {
                 target: pill
                 function onQuickChoosingChanged() {
                     if (pill.quickChoosing)
+                        focusScope.forceActiveFocus();
+                }
+                function onModeChanged() {
+                    if (pill.mode === "hover" && pill.hovered && !pill.surfaceOpen)
                         focusScope.forceActiveFocus();
                 }
                 function onWallpaperSearchingChanged() {

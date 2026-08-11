@@ -24,6 +24,12 @@ Column {
     property string query: ""
     property int selectedIndex: 0
 
+    /**
+     * True while the owning surface's keyboard focus sits on this add bar, so
+     * the dashed frame lights the same way a hover does.
+     */
+    property bool barFocused: false
+
     signal picked(var entry)
 
     spacing: 0
@@ -159,7 +165,7 @@ Column {
             anchors.fill: parent
             anchors.topMargin: 4 * picker.s
             anchors.bottomMargin: 4 * picker.s
-            property color stroke: Qt.alpha(Theme.vermLit, addArea.containsMouse ? 0.7 : 0.36)
+            property color stroke: Qt.alpha(Theme.vermLit, (addArea.containsMouse || picker.barFocused) ? 0.7 : 0.36)
             onStrokeChanged: requestPaint()
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
@@ -202,7 +208,7 @@ Column {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Add app"
-                color: Theme.vermLit
+                color: picker.barFocused ? Theme.flameGlow : Theme.vermLit
                 font.family: Theme.font
                 font.pixelSize: 11 * picker.s
                 font.weight: Font.DemiBold
