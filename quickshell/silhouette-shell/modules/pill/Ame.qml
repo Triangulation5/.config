@@ -26,8 +26,10 @@ import qs.services
  * the current anchor and pops back with the settle, so toast/OSD handoffs don't
  * ghost-fly from stale positions. Body draws on a QtQuick Canvas: FrameAnimation
  * drives full-rate repaint only while the timeline, splash, remnant or a glide
- * is live; otherwise a Timer ticks the slow inner swirl at 12fps (30fps while
- * the caret blinks) to keep idle cost low for a 24/7 shell.
+ * is live; otherwise a Timer ticks the slow inner swirl at ~3fps (30fps while
+ * the caret blinks) to keep idle cost low for a 24/7 shell. The swirl advance
+ * is interval * 0.0005, so the slower tick keeps the exact same motion, just
+ * fewer redraws (and fewer blur-layer re-renders on top of each one).
  */
 Item {
     id: root
@@ -326,7 +328,7 @@ Item {
 
     Timer {
         running: root.visible && !root.busy
-        interval: root.blinking ? 33 : 83
+        interval: root.blinking ? 33 : 300
         repeat: true
         onTriggered: {
             root.swirl += interval * 0.0005;

@@ -3,10 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../../utils/setInput.js" as SetInput
+import "../../utils/lua/setInput.js" as SetInput
 import qs.services
 import qs.modules.controlcenter
-import qs.components.icons
 import qs.components.controls
 
 /**
@@ -254,108 +253,6 @@ SettingsSurface {
         }
     }
 
-    component GroupLabel: Text {
-        topPadding: 16 * root.s
-        bottomPadding: 6 * root.s
-        color: Theme.faint
-        font.family: Theme.font
-        font.pixelSize: 8.5 * root.s
-        font.weight: Font.Bold
-        font.capitalization: Font.AllUppercase
-        font.letterSpacing: 1.2 * root.s
-    }
-
-    /**
-     * One settings line. At rest it is an icon + label + control row; hovering or
-     * keyboard-focusing the row folds its grey caption open below the label so
-     * the tab stays compact by default. The row feeds the surface registry: hover
-     * moves the soul seam and a click anywhere on the line drives its control via
-     * activateRow.
-     */
-    component FieldRow: Item {
-        id: frow
-        property string label: ""
-        property string caption: ""
-        property string icon: ""
-        default property alias control: ctrl.data
-
-        readonly property bool focused: root.focusRowItem === frow
-        readonly property bool expanded: fhover.hovered || frow.focused
-        readonly property real rowH: 30 * root.s
-        readonly property real capH: 14 * root.s
-
-        width: parent ? parent.width : 0
-        height: frow.rowH + (frow.expanded ? frow.capH : 0)
-        clip: true
-        Behavior on height { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
-
-        HoverHandler {
-            id: fhover
-            onHoveredChanged: root.reportRowHover(frow, hovered)
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.topMargin: 3 * root.s
-            anchors.bottomMargin: 3 * root.s
-            radius: 9 * root.s
-            color: (fhover.hovered || frow.focused) ? Theme.frameBg : "transparent"
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.activateRow(frow)
-        }
-
-        GlyphIcon {
-            id: rowIcon
-            anchors.left: parent.left
-            anchors.leftMargin: 9 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            visible: frow.icon.length > 0
-            width: 15 * root.s
-            height: 15 * root.s
-            name: frow.icon
-            color: frow.focused ? Theme.cream : Theme.subtle
-            stroke: 1.8
-        }
-
-        Column {
-            anchors.left: rowIcon.visible ? rowIcon.right : parent.left
-            anchors.leftMargin: 9 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 2 * root.s
-
-            Text {
-                text: frow.label
-                color: Theme.cream
-                font.family: Theme.font
-                font.pixelSize: 12.5 * root.s
-                font.weight: Font.Medium
-            }
-
-            Text {
-                visible: frow.expanded && frow.caption.length > 0
-                text: frow.caption
-                color: Theme.faint
-                font.family: Theme.font
-                font.pixelSize: 9 * root.s
-                font.weight: Font.Medium
-            }
-        }
-
-        Item {
-            id: ctrl
-            anchors.right: parent.right
-            anchors.rightMargin: 9 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
-        }
-    }
-
     Column {
         id: content
         z: 100
@@ -380,9 +277,10 @@ SettingsSurface {
             anchors.rightMargin: 12 * root.s
             spacing: 0
 
-            GroupLabel { text: "Pointer" }
+            GroupLabel { s: root.s; text: "Pointer" }
 
             FieldRow {
+                surface: root
                 id: sensRow
                 label: "Sensitivity"
                 caption: "Pointer speed offset"
@@ -401,6 +299,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: accelRow
                 label: "Acceleration"
                 caption: "How pointer speed follows motion"
@@ -416,9 +315,10 @@ SettingsSurface {
                 }
             }
 
-            GroupLabel { text: "Keyboard" }
+            GroupLabel { s: root.s; text: "Keyboard" }
 
             FieldRow {
+                surface: root
                 id: layoutRow
                 label: "Layout"
                 caption: "Click to cycle common layouts"
@@ -445,6 +345,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: rateRow
                 label: "Repeat rate"
                 caption: "Key repeats per second when held"
@@ -463,6 +364,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: delayRow
                 label: "Repeat delay"
                 caption: "Hold time before a key repeats"
@@ -481,6 +383,7 @@ SettingsSurface {
             }
 
             FieldRow {
+                surface: root
                 id: numlockRow
                 label: "Numlock"
                 caption: "Numlock on at startup"
@@ -495,9 +398,10 @@ SettingsSurface {
                 }
             }
 
-            GroupLabel { text: "Cursor" }
+            GroupLabel { s: root.s; text: "Cursor" }
 
             FieldRow {
+                surface: root
                 id: sizeRow
                 label: "Size"
                 caption: "Cursor size in pixels"

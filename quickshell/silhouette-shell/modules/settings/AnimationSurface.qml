@@ -4,7 +4,7 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
-import "../../utils/setAnim.js" as SetAnim
+import "../../utils/lua/setAnim.js" as SetAnim
 import qs.services
 import qs.modules.controlcenter
 import qs.components.controls
@@ -137,18 +137,6 @@ SettingsSurface {
     Process { id: reloadProc; command: ["setsid", "-f", "sh", "-c", "sleep 0.3; hyprctl reload"] }
     Timer { id: reloadTimer; interval: 250; repeat: false; onTriggered: reloadProc.running = true }
 
-    component GroupLabel: Text {
-        topPadding: 16 * root.s
-        bottomPadding: 6 * root.s
-        leftPadding: 12 * root.s
-        color: Theme.faint
-        font.family: Theme.font
-        font.pixelSize: 8.5 * root.s
-        font.weight: Font.Bold
-        font.capitalization: Font.AllUppercase
-        font.letterSpacing: 1.2 * root.s
-    }
-
     Column {
         id: content
         z: 100
@@ -166,7 +154,7 @@ SettingsSurface {
             showBack: true
         }
 
-        GroupLabel { text: "Motion" }
+        GroupLabel { s: root.s; leftPadding: 12 * root.s; text: "Motion" }
 
         SettingsRow {
             id: enabledRow
@@ -209,6 +197,8 @@ SettingsSurface {
         }
 
         GroupLabel {
+            s: root.s
+            leftPadding: 12 * root.s
             text: "Curve"
             visible: root.animOn
         }
