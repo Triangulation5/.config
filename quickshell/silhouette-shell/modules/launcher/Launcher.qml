@@ -54,6 +54,37 @@ PillSurface {
         root.calcCopied = true;
     }
 
+    /**
+     * Command palette mode: a `>` prefix turns the launcher into a raycast-style
+     * palette. Currently supports web search via Firefox.
+     */
+    readonly property bool commandActive: query.length > 1 && query[0] === '>'
+    readonly property string commandQuery: commandActive ? query.slice(1).trim() : ""
+
+    function runWebSearch() {
+        if (!root.commandActive || root.commandQuery.length === 0)
+            return;
+        Quickshell.execDetached(["firefox", "--search", root.commandQuery]);
+        root.quit();
+        root.requestClose();
+    }
+
+    /**
+     * Terminal mode: a `$` prefix turns the launcher into a terminal command
+     * runner. The query is launched via kitty so CLI apps like btop or nvim
+     * open in their own terminal window.
+     */
+    readonly property bool terminalActive: query.length > 1 && query[0] === '$'
+    readonly property string terminalCommand: terminalActive ? query.slice(1).trim() : ""
+
+    function runInTerminal() {
+        if (!root.terminalActive || root.terminalCommand.length === 0)
+            return;
+        Quickshell.execDetached(["kitty", "--", "bash", "-c", root.terminalCommand + "; exec $SHELL"]);
+        root.quit();
+        root.requestClose();
+    }
+
     /** Row index currently in AppImage edit mode (rename plus armed delete), -1 when none. */
     property int editIndex: -1
 
@@ -124,6 +155,14 @@ PillSurface {
     }
 
     function activate() {
+        if (root.commandActive) {
+            root.runWebSearch();
+            return;
+        }
+        if (root.terminalActive) {
+            root.runInTerminal();
+            return;
+        }
         if (root.calcActive) {
             root.copyResult();
             return;
@@ -185,7 +224,7 @@ PillSurface {
         s: root.s
         kanji: "探"
         placeholder: "Search apps"
-        counterText: root.results.length + " / " + root.totalCount
+        counterText: root.commandActive ? "⌘" : (root.terminalActive ? "$" : (root.results.length + " / " + root.totalCount))
         onTextChanged: {
             root.query = text;
             root.selectedIndex = 0;
@@ -271,9 +310,165 @@ PillSurface {
         }
     }
 
+    Item {
+        id: commandRow
+        visible: root.commandActive
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: visible ? 44 * root.s : 0
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 9 * root.s
+            color: Theme.frameBg
+            border.width: 1
+            border.color: Theme.frameBorder
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.runWebSearch()
+        }
+
+        Item {
+            anchors.fill: parent
+            anchors.leftMargin: 12 * root.s
+            anchors.rightMargin: 12 * root.s
+
+            GlyphIcon {
+                id: cmdGlyph
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 18 * root.s
+                height: 18 * root.s
+                name: "search"
+                color: Theme.vermLit
+                stroke: 1.7
+            }
+
+            Column {
+                anchors.left: cmdGlyph.right
+                anchors.leftMargin: 10 * root.s
+                anchors.right: cmdHint.left
+                anchors.rightMargin: 8 * root.s
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1 * root.s
+
+                Text {
+                    width: parent.width
+                    text: "Search the web"
+                    color: Theme.bright
+                    font.family: Theme.font
+                    font.pixelSize: 13.5 * root.s
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width
+                    text: root.commandQuery
+                    color: Theme.faint
+                    font.family: Theme.font
+                    font.pixelSize: 10.5 * root.s
+                    elide: Text.ElideRight
+                }
+            }
+
+            Text {
+                id: cmdHint
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: "↵ search"
+                color: Theme.vermLit
+                font.family: Theme.font
+                font.pixelSize: 11 * root.s
+            }
+        }
+    }
+
+    Item {
+        id: terminalRow
+        visible: root.terminalActive
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: visible ? 44 * root.s : 0
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 9 * root.s
+            color: Theme.frameBg
+            border.width: 1
+            border.color: Theme.frameBorder
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.runInTerminal()
+        }
+
+        Item {
+            anchors.fill: parent
+            anchors.leftMargin: 12 * root.s
+            anchors.rightMargin: 12 * root.s
+
+            GlyphIcon {
+                id: termGlyph
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 18 * root.s
+                height: 18 * root.s
+                name: "terminal"
+                color: Theme.vermLit
+                stroke: 1.7
+            }
+
+            Column {
+                anchors.left: termGlyph.right
+                anchors.leftMargin: 10 * root.s
+                anchors.right: termHint.left
+                anchors.rightMargin: 8 * root.s
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1 * root.s
+
+                Text {
+                    width: parent.width
+                    text: "Run in terminal"
+                    color: Theme.bright
+                    font.family: Theme.font
+                    font.pixelSize: 13.5 * root.s
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width
+                    text: root.terminalCommand
+                    color: Theme.faint
+                    font.family: Theme.font
+                    font.pixelSize: 10.5 * root.s
+                    elide: Text.ElideRight
+                }
+            }
+
+            Text {
+                id: termHint
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: "↵ run"
+                color: Theme.vermLit
+                font.family: Theme.font
+                font.pixelSize: 11 * root.s
+            }
+        }
+    }
+
     Text {
         anchors.centerIn: list
-        visible: root.results.length === 0 && !root.calcActive
+        visible: root.results.length === 0 && !root.calcActive && !root.commandActive && !root.terminalActive
         text: root.query.length ? "No matches" : "No apps found"
         color: Theme.faint
         font.family: Theme.font
@@ -282,7 +477,10 @@ PillSurface {
 
     ListView {
         id: list
-        anchors.top: root.calcActive ? calcRow.bottom : divider.bottom
+        visible: !root.commandActive && !root.terminalActive
+        anchors.top: root.calcActive ? calcRow.bottom
+            : (root.commandActive ? commandRow.bottom
+            : (root.terminalActive ? terminalRow.bottom : divider.bottom))
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right

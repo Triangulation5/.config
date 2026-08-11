@@ -55,8 +55,11 @@ Item {
     readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
     readonly property real volume: sink && sink.audio ? Math.max(0, Math.min(1, sink.audio.volume)) : 0
 
+    readonly property var source: Pipewire.defaultAudioSource
+    readonly property bool micMuted: source && source.audio ? source.audio.muted : false
+
     readonly property real desiredW: kind === "workspace" ? Math.max(120 * s, wsIndicator.implicitWidth + 40 * s)
-        : (kind === "track" ? 344 * s : (kind === "record" ? 256 * s : 248 * s))
+        : (kind === "track" ? 344 * s : (kind === "record" ? 256 * s : (kind === "mic" ? 220 * s : 248 * s)))
     readonly property real desiredH: kind === "track" ? 64 * s : 44 * s
 
     /**
@@ -171,13 +174,18 @@ Item {
     }
 
     PwObjectTracker {
-        objects: [root.sink].filter(Boolean)
+        objects: [root.sink, root.source].filter(Boolean)
     }
 
     Connections {
         target: root.sink && root.sink.audio ? root.sink.audio : null
         function onVolumesChanged() { root.flash("volume"); }
         function onMutedChanged() { root.flash("volume"); }
+    }
+
+    Connections {
+        target: root.source && root.source.audio ? root.source.audio : null
+        function onMutedChanged() { root.flash("mic"); }
     }
 
     Connections {
@@ -265,6 +273,38 @@ Item {
                 Behavior on width { NumberAnimation { duration: Motion.fast } }
                 Behavior on color { ColorAnimation { duration: Motion.fast } }
             }
+        }
+    }
+
+    Item {
+        id: micRow
+        anchors.fill: parent
+        opacity: root.kind === "mic" ? 1 : 0
+        visible: opacity > 0.01
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+        GlyphIcon {
+            id: micGlyph
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 17 * root.s
+            height: 17 * root.s
+            name: root.micMuted ? "mic-off" : "mic"
+            color: root.micMuted ? Theme.verm : Theme.vermLit
+            stroke: 1.7
+        }
+
+        Text {
+            anchors.left: micGlyph.right
+            anchors.leftMargin: 12 * root.s
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Microphone " + (root.micMuted ? "off" : "on")
+            color: root.micMuted ? Theme.verm : Theme.cream
+            font.family: Theme.font
+            font.pixelSize: 11.5 * root.s
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
         }
     }
 
