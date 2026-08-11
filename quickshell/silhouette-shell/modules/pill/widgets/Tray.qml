@@ -244,6 +244,7 @@ Item {
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 cache: true
+                asynchronous: true
                 visible: mrow.entryData.icon
             }
 

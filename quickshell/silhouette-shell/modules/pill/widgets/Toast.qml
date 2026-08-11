@@ -70,6 +70,7 @@ Item {
             sourceSize.height: 56
             fillMode: Image.PreserveAspectCrop
             smooth: true
+            asynchronous: true
             visible: source.toString().length > 0
         }
 

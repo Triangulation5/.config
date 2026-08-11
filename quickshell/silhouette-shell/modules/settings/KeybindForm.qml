@@ -97,7 +97,7 @@ Column {
                 anchors.left: parent.left
                 anchors.leftMargin: 11 * surface.s
                 anchors.verticalCenter: parent.verticalCenter
-                text: surface.listening ? "press keys…  esc cancels"
+                text: surface.listening ? "press keys… esc cancels"
                     : (surface.formCombo.length ? surface.formCombo : "tap to set a key")
                 color: surface.listening ? Theme.flameGlow
                     : (surface.formCombo.length ? Theme.cream : Theme.faint)

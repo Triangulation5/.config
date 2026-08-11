@@ -320,6 +320,7 @@ PillSurface {
                 sourceSize.height: 40
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
+                asynchronous: true
                 visible: source.toString().length > 0
             }
 
@@ -997,6 +998,7 @@ PillSurface {
                                             sourceSize.height: 40
                                             fillMode: Image.PreserveAspectCrop
                                             smooth: true
+                                            asynchronous: true
                                             visible: source.toString().length > 0
                                         }
 

@@ -83,7 +83,7 @@ ShellRoot {
             + "gdbus call --session --dest org.freedesktop.Notifications "
             + "--object-path /org/freedesktop/Notifications "
             + "--method org.freedesktop.Notifications.Notify "
-            + "Ricelin 0 '' 'Ricelin updated' \"$b\" '[]' '{}' 5000 >/dev/null 2>&1"]
+            + "SilhouetteShell 0 '' 'SilhouetteShell updated' \"$b\" '[]' '{}' 5000 >/dev/null 2>&1"]
     }
 
 
@@ -332,7 +332,7 @@ ShellRoot {
                     if (pill.quickChoosing) {
                         ScreenRec.quickChoosing = false;
                         ScreenRec.quickScreenChoosing = false;
-                    } else if (!pill.recorderChooserBack() && !pill.faceBack() && !pill.linkBack() && !pill.keybindsBack() && !pill.emojiBack() && !pill.windowswitcherBack()) {
+                    } else if (!pill.recorderChooserBack() && !pill.faceBack() && !pill.linkBack() && !pill.keybindsBack() && !pill.timerBack()) {
                         root.close();
                     }
                 }
@@ -373,6 +373,11 @@ ShellRoot {
                      * this only fires while browsing the list.
                      */
                     if (e.key === Qt.Key_Slash && pill.focusSearch()) {
+                        e.accepted = true;
+                        return;
+                    }
+                    if (e.key === Qt.Key_R && !e.isAutoRepeat && pill.timerOpen) {
+                        pill.timerReset();
                         e.accepted = true;
                         return;
                     }
@@ -459,8 +464,16 @@ ShellRoot {
                         if (!e.isAutoRepeat) pill.quickChooseActivate();
                         e.accepted = true;
                     } else if (pill.wallpaperOpen) {
-                        if (!e.isAutoRepeat) pill.wallpaperActivate();
-                        e.accepted = true;
+                        if (e.isAutoRepeat) {
+                            if (!pill._wpHoldStarted) {
+                                pill._wpHoldStarted = true;
+                                pill.wallpaperHoldPress();
+                            }
+                            e.accepted = true;
+                        } else {
+                            pill.wallpaperActivate();
+                            e.accepted = true;
+                        }
                     } else if (pill.powerOpen) {
                         if (!e.isAutoRepeat) pill.powerPress();
                         e.accepted = true;
@@ -496,6 +509,9 @@ ShellRoot {
                         e.accepted = true;
                     } else if (pill.keybindsOpen && !pill.keybindsListening) {
                         if (!e.isAutoRepeat) pill.keybindsActivate();
+                        e.accepted = true;
+                    } else if (pill.timerOpen) {
+                        if (!e.isAutoRepeat) pill.timerActivate();
                         e.accepted = true;
                     } else if (pill.settingsLike) {
                         if (!e.isAutoRepeat) pill.settingsActivate();
@@ -624,9 +640,8 @@ ShellRoot {
         function system(mon: string): void { root.toggleSurface(mon, "sysmon"); }
         function clipboard(mon: string): void { root.toggleSurface(mon, "clipboard"); }
         function wallpaper(mon: string): void { root.toggleSurface(mon, "wallpaper"); }
-        function emoji(mon: string): void { root.toggleSurface(mon, "emoji"); }
         function localsend(mon: string): void { root.toggleSurface(mon, "localsend"); }
-        function windowswitcher(mon: string): void { root.toggleSurface(mon, "windowswitcher"); }
+        function timer(mon: string): void { root.toggleSurface(mon, "timer"); }
         function media(mon: string): void {
             if (Players.playing)
                 root.toggleSurface(mon, "media");

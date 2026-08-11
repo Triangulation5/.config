@@ -102,6 +102,8 @@ Item {
         "search": { d: "M11 3a8 8 0 1 0 4.9 14.3l4.3 4.3 1.4-1.4-4.3-4.3A8 8 0 0 0 11 3zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z", fill: false },
         "terminal": { d: "M5 6h14a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z M8 13h4 M8 16h6", fill: false },
         "window": { d: "M4 5h16a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 3h14M5 8v10h14V8", fill: false },
+        "share": { d: "M12 3l4 4h-3v8h-2V7H8z M6 19h12v-5 M12 22v-3", fill: false },
+        "smartphone": { d: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M12 18h.01", fill: false },
     })
 
     readonly property var g: glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false })
