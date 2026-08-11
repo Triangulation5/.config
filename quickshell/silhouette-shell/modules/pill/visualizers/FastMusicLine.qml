@@ -35,6 +35,24 @@ Rectangle {
      */
     property bool live: false
 
+    /**
+     * True while the pill is at rest. The process stays alive (warm) whenever
+     * live, but frames are only consumed while resting - so the string
+     * resumes instantly on return to rest without parsing hidden frames.
+     * Warmth only pays off for short peek-aways: after expandKill's interval
+     * away from rest the capture is put down (forcedDown), so a long surface
+     * session, parked hover or game mode can't burn a hidden 60fps cava.
+     * Returning to rest clears forcedDown and respawns it.
+     */
+    property bool resting: false
+
+    /**
+     * Latched by expandKill after a long stretch away from rest. Kept as a
+     * separate flag (instead of poking cava.running directly, which would
+     * sever the running binding) so returning to rest revives the process.
+     */
+    property bool forcedDown: false
+
     property variant cavaData: [
         0,0,0,0,0,0,0,0,0,0
     ]
@@ -50,11 +68,15 @@ Rectangle {
     Process {
         id: cava
 
-        running: musicLineContainer.live
+        running: musicLineContainer.live && !musicLineContainer.forcedDown
 
         command: [
             "/bin/bash",
             "-c",
+            /**
+             * No integral/gravity here: cava 0.8+ dropped those smoothing
+             * keys, so they'd be silently ignored anyway.
+             */
             'printf "[general]\n' +
             'framerate=60\n' +
             'bars=' + segments + '\n' +
@@ -64,9 +86,7 @@ Rectangle {
             'data_format=ascii\n' +
             'ascii_max_range=1000\n' +
             '[smoothing]\n' +
-            'integral=0\n' +
             'waves=0\n' +
-            'gravity=10000000\n' +
             '[input]\n' +
             'method=pulse\n' +
             'source=auto\n" | cava -p /dev/stdin'
@@ -74,6 +94,9 @@ Rectangle {
 
         stdout: SplitParser {
             onRead: data => {
+                if (!musicLineContainer.resting)
+                    return
+
                 var parts = data.trim().split(";")
                 var out = new Array(parts.length - 1)
                 for (var i = 0; i < out.length; i++)
@@ -82,6 +105,25 @@ Rectangle {
             }
         }
     }
+
+    /**
+     * Kill-after-long-expand: quick hover-peeks keep the warm capture (instant
+     * resume), but once the pill has been away from rest for this long the
+     * hidden 60fps process stops paying for itself (long surface session,
+     * parked hover, or game mode where the string can't be seen anyway). Fires
+     * once per stretch; returning to rest clears forcedDown and respawns, so
+     * the only cost is a ~150ms warm-up on that first return.
+     */
+    Timer {
+        id: expandKill
+        interval: 10000
+        running: !musicLineContainer.resting
+        repeat: false
+        onTriggered: musicLineContainer.forcedDown = true
+    }
+
+    onRestingChanged: if (resting)
+        forcedDown = false
 
 
     function color_mix(color1, color2, weight) {
@@ -117,7 +159,12 @@ Rectangle {
         anchors.fill: parent
 
         radius: 20
-        samples: 25
+        /**
+         * Samples kept low: at this tiny scale the 25-tap blur reads the same
+         * as 12, and it's re-rendered every frame at 60fps - needless iGPU
+         * work for a glow that barely shows.
+         */
+        samples: 12
 
         color: Qt.rgba(
             1.0,

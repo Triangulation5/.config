@@ -938,14 +938,16 @@ Item {
     }
 
     /**
-     * Extra input width past the pill's right edge while the media bud sticks
-     * out there, so the window mask covers the bud's outer half. pill.hovered is
-     * fed by a window-level HoverHandler in shell.qml: pointer events only exist
-     * inside the input mask, so "window hovered" means "pointer over the pill (or
-     * bud)". That sidesteps the per-item hover flicker the child MouseAreas and
-     * the centred width morph would otherwise cause.
+     * No input pad: the media bud lives inside the hover row's bounds, so the
+     * mask never needs to extend past the pill. (The old expression read a
+     * nonexistent `budR`; while `shown` was an undeclared property it short-
+     * circuited to 0, but once Media gained a real `shown` it evaluated
+     * `undefined + 2*s` = NaN, which collapsed the window mask and killed all
+     * hover input on the pill.) pill.hovered is fed by a window-level
+     * HoverHandler in shell.qml: pointer events only exist inside the input
+     * mask, so "window hovered" means "pointer over the pill (or bud)".
      */
-    readonly property real inputPadRight: (hoverMedia.active && hoverMedia.item) ? (hoverMedia.item.shown ? hoverMedia.item.budR + 2 * s : 0) : 0
+    readonly property real inputPadRight: 0
 
     onHoveredChanged: {
         if (hovered) {
@@ -1022,33 +1024,19 @@ Item {
                  * clock. The explicit width keeps the slot stable for both the
                  * bars and the string renderer.
                  *
-                 * The slot's width/height animate (Behaviors below), so the clock
-                 * beside it slides aside as the bars bloom in instead of jumping
-                 * to its new spot. The split is asymmetric: growing rides the
-                 * standard glide so the bloom reads deliberate, while collapsing
-                 * uses the fast glide so expanding the pill or a silence drops
-                 * the bars promptly instead of leaving them lingering.
+                 * The slot keeps a constant footprint (while the normal row is
+                 * showing) so the row layout never re-runs as the bars appear
+                 * and disappear: the clock's slide is a direct Translate on the
+                 * clock below, which renders as a clean glide instead of the
+                 * sub-pixel layout stepping that made the old layout-driven
+                 * slide stutter.
                  */
                 readonly property bool barsOn: Flags.musicViz && Cava.active
 
                 anchors.verticalCenter: parent.verticalCenter
 
-                width: barsOn ? musicBars.width : 0
-                height: barsOn ? musicBars.height : 0
-
-                Behavior on width {
-                    NumberAnimation {
-                        duration: restKanji.barsOn ? Motion.standard : Motion.fast
-                        easing.type: restKanji.barsOn ? Motion.easeStandard : Easing.OutQuad
-                    }
-                }
-
-                Behavior on height {
-                    NumberAnimation {
-                        duration: restKanji.barsOn ? Motion.standard : Motion.fast
-                        easing.type: restKanji.barsOn ? Motion.easeStandard : Easing.OutQuad
-                    }
-                }
+                width: pill.specialView === "" ? musicBars.width : 0
+                height: pill.specialView === "" ? musicBars.height : 0
 
                 MusicBars {
                     id: musicBars
@@ -1058,6 +1046,7 @@ Item {
                     centeredVisualizer: Flags.vizStyle === "centered"
                     stringVisualizer: Flags.vizStyle === "string"
                     live: restKanji.barsOn
+                    resting: pill.mode === "rest"
 
                     opacity: restKanji.barsOn ? 1 : 0
                     scale: restKanji.barsOn ? 1 : 0.7
@@ -1092,6 +1081,30 @@ Item {
                 font.pixelSize: 18 * pill.s
                 font.weight: Font.DemiBold
                 font.features: { "tnum": 1 }
+
+                /**
+                 * The clock's slide is a direct translate, not a layout slide:
+                 * the row keeps a constant footprint (see restKanji), so nothing
+                 * re-lays out while it moves. The clock sits at its bars-present
+                 * spot; offsetting it left by half the visualizer width plus half
+                 * the row spacing parks it dead-centre when the bars are hidden
+                 * (the row's centre of mass keeps the pill balanced while the
+                 * bars show). Both directions glide on one short, silky OutSine
+                 * - fast enough to read as a single motion with no stutter, and
+                 * no overshoot.
+                 */
+                property real clockSlide: restKanji.barsOn ? 0 : -((musicBars.width + restRow.spacing) / 2)
+
+                transform: Translate {
+                    x: restTime.clockSlide
+                }
+
+                Behavior on clockSlide {
+                    NumberAnimation {
+                        duration: Math.round(160 * Motion.mult)
+                        easing.type: Easing.OutSine
+                    }
+                }
 
                 /**
                  * Hands off to the hover clock in the first moments of the hop
@@ -1262,6 +1275,7 @@ Item {
                         s: pill.s
                         open: true
                         morphCloseness: hover.mediaMorph
+                        shown: pill.mode === "hover"
 
                         onRequestClose: {
                             hoverMedia.active = false
@@ -1407,20 +1421,7 @@ Item {
      * they dominated startup and per-monitor RAM; now a surface is built
      * synchronously on its first open and kept. Each loader fills the pill so
      * the PillSurface inside anchors exactly as it did as a direct child.
-     *
-     * The hot trio preloads shortly after startup: the mixer needs its Pipewire
-     * trackers bound before it looks right, so a cold first open visibly popped
-     * faders in. Startup itself stays light.
      */
-    Timer {
-        interval: 2500
-        running: true
-        onTriggered: {
-            ldMixer.active = true;
-            ldMedia.active = true;
-            ldLink.active = true;
-        }
-    }
 
     Loader {
         id: ldMixer
@@ -1501,6 +1502,7 @@ Item {
             s: pill.s
             open: pill.mediaOpen
             morphCloseness: pill.morphCloseness
+            shown: pill.mediaOpen
             onRequestClose: pill.requestClose()
         }
     }

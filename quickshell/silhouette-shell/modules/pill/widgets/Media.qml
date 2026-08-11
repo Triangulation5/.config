@@ -29,6 +29,15 @@ PillSurface {
     readonly property string serviceLabel: Players.serviceLabel
 
     /**
+     * True while the card is actually on screen. Drives the marquees and the
+     * 2Hz position poll so neither runs while the card is invisible. The host
+     * supplies it: the full media surface passes its open state, and the hover
+     * bud passes the pill's hover mode (the bud stays instantiated with
+     * open: true even at rest, so `open` alone can't gate it). Defaults off.
+     */
+    property bool shown: false
+
+    /**
      * Art only decodes while this monitor's surface is open, keyed on the track
      * so a browser reusing one file path still reloads on a new song. The shared
      * url means every monitor shows the same cover, never a stale neighbour.
@@ -65,7 +74,7 @@ PillSurface {
 
     Timer {
         interval: 500
-        running: root.active && root.playing
+        running: root.shown && root.playing
         repeat: true
         onTriggered: if (root.player) root.player.positionChanged();
     }
@@ -229,7 +238,7 @@ PillSurface {
             color: Theme.cream
             pixelSize: 21 * root.s
             weight: Font.DemiBold
-            active: root.active
+            active: root.shown
         }
 
         Marquee {
@@ -238,7 +247,7 @@ PillSurface {
             text: root.artist
             color: Theme.dim
             pixelSize: 16 * root.s
-            active: root.active
+            active: root.shown
             visible: text.length > 0
         }
     }

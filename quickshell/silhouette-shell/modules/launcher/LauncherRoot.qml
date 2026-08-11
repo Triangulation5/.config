@@ -4,7 +4,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.services
 import qs.modules.launcher
-import "../../utils/fuzzy.js" as Fuzzy
+import "../../utils/launcher/fuzzy.js" as Fuzzy
 
 /**
  * Launcher window root. Shows the launcher on the target monitor with a

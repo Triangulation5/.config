@@ -9,8 +9,8 @@ import qs.modules.pill.widgets
 import qs.modules.pill.surfaces
 import qs.components.icons
 import qs.components.controls
-import "../../utils/fuzzy.js" as Fuzzy
-import "../../utils/calc.js" as Calc
+import "../../utils/launcher/fuzzy.js" as Fuzzy
+import "../../utils/launcher/calc.js" as Calc
 
 /**
  * Launcher surface: search field over a ranked application list, drawn as one
@@ -39,8 +39,8 @@ PillSurface {
      * Calc mode: when the whole query parses as a real calculation (an
      * expression with at least one operation, so lone numbers and app names like
      * i3 or python3 fall through to app search), a result row appears above the
-     * list and Enter copies the value. The parser in lib/calc.js never evals, so
-     * a query cannot run code.
+     * list and Enter copies the value. The parser in utils/launcher/calc.js never
+     * evals, so a query cannot run code.
      */
     readonly property var calc: Calc.evaluate(query)
     readonly property bool calcActive: calc.ok

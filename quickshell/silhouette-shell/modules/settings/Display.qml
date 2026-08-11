@@ -3,10 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../../utils/monitors.js" as Mon
+import "../../utils/lua/monitors.js" as Mon
 import qs.services
 import qs.modules.controlcenter
-import qs.components.icons
 
 /**
  * 画 DISPLAY sub-surface. A proportional mini-map of the monitor layout sits on
@@ -425,81 +424,6 @@ SettingsSurface {
         }
     }
 
-    /**
-     * One registry row inside the monitor card: a leading line icon (or a text
-     * glyph for the star), the shared hover/focus treatment, and hover and
-     * clicks routed through reportRowHover/activateRow so the soul seam and
-     * keyboard focus track these rows like SettingsRow lines. The highlight
-     * hugs only the head line, so an open dropdown grows past it.
-     */
-    component CardRow: Item {
-        id: crow
-
-        property string icon: ""
-        property string glyphText: ""
-        default property alias content: crowInner.data
-
-        readonly property bool focused: root.focusRowItem === crow
-
-        width: parent ? parent.width : 0
-        implicitHeight: crowInner.childrenRect.height
-
-        HoverHandler {
-            id: crowHover
-            onHoveredChanged: root.reportRowHover(crow, hovered)
-        }
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.topMargin: -3 * root.s
-            anchors.leftMargin: -7 * root.s
-            anchors.rightMargin: -7 * root.s
-            height: 32 * root.s
-            radius: 8 * root.s
-            color: (crowHover.hovered || crow.focused) ? Theme.frameBg : "transparent"
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.activateRow(crow)
-        }
-
-        GlyphIcon {
-            id: crowIcon
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.topMargin: 5 * root.s
-            width: 16 * root.s
-            height: 16 * root.s
-            name: crow.icon
-            visible: crow.icon.length > 0
-            color: crow.focused ? Theme.cream : Theme.subtle
-            stroke: 1.8
-        }
-
-        Text {
-            anchors.centerIn: crowIcon
-            visible: crow.glyphText.length > 0
-            text: crow.glyphText
-            color: crow.focused ? Theme.cream : Theme.subtle
-            font.family: Theme.fontJp
-            font.pixelSize: 13 * root.s
-        }
-
-        Item {
-            id: crowInner
-            anchors.left: crowIcon.right
-            anchors.leftMargin: 9 * root.s
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: childrenRect.height
-        }
-    }
-
     Column {
         id: content
         z: 100
@@ -746,6 +670,7 @@ SettingsSurface {
                     }
 
                     CardRow {
+                        surface: root
                         id: resRow
                         icon: "monitor"
 
@@ -766,6 +691,7 @@ SettingsSurface {
                     }
 
                     CardRow {
+                        surface: root
                         id: rateRow
                         icon: "reboot"
 
@@ -785,6 +711,7 @@ SettingsSurface {
                     }
 
                     CardRow {
+                        surface: root
                         id: scaleRow
                         icon: "scaling"
 
@@ -813,6 +740,7 @@ SettingsSurface {
                     }
 
                     CardRow {
+                        surface: root
                         id: mainRow
                         glyphText: "★"
                         visible: root.selMon !== null && !root.selIsMain
