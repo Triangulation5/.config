@@ -24,10 +24,18 @@ Singleton {
     property bool available: false
 
     /**
-     * The pill pipeline only answers to the pill visualizer flag; the lock's
-     * forced capture is a separate process below.
+     * True while the resting pill can actually render the bars: the pill sets
+     * this while in rest mode, so the 60fps capture never runs behind an
+     * expanded pill, a hover, a surface, toast, OSD or game mode where the
+     * bars cannot be seen. Defaults off; the pill flips it on at rest.
      */
-    readonly property bool wanted: Flags.musicViz && available
+    property bool pillWanted: false
+
+    /**
+     * The pill pipeline only answers to the pill visualizer flag and rest-mode
+     * visibility; the lock's forced capture is a separate process below.
+     */
+    readonly property bool wanted: Flags.musicViz && available && root.pillWanted
 
     /**
      * Lock-glow capture: its own cava run from assets/cava.conf (12 bars,
@@ -176,7 +184,12 @@ Singleton {
     Timer {
         id: idle
 
-        interval: 450
+        /**
+         * How long a silent stretch keeps the bars alive before they drop.
+         * Long enough to ride out short speech pauses without flicker, short
+         * enough that the bars retract promptly once audio actually stops.
+         */
+        interval: 300
 
         onTriggered: {
             root.active = false

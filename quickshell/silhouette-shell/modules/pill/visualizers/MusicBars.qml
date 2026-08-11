@@ -18,12 +18,19 @@ Row {
     property bool centeredVisualizer: false
     property bool stringVisualizer: false
 
+    /**
+     * True while the visualizer slot is actually shown (pill at rest + audio
+     * flowing). Gates the string renderer's own cava capture: with nothing to
+     * display, the whole FastMusicLine (process, glow, shape) is unloaded.
+     */
+    property bool live: false
+
     height: span * s
     width: stringVisualizer ? 24 * s : Cava.bars * (2.8 * s + 1.4 * s)
     spacing: stringVisualizer ? 0 : 1.8 * s
 
     Loader {
-        active: root.stringVisualizer
+        active: root.stringVisualizer && root.live
         width: root.width
         height: root.height
         visible: root.stringVisualizer
@@ -36,6 +43,7 @@ Row {
         FastMusicLine {
             width: parent.width
             height: parent.height
+            live: root.live
 
             /**
              * The string is drawn in a 200×200 coordinate space with its origin
