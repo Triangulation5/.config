@@ -85,7 +85,8 @@ Item {
             return false;
         if (kbIndex < 0 || kbIndex >= n)
             kbIndex = 0;
-        kbIndex = (kbIndex + dir + n) % n;
+        else
+            kbIndex = (kbIndex + dir + n) % n;
         return true;
     }
 
