@@ -184,6 +184,21 @@ Singleton {
         root.popups = root.popups.filter(function(p) { return p !== n; });
     }
 
+    /**
+     * Return the first action whose identifier suggests an inline reply
+     * (contains "reply" case-insensitively), or null when none.
+     */
+    function replyAction(n) {
+        if (!n) return null;
+        var acts = n.actions || [];
+        for (var i = 0; i < acts.length; i++) {
+            var id = String(acts[i].identifier || "").toLowerCase();
+            if (id.indexOf("reply") !== -1 || id.indexOf("inline-reply") !== -1)
+                return acts[i];
+        }
+        return null;
+    }
+
     function toggleExpanded(app) {
         var e = Object.assign({}, expandedApps);
         e[app] = e[app] !== true;

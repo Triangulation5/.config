@@ -110,6 +110,17 @@ PillSurface {
 
     property string ethIp: ""
 
+    /** Tracks explicit airplane mode state: toggles wifi + BT radios together. */
+    property bool airplaneMode: false
+
+    onAirplaneModeChanged: {
+        if (!active) return;
+        if (typeof Networking !== "undefined" && Networking)
+            Networking.wifiEnabled = !airplaneMode;
+        if (btAdapter)
+            btAdapter.enabled = !airplaneMode;
+    }
+
     /**
      * Pops one navigation level: drill-in back to main returns true, main
      * returns false so the caller closes the surface instead.
@@ -123,12 +134,13 @@ PillSurface {
     }
 
     /**
-     * Keyboard row focus for the main view: 0 = Network, 1 = Bluetooth. The
-     * wifi and bt subviews hand off to their own pages, which keep their own
-     * row focus. Returns true when the surface consumed the move.
+     * Keyboard row focus for the main view: 0 = Network, 1 = Bluetooth,
+     * 2 = Airplane Mode. The wifi and bt subviews hand off to their own pages,
+     * which keep their own row focus. Returns true when the surface consumed
+     * the move.
      */
     property int kbIndex: -1
-    readonly property int kbCount: 2
+    readonly property int kbCount: 3
 
     function kbMove(dir) {
         if (subview === "wifi")
@@ -137,18 +149,25 @@ PillSurface {
             return btPage.kbMove(dir);
         if (kbIndex < 0 || kbIndex >= kbCount)
             kbIndex = 0;
-        kbIndex = (kbIndex + dir + kbCount) % kbCount;
-        focusRowItem = kbIndex === 0 ? netzRow : btRow;
+        else
+            kbIndex = (kbIndex + dir + kbCount) % kbCount;
+        if (kbIndex === 0) focusRowItem = netzRow;
+        else if (kbIndex === 1) focusRowItem = btRow;
+        else focusRowItem = airplaneRow;
         return true;
     }
 
-    /** Return on the link surface: drill into the focused row, or activate the focused subview row. */
+    /** Return on the link surface: drill into the focused row, toggle airplane, or activate subview row. */
     function kbActivate() {
         if (subview === "wifi")
             return wifiPage.kbActivate();
         if (subview === "bt")
             return btPage.kbActivate();
         var idx = kbIndex < 0 ? 0 : kbIndex;
+        if (idx === 2) {
+            airplaneMode = !airplaneMode;
+            return true;
+        }
         subview = idx === 0 ? "wifi" : "bt";
         return true;
     }
@@ -227,6 +246,8 @@ PillSurface {
      * Single inbox entry: icon tile or diamond, body text, ×N coalesce badge,
      * age label that cross-fades into a dismiss glyph on hover. Critical
      * entries gain a vermilion left hairline and cream emphasis.
+     * When the notification has a reply action, a reply glyph appears on hover;
+     * clicking it reveals an inline TextField — Enter sends the reply, Escape cancels.
      */
     component NotifRow: Rectangle {
         id: nrow
@@ -234,21 +255,34 @@ PillSurface {
         required property var entry
         property bool critical: false
         readonly property var n: entry.n
+        readonly property var replyAct: Notifs.replyAction(nrow.n)
+        readonly property bool hasReply: replyAct !== null
+        property bool replying: false
 
         width: parent ? parent.width : 0
-        height: 26 * root.s
+        height: nrow.replying ? 52 * root.s : 26 * root.s
         radius: 7 * root.s
         color: nrowHover.hovered ? Theme.frameBg : "transparent"
 
+        Behavior on height { NumberAnimation { duration: Motion.fast } }
+
+        onReplyingChanged: if (replying) Qt.callLater(function() { replyField.forceActiveFocus(); })
+
         HoverHandler {
             id: nrowHover
-            onHoveredChanged: root.reportRowHover(nrow, hovered)
+            onHoveredChanged: {
+                root.reportRowHover(nrow, hovered);
+                if (!hovered && !nrow.replying)
+                    nrow.replying = false;
+            }
         }
 
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+                if (nrow.replying)
+                    return;
                 Notifs.activateEntry(nrow.entry);
                 root.requestClose();
             }
@@ -335,8 +369,8 @@ PillSurface {
 
             Item {
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(nrowAge.implicitWidth, nrowX.implicitWidth)
-                height: Math.max(nrowAge.implicitHeight, nrowX.implicitHeight)
+                width: Math.max(nrowAge.implicitWidth, nrowIcons.width)
+                height: Math.max(nrowAge.implicitHeight, nrowIcons.height)
 
                 Text {
                     id: nrowAge
@@ -350,26 +384,99 @@ PillSurface {
                     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
                 }
 
-                GlyphIcon {
-                    id: nrowX
+                Row {
+                    id: nrowIcons
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 11 * root.s
-                    height: 11 * root.s
+                    spacing: 7 * root.s
                     opacity: nrowHover.hovered ? 1 : 0
-                    name: "close"
-                    color: nrowXArea.containsMouse ? Theme.cream : Theme.dim
-                    stroke: 1.9
                     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
-                    MouseArea {
-                        id: nrowXArea
-                        anchors.fill: parent
-                        anchors.margins: -6 * root.s
-                        enabled: nrowHover.hovered
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Notifs.dismissEntry(nrow.entry)
+                    GlyphIcon {
+                        id: nrowReply
+                        visible: nrow.hasReply
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 11 * root.s
+                        height: 11 * root.s
+                        name: "return"
+                        color: nrowReplyArea.containsMouse ? Theme.vermLit : Theme.dim
+                        stroke: 1.9
+
+                        MouseArea {
+                            id: nrowReplyArea
+                            anchors.fill: parent
+                            anchors.margins: -6 * root.s
+                            enabled: nrowHover.hovered && nrow.hasReply
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: nrow.replying = true
+                        }
+                    }
+
+                    GlyphIcon {
+                        id: nrowX
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 11 * root.s
+                        height: 11 * root.s
+                        name: "close"
+                        color: nrowXArea.containsMouse ? Theme.cream : Theme.dim
+                        stroke: 1.9
+
+                        MouseArea {
+                            id: nrowXArea
+                            anchors.fill: parent
+                            anchors.margins: -6 * root.s
+                            enabled: nrowHover.hovered
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Notifs.dismissEntry(nrow.entry)
+                        }
+                    }
+                }
+            }
+        }
+
+        Item {
+            visible: nrow.replying
+            anchors.left: nrowTile.right
+            anchors.leftMargin: 8 * root.s
+            anchors.right: parent.right
+            anchors.rightMargin: 8 * root.s
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 4 * root.s
+            height: 22 * root.s
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 5 * root.s
+                color: Qt.rgba(1, 1, 1, 0.06)
+                border.width: 1
+                border.color: replyField.activeFocus ? Theme.vermDim : Theme.border
+            }
+
+            TextInput {
+                id: replyField
+                anchors.fill: parent
+                anchors.leftMargin: 8 * root.s
+                anchors.rightMargin: 8 * root.s
+                verticalAlignment: TextInput.AlignVCenter
+                color: Theme.cream
+                font.family: Theme.font
+                font.pixelSize: 10.5 * root.s
+                selectByMouse: true
+                clip: true
+                Keys.onPressed: (e) => {
+                    if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
+                        var text = replyField.text.trim();
+                        if (text.length > 0 && nrow.replyAct) {
+                            nrow.replyAct.invoke(text);
+                            Notifs.dismissEntry(nrow.entry);
+                        }
+                        nrow.replying = false;
+                        e.accepted = true;
+                    } else if (e.key === Qt.Key_Escape) {
+                        nrow.replying = false;
+                        e.accepted = true;
                     }
                 }
             }
@@ -648,6 +755,83 @@ PillSurface {
                         name: "chevron-right"
                         color: Theme.iconDim
                         stroke: 1.8
+                    }
+                }
+            }
+
+            Rectangle {
+                id: airplaneRow
+                width: parent.width
+                height: 44 * root.s
+                radius: 10 * root.s
+                color: airplaneHover.hovered || root.kbIndex === 2 ? Theme.frameBg : "transparent"
+
+                HoverHandler {
+                    id: airplaneHover
+                    onHoveredChanged: {
+                        root.reportRowHover(airplaneRow, hovered);
+                        if (hovered) root.kbIndex = 2;
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.airplaneMode = !root.airplaneMode
+                }
+
+                GlyphIcon {
+                    id: airplaneGlyph
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 17 * root.s
+                    height: 17 * root.s
+                    name: "airplane"
+                    color: root.airplaneMode ? Theme.vermLit : Theme.iconDim
+                    stroke: 1.7
+                }
+
+                Column {
+                    anchors.left: airplaneGlyph.right
+                    anchors.leftMargin: 11 * root.s
+                    anchors.right: airplaneRight.left
+                    anchors.rightMargin: 8 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 2 * root.s
+
+                    Text {
+                        width: parent.width
+                        text: "Airplane Mode"
+                        color: Theme.cream
+                        font.family: Theme.font
+                        font.pixelSize: 12.5 * root.s
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        width: parent.width
+                        text: root.airplaneMode ? "On" : "Off"
+                        color: root.airplaneMode ? Theme.vermLit : Theme.dim
+                        font.family: Theme.font
+                        font.pixelSize: 10 * root.s
+                        font.weight: root.airplaneMode ? Font.DemiBold : Font.Medium
+                        elide: Text.ElideRight
+                    }
+                }
+
+                Row {
+                    id: airplaneRight
+                    anchors.right: parent.right
+                    anchors.rightMargin: 8 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 9 * root.s
+
+                    LinkToggle {
+                        s: root.s
+                        anchors.verticalCenter: parent.verticalCenter
+                        on: root.airplaneMode
+                        onToggled: root.airplaneMode = !root.airplaneMode
                     }
                 }
             }

@@ -93,6 +93,9 @@ Item {
     readonly property bool idlelockOpen: surface === "idlelock"
     readonly property bool animationOpen: surface === "animation"
     readonly property bool fontpickerOpen: surface === "fontpicker"
+    readonly property bool emojiOpen: surface === "emoji"
+    readonly property bool localsendOpen: surface === "localsend"
+    readonly property bool windowswitcherOpen: surface === "windowswitcher"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
     /**
@@ -208,6 +211,11 @@ Item {
     readonly property real idlelockW: 392 * s
     readonly property real animationW: 392 * s
     readonly property real fontpickerW: 360 * s
+    readonly property real emojiW: 360 * s
+    readonly property real emojiH: 332 * s
+    readonly property real localsendW: 360 * s
+    readonly property real windowswitcherW: 360 * s
+    readonly property real windowswitcherH: 332 * s
     readonly property real toastW: 342 * s
     readonly property real quickChooseW: 344 * s
     readonly property real quickChooseH: 76 * s
@@ -268,7 +276,10 @@ Item {
         look:       { size: () => Qt.size(lookW, surfaceItem(ldLook).implicitHeight + 29 * s), ame: () => surfaceItem(ldLook) },
         idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock).implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock) },
         animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation).implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation) },
-        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker) }
+        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker) },
+        emoji:      { size: () => { surfaceItem(ldEmoji); return Qt.size(emojiW, emojiH); }, ame: () => surfaceItem(ldEmoji) },
+        localsend:  { size: () => { surfaceItem(ldLSend); return Qt.size(localsendW, surfaceItem(ldLSend).implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend) },
+        windowswitcher: { size: () => { surfaceItem(ldWinSw); return Qt.size(windowswitcherW, windowswitcherH); }, ame: () => surfaceItem(ldWinSw) }
     })
 
     readonly property string mode: dragInstall.dragActive ? "dragOver"
@@ -604,6 +615,65 @@ Item {
         return true;
     }
 
+    function emojiMove(delta) {
+        if (!pill.emojiOpen || !ldEmoji.item)
+            return false;
+        ldEmoji.item.move(delta);
+        return true;
+    }
+
+    function emojiActivate() {
+        if (!pill.emojiOpen || !ldEmoji.item)
+            return false;
+        ldEmoji.item.activate();
+        return true;
+    }
+
+    function localsendMove(dir) {
+        if (!pill.localsendOpen || !ldLSend.item)
+            return false;
+        ldLSend.item.move(dir);
+        return true;
+    }
+
+    function localsendActivate() {
+        if (!pill.localsendOpen || !ldLSend.item)
+            return false;
+        ldLSend.item.activate();
+        return true;
+    }
+
+    /**
+     * Escape/Backspace while the emoji picker is open: close it. Returns true when consumed.
+     */
+    function emojiBack() {
+        if (!pill.emojiOpen || !ldEmoji.item)
+            return false;
+        pill.requestClose();
+        return true;
+    }
+
+    function windowswitcherBack() {
+        if (!pill.windowswitcherOpen || !ldWinSw.item)
+            return false;
+        pill.requestClose();
+        return true;
+    }
+
+    function windowswitcherMove(delta) {
+        if (!pill.windowswitcherOpen || !ldWinSw.item)
+            return false;
+        ldWinSw.item.move(delta);
+        return true;
+    }
+
+    function windowswitcherActivate() {
+        if (!pill.windowswitcherOpen || !ldWinSw.item)
+            return false;
+        ldWinSw.item.activate();
+        return true;
+    }
+
     /**
      * Slide the open launcher's selection by `delta`. Returns true when the
      * launcher consumed it.
@@ -905,6 +975,14 @@ Item {
             ldClip.item.focusField();
             return true;
         }
+        if (pill.emojiOpen && ldEmoji.item) {
+            ldEmoji.item.focusField();
+            return true;
+        }
+        if (pill.windowswitcherOpen && ldWinSw.item) {
+            ldWinSw.item.focusField();
+            return true;
+        }
         if (pill.launcherOpen && ldLauncher.item) {
             ldLauncher.item.focusField();
             return true;
@@ -929,7 +1007,7 @@ Item {
             return false;
         return pill.calendarMove("v", -1) || pill.linkMove(-1) || pill.mixerStep(1)
             || pill.recorderStep(5) || pill.clipboardMove(-1)
-            || pill.fontpickerMove(-1) || pill.launcherMove(-1)
+            || pill.fontpickerMove(-1) || pill.launcherMove(-1) || pill.emojiMove(-1) || pill.localsendMove(-1) || pill.windowswitcherMove(-1)
             || pill.workspacesMove(-1) || pill.stashMove(-1) || pill.spaceappsMove(-1)
             || pill.settingsMove(-1);
     }
@@ -939,7 +1017,7 @@ Item {
             return false;
         return pill.calendarMove("v", 1) || pill.linkMove(1) || pill.mixerStep(-1)
             || pill.recorderStep(-5) || pill.clipboardMove(1)
-            || pill.fontpickerMove(1) || pill.launcherMove(1)
+            || pill.fontpickerMove(1) || pill.launcherMove(1) || pill.emojiMove(1) || pill.localsendMove(1) || pill.windowswitcherMove(1)
             || pill.workspacesMove(1) || pill.stashMove(1) || pill.spaceappsMove(1)
             || pill.settingsMove(1);
     }
@@ -1005,8 +1083,12 @@ Item {
             pill.clipboardActivate();
         } else if (pill.fontpickerOpen) {
             pill.fontpickerActivate();
-        } else if (pill.launcherOpen) {
-            pill.launcherActivate();
+        } else if (pill.emojiOpen) {
+            pill.emojiActivate();
+        } else if (pill.localsendOpen) {
+            pill.localsendActivate();
+        } else if (pill.windowswitcherOpen) {
+            pill.windowswitcherActivate();
         } else if (pill.workspacesOpen) {
             pill.workspacesActivate();
         } else if (pill.stashOpen) {
@@ -2249,6 +2331,39 @@ Item {
             morphCloseness: pill.morphCloseness
 
             onRequestSurface: (name) => pill.requestSurface(name)
+        }
+    }
+
+    Loader {
+        id: ldEmoji
+        active: false
+        anchors.fill: parent
+        sourceComponent: Emoji {
+            s: pill.s
+            open: pill.emojiOpen
+            morphCloseness: pill.morphCloseness
+        }
+    }
+
+    Loader {
+        id: ldLSend
+        active: false
+        anchors.fill: parent
+        sourceComponent: Localsend {
+            s: pill.s
+            open: pill.localsendOpen
+            morphCloseness: pill.morphCloseness
+        }
+    }
+
+    Loader {
+        id: ldWinSw
+        active: false
+        anchors.fill: parent
+        sourceComponent: WindowSwitcher {
+            s: pill.s
+            open: pill.windowswitcherOpen
+            morphCloseness: pill.morphCloseness
         }
     }
 

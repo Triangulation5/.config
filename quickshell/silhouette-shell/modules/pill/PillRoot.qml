@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
 
 import qs.services
 import qs.modules.pill
@@ -331,7 +332,7 @@ ShellRoot {
                     if (pill.quickChoosing) {
                         ScreenRec.quickChoosing = false;
                         ScreenRec.quickScreenChoosing = false;
-                    } else if (!pill.recorderChooserBack() && !pill.faceBack() && !pill.linkBack() && !pill.keybindsBack()) {
+                    } else if (!pill.recorderChooserBack() && !pill.faceBack() && !pill.linkBack() && !pill.keybindsBack() && !pill.emojiBack() && !pill.windowswitcherBack()) {
                         root.close();
                     }
                 }
@@ -623,6 +624,9 @@ ShellRoot {
         function system(mon: string): void { root.toggleSurface(mon, "sysmon"); }
         function clipboard(mon: string): void { root.toggleSurface(mon, "clipboard"); }
         function wallpaper(mon: string): void { root.toggleSurface(mon, "wallpaper"); }
+        function emoji(mon: string): void { root.toggleSurface(mon, "emoji"); }
+        function localsend(mon: string): void { root.toggleSurface(mon, "localsend"); }
+        function windowswitcher(mon: string): void { root.toggleSurface(mon, "windowswitcher"); }
         function media(mon: string): void {
             if (Players.playing)
                 root.toggleSurface(mon, "media");
@@ -630,6 +634,12 @@ ShellRoot {
         function peek(mon: string): void { root.peek(mon); }
         function hide(): void { root.close(); }
         function page(mon: string, name: string): void { root.toggleSurface(mon, name); }
+        function mute(mon: string): void {
+            var src = Pipewire.defaultAudioSource;
+            if (src && src.audio) {
+                src.audio.muted = !src.audio.muted;
+            }
+        }
         function minimizeWindow(addr: string): void {
             Hyprland.dispatch('hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:' + addr + '" })');
         }
