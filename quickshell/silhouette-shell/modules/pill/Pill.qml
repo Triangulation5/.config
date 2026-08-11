@@ -4,7 +4,6 @@ import QtQuick
 import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
-import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
@@ -272,7 +271,7 @@ Item {
         fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker) }
     })
 
-    readonly property string mode: dragActive ? "dragOver"
+    readonly property string mode: dragInstall.dragActive ? "dragOver"
         : (surfaceOpen && surfaces[surface] !== undefined ? surface
         : (Flags.gameMode ? "game"
         : (quickChoosing ? "quickChoose"
@@ -280,14 +279,6 @@ Item {
         : (osdActive && !held ? "osd"
         : (toastActive && !held ? "toast"
         : (expanded ? "hover" : "rest")))))))
-
-    /**
-     * AppImage drag-install state, live only while a file hovers the resting pill.
-     * `dragStage` walks hover -> installing -> done, or bad for a non-AppImage drop.
-     */
-    property bool dragActive: false
-    property string dragName: ""
-    property string dragStage: ""
 
     signal requestSurface(string name)
     signal requestClose()
@@ -656,6 +647,8 @@ Item {
     property bool hoverHop: false
 
     onModeChanged: {
+        /** Keep the 60fps cava capture only while the bars can actually render. */
+        Cava.pillWanted = mode === "rest";
         hoverHop = (mode === "hover" || mode === "rest") && (lastMode === "hover" || lastMode === "rest");
         lastMode = mode;
         if (mode !== "hover") {
@@ -665,6 +658,8 @@ Item {
         }
     }
     onHoverSoulGateChanged: if (hoverSoulGate) kanjiFlashAnim.restart()
+
+    Component.onCompleted: Cava.pillWanted = mode === "rest"
 
     property string soulTarget: ""
 
@@ -979,292 +974,13 @@ Item {
         onTapped: pill.pinned = !pill.pinned
     }
 
-    property var installQueue: []
-
-    function localPath(url) {
-        var s = String(url);
-        if (s.indexOf("file://") === 0)
-            s = s.substring(7);
-        return decodeURIComponent(s);
-    }
-
-    readonly property var dropExt: /\.(appimage|deb|rpm|flatpakref|zip|tgz|txz|tbz2|ttf|otf|png|jpe?g|webp)$|\.(pkg\.)?tar\.(gz|xz|bz2|zst)$/i
-
-    function droppablePaths(urls) {
-        var out = [];
-        for (var i = 0; i < urls.length; i++)
-            if (pill.dropExt.test(String(urls[i])))
-                out.push(pill.localPath(urls[i]));
-        return out;
-    }
-
-    function dropLabel(urls) {
-        var p = pill.localPath(urls.length ? urls[0] : "");
-        return p.substring(p.lastIndexOf("/") + 1).replace(pill.dropExt, "");
-    }
-
-    property bool installedAny: false
-    property bool installedApp: false
-    property bool installFailed: false
-    property string installKind: "app"
-    property string installAction: "new"
-    property string installLine: ""
-    property string installProto: ""
-    property string installPct: ""
-    property int installSeconds: 0
-
-    function runNextInstall() {
-        if (pill.installQueue.length === 0) {
-            pill.dragStage = pill.installedAny ? "done" : "fail";
-            (pill.installedAny ? dropDoneTimer : dropBadTimer).restart();
-            return;
-        }
-        var next = pill.installQueue.shift();
-        pill.dragName = next.substring(next.lastIndexOf("/") + 1).replace(pill.dropExt, "");
-        pill.installLine = "";
-        pill.installProto = "";
-        pill.installPct = "";
-        installProc.command = ["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/app-install.sh", "install", next];
-        installProc.running = true;
-    }
-
-    /**
-     * Streams installer stdout instead of collecting it: slow backends (flatpak
-     * runtime pulls, pacman) narrate their steps, and the drop face mirrors the
-     * newest line live. The machine-readable result is the one tab-separated
-     * kind-prefixed line, fished out of the stream as it passes.
-     */
-    Process {
-        id: installProc
-        stdout: SplitParser {
-            onRead: (data) => {
-                var seg = data.split("\r").pop().replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").trim();
-                if (seg.length === 0)
-                    return;
-                if (/^(app|native|font|wallpaper)\t/.test(seg)) {
-                    pill.installProto = seg;
-                } else {
-                    pill.installLine = seg;
-                    var pct = seg.match(/(\d{1,3})\s*%/);
-                    if (pct && Number(pct[1]) <= 100)
-                        pill.installPct = pct[1] + "%";
-                }
-            }
-        }
-        onExited: (exitCode) => {
-            if (exitCode === 0 && pill.installProto.length > 0) {
-                pill.installedAny = true;
-                var parts = pill.installProto.split("\t");
-                pill.installKind = parts[0];
-                pill.installAction = parts[2];
-                if (parts[0] === "app" || parts[0] === "native")
-                    pill.installedApp = true;
-                if (parts[0] === "font" && parts.length >= 4)
-                    droppedFont.source = "file://" + parts[3];
-            } else {
-                pill.installFailed = true;
-            }
-            pill.runNextInstall();
-        }
-    }
-
-    Timer {
-        interval: 1000
-        repeat: true
-        running: pill.dragStage === "installing"
-        onTriggered: pill.installSeconds++
-    }
-
-    /**
-     * Registers a just-dropped font in this running process; the fontconfig
-     * cache alone only reaches apps started later. Ready -> the font picker's
-     * family list refreshes and the new face shows up without a restart.
-     */
-    FontLoader {
-        id: droppedFont
-        onStatusChanged: if (status === FontLoader.Ready) Theme.refreshFonts()
-    }
-
-    Timer {
-        id: dropDoneTimer
-        interval: 1100
-        onTriggered: {
-            pill.dragActive = false;
-            pill.dragStage = "";
-            if (pill.installedApp)
-                pill.requestSurface("launcher");
-        }
-    }
-
-    Timer {
-        id: dropBadTimer
-        interval: 1300
-        onTriggered: {
-            pill.dragActive = false;
-            pill.dragStage = "";
-        }
-    }
-
-    /**
-     * File drops land only on the resting pill; an open surface turns the pill
-     * into a fullscreen modal that swallows the drag before it can start.
-     * app-install.sh routes each drop by type (apps install, fonts land in the
-     * font dir, images become the wallpaper), anything else flashes a rejection.
-     */
-    DropArea {
+    DragInstall {
+        id: dragInstall
         anchors.fill: parent
-        enabled: !pill.surfaceOpen && pill.dragStage !== "installing" && pill.dragStage !== "done"
-        keys: ["text/uri-list"]
-        onEntered: (drag) => {
-            drag.acceptProposedAction();
-            pill.dragActive = true;
-            pill.dragStage = pill.droppablePaths(drag.urls).length > 0 ? "hover" : "bad";
-            pill.dragName = pill.dropLabel(drag.urls);
-        }
-        onExited: {
-            if (pill.dragStage === "hover" || pill.dragStage === "bad") {
-                pill.dragActive = false;
-                pill.dragStage = "";
-            }
-        }
-        onDropped: (drop) => {
-            drop.acceptProposedAction();
-            var files = pill.droppablePaths(drop.urls);
-            if (files.length === 0) {
-                pill.dragActive = true;
-                pill.dragStage = "bad";
-                pill.dragName = pill.dropLabel(drop.urls);
-                dropBadTimer.restart();
-                return;
-            }
-            pill.dragActive = true;
-            pill.dragStage = "installing";
-            pill.installedAny = false;
-            pill.installedApp = false;
-            pill.installFailed = false;
-            pill.installKind = "app";
-            pill.installAction = "new";
-            pill.installSeconds = 0;
-            pill.installQueue = files;
-            pill.runNextInstall();
-        }
-    }
-
-    /**
-     * Drop-zone face: corner brackets frame a stage glyph and label that walk
-     * from "drop to install" through the spinner to a checkmark. Shares the morph
-     * fade of the other pill faces, so it grows in as the pill reaches its size.
-     */
-    Item {
-        id: dragOverView
-        anchors.fill: parent
-        anchors.margins: 11 * pill.s
-        enabled: pill.mode === "dragOver"
-        opacity: pill.mode === "dragOver" ? Math.pow(pill.morphCloseness, 1.2) : 0
-        visible: opacity > 0.01
-
-        Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-
-        readonly property color accent: (pill.dragStage === "bad" || pill.dragStage === "fail") ? "#e0533f" : Theme.vermLit
-        readonly property real brLen: 15 * pill.s
-        readonly property real brThick: 2 * pill.s
-
-        Repeater {
-            model: [[0, 0], [1, 0], [0, 1], [1, 1]]
-            delegate: Item {
-                id: corner
-                required property var modelData
-                readonly property bool rightSide: modelData[0] === 1
-                readonly property bool bottomSide: modelData[1] === 1
-                x: rightSide ? dragOverView.width - dragOverView.brLen : 0
-                y: bottomSide ? dragOverView.height - dragOverView.brLen : 0
-                width: dragOverView.brLen
-                height: dragOverView.brLen
-
-                Rectangle {
-                    width: dragOverView.brLen
-                    height: dragOverView.brThick
-                    radius: dragOverView.brThick / 2
-                    color: dragOverView.accent
-                    anchors.top: corner.bottomSide ? undefined : parent.top
-                    anchors.bottom: corner.bottomSide ? parent.bottom : undefined
-                    anchors.left: corner.rightSide ? undefined : parent.left
-                    anchors.right: corner.rightSide ? parent.right : undefined
-                }
-                Rectangle {
-                    width: dragOverView.brThick
-                    height: dragOverView.brLen
-                    radius: dragOverView.brThick / 2
-                    color: dragOverView.accent
-                    anchors.top: corner.bottomSide ? undefined : parent.top
-                    anchors.bottom: corner.bottomSide ? parent.bottom : undefined
-                    anchors.left: corner.rightSide ? undefined : parent.left
-                    anchors.right: corner.rightSide ? parent.right : undefined
-                }
-            }
-        }
-
-        Column {
-            anchors.centerIn: parent
-            width: parent.width - 44 * pill.s
-            spacing: 7 * pill.s
-
-            Item {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 26 * pill.s
-                height: 26 * pill.s
-
-                GlyphIcon {
-                    id: dragGlyph
-                    anchors.fill: parent
-                    stroke: 2
-                    color: dragOverView.accent
-                    name: (pill.dragStage === "bad" || pill.dragStage === "fail") ? "close"
-                        : (pill.dragStage === "installing" ? "reboot"
-                        : (pill.dragStage === "done" ? "check" : "download"))
-
-                    RotationAnimation on rotation {
-                        running: pill.dragStage === "installing"
-                        loops: Animation.Infinite
-                        from: 0
-                        to: 360
-                        duration: 900
-                    }
-                    onNameChanged: if (pill.dragStage !== "installing") rotation = 0
-                }
-            }
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: pill.dragStage === "bad" ? "Can't install this"
-                    : (pill.dragStage === "fail" ? "Install failed"
-                    : (pill.dragStage === "installing" ? ("Installing"
-                        + (pill.installPct.length > 0 ? " " + pill.installPct : "")
-                        + (pill.installSeconds >= 3 ? "  " + Math.floor(pill.installSeconds / 60) + ":" + String(pill.installSeconds % 60).padStart(2, "0") : ""))
-                    : (pill.dragStage === "done" ? (pill.installFailed ? "Installed, some failed"
-                        : (!pill.installedApp && pill.installKind === "wallpaper" ? "Wallpaper set"
-                        : (!pill.installedApp && pill.installKind === "font" ? "Font installed"
-                        : (pill.installAction === "updated" ? "Updated"
-                        : (pill.installAction === "reinstalled" ? "Reinstalled" : "Installed")))))
-                    : "Drop to install")))
-                color: Theme.cream
-                font.family: Theme.font
-                font.pixelSize: 13 * pill.s
-                font.weight: Font.Medium
-            }
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                text: pill.dragStage === "installing" && pill.installLine.length > 0 ? pill.installLine : pill.dragName
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 11 * pill.s
-                elide: Text.ElideMiddle
-                maximumLineCount: 1
-            }
-        }
+        s: pill.s
+        surfaceOpen: pill.surfaceOpen
+        morph: pill.morphCloseness
+        onLaunchRequested: pill.requestSurface("launcher")
     }
 
     /**
@@ -1272,129 +988,20 @@ Item {
      * and, when something plays, the current track. Everything else the desktop
      * usually shows is deliberately gone.
      */
-    Item {
+    GameBar {
         id: gameBar
         anchors.fill: parent
-        enabled: pill.mode === "game"
-        opacity: pill.mode === "game" ? Math.pow(pill.morphCloseness, 1.2) : 0
-        visible: opacity > 0.01
-
-        Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-
-        Row {
-            anchors.left: parent.left
-            anchors.leftMargin: 18 * pill.s
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 9 * pill.s
-            opacity: Players.playing ? 1 : 0
-            visible: opacity > 0.01
-            Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 26 * pill.s
-                height: 26 * pill.s
-                radius: 7 * pill.s
-                color: Theme.tileBg
-                clip: true
-                Image {
-                    anchors.fill: parent
-                    source: Players.artUrl
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    visible: status === Image.Ready
-                }
-            }
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                Text {
-                    text: Players.title
-                    color: Theme.cream
-                    font.family: Theme.font
-                    font.pixelSize: 12.5 * pill.s
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
-                    width: Math.min(implicitWidth, 220 * pill.s)
-                }
-                Text {
-                    text: Players.artist
-                    color: Theme.dim
-                    font.family: Theme.font
-                    font.pixelSize: 10.5 * pill.s
-                    elide: Text.ElideRight
-                    width: Math.min(implicitWidth, 220 * pill.s)
-                    visible: text.length > 0
-                }
-            }
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: clock.hhmm
-            color: Theme.cream
-            font.family: Theme.font
-            font.pixelSize: 16 * pill.s
-            font.weight: Font.DemiBold
-            font.features: ({ "tnum": 1 })
-        }
-
-        /**
-         * Volume/brightness feedback stays visible while gaming as a compact
-         * chip on the bar's right, since the full OSD face is parked behind
-         * game mode in the mode ladder. Notifications stay suppressed.
-         */
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: 18 * pill.s
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 9 * pill.s
-            opacity: osd.flashing && (osd.kind === "volume" || osd.kind === "brightness") ? 1 : 0
-            visible: opacity > 0.01
-            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-
-            GlyphIcon {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 14 * pill.s
-                height: 14 * pill.s
-                name: osd.kind === "brightness" ? "sun" : (osd.muted ? "speaker-off" : "speaker")
-                color: osd.kind === "volume" && osd.muted ? Theme.dim : Theme.iconDim
-                stroke: 1.7
-            }
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 64 * pill.s
-                height: 3 * pill.s
-                radius: 1.5 * pill.s
-                color: Theme.threadBg
-
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: parent.width * (osd.kind === "brightness" ? osd.brightness : osd.volume)
-                    radius: parent.radius
-                    color: osd.kind === "volume" && osd.muted ? Theme.vermDim : Theme.vermLit
-                    Behavior on width { NumberAnimation { duration: Motion.fast } }
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: Math.round((osd.kind === "brightness" ? osd.brightness : osd.volume) * 100) + "%"
-                color: osd.kind === "volume" && osd.muted ? Theme.dim : Theme.cream
-                font.family: Theme.font
-                font.pixelSize: 10.5 * pill.s
-                font.weight: Font.DemiBold
-                font.features: ({ "tnum": 1 })
-            }
-        }
+        s: pill.s
+        active: pill.mode === "game"
+        morph: pill.morphCloseness
+        time: clock.hhmm
+        osd: osd
     }
 
     Item {
         id: rest
         anchors.fill: parent
-        opacity: (pill.expanded || pill.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount") ? 0 : Math.pow(pill.morphCloseness, 1.5)
+        opacity: (pill.expanded || dragInstall.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount") ? 0 : Math.pow(pill.morphCloseness, 1.5)
         visible: opacity > 0.01
         Behavior on opacity { NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) } }
 
@@ -1414,6 +1021,13 @@ Item {
                  * which would park the string on a point and let it overlap the
                  * clock. The explicit width keeps the slot stable for both the
                  * bars and the string renderer.
+                 *
+                 * The slot's width/height animate (Behaviors below), so the clock
+                 * beside it slides aside as the bars bloom in instead of jumping
+                 * to its new spot. The split is asymmetric: growing rides the
+                 * standard glide so the bloom reads deliberate, while collapsing
+                 * uses the fast glide so expanding the pill or a silence drops
+                 * the bars promptly instead of leaving them lingering.
                  */
                 readonly property bool barsOn: Flags.musicViz && Cava.active
 
@@ -1422,6 +1036,20 @@ Item {
                 width: barsOn ? musicBars.width : 0
                 height: barsOn ? musicBars.height : 0
 
+                Behavior on width {
+                    NumberAnimation {
+                        duration: restKanji.barsOn ? Motion.standard : Motion.fast
+                        easing.type: restKanji.barsOn ? Motion.easeStandard : Easing.OutQuad
+                    }
+                }
+
+                Behavior on height {
+                    NumberAnimation {
+                        duration: restKanji.barsOn ? Motion.standard : Motion.fast
+                        easing.type: restKanji.barsOn ? Motion.easeStandard : Easing.OutQuad
+                    }
+                }
+
                 MusicBars {
                     id: musicBars
                     anchors.centerIn: parent
@@ -1429,21 +1057,27 @@ Item {
 
                     centeredVisualizer: Flags.vizStyle === "centered"
                     stringVisualizer: Flags.vizStyle === "string"
+                    live: restKanji.barsOn
 
                     opacity: restKanji.barsOn ? 1 : 0
                     scale: restKanji.barsOn ? 1 : 0.7
 
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: Motion.standard
-                            easing.type: Motion.easeStandard
+                            duration: restKanji.barsOn ? Motion.standard : Motion.fast
+                            easing.type: restKanji.barsOn ? Motion.easeStandard : Easing.OutQuad
                         }
                     }
 
                     Behavior on scale {
                         NumberAnimation {
-                            duration: Motion.standard
-                            easing.type: Motion.easeStandard
+                            /**
+                             * A soft OutBack overshoot on the way in gives the
+                             * bloom a subtle spring; the fast OutQuad collapse
+                             * reads as a clean, quick retract.
+                             */
+                            duration: restKanji.barsOn ? Motion.standard : Motion.fast
+                            easing.type: restKanji.barsOn ? Easing.OutBack : Easing.OutQuad
                         }
                     }
                 }
@@ -2160,201 +1794,22 @@ Item {
      * to the inline sub-choice. A pick fires ScreenRec.prepareScreen / prepareWindow
      * → targetReady → the central countdown, then closes.
      */
-    Item {
+    QuickChooser {
         id: quickChooser
         anchors.fill: parent
         anchors.margins: 6 * pill.s
-        enabled: pill.mode === "quickChoose"
-        opacity: pill.mode === "quickChoose" ? Math.pow(pill.morphCloseness, 1.3) : 0
-        visible: opacity > 0.01
-        Behavior on opacity {
-            NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard }
-        }
-
-        Row {
-            id: quickSources
-            anchors.fill: parent
-            visible: !ScreenRec.quickScreenChoosing
-            spacing: 6 * pill.s
-
-            Repeater {
-                model: [
-                    { kind: "screen", label: "Screen", glyph: "monitor" },
-                    { kind: "window", label: "Window / Region", glyph: "video" }
-                ]
-
-                Rectangle {
-                    id: qSrcTile
-                    required property var modelData
-                    width: (quickSources.width - 6 * pill.s) / 2
-                    height: parent.height
-                    radius: 11 * pill.s
-                    color: qSrcArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
-                    border.width: 1
-                    border.color: qSrcArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
-                    Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 8 * pill.s
-
-                        GlyphIcon {
-                            width: 16 * pill.s
-                            height: 16 * pill.s
-                            name: qSrcTile.modelData.glyph
-                            color: qSrcArea.containsMouse ? Theme.vermLit : Theme.iconDim
-                            stroke: 1.7
-                        }
-                        Text {
-                            height: 16 * pill.s
-                            verticalAlignment: Text.AlignVCenter
-                            text: qSrcTile.modelData.label
-                            color: qSrcArea.containsMouse ? Theme.cream : Theme.subtle
-                            font.family: Theme.font
-                            font.pixelSize: 11 * pill.s
-                            font.weight: Font.Bold
-                        }
-                    }
-
-                    MouseArea {
-                        id: qSrcArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: pill.quickChooseSource(qSrcTile.modelData.kind)
-                    }
-                }
-            }
-        }
-
-        ListView {
-            id: quickScreens
-            anchors.fill: parent
-            anchors.rightMargin: 22 * pill.s
-            visible: ScreenRec.quickScreenChoosing
-            orientation: ListView.Horizontal
-            spacing: 6 * pill.s
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            model: ScreenRec.monitors
-
-            delegate: Rectangle {
-                id: qMonTile
-                required property var modelData
-                width: 152 * pill.s
-                height: quickScreens.height
-                radius: 11 * pill.s
-                color: qMonArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
-                border.width: 1
-                border.color: qMonArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
-                Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 2 * pill.s
-
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: qMonTile.modelData.name
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 11.5 * pill.s
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: qMonTile.modelData.w + " × " + qMonTile.modelData.h
-                        color: Theme.subtle
-                        font.family: Theme.font
-                        font.pixelSize: 9.5 * pill.s
-                        font.features: { "tnum": 1 }
-                    }
-                }
-
-                MouseArea {
-                    id: qMonArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: pill.quickPickMonitor(qMonTile.modelData.name)
-                }
-            }
-        }
-
-        WheelScroller {
-            flick: quickScreens
-            s: pill.s
-            anchors.fill: quickScreens
-            visible: ScreenRec.quickScreenChoosing
-        }
-
-        GlyphIcon {
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.margins: 5 * pill.s
-            visible: ScreenRec.quickScreenChoosing
-            width: 12 * pill.s
-            height: 12 * pill.s
-            name: "chevron-left"
-            color: qBackArea.containsMouse ? Theme.cream : Theme.faint
-            stroke: 2
-
-            MouseArea {
-                id: qBackArea
-                anchors.fill: parent
-                anchors.margins: -7 * pill.s
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: ScreenRec.quickScreenChoosing = false
-            }
-        }
+        s: pill.s
+        active: pill.mode === "quickChoose"
+        morph: pill.morphCloseness
+        onPickSource: (kind) => pill.quickChooseSource(kind)
+        onPickMonitor: (name) => pill.quickPickMonitor(name)
     }
 
-    /**
-     * Standalone pre-roll countdown toast. Shown at the pill top on the focused
-     * monitor when the central countdown runs and the recorder surface is closed
-     * (mode "quickCount"): a big flame-glow numeral over a small "GET READY" label.
-     * Tapping cancels. The surface's own in-bar countdown covers the surface case.
-     */
-    Item {
+    QuickCount {
         id: quickCount
         anchors.fill: parent
-        enabled: pill.mode === "quickCount"
-        opacity: pill.mode === "quickCount" ? Math.pow(pill.morphCloseness, 1.3) : 0
-        visible: opacity > 0.01
-        Behavior on opacity {
-            NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard }
-        }
-
-        Column {
-            anchors.centerIn: parent
-            spacing: 1 * pill.s
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: ScreenRec.countdown
-                color: Theme.flameGlow
-                font.family: Theme.font
-                font.pixelSize: 28 * pill.s
-                font.weight: Font.ExtraBold
-                font.features: { "tnum": 1 }
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "GET READY"
-                color: Theme.dim
-                font.family: Theme.font
-                font.pixelSize: 8.5 * pill.s
-                font.weight: Font.Bold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.6 * pill.s
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: ScreenRec.cancel()
-        }
+        s: pill.s
+        active: pill.mode === "quickCount"
+        morph: pill.morphCloseness
     }
 }

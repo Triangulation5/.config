@@ -28,6 +28,13 @@ Rectangle {
     property int curveHeight: 100
     property double curveSpill: 1.5
 
+    /**
+     * True while this renderer is actually visible (pill at rest + audio). The
+     * cava capture below only runs then; when the pill is expanded or no audio
+     * flows, the process is killed instead of parsing silent frames 24/7.
+     */
+    property bool live: false
+
     property variant cavaData: [
         0,0,0,0,0,0,0,0,0,0
     ]
@@ -43,7 +50,7 @@ Rectangle {
     Process {
         id: cava
 
-        running: true
+        running: musicLineContainer.live
 
         command: [
             "/bin/bash",
