@@ -4,11 +4,15 @@ Calendar 1.0 Calendar.qml
 CalendarEditor 1.0 CalendarEditor.qml
 CalendarStyle 1.0 CalendarStyle.qml
 Clipboard 1.0 Clipboard.qml
+DragInstall 1.0 DragInstall.qml
+GameBar 1.0 GameBar.qml
 IdleLock 1.0 IdleLock.qml
 Media 1.0 Media.qml
 MinimizedTray 1.0 MinimizedTray.qml
 Mixer 1.0 Mixer.qml
 Osd 1.0 Osd.qml
+QuickChooser 1.0 QuickChooser.qml
+QuickCount 1.0 QuickCount.qml
 Recorder 1.0 Recorder.qml
 SpaceApps 1.0 SpaceApps.qml
 Stash 1.0 Stash.qml

@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import qs.services
+import qs.modules.lock
 import qs.components.layout
 
 /**
@@ -49,10 +50,6 @@ Item {
     }
 
     readonly property real spread: 2.4
-    readonly property size half: Qt.size(Math.max(2, Math.round(width / 2)), Math.max(2, Math.round(height / 2)))
-    readonly property size quarter: Qt.size(Math.max(2, Math.round(width / 4)), Math.max(2, Math.round(height / 4)))
-    readonly property size eighth: Qt.size(Math.max(2, Math.round(width / 8)), Math.max(2, Math.round(height / 8)))
-    readonly property vector2d eighthVec: Qt.vector2d(eighth.width, eighth.height)
 
     readonly property string shotSource: {
         if (surface.screenName.length === 0)
@@ -75,199 +72,10 @@ Item {
         active: true
         asynchronous: true
 
-        sourceComponent: Component {
-          Item {
-            anchors.fill: parent
-
-            Image {
-                id: bgImg
-                anchors.fill: parent
-                source: surface.shotSource
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                cache: false
-                asynchronous: true
-                visible: false
-            }
-
-            ShaderEffectSource {
-                id: downHalf
-                anchors.fill: parent
-                sourceItem: bgImg
-                textureSize: surface.half
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: copyHalf
-                anchors.fill: parent
-                visible: false
-                property var source: downHalf
-            }
-
-            ShaderEffectSource {
-                id: downQuarter
-                anchors.fill: parent
-                sourceItem: copyHalf
-                textureSize: surface.quarter
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: copyQuarter
-                anchors.fill: parent
-                visible: false
-                property var source: downQuarter
-            }
-
-            ShaderEffectSource {
-                id: downEighth
-                anchors.fill: parent
-                sourceItem: copyQuarter
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: blurH1
-                anchors.fill: parent
-                visible: false
-                property var source: downEighth
-                property vector2d resolution: surface.eighthVec
-                property vector2d blurDir: Qt.vector2d(1, 0)
-                property real spread: surface.spread
-                fragmentShader: "../../assets/shaders/blur.frag.qsb"
-            }
-
-            ShaderEffectSource {
-                id: blurH1Src
-                anchors.fill: parent
-                sourceItem: blurH1
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: blurV1
-                anchors.fill: parent
-                visible: false
-                property var source: blurH1Src
-                property vector2d resolution: surface.eighthVec
-                property vector2d blurDir: Qt.vector2d(0, 1)
-                property real spread: surface.spread
-                fragmentShader: "../../assets/shaders/blur.frag.qsb"
-            }
-
-            ShaderEffectSource {
-                id: blurV1Src
-                anchors.fill: parent
-                sourceItem: blurV1
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: blurH2
-                anchors.fill: parent
-                visible: false
-                property var source: blurV1Src
-                property vector2d resolution: surface.eighthVec
-                property vector2d blurDir: Qt.vector2d(1, 0)
-                property real spread: surface.spread
-                fragmentShader: "../../assets/shaders/blur.frag.qsb"
-            }
-
-            ShaderEffectSource {
-                id: blurH2Src
-                anchors.fill: parent
-                sourceItem: blurH2
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: blurV2
-                anchors.fill: parent
-                visible: false
-                property var source: blurH2Src
-                property vector2d resolution: surface.eighthVec
-                property vector2d blurDir: Qt.vector2d(0, 1)
-                property real spread: surface.spread
-                fragmentShader: "../../assets/shaders/blur.frag.qsb"
-            }
-
-            ShaderEffectSource {
-                id: blurV2Src
-                anchors.fill: parent
-                sourceItem: blurV2
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: blurH3
-                anchors.fill: parent
-                visible: false
-                property var source: blurV2Src
-                property vector2d resolution: surface.eighthVec
-                property vector2d blurDir: Qt.vector2d(1, 0)
-                property real spread: surface.spread
-                fragmentShader: "../../assets/shaders/blur.frag.qsb"
-            }
-
-            ShaderEffectSource {
-                id: blurH3Src
-                anchors.fill: parent
-                sourceItem: blurH3
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                id: blurV3
-                anchors.fill: parent
-                visible: false
-                property var source: blurH3Src
-                property vector2d resolution: surface.eighthVec
-                property vector2d blurDir: Qt.vector2d(0, 1)
-                property real spread: surface.spread
-                fragmentShader: "../../assets/shaders/blur.frag.qsb"
-            }
-
-            ShaderEffectSource {
-                id: blurV3Src
-                anchors.fill: parent
-                sourceItem: blurV3
-                textureSize: surface.eighth
-                smooth: true
-                hideSource: true
-                visible: false
-            }
-
-            ShaderEffect {
-                anchors.fill: parent
-                property var source: blurV3Src
-                property vector2d srcSize: surface.eighthVec
-                property real darken: 0.62
-                fragmentShader: "../../assets/shaders/grade.frag.qsb"
-            }
-          }
+        sourceComponent: BlurredShot {
+            source: surface.shotSource
+            spread: surface.spread
+            darken: 0.62
         }
     }
 
@@ -318,10 +126,10 @@ Item {
             id: pillMask
 
             color: "white"
-            antialiasing: true
+            antialiasing: !Flags.gameMode
 
             readonly property real pillW: 176 * surface.s
-            readonly property real pillH: 42 * surface.s
+            readonly property real pillH: 41.8 * surface.s
             readonly property real pillY: (Flags.notchStyle ? 0 : 8 * Flags.topGap) * surface.s
 
             readonly property real gameFlat: Flags.gameMode ? 1 : 0
@@ -330,7 +138,7 @@ Item {
             height: pillH + (surface.height - pillH) * surface.maskP
 
             x: Flags.gameMode ? 0 : (surface.width - width) / 2
-            y: Flags.gameMode ? pillY : pillY * (1 - surface.maskP)
+            y: Flags.gameMode ? 0 : pillY * (1 - surface.maskP)
 
             topLeftRadius: Flags.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
             topRightRadius: Flags.notchStyle ? 0 : (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
