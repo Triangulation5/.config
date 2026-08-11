@@ -23,8 +23,10 @@ Item {
     property string placement: "above"
 
     readonly property bool below: placement === "below"
-    readonly property real pointerH: 5 * s
-    readonly property real gap: 5 * s
+    /** One em-unit: the title's font size, so every dimension scales with the text. */
+    readonly property real em: titleText.font.pixelSize
+    readonly property real pointerH: 0.5 * em
+    readonly property real gap: 0.5 * em
 
     property bool armed: false
 
@@ -61,9 +63,9 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: root.below ? undefined : parent.top
         anchors.bottom: root.below ? parent.bottom : undefined
-        width: Math.max(titleText.implicitWidth, descText.implicitWidth) + 22 * root.s
-        height: column.implicitHeight + 14 * root.s
-        radius: 9 * root.s
+        width: Math.max(titleText.implicitWidth, descText.implicitWidth) + 2.3 * root.em
+        height: column.implicitHeight + 1.5 * root.em
+        radius: 1.15 * root.em
         border.width: 1
         border.color: Theme.frameBorder
         gradient: Gradient {
@@ -75,15 +77,15 @@ Item {
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: Theme.shadow
-            shadowBlur: 0.6
-            shadowVerticalOffset: 4 * root.s
+            shadowBlur: 0.45
+            shadowVerticalOffset: 0.3 * root.em
         }
     }
 
     Column {
         id: column
         anchors.centerIn: bubble
-        spacing: 2 * root.s
+        spacing: 0.3 * root.em
 
         Text {
             id: titleText
@@ -91,8 +93,8 @@ Item {
             text: root.title
             color: Theme.cream
             font.family: Theme.font
-            font.pixelSize: 11 * root.s
-            font.weight: Font.Bold
+            font.pixelSize: 10.5 * root.s
+            font.weight: Font.DemiBold
         }
         Text {
             id: descText
@@ -101,12 +103,13 @@ Item {
             text: root.desc
             color: Theme.subtle
             font.family: Theme.font
-            font.pixelSize: 10 * root.s
+            font.pixelSize: 9.5 * root.s
+            font.weight: Font.Medium
         }
     }
 
     Canvas {
-        width: 11 * root.s
+        width: 0.95 * root.em
         height: root.pointerH
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: root.below ? parent.top : undefined

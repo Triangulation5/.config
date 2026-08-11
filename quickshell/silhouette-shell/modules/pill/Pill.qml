@@ -93,9 +93,8 @@ Item {
     readonly property bool idlelockOpen: surface === "idlelock"
     readonly property bool animationOpen: surface === "animation"
     readonly property bool fontpickerOpen: surface === "fontpicker"
-    readonly property bool emojiOpen: surface === "emoji"
     readonly property bool localsendOpen: surface === "localsend"
-    readonly property bool windowswitcherOpen: surface === "windowswitcher"
+    readonly property bool timerOpen: surface === "timer"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
     /**
@@ -211,11 +210,9 @@ Item {
     readonly property real idlelockW: 392 * s
     readonly property real animationW: 392 * s
     readonly property real fontpickerW: 360 * s
-    readonly property real emojiW: 360 * s
-    readonly property real emojiH: 332 * s
     readonly property real localsendW: 360 * s
-    readonly property real windowswitcherW: 360 * s
-    readonly property real windowswitcherH: 332 * s
+    readonly property real timerW: 340 * s
+    readonly property real timerH: 480 * s
     readonly property real toastW: 342 * s
     readonly property real quickChooseW: 344 * s
     readonly property real quickChooseH: 76 * s
@@ -229,18 +226,54 @@ Item {
     readonly property real openCorner: 22 * s
 
     /**
-     * Latch-once lazy load. Every surface sleeps in an inactive Loader until its
-     * first open; the size and ame thunks below resolve items through here. The
-     * ordering is the trick: flip `active` before any read of the loader, so the
-     * calling binding never has the loader registered as a dep when the flip
-     * fires mid-evaluation (that read-then-write would be a binding loop). The
-     * write is idempotent and the Loader loads synchronously, so a first open
-     * reads the real implicitHeight in the same evaluation and the morph target
-     * is exact. Nothing ever deactivates a loaded surface.
+     * Latch-once lazy load with idle-timeout cleanup. Every surface sleeps in
+     * an inactive Loader until first opened; the size and ame thunks below
+     * resolve items through here. After a surface has been idle (not opened)
+     * for `surfaceIdleTimeout` seconds its Loader is deactivated so the
+     * component tree is destroyed, freeing RAM and GPU resources until the
+     * next open reactivates it.
      */
-    function surfaceItem(ld) {
+    function surfaceItem(ld, name) {
         ld.active = true;
+        if (name && name.length)
+            _surfaceLastOpened[name] = Date.now();
         return ld.item;
+    }
+
+    /** Seconds a surface stays loaded after last use before being reclaimed. */
+    property int surfaceIdleTimeout: 120
+
+    /** Timestamp of last open per surface name. */
+    property var _surfaceLastOpened: ({})
+
+    /** Loader id → surface name map, built in Component.onCompleted. */
+    property var _surfaceLoaders: ({})
+    /** True while the idle-cleanup timer has run at least once. */
+    property bool _surfaceCleanupReady: false
+
+    function _cleanupIdleSurfaces() {
+        var now = Date.now();
+        var timeout = pill.surfaceIdleTimeout * 1000;
+        var ld;
+        for (var name in pill._surfaceLoaders) {
+            ld = pill._surfaceLoaders[name];
+            if (!ld || !ld.active)
+                continue;
+            /** Never evict a running timer — it must persist in the background. */
+            if (name === "timer" && ld.item && ld.item.timerState === "running")
+                continue;
+            var last = pill._surfaceLastOpened[name] || 0;
+            if (now - last >= timeout)
+                ld.active = false;
+        }
+    }
+
+    Timer {
+        id: idleCleanupTimer
+        interval: 30000
+        repeat: true
+        running: pill._surfaceCleanupReady
+        onTriggered: pill._cleanupIdleSurfaces()
     }
 
     /**
@@ -253,33 +286,32 @@ Item {
      * no parallel ternary chains to keep in lockstep.
      */
     readonly property var surfaces: ({
-        calendar:  { size: () => { const it = surfaceItem(ldCalendar); return Qt.size((it.implicitWidth > 0 ? it.implicitWidth : 282 * s) + 36 * s, it.implicitHeight + 32 * s); }, ame: () => surfaceItem(ldCalendar) },
-        launcher:  { size: () => { surfaceItem(ldLauncher); return Qt.size(launcherW, launcherH); }, ame: () => surfaceItem(ldLauncher) },
-        clipboard: { size: () => { surfaceItem(ldClip); return Qt.size(clipboardW, clipboardH); }, ame: () => surfaceItem(ldClip) },
-        wallpaper: { size: () => { surfaceItem(ldWall); return Qt.size(wallpaperW, wallpaperH); }, ame: () => null },
-        power:     { size: () => { surfaceItem(ldPower); return Qt.size(powerW, powerH); }, ame: () => surfaceItem(ldPower) },
-        media:     { size: () => { surfaceItem(ldMedia); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia) },
-        mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceItem(ldMixer).faderCount) * s, mixerH), ame: () => surfaceItem(ldMixer) },
-        link:      { size: () => { const it = surfaceItem(ldLink); return Qt.size(it.desiredW, it.implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLink) },
-        battery:   { size: () => Qt.size(batteryW, surfaceItem(ldBattery).implicitHeight + 26 * s), ame: () => surfaceItem(ldBattery) },
-        settings:  { size: () => Qt.size(settingsW, surfaceItem(ldSettings).implicitHeight + 29 * s), ame: () => surfaceItem(ldSettings) },
-        keybinds:  { size: () => Qt.size(keybindsW, surfaceItem(ldKeybinds).implicitHeight + 29 * s), ame: () => surfaceItem(ldKeybinds) },
-        workspaces: { size: () => Qt.size(workspacesW, surfaceItem(ldWorkspaces).implicitHeight + 29 * s), ame: () => surfaceItem(ldWorkspaces) },
-        stash:     { size: () => Qt.size(stashW, surfaceItem(ldStash).implicitHeight + 29 * s), ame: () => surfaceItem(ldStash) },
-        spaceapps: { size: () => Qt.size(spaceappsW, surfaceItem(ldSpaceapps).implicitHeight + 29 * s), ame: () => surfaceItem(ldSpaceapps) },
-        recorder:  { size: () => Qt.size(recorderW, surfaceItem(ldRecorder).implicitHeight + 33 * s), ame: () => surfaceItem(ldRecorder) },
-        sysmon:    { size: () => Qt.size(sysmonW, surfaceItem(ldSysmon).implicitHeight + 33 * s), ame: () => surfaceItem(ldSysmon) },
-        appearance: { size: () => Qt.size(appearanceW, surfaceItem(ldAppearance).implicitHeight + 29 * s), ame: () => surfaceItem(ldAppearance) },
-        updates:    { size: () => Qt.size(updatesW, surfaceItem(ldUpdates).implicitHeight + 29 * s), ame: () => surfaceItem(ldUpdates) },
-        display:    { size: () => Qt.size(displayW, surfaceItem(ldDisplay).implicitHeight + 29 * s), ame: () => surfaceItem(ldDisplay) },
-        input:      { size: () => Qt.size(inputW, surfaceItem(ldInput).implicitHeight + 29 * s), ame: () => surfaceItem(ldInput) },
-        look:       { size: () => Qt.size(lookW, surfaceItem(ldLook).implicitHeight + 29 * s), ame: () => surfaceItem(ldLook) },
-        idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock).implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock) },
-        animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation).implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation) },
-        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker).implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker) },
-        emoji:      { size: () => { surfaceItem(ldEmoji); return Qt.size(emojiW, emojiH); }, ame: () => surfaceItem(ldEmoji) },
-        localsend:  { size: () => { surfaceItem(ldLSend); return Qt.size(localsendW, surfaceItem(ldLSend).implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend) },
-        windowswitcher: { size: () => { surfaceItem(ldWinSw); return Qt.size(windowswitcherW, windowswitcherH); }, ame: () => surfaceItem(ldWinSw) }
+        calendar:  { size: () => { const it = surfaceItem(ldCalendar, "calendar"); return Qt.size((it.implicitWidth > 0 ? it.implicitWidth : 282 * s) + 36 * s, it.implicitHeight + 32 * s); }, ame: () => surfaceItem(ldCalendar, "calendar") },
+        launcher:  { size: () => { surfaceItem(ldLauncher, "launcher"); return Qt.size(launcherW, launcherH); }, ame: () => surfaceItem(ldLauncher, "launcher") },
+        clipboard: { size: () => { surfaceItem(ldClip, "clipboard"); return Qt.size(clipboardW, clipboardH); }, ame: () => surfaceItem(ldClip, "clipboard") },
+        wallpaper: { size: () => { surfaceItem(ldWall, "wallpaper"); return Qt.size(wallpaperW, wallpaperH); }, ame: () => null },
+        power:     { size: () => { surfaceItem(ldPower, "power"); return Qt.size(powerW, powerH); }, ame: () => surfaceItem(ldPower, "power") },
+        media:     { size: () => { surfaceItem(ldMedia, "media"); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia, "media") },
+        mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceItem(ldMixer, "mixer").faderCount) * s, mixerH), ame: () => surfaceItem(ldMixer, "mixer") },
+        link:      { size: () => { const it = surfaceItem(ldLink, "link"); return Qt.size(it.desiredW, it.implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLink, "link") },
+        battery:   { size: () => Qt.size(batteryW, surfaceItem(ldBattery, "battery").implicitHeight + 26 * s), ame: () => surfaceItem(ldBattery, "battery") },
+        settings:  { size: () => Qt.size(settingsW, surfaceItem(ldSettings, "settings").implicitHeight + 29 * s), ame: () => surfaceItem(ldSettings, "settings") },
+        keybinds:  { size: () => Qt.size(keybindsW, surfaceItem(ldKeybinds, "keybinds").implicitHeight + 29 * s), ame: () => surfaceItem(ldKeybinds, "keybinds") },
+        workspaces: { size: () => Qt.size(workspacesW, surfaceItem(ldWorkspaces, "workspaces").implicitHeight + 29 * s), ame: () => surfaceItem(ldWorkspaces, "workspaces") },
+        stash:     { size: () => Qt.size(stashW, surfaceItem(ldStash, "stash").implicitHeight + 29 * s), ame: () => surfaceItem(ldStash, "stash") },
+        spaceapps: { size: () => Qt.size(spaceappsW, surfaceItem(ldSpaceapps, "spaceapps").implicitHeight + 29 * s), ame: () => surfaceItem(ldSpaceapps, "spaceapps") },
+        recorder:  { size: () => Qt.size(recorderW, surfaceItem(ldRecorder, "recorder").implicitHeight + 33 * s), ame: () => surfaceItem(ldRecorder, "recorder") },
+        sysmon:    { size: () => Qt.size(sysmonW, surfaceItem(ldSysmon, "sysmon").implicitHeight + 33 * s), ame: () => surfaceItem(ldSysmon, "sysmon") },
+        appearance: { size: () => Qt.size(appearanceW, surfaceItem(ldAppearance, "appearance").implicitHeight + 29 * s), ame: () => surfaceItem(ldAppearance, "appearance") },
+        updates:    { size: () => Qt.size(updatesW, surfaceItem(ldUpdates, "updates").implicitHeight + 29 * s), ame: () => surfaceItem(ldUpdates, "updates") },
+        display:    { size: () => Qt.size(displayW, surfaceItem(ldDisplay, "display").implicitHeight + 29 * s), ame: () => surfaceItem(ldDisplay, "display") },
+        input:      { size: () => Qt.size(inputW, surfaceItem(ldInput, "input").implicitHeight + 29 * s), ame: () => surfaceItem(ldInput, "input") },
+        look:       { size: () => Qt.size(lookW, surfaceItem(ldLook, "look").implicitHeight + 29 * s), ame: () => surfaceItem(ldLook, "look") },
+        idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock, "idlelock").implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock, "idlelock") },
+        animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation, "animation").implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation, "animation") },
+        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker, "fontpicker").implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
+        localsend:  { size: () => { surfaceItem(ldLSend, "localsend"); return Qt.size(localsendW, surfaceItem(ldLSend, "localsend").implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend, "localsend") },
+        timer:    { size: () => { surfaceItem(ldTimer, "timer"); return Qt.size(timerW, timerH); }, ame: () => null }
     })
 
     readonly property string mode: dragInstall.dragActive ? "dragOver"
@@ -538,6 +570,12 @@ Item {
             ldWall.item.activate();
     }
 
+    /** Keyboard hold-to-delete on the wallpaper strip. */
+    function wallpaperHoldPress() {
+        if (pill.wallpaperOpen && ldWall.item)
+            ldWall.item.holdPress();
+    }
+
     readonly property bool wallpaperSearching: pill.wallpaperOpen && ldWall.item !== null && ldWall.item.searching
 
     /**
@@ -615,20 +653,6 @@ Item {
         return true;
     }
 
-    function emojiMove(delta) {
-        if (!pill.emojiOpen || !ldEmoji.item)
-            return false;
-        ldEmoji.item.move(delta);
-        return true;
-    }
-
-    function emojiActivate() {
-        if (!pill.emojiOpen || !ldEmoji.item)
-            return false;
-        ldEmoji.item.activate();
-        return true;
-    }
-
     function localsendMove(dir) {
         if (!pill.localsendOpen || !ldLSend.item)
             return false;
@@ -643,34 +667,24 @@ Item {
         return true;
     }
 
-    /**
-     * Escape/Backspace while the emoji picker is open: close it. Returns true when consumed.
-     */
-    function emojiBack() {
-        if (!pill.emojiOpen || !ldEmoji.item)
+    function timerBack() {
+        if (!pill.timerOpen || !ldTimer.item)
             return false;
         pill.requestClose();
         return true;
     }
 
-    function windowswitcherBack() {
-        if (!pill.windowswitcherOpen || !ldWinSw.item)
+    function timerActivate() {
+        if (!pill.timerOpen || !ldTimer.item)
             return false;
-        pill.requestClose();
+        ldTimer.item.toggle();
         return true;
     }
 
-    function windowswitcherMove(delta) {
-        if (!pill.windowswitcherOpen || !ldWinSw.item)
+    function timerReset() {
+        if (!pill.timerOpen || !ldTimer.item)
             return false;
-        ldWinSw.item.move(delta);
-        return true;
-    }
-
-    function windowswitcherActivate() {
-        if (!pill.windowswitcherOpen || !ldWinSw.item)
-            return false;
-        ldWinSw.item.activate();
+        ldTimer.item.reset();
         return true;
     }
 
@@ -975,14 +989,6 @@ Item {
             ldClip.item.focusField();
             return true;
         }
-        if (pill.emojiOpen && ldEmoji.item) {
-            ldEmoji.item.focusField();
-            return true;
-        }
-        if (pill.windowswitcherOpen && ldWinSw.item) {
-            ldWinSw.item.focusField();
-            return true;
-        }
         if (pill.launcherOpen && ldLauncher.item) {
             ldLauncher.item.focusField();
             return true;
@@ -1007,9 +1013,10 @@ Item {
             return false;
         return pill.calendarMove("v", -1) || pill.linkMove(-1) || pill.mixerStep(1)
             || pill.recorderStep(5) || pill.clipboardMove(-1)
-            || pill.fontpickerMove(-1) || pill.launcherMove(-1) || pill.emojiMove(-1) || pill.localsendMove(-1) || pill.windowswitcherMove(-1)
+            || pill.fontpickerMove(-1) || pill.launcherMove(-1) || pill.localsendMove(-1)
             || pill.workspacesMove(-1) || pill.stashMove(-1) || pill.spaceappsMove(-1)
-            || pill.settingsMove(-1);
+            || pill.settingsMove(-1)
+            || (pill.timerOpen && pill.timerActivate());
     }
     function navDown() {
         if (pill.keybindsOpen && !pill.keybindsListening) { pill.keybindsMove(1); return true; }
@@ -1017,9 +1024,10 @@ Item {
             return false;
         return pill.calendarMove("v", 1) || pill.linkMove(1) || pill.mixerStep(-1)
             || pill.recorderStep(-5) || pill.clipboardMove(1)
-            || pill.fontpickerMove(1) || pill.launcherMove(1) || pill.emojiMove(1) || pill.localsendMove(1) || pill.windowswitcherMove(1)
+            || pill.fontpickerMove(1) || pill.launcherMove(1) || pill.localsendMove(1)
             || pill.workspacesMove(1) || pill.stashMove(1) || pill.spaceappsMove(1)
-            || pill.settingsMove(1);
+            || pill.settingsMove(1)
+            || (pill.timerOpen && pill.timerActivate());
     }
     function navLeft() {
         if (pill.quickChoosing) return pill.quickChooseMove(-1);
@@ -1083,12 +1091,10 @@ Item {
             pill.clipboardActivate();
         } else if (pill.fontpickerOpen) {
             pill.fontpickerActivate();
-        } else if (pill.emojiOpen) {
-            pill.emojiActivate();
         } else if (pill.localsendOpen) {
             pill.localsendActivate();
-        } else if (pill.windowswitcherOpen) {
-            pill.windowswitcherActivate();
+        } else if (pill.timerOpen) {
+            pill.timerActivate();
         } else if (pill.workspacesOpen) {
             pill.workspacesActivate();
         } else if (pill.stashOpen) {
@@ -1211,6 +1217,9 @@ Item {
          * capture would feed an invisible visualizer.
          */
         Cava.pillWanted = mode === "rest" && !Flags.autoHide;
+        /** Touch the last-opened timestamp so the idle cleaner sees recent use. */
+        if (pill.surfaces[mode] !== undefined)
+            pill._surfaceLastOpened[mode] = Date.now();
         hoverHop = (mode === "hover" || mode === "rest") && (lastMode === "hover" || lastMode === "rest");
         lastMode = mode;
         if (mode !== "hover") {
@@ -1234,7 +1243,21 @@ Item {
         }
     }
 
-    Component.onCompleted: Cava.pillWanted = mode === "rest" && !Flags.autoHide
+    Component.onCompleted: {
+        Cava.pillWanted = mode === "rest" && !Flags.autoHide;
+        pill._surfaceLoaders = {
+            mixer: ldMixer, calendar: ldCalendar, launcher: ldLauncher,
+            clipboard: ldClip, wallpaper: ldWall, power: ldPower,
+            media: ldMedia, link: ldLink, battery: ldBattery,
+            settings: ldSettings, keybinds: ldKeybinds, workspaces: ldWorkspaces,
+            stash: ldStash, spaceapps: ldSpaceapps, recorder: ldRecorder,
+            sysmon: ldSysmon, appearance: ldAppearance, updates: ldUpdates,
+            display: ldDisplay, input: ldInput, look: ldLook,
+            idlelock: ldIdlelock, animation: ldAnimation, fontpicker: ldFontpicker,
+            localsend: ldLSend, timer: ldTimer
+        };
+        pill._surfaceCleanupReady = true;
+    }
 
     property string soulTarget: ""
 
@@ -1558,6 +1581,11 @@ Item {
         surfaceOpen: pill.surfaceOpen
         morph: pill.morphCloseness
         onLaunchRequested: pill.requestSurface("launcher")
+        onShareRequested: (path) => {
+            pill._pendingSend = path;
+            pill.requestSurface("localsend");
+            Qt.callLater(function() { if (ldLSend.item) ldLSend.item.sendFile = pill._pendingSend; });
+        }
     }
 
     /**
@@ -2335,17 +2363,6 @@ Item {
     }
 
     Loader {
-        id: ldEmoji
-        active: false
-        anchors.fill: parent
-        sourceComponent: Emoji {
-            s: pill.s
-            open: pill.emojiOpen
-            morphCloseness: pill.morphCloseness
-        }
-    }
-
-    Loader {
         id: ldLSend
         active: false
         anchors.fill: parent
@@ -2357,12 +2374,12 @@ Item {
     }
 
     Loader {
-        id: ldWinSw
+        id: ldTimer
         active: false
         anchors.fill: parent
-        sourceComponent: WindowSwitcher {
+        sourceComponent: Pomodoro {
             s: pill.s
-            open: pill.windowswitcherOpen
+            open: pill.timerOpen
             morphCloseness: pill.morphCloseness
         }
     }

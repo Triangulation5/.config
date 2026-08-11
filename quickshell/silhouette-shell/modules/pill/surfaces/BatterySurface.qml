@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.services
+import qs.components.layout
 
 /**
  * 蓄 BATTERY surface: a typographic read-out for the laptop battery. The
@@ -46,47 +47,12 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        Item {
-            width: parent.width
-            height: 22 * root.s
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8 * root.s
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Flags.showGlyphs
-                    text: "蓄"
-                    color: Theme.cream
-                    font.family: Theme.fontJp
-                    font.weight: Font.Medium
-                    font.pixelSize: 16 * root.s
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "BATTERY"
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 10 * root.s
-                    font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1.6 * root.s
-                }
-            }
-
-            Text {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: Battery.stateLabel
-                color: Battery.charging ? Theme.flameGlow : Theme.dim
-                font.family: Theme.font
-                font.pixelSize: 9.5 * root.s
-                font.weight: Font.Bold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.1 * root.s
-            }
+        SurfaceHeader {
+            kanji: "蓄"
+            label: "BATTERY"
+            badge: Battery.stateLabel
+            badgeColor: Battery.charging ? Theme.flameGlow : Theme.dim
+            s: root.s
         }
 
         Column {
@@ -147,43 +113,12 @@ PillSurface {
             topPadding: 16 * root.s
             spacing: 10 * root.s
 
-            component StatRow: Item {
-                id: stat
-                width: parent ? parent.width : 0
-                height: vText.implicitHeight
-                property string label: ""
-                property string value: ""
-                property bool warm: false
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.baseline: vText.baseline
-                    text: stat.label
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 10 * root.s
-                    font.weight: Font.Medium
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 0.8 * root.s
-                }
-
-                Text {
-                    id: vText
-                    anchors.right: parent.right
-                    text: stat.value
-                    color: stat.warm ? Theme.flameGlow : Theme.cream
-                    font.family: Theme.font
-                    font.pixelSize: 12.5 * root.s
-                    font.weight: Font.DemiBold
-                    font.features: { "tnum": 1 }
-                }
-            }
-
             StatRow {
                 visible: Math.abs(Battery.rateW) >= 0.05
                 label: "Rate"
                 value: (Battery.rateW > 0 ? "+" : "−") + Math.abs(Battery.rateW).toFixed(1) + " W"
                 warm: Battery.charging
+                s: root.s
             }
 
             StatRow {
@@ -191,12 +126,14 @@ PillSurface {
                 label: "Health"
                 value: Battery.health + "%"
                 warm: true
+                s: root.s
             }
 
             StatRow {
                 visible: Battery.capacityWh >= 1
                 label: "Capacity"
                 value: Battery.capacityWh.toFixed(1) + " Wh"
+                s: root.s
             }
         }
     }
