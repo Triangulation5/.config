@@ -6,21 +6,21 @@ import qs.services
 import qs.components.icons
 
 /**
- * One application row: the app icon, its name, and a secondary line (generic
- * name or category). AppImage entries support rename and a two-tap delete via
- * right-click editing. Extracted from Launcher.qml's app list delegate.
+ * One application row in the launcher's app list. All data (entry, selected,
+ * editing state, scale) is passed from the delegate body where both root and
+ * the ListView delegate index are directly accessible. Actions (click, delete,
+ * rename) go through the surface reference.
  */
 Item {
     id: appRow
 
     property var surface: null
-    required property int index
+    property real s: 1
+    property var entry: null
+    property bool selected: false
+    property bool editing: false
 
-    readonly property real s: surface ? surface.s : 1
-    readonly property var entry: surface && appRow.index < surface.results.length ? surface.results[appRow.index] : null
-    readonly property bool selected: surface ? surface.selectedIndex === appRow.index : false
     readonly property bool isAppImage: entry && entry.id && entry.id.indexOf("ricelin-") === 0
-    readonly property bool editing: surface && isAppImage ? surface.editIndex === appRow.index : false
     property bool armed: false
     onEditingChanged: if (!editing) armed = false
 
@@ -54,20 +54,30 @@ Item {
             var g = rowArea.mapToItem(null, m.x, m.y);
             if (g.x !== surface.lastPointer.x || g.y !== surface.lastPointer.y) {
                 surface.lastPointer = Qt.point(g.x, g.y);
-                surface.selectedIndex = appRow.index;
+                surface.selectedIndex = surface.editIndex === -1 ? findListIndex() : surface.editIndex;
             }
         }
         onClicked: function(m) {
             if (!surface) return;
             if (m.button === Qt.RightButton) {
                 if (appRow.isAppImage)
-                    surface.editIndex = appRow.editing ? -1 : appRow.index;
+                    surface.editIndex = appRow.editing ? -1 : findListIndex();
                 return;
             }
             if (appRow.editing) return;
-            surface.selectedIndex = appRow.index;
+            var idx = findListIndex();
+            surface.selectedIndex = idx;
             surface.activate();
         }
+    }
+
+    /** Find this row's index by scanning surface.results for our entry. */
+    function findListIndex() {
+        if (!surface || !entry || !entry.id) return -1;
+        var r = surface.results;
+        for (var i = 0; i < r.length; i++)
+            if (r[i] && r[i].id === entry.id) return i;
+        return -1;
     }
 
     Item {
