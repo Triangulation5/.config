@@ -57,6 +57,24 @@ PillSurface {
     }
 
     /**
+     * AI mode: an `@` prefix opens Perplexity in Firefox with the query
+     * pre-filled and submitted via the `q=` URL parameter. Reuses an
+     * existing Firefox window as a new tab if one is already running.
+     */
+    readonly property bool aiActive: query.length > 1 && query[0] === '@'
+    readonly property string aiQuery: aiActive ? query.slice(1).trim() : ""
+
+    function runAI() {
+        if (!aiActive || aiQuery.length === 0)
+            return;
+
+        const url = "https://www.perplexity.ai/search?q=" + encodeURIComponent(aiQuery);
+        Quickshell.execDetached(["firefox", "--new-tab", url]);
+
+        requestClose();
+    }
+
+    /**
      * Command palette mode: a `>` prefix turns the launcher into a raycast-style
      * palette. Currently supports web search via Firefox.
      */
@@ -82,7 +100,7 @@ PillSurface {
     function runInTerminal() {
         if (!root.terminalActive || root.terminalCommand.length === 0)
             return;
-        Quickshell.execDetached(["kitty", "--", "bash", "-c", root.terminalCommand + "; exec $SHELL"]);
+        Quickshell.execDetached(["kitty", "bash", "-c", root.terminalCommand + "; exec $SHELL"]);
         root.quit();
         root.requestClose();
     }
@@ -260,6 +278,10 @@ PillSurface {
     }
 
     function activate() {
+        if (root.aiActive) {
+            root.runAI();
+            return;
+        }
         if (root.commandActive) {
             root.runWebSearch();
             return;
@@ -345,7 +367,7 @@ PillSurface {
         s: root.s
         kanji: "探"
         placeholder: "Search apps"
-        counterText: root.commandActive ? "⌘" : (root.terminalActive ? "$" : (root.windowActive ? (root.windowResults.length + " windows") : (root.emojiActive ? ":" : (root.results.length + " / " + root.totalCount))))
+        counterText: root.aiActive ? "@" : (root.commandActive ? "⌘" : (root.terminalActive ? "$" : (root.windowActive ? (root.windowResults.length + " windows") : (root.emojiActive ? ":" : (root.results.length + " / " + root.totalCount)))))
         onTextChanged: {
             root.query = text;
             root.selectedIndex = 0;
@@ -425,6 +447,84 @@ PillSurface {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.calcCopied ? "copied" : "↵ copy"
                 color: root.calcCopied ? Theme.dim : Theme.vermLit
+                font.family: Theme.font
+                font.pixelSize: 11 * root.s
+            }
+        }
+    }
+
+    Item {
+        id: aiRow
+        visible: root.aiActive
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: visible ? 44 * root.s : 0
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 9 * root.s
+            color: Theme.frameBg
+            border.width: 1
+            border.color: Theme.frameBorder
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.runAI()
+        }
+
+        Item {
+            anchors.fill: parent
+            anchors.leftMargin: 12 * root.s
+            anchors.rightMargin: 12 * root.s
+
+            GlyphIcon {
+                id: aiGlyph
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 18 * root.s
+                height: 18 * root.s
+                name: "sparkles"
+                color: Theme.vermLit
+                stroke: 1.7
+            }
+
+            Column {
+                anchors.left: aiGlyph.right
+                anchors.leftMargin: 10 * root.s
+                anchors.right: aiHint.left
+                anchors.rightMargin: 8 * root.s
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1 * root.s
+
+                Text {
+                    width: parent.width
+                    text: "Ask Perplexity"
+                    color: Theme.bright
+                    font.family: Theme.font
+                    font.pixelSize: 13.5 * root.s
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+                Text {
+                    width: parent.width
+                    text: root.aiQuery
+                    color: Theme.faint
+                    font.family: Theme.font
+                    font.pixelSize: 10.5 * root.s
+                    elide: Text.ElideRight
+                }
+            }
+
+            Text {
+                id: aiHint
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: "↵ ask"
+                color: Theme.vermLit
                 font.family: Theme.font
                 font.pixelSize: 11 * root.s
             }
@@ -589,7 +689,7 @@ PillSurface {
 
     Text {
         anchors.centerIn: list
-        visible: root.results.length === 0 && !root.calcActive && !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
+        visible: root.results.length === 0 && !root.calcActive && !root.aiActive && !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
         text: root.query.length ? "No matches" : "No apps found"
         color: Theme.faint
         font.family: Theme.font
@@ -837,10 +937,11 @@ PillSurface {
 
     ListView {
         id: list
-        visible: !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
+        visible: !root.aiActive && !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
         anchors.top: root.calcActive ? calcRow.bottom
+            : (root.aiActive ? aiRow.bottom
             : (root.commandActive ? commandRow.bottom
-            : (root.terminalActive ? terminalRow.bottom : divider.bottom))
+            : (root.terminalActive ? terminalRow.bottom : divider.bottom)))
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right

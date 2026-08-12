@@ -1,6 +1,13 @@
 module qs.modules.settings
 
 AnimationSurface 1.0 AnimationSurface.qml
+BinarySeg 1.0 BinarySeg.qml
+BlurGroup 1.0 look/BlurGroup.qml
+NightLightGroup 1.0 look/NightLightGroup.qml
+OpacityGroup 1.0 look/OpacityGroup.qml
+PillGroup 1.0 look/PillGroup.qml
+ShadowGroup 1.0 look/ShadowGroup.qml
+WindowGroup 1.0 look/WindowGroup.qml
 Appearance 1.0 Appearance.qml
 CardRow 1.0 CardRow.qml
 Display 1.0 Display.qml
