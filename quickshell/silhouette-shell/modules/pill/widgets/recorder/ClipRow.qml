@@ -6,34 +6,30 @@ import qs.services
 import qs.components.icons
 
 /**
- * One recording clip row in the Recorder's filmstrip: a thumbnail with a play
- * overlay, date stamp, file size, and a two-tap delete badge. Clicking opens
- * the file via ScreenRec. The delete button requires two clicks — first arms it
- * red, second fires the delete through the surface's rmClipProc Process.
+ * One recording clip row in the Recorder's filmstrip. All data is passed
+ * from the delegate body where both root and the ListView model data
+ * are directly accessible.
  */
 Item {
     id: frame
 
     property var surface: null
-    required property var modelData
-    required property int index
-
-    readonly property real s: surface ? surface.s : 1
+    property real s: 1
+    property string clipName: ""
+    property string clipThumb: ""
+    property string clipSizeLabel: ""
+    property string clipPath: ""
+    property int rowIndex: -1
 
     /* ── Derived display strings ──────────────────────────────── */
 
-    /**
-     * Clip name `recording_YYYY-MM-DD_HH-MM-SS` → `MM-DD HH:MM`
-     * so the readable part fits beside the file size on one line.
-     */
     readonly property string stamp: {
-        var m = /_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/.exec(frame.modelData.name);
+        var m = /_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/.exec(frame.clipName);
         return m ? m[2] + "-" + m[3] + " " + m[4] + ":" + m[5]
-                 : frame.modelData.name.replace("recording_", "").replace(".mp4", "");
+                 : frame.clipName.replace("recording_", "").replace(".mp4", "");
     }
     readonly property bool coverReady: cover.status === Image.Ready && cover.source !== ""
 
-    /** Two-step delete: first ✕ click arms it red, the next removes the clip. */
     property bool armed: false
 
     width: 108 * s
@@ -63,7 +59,7 @@ Item {
         Image {
             id: cover
             anchors.fill: parent
-            source: frame.modelData.thumb ? "file://" + frame.modelData.thumb : ""
+            source: frame.clipThumb ? "file://" + frame.clipThumb : ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             cache: true
@@ -106,7 +102,7 @@ Item {
         radius: thumb.radius
         color: "transparent"
         border.width: 1.5
-        border.color: frame.index === 0 ? Qt.alpha(Theme.vermLit, 0.4)
+        border.color: frame.rowIndex === 0 ? Qt.alpha(Theme.vermLit, 0.4)
             : (frameArea.containsMouse ? Theme.vermDim : Theme.border)
         Behavior on border.color { ColorAnimation { duration: Motion.fast } }
     }
@@ -141,7 +137,7 @@ Item {
             id: sizeTxt
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: frame.modelData.sizeLabel
+            text: frame.clipSizeLabel
             color: Theme.faint
             font.family: Theme.font
             font.pixelSize: 8.5 * s
@@ -157,7 +153,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: ScreenRec.openFile(frame.modelData.path)
+        onClicked: ScreenRec.openFile(frame.clipPath)
     }
 
     /* ── Two-step delete badge ──────────────────────────────────── */
@@ -199,7 +195,7 @@ Item {
                 }
                 frame.armed = false;
                 if (surface && surface.rmClipProc) {
-                    surface.rmClipProc.command = ["rm", "--", frame.modelData.path];
+                    surface.rmClipProc.command = ["rm", "--", frame.clipPath];
                     surface.rmClipProc.running = true;
                 }
             }

@@ -476,8 +476,12 @@ PillSurface {
                 required property int index
                 required property var modelData
                 surface: root
-                modelData: modelData
-                index: index
+                s: root.s
+                rowIndex: index
+                kbCombo: modelData.combo
+                kbLabel: modelData.label
+                kbCmd: modelData.cmd
+                kbIsMouse: modelData.isMouse
             }
         }
 

@@ -5,20 +5,21 @@ import qs.services
 import qs.components.icons
 
 /**
- * One workspace navigation row: workspace name, note, keybinding chip, and a
- * chevron that navigates to the linked surface. Extracted from
- * WorkspacesSurface.qml's first Repeater delegate.
+ * One workspace navigation row in the workspaces hub. All data is passed
+ * from the delegate body.
  */
 Item {
     id: wrow
 
     property var surface: null
-    required property var modelData
-    required property int index
+    property real s: 1
+    property string wsName: ""
+    property string wsNote: ""
+    property string wsKey: ""
+    property string wsNavSurface: ""
 
-    readonly property bool nav: modelData.surface.length > 0
+    readonly property bool nav: wrow.wsNavSurface.length > 0
     readonly property bool focused: wrow.nav && surface ? surface.focusIndex === 0 : false
-    readonly property real s: surface ? surface.s : 1
 
     width: parent ? parent.width : 0
     height: 50 * s
@@ -46,7 +47,7 @@ Item {
 
         Text {
             width: parent.width
-            text: wrow.modelData.name
+            text: wrow.wsName
             color: Theme.cream
             font.family: Theme.font
             font.pixelSize: 12.5 * s
@@ -55,7 +56,7 @@ Item {
         }
         Text {
             width: parent.width
-            text: wrow.modelData.note
+            text: wrow.wsNote
             color: Theme.faint
             font.family: Theme.font
             font.pixelSize: 10.5 * s
@@ -82,7 +83,7 @@ Item {
             Text {
                 id: keyText
                 anchors.centerIn: parent
-                text: wrow.modelData.key
+                text: wrow.wsKey
                 color: Theme.subtle
                 font.family: Theme.font
                 font.pixelSize: 11 * s
@@ -106,7 +107,7 @@ Item {
         anchors.fill: parent
         enabled: wrow.nav
         cursorShape: Qt.PointingHandCursor
-        onClicked: if (surface) surface.requestSurface(wrow.modelData.surface)
+        onClicked: if (surface) surface.requestSurface(wrow.wsNavSurface)
     }
 
     Rectangle {

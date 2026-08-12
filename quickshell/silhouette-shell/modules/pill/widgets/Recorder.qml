@@ -790,8 +790,11 @@ PillSurface {
                         required property var modelData
                         required property int index
                         surface: root
-                        modelData: modelData
-                        index: index
+                        s: root.s
+                        monName: modelData.name
+                        monW: modelData.w
+                        monH: modelData.h
+                        rowIndex: index
                     }
                 }
 
@@ -1098,8 +1101,12 @@ PillSurface {
                     required property var modelData
                     required property int index
                     surface: root
-                    modelData: modelData
-                    index: index
+                    s: root.s
+                    clipName: modelData.name
+                    clipThumb: modelData.thumb
+                    clipSizeLabel: modelData.sizeLabel
+                    clipPath: modelData.path
+                    rowIndex: index
                 }
             }
 
