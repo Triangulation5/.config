@@ -15,7 +15,6 @@ Item {
 
     property var surface: null
     required property int index
-    required property var modelData
 
     readonly property real s: surface ? surface.s : 1
     readonly property var entry: surface && appRow.index < surface.results.length ? surface.results[appRow.index] : null
