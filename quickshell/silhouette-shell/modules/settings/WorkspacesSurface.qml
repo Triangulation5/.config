@@ -225,8 +225,11 @@ PillSurface {
                     required property int index
                     required property var modelData
                     surface: root
-                    modelData: modelData
-                    index: index
+                    s: root.s
+                    wsName: modelData.name
+                    wsNote: modelData.note
+                    wsKey: modelData.key
+                    wsNavSurface: modelData.surface
                 }
             }
 
@@ -237,8 +240,12 @@ PillSurface {
                     required property int index
                     required property var modelData
                     surface: root
-                    modelData: modelData
-                    index: index
+                    s: root.s
+                    rowIndex: index
+                    wsName: modelData.name
+                    wsDesc: modelData.desc
+                    wsKey: modelData.key
+                    wsId: modelData.id
                 }
             }
 

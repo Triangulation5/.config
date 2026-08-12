@@ -4,21 +4,21 @@ import QtQuick
 import qs.services
 
 /**
- * One keybind row: a rounded combo-chip on the left with the chord, the bind
- * label on the right, and the raw command revealed on hover. The host binds
- * `surface` to the Keybinds surface for scale and focus state.
+ * One keybind row in the keybinds list. All data is passed from the delegate
+ * body where the Keybinds surface and the model data are both accessible.
  */
 Item {
     id: brow
 
-    /** Reference to the Keybinds surface. */
     property var surface: null
-    /** Per-row data from the filtered binds list. */
-    required property var modelData
-    required property int index
+    property real s: 1
+    property int rowIndex: -1
+    property string kbCombo: ""
+    property string kbLabel: ""
+    property string kbCmd: ""
+    property bool kbIsMouse: false
 
-    readonly property bool focused: surface ? surface.focusIndex === brow.index : false
-    readonly property real s: surface ? surface.s : 1
+    readonly property bool focused: surface ? surface.focusIndex === brow.rowIndex : false
 
     width: ListView.view ? ListView.view.width : 0
     height: 38 * s
@@ -29,7 +29,7 @@ Item {
 
     HoverHandler {
         id: rowHover
-        onHoveredChanged: if (hovered && surface && !surface.listening) surface.focusIndex = brow.index
+        onHoveredChanged: if (hovered && surface && !surface.listening) surface.focusIndex = brow.rowIndex
     }
 
     Rectangle {
@@ -57,7 +57,7 @@ Item {
         Text {
             id: comboText
             anchors.centerIn: parent
-            text: surface ? surface.comboPretty(brow.modelData.combo) : brow.modelData.combo
+            text: surface ? surface.comboPretty(brow.kbCombo) : brow.kbCombo
             color: brow.focused ? Theme.cream : Theme.subtle
             font.family: Theme.font
             font.pixelSize: 11 * s
@@ -78,7 +78,7 @@ Item {
             anchors.right: parent.right
             width: parent.width
             horizontalAlignment: Text.AlignRight
-            text: brow.modelData.label
+            text: brow.kbLabel
             color: brow.focused ? Theme.subtle : Theme.faint
             font.family: Theme.font
             font.pixelSize: 11 * s
@@ -90,8 +90,8 @@ Item {
             anchors.right: parent.right
             width: parent.width
             horizontalAlignment: Text.AlignRight
-            visible: rowHover.hovered && brow.modelData.cmd.length > 0
-            text: brow.modelData.cmd
+            visible: rowHover.hovered && brow.kbCmd.length > 0
+            text: brow.kbCmd
             color: Theme.dim
             font.family: Theme.font
             font.pixelSize: 9 * s
@@ -103,12 +103,17 @@ Item {
     MouseArea {
         anchors.fill: parent
         enabled: surface ? !surface.listening : true
-        cursorShape: brow.modelData.isMouse ? Qt.ArrowCursor : Qt.PointingHandCursor
+        cursorShape: brow.kbIsMouse ? Qt.ArrowCursor : Qt.PointingHandCursor
         onClicked: {
             if (surface) {
-                surface.focusIndex = brow.index;
-                surface.openEdit(brow.modelData);
+                surface.focusIndex = brow.rowIndex;
+                surface.openEdit(brow.kbModel());
             }
         }
+    }
+
+    /** Reconstruct a model-like object for openEdit. */
+    function kbModel() {
+        return { combo: brow.kbCombo, label: brow.kbLabel, cmd: brow.kbCmd, isMouse: brow.kbIsMouse };
     }
 }
