@@ -590,17 +590,7 @@ Item {
 
     Component.onCompleted: {
         Cava.pillWanted = mode === "rest" && !Flags.autoHide;
-        pill._surfaceLoaders = {
-            mixer: ldMixer, calendar: ldCalendar, launcher: ldLauncher,
-            clipboard: ldClip, wallpaper: ldWall, power: ldPower,
-            media: ldMedia, link: ldLink, battery: ldBattery,
-            settings: ldSettings, keybinds: ldKeybinds, workspaces: ldWorkspaces,
-            stash: ldStash, spaceapps: ldSpaceapps, recorder: ldRecorder,
-            sysmon: ldSysmon, appearance: ldAppearance, updates: ldUpdates,
-            display: ldDisplay, input: ldInput, look: ldLook,
-            idlelock: ldIdlelock, animation: ldAnimation, fontpicker: ldFontpicker,
-            localsend: ldLSend, timer: ldTimer
-        };
+        // Each PillSurfaceLoader registers itself by name into _surfaceLoaders.
         pill._surfaceCleanupReady = true;
     }
 
@@ -1396,148 +1386,70 @@ Item {
     }
 
     /**
-     * Morphing surfaces, one PillSurfaceLoader each. Each shares the lazy
-     * Loader pattern (active=false, anchors.fill) while keeping s/open/
-     * morphCloseness inline so bindings are live from component creation.
+     * Morphing surfaces, one self-registering PillSurfaceLoader each. Each
+     * names its surface and is registered into _surfaceLoaders on creation;
+     * the loader supplies s/open/morphCloseness, so the sourceComponents only
+     * carry their surface-specific props and signals.
      */
 
-    PillSurfaceLoader {
-        id: ldMixer
-        sourceComponent: Mixer { s: pill.s; open: pill.mixerOpen; morphCloseness: pill.morphCloseness }
-    }
+    PillSurfaceLoader { id: ldMixer; name: "mixer"; host: pill; sourceComponent: Mixer {} }
 
-    PillSurfaceLoader {
-        id: ldCalendar
-        sourceComponent: Calendar { s: pill.s; open: pill.calendarOpen; morphCloseness: pill.morphCloseness; targetDate: pill.calendarFocusDate }
-    }
+    PillSurfaceLoader { id: ldCalendar; name: "calendar"; host: pill; sourceComponent: Calendar { targetDate: pill.calendarFocusDate } }
 
-    PillSurfaceLoader {
-        id: ldLauncher
-        sourceComponent: Launcher { s: pill.s; open: pill.launcherOpen; morphCloseness: pill.morphCloseness; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldLauncher; name: "launcher"; host: pill; sourceComponent: Launcher { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldClip
-        sourceComponent: Clipboard { s: pill.s; open: pill.clipboardOpen; morphCloseness: pill.morphCloseness; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldClip; name: "clipboard"; host: pill; sourceComponent: Clipboard { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldWall
-        sourceComponent: Wallpaper { s: pill.s; open: pill.wallpaperOpen; morphCloseness: pill.morphCloseness; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldWall; name: "wallpaper"; host: pill; sourceComponent: Wallpaper { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldPower
-        sourceComponent: Power { s: pill.s; open: pill.powerOpen; morphCloseness: pill.morphCloseness; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldPower; name: "power"; host: pill; sourceComponent: Power { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldMedia
-        sourceComponent: Media { s: pill.s; open: pill.mediaOpen; morphCloseness: pill.morphCloseness; shown: pill.mediaOpen; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldMedia; name: "media"; host: pill; sourceComponent: Media { shown: pill.mediaOpen; onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldLink
-        sourceComponent: Link {
-            s: pill.s; open: pill.linkOpen; morphCloseness: pill.morphCloseness
-            initialView: pill.linkInitialView
-            sendStatus: pill.localsendActivity
-            onRequestClose: pill.requestClose()
-            onOpenSend: pill.requestSurface("localsend")
-        }
-    }
+    PillSurfaceLoader { id: ldLink; name: "link"; host: pill; sourceComponent: Link {
+        initialView: pill.linkInitialView
+        sendStatus: pill.localsendActivity
+        onRequestClose: pill.requestClose()
+        onOpenSend: pill.requestSurface("localsend")
+    } }
 
     onLinkOpenChanged: if (!linkOpen) linkInitialView = "main"
 
-    PillSurfaceLoader {
-        id: ldBattery
-        sourceComponent: BatterySurface { s: pill.s; open: pill.batteryOpen; morphCloseness: pill.morphCloseness; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldBattery; name: "battery"; host: pill; sourceComponent: BatterySurface { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldSettings
-        sourceComponent: Settings { s: pill.s; open: pill.settingsOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldSettings; name: "settings"; host: pill; sourceComponent: Settings { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldKeybinds
-        sourceComponent: Keybinds { s: pill.s; open: pill.keybindsOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldKeybinds; name: "keybinds"; host: pill; sourceComponent: Keybinds { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldWorkspaces
-        sourceComponent: WorkspacesSurface { s: pill.s; open: pill.workspacesOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldWorkspaces; name: "workspaces"; host: pill; sourceComponent: WorkspacesSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldStash
-        sourceComponent: Stash { s: pill.s; open: pill.stashOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldStash; name: "stash"; host: pill; sourceComponent: Stash { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldSpaceapps
-        sourceComponent: SpaceApps { s: pill.s; open: pill.spaceappsOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldSpaceapps; name: "spaceapps"; host: pill; sourceComponent: SpaceApps { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldRecorder
-        sourceComponent: Recorder { s: pill.s; open: pill.recorderOpen; morphCloseness: pill.morphCloseness; screenName: pill.screenName; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldRecorder; name: "recorder"; host: pill; sourceComponent: Recorder { screenName: pill.screenName; onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldSysmon
-        sourceComponent: SysmonSurface { s: pill.s; open: pill.sysmonOpen; morphCloseness: pill.morphCloseness; onRequestClose: pill.requestClose() }
-    }
+    PillSurfaceLoader { id: ldSysmon; name: "sysmon"; host: pill; sourceComponent: SysmonSurface { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader {
-        id: ldAppearance
-        sourceComponent: Appearance { s: pill.s; open: pill.appearanceOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldAppearance; name: "appearance"; host: pill; sourceComponent: Appearance { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldUpdates
-        sourceComponent: Updates { s: pill.s; open: pill.updatesOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldUpdates; name: "updates"; host: pill; sourceComponent: Updates { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldDisplay
-        sourceComponent: Display { s: pill.s; open: pill.displayOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldDisplay; name: "display"; host: pill; sourceComponent: Display { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldInput
-        sourceComponent: Input { s: pill.s; open: pill.inputOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldInput; name: "input"; host: pill; sourceComponent: Input { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldLook
-        sourceComponent: Look { s: pill.s; open: pill.lookOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldLook; name: "look"; host: pill; sourceComponent: Look { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldIdlelock
-        sourceComponent: IdleLock { s: pill.s; open: pill.idlelockOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldIdlelock; name: "idlelock"; host: pill; sourceComponent: IdleLock { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldAnimation
-        sourceComponent: AnimationSurface { s: pill.s; open: pill.animationOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldAnimation; name: "animation"; host: pill; sourceComponent: AnimationSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldFontpicker
-        sourceComponent: FontPicker { s: pill.s; open: pill.fontpickerOpen; morphCloseness: pill.morphCloseness; onRequestSurface: (name) => pill.requestSurface(name) }
-    }
+    PillSurfaceLoader { id: ldFontpicker; name: "fontpicker"; host: pill; sourceComponent: FontPicker { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader {
-        id: ldLSend
-        sourceComponent: Localsend { s: pill.s; open: pill.localsendOpen; morphCloseness: pill.morphCloseness }
-    }
+    PillSurfaceLoader { id: ldLSend; name: "localsend"; host: pill; sourceComponent: Localsend {} }
 
-    PillSurfaceLoader {
-        id: ldTimer
-        sourceComponent: Pomodoro { s: pill.s; open: pill.timerOpen; morphCloseness: pill.morphCloseness }
-    }
+    PillSurfaceLoader { id: ldTimer; name: "timer"; host: pill; sourceComponent: Pomodoro {} }
     Osd {
         id: osd
         anchors.fill: parent
