@@ -332,7 +332,7 @@ ShellRoot {
                     if (pill.quickChoosing) {
                         ScreenRec.quickChoosing = false;
                         ScreenRec.quickScreenChoosing = false;
-                    } else if (!pill.recorderChooserBack() && !pill.faceBack() && !pill.linkBack() && !pill.keybindsBack() && !pill.timerBack()) {
+                    } else {
                         root.close();
                     }
                 }
@@ -438,7 +438,7 @@ ShellRoot {
                     if (e.key === Qt.Key_Backspace) {
                         if (pill.quickChoosing) {
                             pill.quickChooseBack();
-                        } else if (!pill.recorderChooserBack() && !pill.linkBack() && !pill.faceBack()) {
+                        } else if (!pill.recorderChooserBack() && !pill.linkBack() && !pill.faceBack() && !pill.keybindsBack() && !pill.timerBack()) {
                             pill.surfaceBack();
                         }
                         e.accepted = true;
@@ -558,9 +558,8 @@ ShellRoot {
                     opacity: (overlay.monFullscreen || overlay.autoRetracted) ? 0 : 1
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: Motion.morph
-                            easing.type: Motion.easeMorph
-                            easing.bezierCurve: Motion.morphCurve
+                            duration: Math.round(Motion.morph * 0.7)
+                            easing.type: Easing.OutCubic
                         }
                     }
                     transform: Translate {
