@@ -1,9 +1,9 @@
 module qs.modules.launcher
 
-LauncherRoot 1.0 LauncherRoot.qml
-AppRow 1.0 AppRow.qml
 AppPickerList 1.0 AppPickerList.qml
+AppRow 1.0 AppRow.qml
 Launcher 1.0 Launcher.qml
-WindowRow 1.0 WindowRow.qml
+LauncherRoot 1.0 LauncherRoot.qml
 PrefixRow 1.0 PrefixRow.qml
 SearchField 1.0 SearchField.qml
+WindowRow 1.0 WindowRow.qml

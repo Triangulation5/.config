@@ -99,7 +99,7 @@ PillSurface {
         onTriggered: { if (root.remainingSecs > 0) root.remainingSecs--; if (root.remainingSecs <= 0) root.finish(); }
     }
 
-    /* ── Ame seam tracks the arc head ── */
+    /** ── Ame seam tracks the arc head ── */
 
     /** Ring geometry, shared by Canvas and Ame. */
     readonly property real ringCx: ringArea.width / 2
@@ -128,7 +128,7 @@ PillSurface {
 
     implicitHeight: content.implicitHeight
 
-    /* ── Layout ── */
+    /** ── Layout ── */
 
     Column {
         id: content
@@ -137,7 +137,7 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        /* Header */
+        /** Header. */
         SurfaceHeader {
             id: timerHeader
             kanji: "砂"
@@ -152,7 +152,7 @@ PillSurface {
 
         Item { width: 1; height: 16 * root.s }
 
-        /* ── Circular countdown dial ── */
+        /** ── Circular countdown dial ── */
         Item {
             id: ringArea
             width: parent.width * 0.62
@@ -244,7 +244,7 @@ PillSurface {
 
         Item { width: 1; height: ringArea.width * 0.087 }
 
-        /* Session toggle — pill chips */
+        /** Session toggle — pill chips. */
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             height: root.showCountdown ? 0 : implicitHeight
@@ -299,7 +299,7 @@ PillSurface {
 
         Item { width: 1; height: 10 * root.s }
 
-        /* Presets — pill chips in a row */
+        /** Presets — pill chips in a row. */
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             height: root.showCountdown ? 0 : implicitHeight
@@ -335,14 +335,14 @@ PillSurface {
             }
         }
 
-        /* Hairline */
+        /** Hairline. */
         Hairline {
             s: root.s
             height: root.showCountdown ? 0 : 1
             visible: !root.showCountdown
         }
 
-        /* Custom time setter — stat rows with −/+ steppers */
+        /** Custom time setter — stat rows with −/+ steppers. */
         Column {
             width: parent.width
             height: root.showCountdown ? 0 : implicitHeight
@@ -417,7 +417,7 @@ PillSurface {
 
         Item { width: 1; height: root.showCountdown ? ringArea.width * 0.043 : ringArea.width * 0.065 }
 
-        /* Buttons */
+        /** Buttons. */
         Item {
             width: parent.width
             height: 32 * root.s
@@ -465,7 +465,7 @@ PillSurface {
 
         Item { width: 1; height: root.showCountdown ? 0 : 8 * root.s }
 
-        /* Keyboard hint */
+        /** Keyboard hint. */
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: root.timerState === "idle"

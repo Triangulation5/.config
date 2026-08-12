@@ -286,7 +286,7 @@ PillSurface {
                     spacing: 6 * root.s
                     visible: Notifs.unread > 0 || root.sendStatus.length > 0
 
-                    /* Send status chip — scanning or sending */
+                    /** Send status chip — scanning or sending. */
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 5 * root.s

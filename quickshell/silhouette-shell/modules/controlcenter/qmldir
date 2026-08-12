@@ -2,12 +2,13 @@ module qs.modules.controlcenter
 
 CredRow 1.0 CredRow.qml
 Ember 1.0 Ember.qml
+HotspotControl 1.0 HotspotControl.qml
 Link 1.0 Link.qml
 LinkBt 1.0 LinkBt.qml
 LinkInbox 1.0 LinkInbox.qml
 LinkToggle 1.0 LinkToggle.qml
 LinkWifi 1.0 LinkWifi.qml
-WifiNetRow 1.0 WifiNetRow.qml
-WifiHotspot 1.0 WifiHotspot.qml
 NotifRow 1.0 NotifRow.qml
 Power 1.0 Power.qml
+WifiHotspot 1.0 WifiHotspot.qml
+WifiNetRow 1.0 WifiNetRow.qml
