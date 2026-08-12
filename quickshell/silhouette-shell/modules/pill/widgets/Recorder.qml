@@ -787,6 +787,8 @@ PillSurface {
                     model: ScreenRec.monitors
 
                     delegate: MonTile {
+                        required property var modelData
+                        required property int index
                         surface: root
                         modelData: modelData
                         index: index
@@ -1093,6 +1095,8 @@ PillSurface {
                 model: ScreenRec.recent
 
                 delegate: ClipRow {
+                    required property var modelData
+                    required property int index
                     surface: root
                     modelData: modelData
                     index: index
