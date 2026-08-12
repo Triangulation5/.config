@@ -17,6 +17,8 @@ KeybindForm 1.0 KeybindForm.qml
 KeybindRow 1.0 KeybindRow.qml
 Keybinds 1.0 Keybinds.qml
 Look 1.0 Look.qml
+MonitorCard 1.0 MonitorCard.qml
+MonitorMap 1.0 MonitorMap.qml
 NightLightGroup 1.0 look/NightLightGroup.qml
 OpacityGroup 1.0 look/OpacityGroup.qml
 PillGroup 1.0 look/PillGroup.qml

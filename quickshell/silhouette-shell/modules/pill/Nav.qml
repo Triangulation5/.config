@@ -17,8 +17,8 @@ QtObject {
 
     /**
      * Resolve an open surface's item through the pill's loader registry (null
-     * when not open). The name keys must match the surface-name -> loader map
-     * built in Pill.qml's Component.onCompleted.
+     * when not open). The name keys must match the surface-name → loader map
+     * each PillSurfaceLoader registers into on creation.
      */
     function itemFor(name) {
         var ld = host._surfaceLoaders[name];
