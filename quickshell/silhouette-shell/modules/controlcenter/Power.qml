@@ -242,8 +242,9 @@ PillSurface {
                         radius: Motion.rTile * root.s
                         color: tile.isHover ? Theme.frameBg : "transparent"
                         border.width: 1
-                        border.color: tile.isHover ? Theme.frameBorder : Theme.border
+                        border.color: tile.isHover ? Theme.frameBorder : "transparent"
                         Behavior on color { ColorAnimation { duration: Motion.fast } }
+                        Behavior on border.color { ColorAnimation { duration: Motion.fast } }
                     }
 
                     /**
