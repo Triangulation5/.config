@@ -222,9 +222,6 @@ PillSurface {
                 model: root.spaces
 
                 delegate: WorkspaceNavRow {
-                    required property int index
-                    required property var modelData
-
                     surface: root
                     modelData: modelData
                     index: index
@@ -235,9 +232,6 @@ PillSurface {
                 model: Spaces.list
 
                 delegate: WorkspaceRuleRow {
-                    required property int index
-                    required property var modelData
-
                     surface: root
                     modelData: modelData
                     index: index
