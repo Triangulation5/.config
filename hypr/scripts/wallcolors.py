@@ -482,7 +482,24 @@ def main():
     # and base07 as bright white, matching kitty's 16-slot color0..15 palette.
     # matugen base16 JSON keys are lowercase hex (base0b, base0a, ...);
     # keep the letters lowercase so the lookups match.
-    ansi_keys = ("00", "08", "0b", "0a", "0d", "0e", "0c", "05", "03", "08", "0b", "0a", "0d", "0e", "0c", "07")
+    ansi_keys = (
+        "00",
+        "08",
+        "0b",
+        "0a",
+        "0d",
+        "0e",
+        "0c",
+        "05",
+        "03",
+        "08",
+        "0b",
+        "0a",
+        "0d",
+        "0e",
+        "0c",
+        "07",
+    )
     for index, key in enumerate(ansi_keys):
         kitty.append(f"color{index} {terminal_colors[f'base{key}']}")
 
