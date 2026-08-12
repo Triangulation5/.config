@@ -212,7 +212,7 @@ Item {
     readonly property real fontpickerW: 360 * s
     readonly property real localsendW: 360 * s
     readonly property real timerW: 340 * s
-    readonly property real timerH: 480 * s
+    readonly property real timerH: 460 * s
     readonly property real toastW: 342 * s
     readonly property real quickChooseW: 344 * s
     readonly property real quickChooseH: 76 * s
@@ -311,7 +311,7 @@ Item {
         animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation, "animation").implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation, "animation") },
         fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker, "fontpicker").implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
         localsend:  { size: () => { surfaceItem(ldLSend, "localsend"); return Qt.size(localsendW, surfaceItem(ldLSend, "localsend").implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend, "localsend") },
-        timer:    { size: () => { surfaceItem(ldTimer, "timer"); return Qt.size(timerW, timerH); }, ame: () => null }
+        timer:    { size: () => { const it = surfaceItem(ldTimer, "timer"); return Qt.size(timerW, it.implicitHeight + 28 * s); }, ame: () => null }
     })
 
     readonly property string mode: dragInstall.dragActive ? "dragOver"

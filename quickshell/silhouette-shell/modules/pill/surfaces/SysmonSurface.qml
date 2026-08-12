@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.services
-import qs.components.layout
 
 /**
  * 系 SYSTEM surface: a flat washi card of live machine vitals fed by the Sysmon
@@ -31,7 +30,14 @@ PillSurface {
 
     onActiveChanged: Sysmon.open = active
 
-    readonly property point soulPoint: sysHeader.soulPoint(root)
+    readonly property point soulPoint: {
+        void root.width;
+        void root.height;
+        if (Flags.showGlyphs)
+            return kanji.mapToItem(root, kanji.width / 2, -3 * root.s);
+        return sysLabel.mapToItem(root, -8 * root.s, sysLabel.height / 2);
+    }
+
     ameForm: open ? "soul" : "off"
     amePoint: soulPoint
 
@@ -159,12 +165,51 @@ PillSurface {
         width: parent.width
         spacing: 0
 
-        SurfaceHeader {
-            id: sysHeader
-            kanji: "系"
-            label: "SYSTEM"
-            badge: Sysmon.uptime
-            s: root.s
+        /* Header */
+        Item {
+            width: parent.width
+            height: 24 * root.s
+
+            Row {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 9 * root.s
+
+                Text {
+                    id: kanji
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: Flags.showGlyphs
+                    text: "系"
+                    color: Theme.cream
+                    font.family: Theme.fontJp
+                    font.weight: Font.Medium
+                    font.pixelSize: 16 * root.s
+                }
+                Text {
+                    id: sysLabel
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "SYSTEM"
+                    color: Theme.subtle
+                    font.family: Theme.font
+                    font.pixelSize: 10 * root.s
+                    font.weight: Font.DemiBold
+                    font.capitalization: Font.AllUppercase
+                    font.letterSpacing: 1.8 * root.s
+                }
+            }
+
+            Text {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                text: Sysmon.uptime
+                color: Theme.dim
+                font.family: Theme.font
+                font.pixelSize: 9.5 * root.s
+                font.weight: Font.Bold
+                font.capitalization: Font.AllUppercase
+                font.letterSpacing: 1.1 * root.s
+                font.features: { "tnum": 1 }
+            }
         }
 
         Item { width: 1; height: 16 * root.s }
@@ -200,7 +245,11 @@ PillSurface {
 
         Item { width: 1; height: 18 * root.s }
 
-        Hairline { s: root.s }
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.hair
+        }
 
         Item { width: 1; height: 13 * root.s }
 
