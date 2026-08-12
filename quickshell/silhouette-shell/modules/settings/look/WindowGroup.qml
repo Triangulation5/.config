@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import ".."
-import qs.services
 import qs.modules.controlcenter
 import qs.components.controls
 

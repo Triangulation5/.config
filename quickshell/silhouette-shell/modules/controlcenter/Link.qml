@@ -10,7 +10,6 @@ import qs.services
 import qs.modules.pill.surfaces
 import qs.components.layout
 import qs.components.icons
-import qs.components.controls
 
 /**
  * 繋 LINK surface: connectivity rows (auto-detected Netz, Bluetooth) over the
@@ -125,10 +124,15 @@ PillSurface {
     }
 
     /**
-     * Pops one navigation level: drill-in back to main returns true, main
-     * returns false so the caller closes the surface instead.
+     * Pops one navigation level: an expanded subview row collapses first, then
+     * the drill-in returns to main (true); main returns false so the caller
+     * closes the surface instead.
      */
     function back() {
+        if (subview === "wifi" && wifiPage.kbBack())
+            return true;
+        if (subview === "bt" && btPage.kbBack())
+            return true;
         if (subview !== "main") {
             subview = "main";
             return true;
@@ -173,6 +177,19 @@ PillSurface {
         }
         subview = idx === 0 ? "wifi" : "bt";
         return true;
+    }
+
+    /**
+     * Left/right on the link surface: cycle the active subview page's expanded
+     * row confirm buttons. Returns true when the page consumed it; the main
+     * view has no horizontal controls.
+     */
+    function kbAdjust(dir) {
+        if (subview === "wifi")
+            return wifiPage.kbAdjust(dir);
+        if (subview === "bt")
+            return btPage.kbAdjust(dir);
+        return false;
     }
 
     function batteryLevel(d) {
@@ -609,321 +626,10 @@ PillSurface {
                 }
             }
 
-            Item {
-                width: parent.width
-                height: 20 * root.s
-
-                Row {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 6 * root.s
-
-                    Item {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 10 * root.s
-                        height: 10 * root.s
-                    }
-
-                    Text {
-                        id: inboxKanji
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: Flags.showGlyphs
-                        text: "報"
-                        color: Theme.dim
-                        font.family: Theme.fontJp
-                        font.weight: Font.Medium
-                        font.pixelSize: 11.5 * root.s
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Flags.showGlyphs ? "INBOX" : "Notifications"
-                        color: Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 9 * root.s
-                        font.weight: Font.Bold
-                        font.letterSpacing: Flags.showGlyphs ? 1.8 * root.s : 0.8 * root.s
-                    }
-                }
-
-                Row {
-                    id: clearRow
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Notifs.count > 0
-                    spacing: 4 * root.s
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: Flags.showGlyphs
-                        text: "払"
-                        color: clearArea.containsMouse ? Theme.vermLit : Theme.vermDim
-                        font.family: Theme.fontJp
-                        font.pixelSize: 9 * root.s
-                        font.weight: Font.Bold
-                    }
-                    GlyphIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !Flags.showGlyphs
-                        width: 11 * root.s
-                        height: 11 * root.s
-                        name: "trash"
-                        color: clearArea.containsMouse ? Theme.vermLit : Theme.vermDim
-                        stroke: 1.8
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "CLEAR"
-                        color: clearArea.containsMouse ? Theme.vermLit : Theme.vermDim
-                        font.family: Theme.font
-                        font.pixelSize: 9 * root.s
-                        font.weight: Font.Bold
-                        font.letterSpacing: 1.4 * root.s
-                    }
-                }
-
-                MouseArea {
-                    id: clearArea
-                    anchors.fill: clearRow
-                    anchors.margins: -5 * root.s
-                    visible: Notifs.count > 0
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Notifs.clearAll()
-                }
-            }
-
-            Item {
-                visible: Notifs.count > 0
-                width: parent.width
-                height: notifFlick.height
-
-                Flickable {
-                    id: notifFlick
-                    width: parent.width
-                    height: Math.min(notifCol.implicitHeight, 320 * root.s)
-                    contentHeight: notifCol.implicitHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    onContentHeightChanged: returnToBounds()
-
-                    Column {
-                        id: notifCol
-                        width: notifFlick.width
-                        spacing: 6 * root.s
-
-                        Repeater {
-                            model: Notifs.groups
-
-                            Column {
-                                id: group
-                                required property var modelData
-                                readonly property bool expanded: Notifs.expandedApps[modelData.app] === true
-                                width: notifCol.width
-                                spacing: 2 * root.s
-
-                                Repeater {
-                                    model: group.modelData.criticals
-
-                                    NotifRow {
-                                        required property var modelData
-                                        s: root.s
-                                        entry: modelData
-                                        critical: true
-                                        onReportHover: (item, hovered) => root.reportRowHover(item, hovered)
-                                        onRequestClose: root.requestClose()
-                                    }
-                                }
-
-                                Rectangle {
-                                    id: groupHead
-                                    width: parent.width
-                                    height: 32 * root.s
-                                    radius: 8 * root.s
-                                    color: headHover.hovered ? Theme.frameBg : "transparent"
-
-                                    HoverHandler {
-                                        id: headHover
-                                        onHoveredChanged: root.reportRowHover(groupHead, hovered)
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: Notifs.toggleExpanded(group.modelData.app)
-                                    }
-
-                                    Rectangle {
-                                        id: headTile
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 6 * root.s
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 20 * root.s
-                                        height: 20 * root.s
-                                        radius: 6 * root.s
-                                        color: Theme.tileBg
-                                        border.width: 1
-                                        border.color: Theme.border
-
-                                        Image {
-                                            id: headImg
-                                            anchors.fill: parent
-                                            anchors.margins: group.modelData.newest.image ? 0 : 3 * root.s
-                                            source: Notifs.iconFor(group.modelData.newest)
-                                            sourceSize.width: 40
-                                            sourceSize.height: 40
-                                            fillMode: Image.PreserveAspectCrop
-                                            smooth: true
-                                            asynchronous: true
-                                            visible: source.toString().length > 0
-                                        }
-
-                                        Rectangle {
-                                            anchors.centerIn: parent
-                                            visible: !headImg.visible
-                                            width: 6 * root.s
-                                            height: 6 * root.s
-                                            radius: 2 * root.s
-                                            rotation: 45
-                                            color: Theme.verm
-                                        }
-                                    }
-
-                                    Text {
-                                        id: headName
-                                        anchors.left: headTile.right
-                                        anchors.leftMargin: 8 * root.s
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: Math.min(implicitWidth, 110 * root.s)
-                                        text: group.modelData.app
-                                        color: Theme.subtle
-                                        font.family: Theme.font
-                                        font.pixelSize: 9 * root.s
-                                        font.weight: Font.Bold
-                                        font.capitalization: Font.AllUppercase
-                                        font.letterSpacing: 1.2 * root.s
-                                        elide: Text.ElideRight
-                                    }
-
-                                    Text {
-                                        id: headCount
-                                        anchors.left: headName.right
-                                        anchors.leftMargin: 5 * root.s
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "· " + group.modelData.count
-                                        color: Theme.faint
-                                        font.family: Theme.font
-                                        font.pixelSize: 9 * root.s
-                                    }
-
-                                    Text {
-                                        anchors.left: headCount.right
-                                        anchors.leftMargin: 8 * root.s
-                                        anchors.right: headX.left
-                                        anchors.rightMargin: 8 * root.s
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: group.modelData.preview.body.length > 0
-                                            ? group.modelData.preview.body
-                                            : group.modelData.preview.summary
-                                        color: Theme.dim
-                                        font.family: Theme.font
-                                        font.pixelSize: 10 * root.s
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
-                                        textFormat: Text.PlainText
-                                    }
-
-                                    GlyphIcon {
-                                        id: headChev
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 8 * root.s
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 11 * root.s
-                                        height: 11 * root.s
-                                        name: group.expanded ? "chevron-down" : "chevron-right"
-                                        color: Theme.faint
-                                        stroke: 2
-                                    }
-
-                                    GlyphIcon {
-                                        id: headX
-                                        anchors.right: headChev.left
-                                        anchors.rightMargin: 7 * root.s
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 11 * root.s
-                                        height: 11 * root.s
-                                        opacity: headHover.hovered ? 1 : 0
-                                        name: "close"
-                                        color: headXArea.containsMouse ? Theme.cream : Theme.dim
-                                        stroke: 1.9
-                                        Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-
-                                        MouseArea {
-                                            id: headXArea
-                                            anchors.fill: parent
-                                            anchors.margins: -6 * root.s
-                                            enabled: headHover.hovered
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: Notifs.dismissApp(group.modelData.app)
-                                        }
-                                    }
-                                }
-
-                                Column {
-                                    visible: group.expanded
-                                    width: parent.width
-                                    spacing: 2 * root.s
-
-                                    Repeater {
-                                        model: group.expanded ? group.modelData.entries : []
-
-                                        NotifRow {
-                                            required property var modelData
-                                            s: root.s
-                                            entry: modelData
-                                            onReportHover: (item, hovered) => root.reportRowHover(item, hovered)
-                                            onRequestClose: root.requestClose()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                WheelScroller {
-                    anchors.fill: parent
-                    s: root.s
-                    flick: notifFlick
-                }
-            }
-
-            Column {
-                visible: Notifs.count === 0
-                width: parent.width
-                topPadding: 14 * root.s
-                bottomPadding: 14 * root.s
-                spacing: 4 * root.s
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    visible: Flags.showGlyphs
-                    text: "静"
-                    color: Theme.ghost
-                    opacity: 0.55
-                    font.family: Theme.fontJp
-                    font.weight: Font.Medium
-                    font.pixelSize: 32 * root.s
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: Flags.showGlyphs ? "SILENCE" : "No notifications to display"
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 9 * root.s
-                    font.weight: Font.Bold
-                    font.letterSpacing: Flags.showGlyphs ? 2.2 * root.s : 0.8 * root.s
-                }
+            LinkInbox {
+                s: root.s
+                onReportRowHover: (item, hovered) => root.reportRowHover(item, hovered)
+                onRequestClose: root.requestClose()
             }
         }
     }

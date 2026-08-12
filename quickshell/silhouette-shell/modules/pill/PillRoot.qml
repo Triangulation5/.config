@@ -533,10 +533,14 @@ ShellRoot {
                 Keys.onReleased: (e) => {
                     if (e.isAutoRepeat)
                         return;
-                    if ((e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space)
-                        && pill.powerOpen) {
-                        pill.powerRelease();
-                        e.accepted = true;
+                    if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) {
+                        /** Re-arm the wallpaper hold latch so the next press-hold re-fires the delete hold. */
+                        if (pill.wallpaperOpen)
+                            pill._wpHoldStarted = false;
+                        if (pill.powerOpen) {
+                            pill.powerRelease();
+                            e.accepted = true;
+                        }
                     }
                 }
 

@@ -3,9 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 import qs.services
-import qs.components.animation
-import qs.components.icons
-import qs.components.controls
 
 /**
  * Toast content for the morphing pill body: icon tile, app eyebrow, summary

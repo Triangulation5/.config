@@ -165,7 +165,7 @@ PillSurface {
         width: parent.width
         spacing: 0
 
-        /* Header */
+        /** Header */
         Item {
             width: parent.width
             height: 24 * root.s

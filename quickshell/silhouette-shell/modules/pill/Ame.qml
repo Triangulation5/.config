@@ -328,7 +328,7 @@ Item {
 
     Timer {
         running: root.visible && !root.busy
-        interval: root.blinking ? 33 : 300
+        interval: root.blinking ? 33 : 500
         repeat: true
         onTriggered: {
             root.swirl += interval * 0.0005;

@@ -7,8 +7,6 @@ import Quickshell.Widgets
 import Quickshell.Services.Pipewire
 import qs.services
 import qs.modules.controlcenter
-import qs.modules.settings
-import qs.components.animation
 import qs.components.controls
 import qs.components.icons
 import qs.modules.pill.surfaces
@@ -839,46 +837,10 @@ PillSurface {
 
         Item { width: 1; height: 11 * root.s }
 
-        AudioRow {
+        AudioFaders {
             s: root.s
             faderFocus: root.faderFocus
             onStepFocused: (delta) => root.stepFocused(delta)
-            glyph: "mic"
-            name: "Microphone"
-            on: ScreenRec.micOn
-            faderIndex: 0
-            level: root.source && root.source.audio ? root.source.audio.volume : 0
-            onFaderMoved: (v) => { if (root.source && root.source.audio) root.source.audio.volume = v; }
-
-            MouseArea {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 80 * root.s
-                height: parent.height
-                cursorShape: Qt.PointingHandCursor
-                onClicked: ScreenRec.micOn = !ScreenRec.micOn
-            }
-        }
-
-        AudioRow {
-            s: root.s
-            faderFocus: root.faderFocus
-            onStepFocused: (delta) => root.stepFocused(delta)
-            glyph: "speaker"
-            name: "Desktop"
-            on: ScreenRec.desktopOn
-            faderIndex: 1
-            level: root.sink && root.sink.audio ? root.sink.audio.volume : 0
-            onFaderMoved: (v) => { if (root.sink && root.sink.audio) root.sink.audio.volume = v; }
-
-            MouseArea {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 80 * root.s
-                height: parent.height
-                cursorShape: Qt.PointingHandCursor
-                onClicked: ScreenRec.desktopOn = !ScreenRec.desktopOn
-            }
         }
 
         Item { width: 1; height: 11 * root.s }
@@ -891,101 +853,8 @@ PillSurface {
 
         Item { width: 1; height: 11 * root.s }
 
-        /**
-         * Save-location row: a tracked "SAVE TO" label, the output directory
-         * collapsed to `~` and elided to fit, and Change / Open affordances that
-         * drive the native picker and file manager.
-         */
-        Item {
-            id: pathRow
-            width: parent.width
-            height: 18 * root.s
-
-            readonly property string shownDir: {
-                var d = ScreenRec.outDir;
-                var h = ScreenRec.home;
-                return h.length > 0 && d.indexOf(h) === 0 ? "~" + d.slice(h.length) : d;
-            }
-
-            Text {
-                id: pathLabel
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: "SAVE TO"
-                color: Theme.faint
-                font.family: Theme.font
-                font.pixelSize: 9 * root.s
-                font.weight: Font.Bold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.2 * root.s
-            }
-
-            Item {
-                id: pathActions
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                height: parent.height
-                width: changeTxt.width + 9 * root.s + openTxt.width
-
-                Text {
-                    id: changeTxt
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "CHANGE"
-                    color: changeArea.containsMouse ? Theme.flameGlow : Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 9 * root.s
-                    font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1 * root.s
-
-                    MouseArea {
-                        id: changeArea
-                        anchors.fill: parent
-                        anchors.margins: -5 * root.s
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: ScreenRec.pickDir()
-                    }
-                }
-                Text {
-                    id: openTxt
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "OPEN"
-                    color: openArea.containsMouse ? Theme.flameGlow : Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 9 * root.s
-                    font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1 * root.s
-
-                    MouseArea {
-                        id: openArea
-                        anchors.fill: parent
-                        anchors.margins: -5 * root.s
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: ScreenRec.openDir()
-                    }
-                }
-            }
-
-            Text {
-                id: pathText
-                anchors.left: pathLabel.right
-                anchors.leftMargin: 10 * root.s
-                anchors.right: pathActions.left
-                anchors.rightMargin: 12 * root.s
-                anchors.verticalCenter: parent.verticalCenter
-                text: pathRow.shownDir
-                color: Theme.cream
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.DemiBold
-                elide: Text.ElideMiddle
-                maximumLineCount: 1
-            }
+        SaveRow {
+            s: root.s
         }
 
         Item { width: 1; height: 11 * root.s }
@@ -998,127 +867,9 @@ PillSurface {
 
         Item { width: 1; height: 12 * root.s }
 
-        Item {
-            width: parent.width
-            height: 16 * root.s
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6 * root.s
-
-                Text {
-                    visible: Flags.showGlyphs
-                    height: 16 * root.s
-                    verticalAlignment: Text.AlignVCenter
-                    text: "録"
-                    color: Theme.subtle
-                    font.family: Theme.fontJp
-                    font.pixelSize: 11 * root.s
-                }
-                Text {
-                    height: 16 * root.s
-                    verticalAlignment: Text.AlignVCenter
-                    text: "RECENT · " + ScreenRec.recentCount
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 9 * root.s
-                    font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1.2 * root.s
-                }
-            }
-
-            Item {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                height: parent.height
-                width: clearTxt.width + (Flags.showGlyphs ? clearKanji.width + 5 * root.s : 0)
-                visible: ScreenRec.recentCount > 0
-
-                Text {
-                    id: clearKanji
-                    anchors.right: clearTxt.left
-                    anchors.rightMargin: 5 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Flags.showGlyphs
-                    text: "払"
-                    color: clearArea.containsMouse ? Theme.flameGlow : Theme.vermDeep
-                    font.family: Theme.fontJp
-                    font.pixelSize: 11 * root.s
-                }
-                Text {
-                    id: clearTxt
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "CLEAR"
-                    color: clearArea.containsMouse ? Theme.flameGlow : Theme.vermDeep
-                    font.family: Theme.font
-                    font.pixelSize: 9 * root.s
-                    font.weight: Font.Bold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1 * root.s
-                }
-
-                MouseArea {
-                    id: clearArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: ScreenRec.clearRecent()
-                }
-            }
-        }
-
-        Item { width: 1; height: 9 * root.s }
-
-        Item {
-            width: parent.width
-            height: 64 * root.s
-
-            Text {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                visible: ScreenRec.recentCount === 0
-                text: "No recordings yet"
-                color: Theme.faint
-                font.family: Theme.font
-                font.pixelSize: 10.5 * root.s
-            }
-
-            ListView {
-                id: filmstrip
-                anchors.fill: parent
-                visible: ScreenRec.recentCount > 0
-                orientation: ListView.Horizontal
-                clip: true
-                spacing: 9 * root.s
-                boundsBehavior: Flickable.StopAtBounds
-                model: ScreenRec.recent
-
-                delegate: ClipRow {
-                    required property var modelData
-                    required property int index
-                    surface: root
-                    s: root.s
-                    clipName: modelData.name
-                    clipThumb: modelData.thumb
-                    clipSizeLabel: modelData.sizeLabel
-                    clipPath: modelData.path
-                    rowIndex: index
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.NoButton
-                onWheel: (event) => {
-                    var max = Math.max(0, filmstrip.contentWidth - filmstrip.width);
-                    filmstrip.contentX = Math.max(0, Math.min(max, filmstrip.contentX - event.angleDelta.y / 120 * 48 * root.s));
-                    event.accepted = true;
-                }
-            }
+        ClipList {
+            s: root.s
+            surface: root
         }
     }
 }

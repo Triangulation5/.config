@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import qs.services
 import qs.modules.launcher
 import "../../utils/launcher/fuzzy.js" as Fuzzy
 

@@ -1,6 +1,5 @@
 import QtQuick
 import qs.services
-import qs.components.icons
 
 /**
  * Hold-to-confirm heat shared by the destructive gestures (power tiles,
