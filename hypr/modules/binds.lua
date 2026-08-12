@@ -33,6 +33,7 @@ hl.bind(mainMod .. " + W",         hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + G",         hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + X",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V",         hl.dsp.exec_cmd(quickshell .. " clipboard"))
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(quickshell .. " localsend"))
 
 hl.bind("Print",         hl.dsp.exec_cmd(screenshots))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(screenshots .. " monitor"))
