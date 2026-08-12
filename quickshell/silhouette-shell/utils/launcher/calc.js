@@ -73,8 +73,8 @@ function tokenize(src) {
             continue;
         }
 
-        // named identifier: function or constant
-        if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 0x3c0 /* π */) {
+        // named identifier: function or constant (including π)
+        if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 0x3c0) {
             var start = i;
             while (i < len) {
                 c = src.charCodeAt(i);

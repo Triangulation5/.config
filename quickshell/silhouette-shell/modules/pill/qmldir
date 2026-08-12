@@ -1,7 +1,7 @@
 module qs.modules.pill
 
-PillRoot 1.0 PillRoot.qml
-Pill 1.0 Pill.qml
+HoverFace 1.0 HoverFace.qml
 Nav 1.0 Nav.qml
-Ame 1.0 Ame.qml
+Pill 1.0 Pill.qml
+PillRoot 1.0 PillRoot.qml
 PillSurfaceLoader 1.0 PillSurfaceLoader.qml
