@@ -5,20 +5,19 @@ import qs.services
 import qs.components.icons
 
 /**
- * One window-switcher row: the app icon (or a generic window glyph), window
- * title, class name, and a workspace pill. Clicking activates the window.
- * Extracted from Launcher.qml's window list delegate.
+ * One window-switcher row in the launcher. All data (s, win, selected,
+ * resolved icon) is passed from the delegate body where root and the
+ * ListView delegate index are both directly accessible. Click actions
+ * go through the surface reference.
  */
 Item {
     id: winRow
 
     property var surface: null
-    required property int index
-
-    readonly property real s: surface ? surface.s : 1
-    readonly property var win: surface && winRow.index < surface.windowResults.length ? surface.windowResults[winRow.index] : null
-    readonly property bool selected: surface ? surface.selectedIndex === winRow.index : false
-    readonly property string resolvedIcon: surface ? surface.iconForWindow(winRow.win.cls) : ""
+    property real s: 1
+    property var win: null
+    property bool selected: false
+    property string resolvedIcon: ""
 
     width: parent ? parent.width : 0
     height: 38 * s
@@ -37,12 +36,18 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onEntered: if (surface) surface.selectedIndex = winRow.index
+        onEntered: {
+            if (!surface || !win) return;
+            var r = surface.windowResults;
+            for (var i = 0; i < r.length; i++)
+                if (r[i] && r[i].address === win.address) { surface.selectedIndex = i; break; }
+        }
         onClicked: {
-            if (surface) {
-                surface.selectedIndex = winRow.index;
-                surface.focusWindow();
-            }
+            if (!surface || !win) return;
+            var r = surface.windowResults;
+            for (var i = 0; i < r.length; i++)
+                if (r[i] && r[i].address === win.address) { surface.selectedIndex = i; break; }
+            surface.focusWindow();
         }
     }
 
@@ -92,7 +97,7 @@ Item {
 
             Text {
                 width: parent.width
-                text: winRow.win.title
+                text: winRow.win ? winRow.win.title : ""
                 color: Theme.cream
                 font.family: Theme.font
                 font.pixelSize: 13 * s
@@ -101,8 +106,8 @@ Item {
             }
             Text {
                 width: parent.width
-                visible: winRow.win.cls.length > 0
-                text: winRow.win.cls
+                visible: winRow.win && winRow.win.cls.length > 0
+                text: winRow.win ? winRow.win.cls : ""
                 color: winRow.selected ? Theme.dim : Theme.faint
                 font.family: Theme.font
                 font.pixelSize: 10.5 * s
@@ -119,12 +124,12 @@ Item {
             height: 18 * s
             radius: 4 * s
             color: winRow.selected ? Qt.rgba(0.94, 0.88, 0.84, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-            visible: winRow.win.workspace.length > 0 && winRow.win.workspace !== "special:minimized"
+            visible: winRow.win && winRow.win.workspace.length > 0 && winRow.win.workspace !== "special:minimized"
 
             Text {
                 id: wsLabel
                 anchors.centerIn: parent
-                text: winRow.win.workspace
+                text: winRow.win ? winRow.win.workspace : ""
                 color: winRow.selected ? Theme.dim : Theme.faint
                 font.family: Theme.font
                 font.pixelSize: 9.5 * s

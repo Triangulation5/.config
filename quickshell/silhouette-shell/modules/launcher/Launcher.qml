@@ -606,7 +606,10 @@ PillSurface {
         delegate: WindowRow {
             required property int index
             surface: root
-            index: index
+            s: root.s
+            win: root.windowResults[index]
+            selected: root.selectedIndex === index
+            resolvedIcon: root.iconForWindow(root.windowResults[index] ? root.windowResults[index].cls : "")
         }
     }
 
@@ -639,7 +642,10 @@ PillSurface {
         delegate: AppRow {
             required property int index
             surface: root
-            index: index
+            s: root.s
+            entry: root.results[index]
+            selected: root.selectedIndex === index
+            editing: { var e = root.results[index]; return e && e.id && e.id.indexOf("ricelin-") === 0 && root.editIndex === index; }
         }
     }
 
