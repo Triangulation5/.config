@@ -1,4 +1,11 @@
-/** Custom Vague.nvim Pallete Overides. */
+/**
+ * Shared colour and font tokens for the shell. Every surface and widget reads
+ * its palette from here so a single swap re-tints the whole shell. In dynamic
+ * palette mode the tokens follow the live wallpaper-derived palette (Dyn);
+ * otherwise they fall back to a fixed warm static set. Also carries the UI
+ * font (Flags-driven, defaulting to Inter) and a small artist-list helper for
+ * media labels.
+ */
 pragma Singleton
 import QtQuick
 import Quickshell

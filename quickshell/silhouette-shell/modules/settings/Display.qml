@@ -81,12 +81,12 @@ SettingsSurface {
         void root.selMon;
         void root.mainName;
         var e = [
-            { item: resRow, kind: "scrub", bump: function (d) { card.bumpRes(d); } },
-            { item: rateRow, kind: "scrub", bump: function (d) { card.bumpRate(d); } },
-            { item: scaleRow, kind: "seg", vals: root.scaleOptions.map(function (o) { return o.value; }), get: function () { return card.pickScale; }, set: function (v) { card.pickScale = v; } }
+            { item: card.resRow, kind: "scrub", bump: function (d) { card.bumpRes(d); } },
+            { item: card.rateRow, kind: "scrub", bump: function (d) { card.bumpRate(d); } },
+            { item: card.scaleRow, kind: "seg", vals: root.scaleOptions.map(function (o) { return o.value; }), get: function () { return card.pickScale; }, set: function (v) { card.pickScale = v; } }
         ];
         if (root.selMon && !root.selIsMain)
-            e.push({ item: mainRow, kind: "toggle", get: function () { return card.pendingMain; }, set: function (v) { card.pendingMain = v; } });
+            e.push({ item: card.mainRow, kind: "toggle", get: function () { return card.pendingMain; }, set: function (v) { card.pendingMain = v; } });
         return e;
     }
 
@@ -200,7 +200,7 @@ SettingsSurface {
      */
     readonly property var mapLayout: {
         var mons = root.monitors;
-        if (mons.length === 0 || mapBox.width <= 0)
+        if (mons.length === 0 || monitorMap.width <= 0)
             return { h: 0, tiles: [] };
         var rects = [];
         var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -221,8 +221,8 @@ SettingsSurface {
             maxX = Math.max(maxX, r.x + r.w);
             maxY = Math.max(maxY, r.y + r.h);
         }
-        var k = Math.min(mapBox.width / (maxX - minX), (96 * root.s) / (maxY - minY));
-        var ox = (mapBox.width - (maxX - minX) * k) / 2;
+        var k = Math.min(monitorMap.width / (maxX - minX), (96 * root.s) / (maxY - minY));
+        var ox = (monitorMap.width - (maxX - minX) * k) / 2;
         var tiles = rects.map(function (t) {
             return { name: t.name, hz: t.hz, x: ox + (t.x - minX) * k, y: (t.y - minY) * k, w: t.w * k, h: t.h * k };
         });
@@ -450,411 +450,24 @@ SettingsSurface {
             anchors.rightMargin: 12 * root.s
             spacing: 12 * root.s
 
-            Item {
-                id: mapBox
+            MonitorMap {
+                id: monitorMap
                 width: parent.width
                 height: root.mapLayout.h
-                Behavior on height { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-
-                Repeater {
-                    model: root.mapLayout.tiles
-
-                    Rectangle {
-                        id: tile
-                        required property var modelData
-
-                        readonly property bool sel: tile.modelData.name === root.selName
-                        readonly property bool isMain: tile.modelData.name === root.mainName
-                        readonly property bool moved: root.pendingMove !== null && root.pendingMove.name === tile.modelData.name
-                        property real dx: 0
-                        property real dy: 0
-
-                        x: tile.modelData.x + 1.5 * root.s + dx
-                        y: tile.modelData.y + 1.5 * root.s + dy
-                        width: Math.max(2, tile.modelData.w - 3 * root.s)
-                        height: Math.max(2, tile.modelData.h - 3 * root.s)
-                        z: tileMA.pressed ? 10 : (tile.sel ? 5 : 0)
-                        radius: 7 * root.s
-                        color: tile.sel ? Qt.alpha(Theme.onGlow, 0.13) : Theme.cardTop
-                        border.width: 1
-                        border.color: tile.moved ? Qt.alpha(Theme.vermLit, 0.7) : (tile.sel ? Theme.cream : Theme.hairSoft)
-
-                        Behavior on x { enabled: !tileMA.pressed; NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-                        Behavior on y { enabled: !tileMA.pressed; NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-                        Behavior on color { ColorAnimation { duration: Motion.fast } }
-                        Behavior on border.color { ColorAnimation { duration: Motion.fast } }
-
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 2 * root.s
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: tile.modelData.name
-                                color: tile.sel ? Theme.cream : Theme.subtle
-                                font.family: Theme.font
-                                font.pixelSize: 10 * root.s
-                                font.weight: Font.DemiBold
-                            }
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: tile.modelData.hz + "Hz"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 8.5 * root.s
-                                font.weight: Font.Medium
-                                font.features: { "tnum": 1 }
-                            }
-                        }
-
-                        Text {
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            anchors.topMargin: 3 * root.s
-                            anchors.rightMargin: 5 * root.s
-                            visible: tile.isMain
-                            text: "★"
-                            color: Theme.vermLit
-                            font.family: Theme.fontJp
-                            font.pixelSize: 9.5 * root.s
-                        }
-
-                        /**
-                         * Manual drag: local deltas accumulate onto the layout
-                         * position, so the binding keeps owning x/y and the snap
-                         * animation plays the moment the deltas reset on release.
-                         */
-                        MouseArea {
-                            id: tileMA
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: pressed ? Qt.ClosedHandCursor : (root.monitors.length >= 2 ? Qt.OpenHandCursor : Qt.PointingHandCursor)
-                            property real sx: 0
-                            property real sy: 0
-                            onPressed: (mouse) => {
-                                if (root.pendingOut.length === 0)
-                                    root.selName = tile.modelData.name;
-                                sx = mouse.x;
-                                sy = mouse.y;
-                            }
-                            onPositionChanged: (mouse) => {
-                                if (!pressed || root.monitors.length < 2 || root.pendingOut.length > 0)
-                                    return;
-                                tile.dx += mouse.x - sx;
-                                tile.dy += mouse.y - sy;
-                            }
-                            onReleased: {
-                                if (tile.dx !== 0 || tile.dy !== 0)
-                                    root.dropTile(tile.modelData.name, tile.x + tile.width / 2, tile.y + tile.height / 2);
-                                tile.dx = 0;
-                                tile.dy = 0;
-                            }
-                        }
-                    }
-                }
+                s: root.s
+                tiles: root.mapLayout.tiles
+                selName: root.selName
+                mainName: root.mainName
+                pendingMove: root.pendingMove
+                canDrag: root.monitors.length >= 2
+                busy: root.pendingOut.length > 0
+                onTilePressed: (name) => { root.selName = name; }
+                onTileDropped: (name, cx, cy) => { root.dropTile(name, cx, cy); }
             }
 
-            Rectangle {
+            MonitorCard {
                 id: card
-                visible: root.selMon !== null
-                width: parent.width
-                radius: Motion.rTile * root.s
-                color: Theme.cardTop
-                border.width: 1
-                border.color: card.pending ? Qt.alpha(Theme.vermLit, 0.55) : Theme.hairSoft
-                implicitHeight: cardCol.implicitHeight + 22 * root.s
-                Behavior on border.color { ColorAnimation { duration: Motion.fast } }
-
-                property int resIndex: 0
-                property int rateIndex: 0
-                property real pickScale: 1
-                property bool pendingMain: false
-
-                readonly property var resolutions: root.selMon ? root.resolutionsFor(root.selMon) : []
-                readonly property var rates: resolutions.length > 0 ? resolutions[Math.min(resIndex, resolutions.length - 1)].rates : []
-                readonly property bool pending: root.selMon !== null && root.pendingOut === root.selMon.name
-
-                /** Anything the helper flow would change: mode, scale or a dragged move. */
-                readonly property bool dirty: {
-                    var mon = root.selMon;
-                    if (!mon || card.resolutions.length === 0)
-                        return false;
-                    var res = card.resolutions[Math.min(card.resIndex, card.resolutions.length - 1)];
-                    var hz = res.rates[Math.min(card.rateIndex, res.rates.length - 1)];
-                    if (res.w !== mon.width || res.h !== mon.height || hz !== mon.refresh)
-                        return true;
-                    if (card.pickScale !== mon.scale)
-                        return true;
-                    var p = root.pendingXY(mon);
-                    return p !== null && (p.x !== mon.x || p.y !== mon.y);
-                }
-                readonly property bool applyReady: dirty || (pendingMain && !root.selIsMain)
-
-                /**
-                 * Seed the pickers from the selected monitor's live mode: the
-                 * resolution whose WxH matches the current width/height, then the
-                 * Hz nearest the current refresh within that resolution. Switching
-                 * selection lands here too, dropping any un-applied edits.
-                 */
-                /**
-                 * Seeds from locally computed lists, never from `card.rates`: inside
-                 * onSelMonChanged the dependent bindings can still hold the previous
-                 * monitor's values (handler order vs binding invalidation), which
-                 * seeded HDMI's rate index against DP-1's rate list.
-                 */
-                function syncToCurrent() {
-                    var mon = root.selMon;
-                    if (!mon)
-                        return;
-                    var resos = root.resolutionsFor(mon);
-                    var ri = 0;
-                    for (var i = 0; i < resos.length; i++) {
-                        if (resos[i].w === mon.width && resos[i].h === mon.height) {
-                            ri = i;
-                            break;
-                        }
-                    }
-                    card.resIndex = ri;
-                    card.rateIndex = card.nearestIn(resos.length > 0 ? resos[ri].rates : [], mon.refresh);
-                    card.pickScale = mon.scale;
-                    card.pendingMain = false;
-                    if (root.pendingMove)
-                        root.pendingMove = null;
-                    root.openPicker = "";
-                }
-
-                function nearestIn(rates, hz) {
-                    var best = 0;
-                    var bestDiff = 1e9;
-                    for (var i = 0; i < rates.length; i++) {
-                        var d = Math.abs(rates[i] - hz);
-                        if (d < bestDiff) { bestDiff = d; best = i; }
-                    }
-                    return best;
-                }
-
-                function nearestRateIndex(hz) {
-                    return nearestIn(card.rates, hz);
-                }
-
-                function bumpRes(d) {
-                    var i = Math.max(0, Math.min(card.resolutions.length - 1, card.resIndex + d));
-                    if (i === card.resIndex)
-                        return;
-                    card.resIndex = i;
-                    card.rateIndex = card.nearestRateIndex(card.rates.length > 0 ? card.rates[0] : 60);
-                }
-
-                function bumpRate(d) {
-                    var cur = Math.min(card.rateIndex, Math.max(0, card.rates.length - 1));
-                    card.rateIndex = Math.max(0, Math.min(card.rates.length - 1, cur + d));
-                }
-
-                Column {
-                    id: cardCol
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.leftMargin: 13 * root.s
-                    anchors.rightMargin: 13 * root.s
-                    anchors.topMargin: 11 * root.s
-                    spacing: 9 * root.s
-
-                    Text {
-                        text: root.selMon ? root.selMon.name + (root.selIsMain ? "  ·  Main" : "") : ""
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 12.5 * root.s
-                        font.weight: Font.Bold
-                        font.letterSpacing: 0.3 * root.s
-                    }
-
-                    CardRow {
-                        surface: root
-                        id: resRow
-                        icon: "monitor"
-
-                        DisplayPicker {
-                            width: parent.width
-                            s: root.s
-                            label: "Resolution"
-                            options: card.resolutions.map(function (r, i) { return { label: r.w + "×" + r.h, value: i }; })
-                            value: card.resIndex
-                            open: root.openPicker === root.selName + ":res"
-                            onRequestToggle: root.openPicker = (root.openPicker === root.selName + ":res" ? "" : root.selName + ":res")
-                            onPicked: (v) => {
-                                card.resIndex = v;
-                                card.rateIndex = card.nearestRateIndex(card.rates.length > 0 ? card.rates[0] : 60);
-                                root.openPicker = "";
-                            }
-                        }
-                    }
-
-                    CardRow {
-                        surface: root
-                        id: rateRow
-                        icon: "reboot"
-
-                        DisplayPicker {
-                            width: parent.width
-                            s: root.s
-                            label: "Refresh"
-                            options: card.rates.map(function (hz, i) { return { label: hz + "Hz", value: i }; })
-                            value: Math.min(card.rateIndex, Math.max(0, card.rates.length - 1))
-                            open: root.openPicker === root.selName + ":rate"
-                            onRequestToggle: root.openPicker = (root.openPicker === root.selName + ":rate" ? "" : root.selName + ":rate")
-                            onPicked: (v) => {
-                                card.rateIndex = v;
-                                root.openPicker = "";
-                            }
-                        }
-                    }
-
-                    CardRow {
-                        surface: root
-                        id: scaleRow
-                        icon: "scaling"
-
-                        Row {
-                            width: parent.width
-                            spacing: 8 * root.s
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 64 * root.s
-                                text: "Scale"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 10.5 * root.s
-                                font.weight: Font.Medium
-                            }
-
-                            SettingsSeg {
-                                anchors.verticalCenter: parent.verticalCenter
-                                s: root.s
-                                options: root.scaleOptions
-                                value: card.pickScale
-                                onPicked: (v) => card.pickScale = v
-                            }
-                        }
-                    }
-
-                    CardRow {
-                        surface: root
-                        id: mainRow
-                        glyphText: "★"
-                        visible: root.selMon !== null && !root.selIsMain
-
-                        Item {
-                            width: parent.width
-                            height: 26 * root.s
-
-                            Text {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Set as main"
-                                color: Theme.cream
-                                font.family: Theme.font
-                                font.pixelSize: 11 * root.s
-                                font.weight: Font.DemiBold
-                            }
-
-                            LinkToggle {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                s: root.s
-                                on: card.pendingMain
-                                onToggled: card.pendingMain = !card.pendingMain
-                            }
-                        }
-                    }
-
-                    Item {
-                        width: parent.width
-                        height: 30 * root.s
-
-                        Rectangle {
-                            id: applyBtn
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: !card.pending && root.pendingOut.length === 0
-                            width: applyLabel.implicitWidth + 28 * root.s
-                            height: 28 * root.s
-                            radius: 9 * root.s
-                            color: !card.applyReady ? Qt.alpha(Theme.onGlow, 0.10)
-                                : (applyArea.containsMouse ? Qt.alpha(Theme.onGlow, 0.34) : Qt.alpha(Theme.onGlow, 0.20))
-                            border.width: 1
-                            border.color: Qt.alpha(Theme.onGlow, !card.applyReady ? 0.22 : (applyArea.containsMouse ? 0.6 : 0.4))
-                            Behavior on color { ColorAnimation { duration: Motion.fast } }
-                            Behavior on border.color { ColorAnimation { duration: Motion.fast } }
-
-                            Text {
-                                id: applyLabel
-                                anchors.centerIn: parent
-                                text: "Apply"
-                                color: card.applyReady ? Theme.cream : Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 10.5 * root.s
-                                font.weight: Font.DemiBold
-                                font.letterSpacing: 0.3 * root.s
-                            }
-
-                            MouseArea {
-                                id: applyArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: card.applyReady ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: if (card.applyReady) root.apply()
-                            }
-                        }
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: card.pending
-                            spacing: 9 * root.s
-
-                            Rectangle {
-                                id: keepBtn
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: keepLabel.implicitWidth + 28 * root.s
-                                height: 28 * root.s
-                                radius: 9 * root.s
-                                color: keepArea.containsMouse ? Theme.vermLit : Theme.verm
-                                Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-                                Text {
-                                    id: keepLabel
-                                    anchors.centerIn: parent
-                                    text: "Keep (" + root.countdown + ")"
-                                    color: Theme.cream
-                                    font.family: Theme.font
-                                    font.pixelSize: 10.5 * root.s
-                                    font.weight: Font.Bold
-                                    font.letterSpacing: 0.3 * root.s
-                                }
-
-                                MouseArea {
-                                    id: keepArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.keep()
-                                }
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "reverts automatically if not kept"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 9.5 * root.s
-                                font.weight: Font.Medium
-                            }
-                        }
-                    }
-                }
+                host: root
             }
 
             Text {

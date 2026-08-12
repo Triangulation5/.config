@@ -94,7 +94,7 @@ Singleton {
             property real topGap: 1.0
             /** Pill-to-window band as a fraction of the shipped 12px. 0 tucks the windows flush under the pill. */
             property real appGap: 1.0
-            /** Custom made notch style bar. */
+            /** True renders the pill as a notch-style bar (ears out, square top corners); false keeps the rounded pill. */
             property bool notchStyle: false
             /** Notch ear flare offset (px). Higher flares both notch ears out. */
             property real notchFlare: -2.45
