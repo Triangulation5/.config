@@ -29,9 +29,6 @@ PillSurface {
     property string timerState: "idle"
     /** Session colour scheme: "focus" (flame-orange) or "break" (teal). */
     property string sessionType: "focus"
-    /** One-shot: keyboard hint dismissed after first use. */
-    property bool hintDismissed: false
-
     property int totalSecs: 25 * 60
     property int remainingSecs: 25 * 60
 
@@ -81,7 +78,6 @@ PillSurface {
     function isPresetActive(secs) { return root.totalSecs === secs; }
 
     function toggle() {
-        root.hintDismissed = true;
         if (root.timerState === "running") { root.timerState = "paused"; }
         else if (root.timerState === "idle" || root.timerState === "paused") {
             if (root.remainingSecs <= 0) root.remainingSecs = root.totalSecs;
@@ -110,7 +106,7 @@ PillSurface {
     readonly property real ringCy: ringArea.height / 2
     readonly property real ringR: Math.min(ringArea.width, ringArea.height) / 2 - (ringLw / 2) - root.s
 
-    readonly property real ringLw: 9 * root.s
+    readonly property real ringLw: ringArea.width * 0.048
     readonly property real ringStart: 135 * Math.PI / 180
     readonly property real ringFull: 270 * Math.PI / 180
 
@@ -130,9 +126,12 @@ PillSurface {
     ameForm: root.showCountdown ? "seam" : (root.open ? "soul" : "off")
     amePoint: root.showCountdown ? arcHead : timerHeader.soulPoint(root)
 
+    implicitHeight: content.implicitHeight
+
     /* ── Layout ── */
 
     Column {
+        id: content
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -151,13 +150,13 @@ PillSurface {
             s: root.s
         }
 
-        Item { width: 1; height: 14 * root.s }
+        Item { width: 1; height: 16 * root.s }
 
         /* ── Circular countdown dial ── */
         Item {
             id: ringArea
-            width: 180 * root.s
-            height: 180 * root.s
+            width: parent.width * 0.62
+            height: width
             anchors.horizontalCenter: parent.horizontalCenter
 
             Canvas {
@@ -224,9 +223,9 @@ PillSurface {
                     color: root.timerState === "finished" ? accent
                         : (root.running ? accentGlow : Theme.cream)
                     font.family: Theme.font
-                    font.pixelSize: root.hours > 0 ? 30 * root.s : 38 * root.s
+                    font.pixelSize: root.hours > 0 ? ringArea.width * 0.16 : ringArea.width * 0.20
                     font.weight: Font.ExtraBold
-                    font.letterSpacing: -0.8 * root.s
+                    font.letterSpacing: -0.004 * ringArea.width
                     font.features: { "tnum": 1 }
                 }
 
@@ -237,22 +236,23 @@ PillSurface {
                     color: root.timerState === "finished" ? accent
                         : (root.running ? accentGlow : Theme.subtle)
                     font.family: Theme.font
-                    font.pixelSize: 11 * root.s
+                    font.pixelSize: ringArea.width * 0.058
                     font.weight: Font.DemiBold
                 }
             }
         }
 
-        Item { width: 1; height: 14 * root.s }
+        Item { width: 1; height: ringArea.width * 0.087 }
 
         /* Session toggle — pill chips */
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
+            height: root.showCountdown ? 0 : implicitHeight
             visible: !root.showCountdown
             spacing: 0
 
             Rectangle {
-                width: Math.max(64 * root.s, focusChip.implicitWidth + 24 * root.s)
+                width: Math.max(parent.width * 0.34, focusChip.implicitWidth + 24 * root.s)
                 height: 26 * root.s
                 radius: 13 * root.s
                 color: root.focusSession ? root.accentBurn : "transparent"
@@ -265,7 +265,7 @@ PillSurface {
                     anchors.centerIn: parent
                     text: "Focus"
                     color: root.focusSession ? "#fff" : Theme.dim
-                    font.family: Theme.font; font.pixelSize: 11 * root.s; font.weight: Font.DemiBold
+                    font.family: Theme.font; font.pixelSize: 11 * root.s; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                 }
                 MouseArea {
                     anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -274,7 +274,7 @@ PillSurface {
             }
 
             Rectangle {
-                width: Math.max(64 * root.s, breakChip.implicitWidth + 24 * root.s)
+                width: Math.max(parent.width * 0.34, breakChip.implicitWidth + 24 * root.s)
                 height: 26 * root.s
                 radius: 13 * root.s
                 color: !root.focusSession ? root.accentBurn : "transparent"
@@ -288,7 +288,7 @@ PillSurface {
                     anchors.centerIn: parent
                     text: "Break"
                     color: !root.focusSession ? "#fff" : Theme.dim
-                    font.family: Theme.font; font.pixelSize: 11 * root.s; font.weight: Font.DemiBold
+                    font.family: Theme.font; font.pixelSize: 11 * root.s; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                 }
                 MouseArea {
                     anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -297,13 +297,14 @@ PillSurface {
             }
         }
 
-        Item { width: 1; height: 14 * root.s }
+        Item { width: 1; height: 10 * root.s }
 
         /* Presets — pill chips in a row */
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
+            height: root.showCountdown ? 0 : implicitHeight
             visible: !root.showCountdown
-            spacing: 6 * root.s
+            spacing: parent.width * 0.02
 
             Repeater {
                 model: root.presets
@@ -311,7 +312,7 @@ PillSurface {
                 Rectangle {
                     required property var modelData
                     readonly property bool active: root.isPresetActive(modelData.secs)
-                    width: presetText.implicitWidth + 20 * root.s
+                    width: presetText.implicitWidth + parent.width * 0.06
                     height: 24 * root.s
                     radius: 12 * root.s
                     color: active ? Qt.rgba(1, 0.851, 0.761, 0.12) : Qt.rgba(1, 1, 1, 0.04)
@@ -337,15 +338,17 @@ PillSurface {
         /* Hairline */
         Hairline {
             s: root.s
+            height: root.showCountdown ? 0 : 1
             visible: !root.showCountdown
         }
 
         /* Custom time setter — stat rows with −/+ steppers */
         Column {
             width: parent.width
+            height: root.showCountdown ? 0 : implicitHeight
             visible: !root.showCountdown
-            topPadding: 12 * root.s
-            spacing: 8 * root.s
+            topPadding: ringArea.width * 0.065
+            spacing: ringArea.width * 0.043
 
             component TimeRow: Item {
                 id: row
@@ -376,7 +379,7 @@ PillSurface {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "−"
                         color: minusArea.containsMouse ? Theme.bright : Theme.faint
-                        font.family: Theme.font; font.pixelSize: 14 * root.s; font.weight: Font.Medium
+                        font.family: Theme.font; font.pixelSize: ringArea.width * 0.075; font.weight: Font.Medium
                         MouseArea {
                             id: minusArea
                             anchors.fill: parent; anchors.margins: -4 * root.s
@@ -389,15 +392,14 @@ PillSurface {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "" + row.value
                         color: Theme.cream
-                        font.family: Theme.font; font.pixelSize: 12.5 * root.s; font.weight: Font.DemiBold
-                        font.features: { "tnum": 1 }
-                        horizontalAlignment: Text.AlignRight; width: 28 * root.s
+                        font.family: Theme.font; font.pixelSize: ringArea.width * 0.066; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
+                        horizontalAlignment: Text.AlignRight; width: parent.parent.width * 0.12
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "+"
                         color: plusArea.containsMouse ? Theme.bright : Theme.faint
-                        font.family: Theme.font; font.pixelSize: 14 * root.s; font.weight: Font.Medium
+                        font.family: Theme.font; font.pixelSize: ringArea.width * 0.075; font.weight: Font.Medium
                         MouseArea {
                             id: plusArea
                             anchors.fill: parent; anchors.margins: -4 * root.s
@@ -413,7 +415,7 @@ PillSurface {
             TimeRow { label: "Seconds"; value: root.totalSecs % 60; step: 1 }
         }
 
-        Item { width: 1; height: 6 * root.s }
+        Item { width: 1; height: root.showCountdown ? ringArea.width * 0.043 : ringArea.width * 0.065 }
 
         /* Buttons */
         Item {
@@ -422,11 +424,11 @@ PillSurface {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 10 * root.s
+                spacing: parent.width * 0.04
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: visible ? 32 * root.s : 0; height: 28 * root.s; radius: 14 * root.s
+                    width: visible ? parent.parent.width * 0.11 : 0; height: 28 * root.s; radius: 14 * root.s
                     color: Qt.rgba(1, 1, 1, 0.04); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.06)
                     visible: root.showCountdown || root.totalSecs !== root.remainingSecs; clip: true
                     Behavior on width { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
@@ -441,7 +443,7 @@ PillSurface {
                 Rectangle {
                     id: startBtn
                     anchors.verticalCenter: parent.verticalCenter
-                    width: startLabel.implicitWidth + 44 * root.s; height: 28 * root.s; radius: 14 * root.s
+                    width: Math.min(parent.parent.width * 0.55, startLabel.implicitWidth + parent.parent.width * 0.16); height: 28 * root.s; radius: 14 * root.s
                     color: root.running ? Qt.rgba(0.94, 0.55, 0.38, 0.10) : (root.timerState === "finished" ? accentBurn : accent)
                     border.width: root.running ? 1 : 0
                     border.color: root.running ? Qt.rgba(0.94, 0.55, 0.38, 0.18) : "transparent"
@@ -451,7 +453,7 @@ PillSurface {
                         id: startLabel; anchors.centerIn: parent
                         text: root.running ? "Pause" : (root.timerState === "finished" ? "Restart" : "Start")
                         color: root.running ? accentGlow : "#fff"
-                        font.family: Theme.font; font.pixelSize: 12.5 * root.s; font.weight: Font.DemiBold
+                        font.family: Theme.font; font.pixelSize: ringArea.width * 0.066; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                     }
                     MouseArea {
                         anchors.fill: parent; cursorShape: Qt.PointingHandCursor
@@ -461,10 +463,12 @@ PillSurface {
             }
         }
 
+        Item { width: 1; height: root.showCountdown ? 0 : 8 * root.s }
+
         /* Keyboard hint */
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.hintDismissed && root.timerState === "idle"
+            visible: root.timerState === "idle"
             text: "space start · r reset"
             color: Theme.subtle
             font.family: Theme.font
