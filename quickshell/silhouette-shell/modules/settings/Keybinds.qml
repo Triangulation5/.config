@@ -473,9 +473,6 @@ PillSurface {
             property Item focusRowItem: null
 
             delegate: KeybindRow {
-                required property int index
-                required property var modelData
-
                 surface: root
                 modelData: modelData
                 index: index
