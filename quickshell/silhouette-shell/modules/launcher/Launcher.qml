@@ -605,9 +605,7 @@ PillSurface {
 
         delegate: WindowRow {
             required property int index
-            required property var modelData
             surface: root
-            modelData: modelData
             index: index
         }
     }
@@ -640,9 +638,7 @@ PillSurface {
 
         delegate: AppRow {
             required property int index
-            required property var modelData
             surface: root
-            modelData: modelData
             index: index
         }
     }
