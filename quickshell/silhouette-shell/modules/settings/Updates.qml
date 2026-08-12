@@ -1,28 +1,18 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
-import Quickshell.Io
 import qs.services
 import qs.modules.controlcenter
 import qs.components.icons
 import qs.components.controls
 
 /**
- * 更 UPDATES sub-surface: a terminal-free face for the Ricelin update engine. It
- * never touches git itself; it shells out to the python engine at
- * ~/.config/hypr/scripts/ricelin-update.py, which prints one JSON object, and
- * renders that. `check` is a safe dry-run that reports how far behind the install
- * is, the changelog, and any protected file whose local edits clash with upstream;
- * `apply` performs the update, taking upstream wholesale only for the conflicting
- * files the user explicitly opted to overwrite.
- *
- * The engine owns every policy decision (devmode detection, on-demand cloning,
- * three-way merges); this surface is a thin reader of its contract. On a dev or
- * symlinked-worktree install the engine answers "devmode" and the surface shows a
- * calm note that updates run through plain git instead, with no buttons. Reached
- * from the settings index and morphs back to it on an empty click or the back
- * chevron.
+ * 更 UPDATES sub-surface: renders the update state owned by the Updates
+ * service. This surface is pure presentation — the check/apply engine, its
+ * processes and every policy decision live in the singleton, so the state
+ * survives surface churn and the pill can read `Updates.applying` for its
+ * auth-pending gate. Reached from the settings index and morphs back to it on
+ * an empty click or the back chevron.
  */
 SettingsSurface {
     id: root
@@ -30,70 +20,6 @@ SettingsSurface {
     backSurface: "settings"
     implicitHeight: content.implicitHeight
     rows: []
-
-    readonly property string engine: Quickshell.env("HOME") + "/.config/hypr/scripts/ricelin-update.py"
-
-    property string status: ""
-    property string version: ""
-    property int behindCount: 0
-    property string fromDate: ""
-    property string toDate: ""
-    property var changelog: []
-    property var conflicts: []
-    property string errorText: ""
-
-    property bool checking: false
-    property bool applying: false
-    property bool restartNeeded: false
-
-    /** Target short sha, split off the engine's "<sha> <date>" version string. */
-    readonly property string targetShort: version.split(" ")[0]
-
-    /**
-     * Short sha of the installed rice, read from the engine's manifest since the
-     * check result only names the target. Empty until a first apply recorded one.
-     */
-    property string installedShort: ""
-
-    function readManifest() {
-        try {
-            root.installedShort = (JSON.parse(manifestFile.text()).syncedSha || "").slice(0, 7);
-        } catch (e) {
-            root.installedShort = "";
-        }
-    }
-
-    /** Conflicting rel-paths the user chose to overwrite with upstream on the next apply. */
-    property var takePaths: ({})
-
-    /** Core packages this update needs that aren't installed yet: [{id, name, desc, group}]. */
-    property var missingDeps: []
-
-    /**
-     * Packages the last apply couldn't bring in: [{id, error}]. A cancelled password
-     * prompt, an AUR build that needs a terminal, or a repo miss all land here so a
-     * failed or skipped install is never silent. Held until the next check.
-     */
-    property var depFailures: []
-
-    /** Per-dep install choice, keyed by id. Absent means default ON, false means opted out. */
-    property var installDeps: ({})
-
-    /** A dep is installed on apply unless the user explicitly turned its toggle off. */
-    function depChosen(id) {
-        return root.installDeps[id] !== false;
-    }
-
-    /** Title-case the package id into a readable label, e.g. noto-fonts-cjk -> Noto Fonts Cjk. */
-    function prettyDep(id) {
-        return id.split("-").map(function (w) {
-            return w.length > 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w;
-        }).join(" ");
-    }
-
-    readonly property bool busy: checking || applying
-    readonly property bool behind: status === "ok" && behindCount > 0
-    readonly property bool upToDate: status === "ok" && behindCount === 0
 
     /** rel-path -> human label for the protected files the engine can three-way merge. */
     readonly property var friendlyName: ({
@@ -111,236 +37,50 @@ SettingsSurface {
         return friendlyName[rel] !== undefined ? friendlyName[rel] : rel;
     }
 
-    readonly property string statusKind: applying ? "applying"
-        : checking ? "checking"
-        : restartNeeded ? "applied"
-        : status === "devmode" ? "devmode"
-        : status === "offline" ? "offline"
-        : status === "noclone" ? "noclone"
-        : status === "error" ? "error"
-        : behind ? "behind"
-        : upToDate ? "ok"
-        : "idle"
+    /** Title-case the package id into a readable label, e.g. noto-fonts-cjk -> Noto Fonts Cjk. */
+    function prettyDep(id) {
+        return id.split("-").map(function (w) {
+            return w.length > 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+        }).join(" ");
+    }
 
-    readonly property bool spinning: checking || applying
-
-    readonly property string badgeIcon: statusKind === "behind" ? "arrow-up"
-        : statusKind === "error" || statusKind === "offline" ? "close"
-        : statusKind === "devmode" ? "bolt"
-        : statusKind === "noclone" ? "download"
+    readonly property string badgeIcon: Updates.statusKind === "behind" ? "arrow-up"
+        : Updates.statusKind === "error" || Updates.statusKind === "offline" ? "close"
+        : Updates.statusKind === "devmode" ? "bolt"
+        : Updates.statusKind === "noclone" ? "download"
         : "check"
 
-    readonly property color badgeTint: statusKind === "error" || statusKind === "offline" ? Theme.dim
-        : statusKind === "checking" || statusKind === "applying" || statusKind === "idle" || statusKind === "noclone" ? Theme.subtle
+    readonly property color badgeTint: Updates.statusKind === "error" || Updates.statusKind === "offline" ? Theme.dim
+        : Updates.statusKind === "checking" || Updates.statusKind === "applying" || Updates.statusKind === "idle" || Updates.statusKind === "noclone" ? Theme.subtle
         : Theme.vermLit
 
-    readonly property string headline: statusKind === "applying" ? "Updating…"
-        : statusKind === "checking" ? "Checking…"
-        : statusKind === "applied" ? "Updated"
-        : statusKind === "devmode" ? "Developer install"
-        : statusKind === "offline" ? "Couldn't reach the server"
-        : statusKind === "noclone" ? "Ready to set up"
-        : statusKind === "error" ? "Check failed"
-        : statusKind === "behind" ? (behindCount + " update" + (behindCount === 1 ? "" : "s") + " available")
-        : statusKind === "ok" ? "Up to date"
+    readonly property string headline: Updates.statusKind === "applying" ? "Updating…"
+        : Updates.statusKind === "checking" ? "Checking…"
+        : Updates.statusKind === "applied" ? "Updated"
+        : Updates.statusKind === "devmode" ? "Developer install"
+        : Updates.statusKind === "offline" ? "Couldn't reach the server"
+        : Updates.statusKind === "noclone" ? "Ready to set up"
+        : Updates.statusKind === "error" ? "Check failed"
+        : Updates.statusKind === "behind" ? (Updates.behindCount + " update" + (Updates.behindCount === 1 ? "" : "s") + " available")
+        : Updates.statusKind === "ok" ? "Up to date"
         : "Updates"
 
     /** A line beneath the headline that orients each state, dropped when empty. */
-    readonly property string subline: statusKind === "devmode" ? "This is a clone or symlinked work-tree, so updates run through plain git. In-app updating is off here."
-        : statusKind === "noclone" ? "The rice copy didn't land yet. Check for updates to fetch it, then updates show up here."
-        : statusKind === "error" ? errorText
-        : statusKind === "behind" ? (fromDate.length > 0 ? fromDate + " → " + toDate : "")
+    readonly property string subline: Updates.statusKind === "devmode" ? "This is a clone or symlinked work-tree, so updates run through plain git. In-app updating is off here."
+        : Updates.statusKind === "noclone" ? "The rice copy didn't land yet. Check for updates to fetch it, then updates show up here."
+        : Updates.statusKind === "error" ? Updates.errorText
+        : Updates.statusKind === "behind" ? (Updates.fromDate.length > 0 ? Updates.fromDate + " → " + Updates.toDate : "")
         : ""
 
     onActiveChanged: {
         if (active) {
-            startCheck();
+            Updates.startCheck();
         } else {
-            checking = false;
-            applying = false;
+            Updates.checking = false;
+            Updates.applying = false;
             focusRowItem = null;
             kbIndex = -1;
         }
-    }
-
-    function resetResult() {
-        status = "";
-        behindCount = 0;
-        fromDate = "";
-        toDate = "";
-        changelog = [];
-        conflicts = [];
-        missingDeps = [];
-        installDeps = ({});
-        depFailures = [];
-        errorText = "";
-        takePaths = ({});
-    }
-
-    /** Drop the behind-driven sections so they vanish once an apply has landed. */
-    function clearPending() {
-        behindCount = 0;
-        changelog = [];
-        conflicts = [];
-        missingDeps = [];
-        installDeps = ({});
-        takePaths = ({});
-    }
-
-    /**
-     * The body for the post-restart toast, composed before clearPending wipes the
-     * changelog. The version line confirms what landed, and the top change names
-     * what is new with a count when more rode along.
-     */
-    function updatedBody() {
-        var v = root.version.replace(" ", " · ");
-        if (root.changelog.length > 0) {
-            var more = root.changelog.length > 1
-                ? "  (+" + (root.changelog.length - 1) + " more)" : "";
-            return "Now on " + v + "\n" + root.changelog[0] + more;
-        }
-        return "Now on " + v;
-    }
-
-    function ingest(data) {
-        root.status = data.status || "error";
-        root.behindCount = data.behind || 0;
-        root.fromDate = data.fromDate || "";
-        root.toDate = data.toDate || "";
-        root.changelog = data.changelog || [];
-        root.conflicts = data.conflicts || [];
-        root.missingDeps = data.missingDeps || [];
-        root.depFailures = data.depFailures || [];
-        root.errorText = data.error || "";
-        if (data.version && data.version.length > 0)
-            root.version = data.version;
-        if (data.applied)
-            root.restartNeeded = data.restartNeeded === true;
-    }
-
-    function startCheck() {
-        if (root.busy)
-            return;
-        root.checking = true;
-        root.restartNeeded = false;
-        resetResult();
-        checkProc.running = true;
-    }
-
-    function startApply() {
-        if (root.busy)
-            return;
-        root.applying = true;
-        var take = [];
-        for (var rel in root.takePaths)
-            if (root.takePaths[rel])
-                take.push(rel);
-        applyProc.takeArg = take.length > 0 ? take.join(",") : "";
-        var deps = [];
-        for (var i = 0; i < root.missingDeps.length; i++) {
-            var id = root.missingDeps[i].id;
-            if (root.depChosen(id))
-                deps.push(id);
-        }
-        applyProc.installArg = deps.length > 0 ? deps.join(",") : "";
-        applyProc.running = true;
-    }
-
-    FileView {
-        id: manifestFile
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/update.json"
-        watchChanges: true
-        printErrors: false
-        onLoaded: root.readManifest()
-        onFileChanged: reload()
-    }
-
-    Process {
-        id: checkProc
-        command: ["python3", root.engine, "check"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.checking = false;
-                try {
-                    root.ingest(JSON.parse(this.text));
-                } catch (e) {
-                    root.status = "error";
-                    root.errorText = "The updater returned something unexpected.";
-                }
-            }
-        }
-    }
-
-    Process {
-        id: applyProc
-        property string takeArg: ""
-        property string installArg: ""
-        command: {
-            var c = ["python3", root.engine, "apply"];
-            if (takeArg.length > 0)
-                c = c.concat(["--take", takeArg]);
-            if (installArg.length > 0)
-                c = c.concat(["--install-deps", installArg]);
-            return c;
-        }
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.applying = false;
-                try {
-                    root.ingest(JSON.parse(this.text));
-                } catch (e) {
-                    root.resetResult();
-                    root.status = "error";
-                    root.errorText = "The updater returned something unexpected.";
-                }
-                /**
-                 * Hold the auto-restart while any install failed: a restart wipes
-                 * this surface, so the user would never see what didn't install. The
-                 * code is already written to disk and lands on the next manual
-                 * restart or check; the failure notice stays put until then.
-                 */
-                if (root.restartNeeded && root.depFailures.length === 0) {
-                    markerProc.body = root.updatedBody();
-                    markerProc.running = true;
-                    root.clearPending();
-                    restartTimer.start();
-                }
-            }
-        }
-    }
-
-    /**
-     * New code only takes effect once the shell reloads, so do it for the user
-     * instead of asking. The brief delay lets the "Updated" line register first.
-     */
-    Timer {
-        id: restartTimer
-        interval: 1200
-        onTriggered: restartProc.running = true
-    }
-
-    /**
-     * Relaunch the pill on its own. setsid detaches the relaunch so it outlives the
-     * instance it kills, and the guard skips a second spawn if the watchdog already
-     * brought it back. Settings persist through flags.json, so it returns as it was.
-     */
-    Process {
-        id: restartProc
-        command: ["setsid", "sh", "-c",
-            "qs -c pill kill; sleep 0.4; qs -c pill ipc show >/dev/null 2>&1 || qs -c pill -d"]
-    }
-
-    /**
-     * Drop a one-shot marker the restarted shell reads to toast what landed, since
-     * the relaunch wipes this surface before any inline confirmation can stick. The
-     * body rides in as a positional arg so the value is never re-parsed by the shell.
-     */
-    Process {
-        id: markerProc
-        property string body: ""
-        command: ["sh", "-c",
-            "d=\"${XDG_STATE_HOME:-$HOME/.local/state}/ricelin\"; mkdir -p \"$d\"; printf '%s' \"$1\" > \"$d/updated\"",
-            "sh", body]
     }
 
     Column {
@@ -375,7 +115,7 @@ SettingsSurface {
 
                 GlyphIcon {
                     anchors.centerIn: parent
-                    visible: !root.spinning
+                    visible: !Updates.spinning
                     width: 17 * root.s
                     height: 17 * root.s
                     name: root.badgeIcon
@@ -385,7 +125,7 @@ SettingsSurface {
 
                 GlyphIcon {
                     anchors.centerIn: parent
-                    visible: root.spinning
+                    visible: Updates.spinning
                     width: 16 * root.s
                     height: 16 * root.s
                     name: "reboot"
@@ -393,7 +133,7 @@ SettingsSurface {
                     stroke: 2
 
                     RotationAnimation on rotation {
-                        running: root.spinning
+                        running: Updates.spinning
                         loops: Animation.Infinite
                         from: 0
                         to: 360
@@ -429,10 +169,10 @@ SettingsSurface {
                 }
 
                 Text {
-                    visible: root.version.length > 0
-                    text: root.behind && root.installedShort.length > 0 && root.installedShort !== root.targetShort
-                        ? root.installedShort + " → " + root.targetShort
-                        : root.version.replace(" ", " · ")
+                    visible: Updates.version.length > 0
+                    text: Updates.behind && Updates.installedShort.length > 0 && Updates.installedShort !== Updates.targetShort
+                        ? Updates.installedShort + " → " + Updates.targetShort
+                        : Updates.version.replace(" ", " · ")
                     color: Theme.faint
                     font.family: Theme.font
                     font.pixelSize: 10.5 * root.s
@@ -455,7 +195,7 @@ SettingsSurface {
             anchors.leftMargin: 14 * root.s
             anchors.rightMargin: 14 * root.s
             spacing: 8 * root.s
-            visible: root.behind
+            visible: Updates.behind
 
             Text {
                 text: "WHAT'S NEW"
@@ -469,7 +209,7 @@ SettingsSurface {
 
             Text {
                 width: parent.width
-                visible: root.changelog.length === 0
+                visible: Updates.changelog.length === 0
                 text: "No highlights noted"
                 color: Theme.dim
                 font.family: Theme.font
@@ -482,10 +222,10 @@ SettingsSurface {
                 id: logList
                 width: parent.width
                 height: visible ? Math.min(contentHeight, 168 * root.s) : 0
-                visible: root.changelog.length > 0
+                visible: Updates.changelog.length > 0
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                model: root.changelog
+                model: Updates.changelog
 
                 delegate: Row {
                     required property var modelData
@@ -523,7 +263,7 @@ SettingsSurface {
             }
         }
 
-        Item { width: 1; height: root.behind ? 14 * root.s : 0 }
+        Item { width: 1; height: Updates.behind ? 14 * root.s : 0 }
 
         /**
          * Conflicts: every protected file whose local edits overlap an upstream
@@ -536,11 +276,11 @@ SettingsSurface {
             anchors.leftMargin: 14 * root.s
             anchors.rightMargin: 14 * root.s
             spacing: 9 * root.s
-            visible: root.conflicts.length > 0
+            visible: Updates.conflicts.length > 0
 
             Text {
                 width: parent.width
-                text: "Your edits clash with " + root.conflicts.length + " file" + (root.conflicts.length === 1 ? "" : "s")
+                text: "Your edits clash with " + Updates.conflicts.length + " file" + (Updates.conflicts.length === 1 ? "" : "s")
                 color: Theme.subtle
                 font.family: Theme.font
                 font.pixelSize: 10.5 * root.s
@@ -549,13 +289,13 @@ SettingsSurface {
             }
 
             Repeater {
-                model: root.conflicts
+                model: Updates.conflicts
 
                 Item {
                     id: confRow
                     required property var modelData
                     readonly property string rel: modelData
-                    readonly property bool takeNew: root.takePaths[rel] === true
+                    readonly property bool takeNew: Updates.takePaths[rel] === true
 
                     width: parent.width
                     height: 30 * root.s
@@ -580,21 +320,21 @@ SettingsSurface {
                             label: "Keep mine"
                             on: !confRow.takeNew
                             corner: -1
-                            onClicked: root.takePaths = Object.assign({}, root.takePaths, { [confRow.rel]: false })
+                            onClicked: Updates.takePaths = Object.assign({}, Updates.takePaths, { [confRow.rel]: false })
                         }
 
                         BinarySeg {
                             label: "Take new"
                             on: confRow.takeNew
                             corner: 1
-                            onClicked: root.takePaths = Object.assign({}, root.takePaths, { [confRow.rel]: true })
+                            onClicked: Updates.takePaths = Object.assign({}, Updates.takePaths, { [confRow.rel]: true })
                         }
                     }
                 }
             }
         }
 
-        Item { width: 1; height: root.conflicts.length > 0 ? 14 * root.s : 0 }
+        Item { width: 1; height: Updates.conflicts.length > 0 ? 14 * root.s : 0 }
 
         /**
          * Missing packages: core packages the rice needs that aren't installed yet,
@@ -610,11 +350,11 @@ SettingsSurface {
             anchors.leftMargin: 14 * root.s
             anchors.rightMargin: 14 * root.s
             spacing: 9 * root.s
-            visible: root.behind && root.missingDeps.length > 0
+            visible: Updates.behind && Updates.missingDeps.length > 0
 
             Text {
                 width: parent.width
-                text: "Needs " + root.missingDeps.length + " package" + (root.missingDeps.length === 1 ? "" : "s")
+                text: "Needs " + Updates.missingDeps.length + " package" + (Updates.missingDeps.length === 1 ? "" : "s")
                 color: Theme.subtle
                 font.family: Theme.font
                 font.pixelSize: 10.5 * root.s
@@ -623,7 +363,7 @@ SettingsSurface {
             }
 
             Repeater {
-                model: root.missingDeps
+                model: Updates.missingDeps
 
                 Item {
                     id: depRow
@@ -667,14 +407,14 @@ SettingsSurface {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         s: root.s
-                        on: root.depChosen(depRow.depId)
-                        onToggled: root.installDeps = Object.assign({}, root.installDeps, { [depRow.depId]: !root.depChosen(depRow.depId) })
+                        on: Updates.depChosen(depRow.depId)
+                        onToggled: Updates.installDeps = Object.assign({}, Updates.installDeps, { [depRow.depId]: !Updates.depChosen(depRow.depId) })
                     }
                 }
             }
         }
 
-        Item { width: 1; height: (root.behind && root.missingDeps.length > 0) ? 14 * root.s : 0 }
+        Item { width: 1; height: (Updates.behind && Updates.missingDeps.length > 0) ? 14 * root.s : 0 }
 
         /**
          * Install failures: any chosen package the last apply couldn't bring in. The
@@ -689,11 +429,11 @@ SettingsSurface {
             anchors.leftMargin: 14 * root.s
             anchors.rightMargin: 14 * root.s
             spacing: 9 * root.s
-            visible: root.depFailures.length > 0
+            visible: Updates.depFailures.length > 0
 
             Text {
                 width: parent.width
-                text: "Couldn't install " + root.depFailures.length + " package" + (root.depFailures.length === 1 ? "" : "s")
+                text: "Couldn't install " + Updates.depFailures.length + " package" + (Updates.depFailures.length === 1 ? "" : "s")
                 color: Theme.verm
                 font.family: Theme.font
                 font.pixelSize: 10.5 * root.s
@@ -702,7 +442,7 @@ SettingsSurface {
             }
 
             Repeater {
-                model: root.depFailures
+                model: Updates.depFailures
 
                 Row {
                     id: failRow
@@ -746,19 +486,19 @@ SettingsSurface {
             }
         }
 
-        Item { width: 1; height: root.depFailures.length > 0 ? 14 * root.s : 0 }
+        Item { width: 1; height: Updates.depFailures.length > 0 ? 14 * root.s : 0 }
 
         Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.leftMargin: 12 * root.s
             anchors.rightMargin: 12 * root.s
-            visible: root.behind || root.statusKind !== "devmode"
+            visible: Updates.behind || Updates.statusKind !== "devmode"
             height: visible ? 1 : 0
             color: Theme.hair
         }
 
-        Item { width: 1; height: (root.behind || root.statusKind !== "devmode") ? 15 * root.s : 0 }
+        Item { width: 1; height: (Updates.behind || Updates.statusKind !== "devmode") ? 15 * root.s : 0 }
 
         Column {
             anchors.left: parent.left
@@ -772,29 +512,29 @@ SettingsSurface {
                 width: parent.width
                 height: 38 * root.s
                 radius: 10 * root.s
-                visible: root.behind
+                visible: Updates.behind
                 color: Qt.alpha(Theme.vermLit, updateHover.hovered ? 0.30 : 0.20)
                 border.width: 1
                 border.color: Qt.alpha(Theme.vermLit, 0.55)
-                opacity: root.applying ? 0.55 : 1
+                opacity: Updates.applying ? 0.55 : 1
                 Behavior on color { ColorAnimation { duration: Motion.fast } }
                 Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
                 HoverHandler {
                     id: updateHover
-                    enabled: !root.applying
+                    enabled: !Updates.applying
                 }
 
                 MouseArea {
                     anchors.fill: parent
-                    enabled: !root.applying
+                    enabled: !Updates.applying
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.startApply()
+                    onClicked: Updates.startApply()
                 }
 
                 Text {
                     anchors.centerIn: parent
-                    text: root.applying ? "Updating…" : "Update now"
+                    text: Updates.applying ? "Updating…" : "Update now"
                     color: Theme.bright
                     font.family: Theme.font
                     font.pixelSize: 12 * root.s
@@ -807,30 +547,30 @@ SettingsSurface {
                 width: parent.width
                 height: 38 * root.s
                 radius: 10 * root.s
-                visible: root.statusKind !== "devmode"
+                visible: Updates.statusKind !== "devmode"
                 color: checkHover.hovered ? Qt.alpha(Theme.onGlow, 0.34) : Qt.alpha(Theme.onGlow, 0.20)
                 border.width: 1
                 border.color: Qt.alpha(Theme.onGlow, checkHover.hovered ? 0.6 : 0.4)
-                opacity: root.busy ? 0.55 : 1
+                opacity: Updates.busy ? 0.55 : 1
                 Behavior on color { ColorAnimation { duration: Motion.fast } }
                 Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
                 HoverHandler {
                     id: checkHover
-                    enabled: !root.busy
+                    enabled: !Updates.busy
                 }
 
                 MouseArea {
                     anchors.fill: parent
-                    enabled: !root.busy
+                    enabled: !Updates.busy
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.startCheck()
+                    onClicked: Updates.startCheck()
                 }
 
                 Text {
                     anchors.centerIn: parent
-                    text: root.checking ? "Checking…"
-                        : root.statusKind === "offline" ? "Retry"
+                    text: Updates.checking ? "Checking…"
+                        : Updates.statusKind === "offline" ? "Retry"
                         : "Check for updates"
                     color: Theme.cream
                     font.family: Theme.font
@@ -841,7 +581,7 @@ SettingsSurface {
 
             Text {
                 width: parent.width
-                visible: root.restartNeeded && root.depFailures.length === 0
+                visible: Updates.restartNeeded && Updates.depFailures.length === 0
                 text: "Updated · restarting the shell"
                 color: Theme.subtle
                 font.family: Theme.font

@@ -560,7 +560,7 @@ PillSurface {
                 font.family: Theme.font
                 font.pixelSize: 9.5 * root.s
                 font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
+                font.capitalization: Font.AllLowercase
                 font.letterSpacing: 1 * root.s
             }
         }

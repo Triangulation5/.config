@@ -16,7 +16,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property int bars: Flags.vizStyle === "centered" ? 7 : 4
+    property int bars: Flags.vizStyle === "centered" ? 7 : 4
 
     property var levels: Array(bars).fill(0)
     property bool active: false
@@ -25,35 +25,78 @@ Singleton {
 
     /**
      * True while the resting pill can actually render the bars: the pill sets
-     * this while in rest mode, so the 60fps capture never runs behind an
-     * expanded pill, a hover, a surface, toast, OSD or game mode where the
-     * bars cannot be seen. Defaults off; the pill flips it on at rest.
+     * this while in rest mode, so the capture never runs behind an expanded
+     * pill, a hover, a surface, toast, OSD or game mode where the bars cannot
+     * be seen. Defaults off; the pill flips it on at rest.
      */
     property bool pillWanted: false
 
     /**
-     * The pill pipeline only answers to the pill visualizer flag and rest-mode
-     * visibility; the lock's forced capture is a separate process below.
+     * The pill capture's real gate. Follows `pillWanted` through a grace
+     * period: when the pill briefly leaves rest (hovering for the workspace
+     * dots, a quick surface open) the capture stays warm so the bars resume
+     * instantly instead of paying a ~2s respawn; only once the grace expires
+     * while the pill is still away does the capture actually go down. Mirror
+     * of the string visualizer's expandKill policy.
      */
-    readonly property bool wanted: Flags.musicViz && available && root.pillWanted
+    property bool pillCaptureWanted: false
+
+    onPillWantedChanged: {
+        if (pillWanted) {
+            pillGrace.stop();
+            pillCaptureWanted = true;
+        } else {
+            pillGrace.restart();
+        }
+    }
+
+    Timer {
+        id: pillGrace
+        interval: 5000
+        onTriggered: root.pillCaptureWanted = false
+    }
 
     /**
-     * Lock-glow capture: its own cava run from assets/cava.conf (12 bars,
-     * ascii range 100), matching the 12 bands the glow shader interpolates.
-     * Forced on while the lock screen is up, independent of the pill
-     * visualizer flag.
+     * The pill pipeline only answers to the pill visualizer flag and the
+     * graced capture gate; the lock's forced capture is a separate process
+     * below.
+     */
+    readonly property bool wanted: Flags.musicViz && available && root.pillCaptureWanted
+
+    /**
+     * Lock-glow capture: its own cava run (12 bars, ascii range 100), matching
+     * the 12 bands the glow shader interpolates. Forced on while the lock
+     * screen is up, independent of the pill visualizer flag.
      */
     property bool enabled: false
     readonly property int lockBars: 12
     property var lockLevels: Array(lockBars).fill(0)
     property bool lockActive: false
 
-    readonly property string lockConfigPath: Quickshell.shellPath("assets/cava.conf")
+    /**
+     * Lock capture config, generated like the pill one so the framerate
+     * follows Flags.vizFps too.
+     */
+    property string lockConfig:
+        "[general]\n"
+        + "mode = normal\n"
+        + "framerate = " + Flags.vizFps + "\n"
+        + "bars = " + lockBars + "\n"
+        + "autosens = 1\n"
+        + "[input]\n"
+        + "method = pulse\n"
+        + "source = auto\n"
+        + "[output]\n"
+        + "method = raw\n"
+        + "raw_target = /dev/stdout\n"
+        + "data_format = ascii\n"
+        + "ascii_max_range = 100\n"
+        + "channels = mono\n"
 
-    readonly property string config:
+    property string config:
         "[general]\n"
         + "bars = " + bars + "\n"
-        + "framerate = 60\n"
+        + "framerate = " + Flags.vizFps + "\n"
         + "autosens = 0\n"
         + "sensitivity = 3500\n"
         + "[input]\n"
@@ -88,8 +131,10 @@ Singleton {
              * Freeze, don't vanish, on expand: active and levels persist so
              * returning to rest shows the bars immediately while cava respawns
              * in the background - a killed-and-respawned capture would
-             * otherwise read as a visible reload. Only turning the visualizer
-             * off or losing cava actually zeroes them.
+             * otherwise read as a visible reload. With the grace gate this
+             * only fires after the pill has been away from rest past the
+             * 5s window; brief absences never reach it. Only turning the
+             * visualizer off or losing cava actually zeroes them.
              */
             levels = Array(bars).fill(0)
             active = false
@@ -115,6 +160,27 @@ Singleton {
         lockProc.running = enabled && available
     }
 
+    /**
+     * Live config changes: the config bindings track Flags continuously, so a
+     * capture relaunched after a framerate or bar-count change comes up with
+     * the new settings instead of the shell-start values. A running capture is
+     * bounced through its relaunch timer (it picks the fresh config up on
+     * respawn); when the pill is expanded the wanted flip already handles it.
+     * The string visualizer self-heals the same way via the rest/expand cycle.
+     */
+    Connections {
+        target: Flags
+        function onVizFpsChanged() {
+            if (root.wanted && cavaProc.running)
+                cavaProc.running = false;
+            if (root.enabled && root.available && lockProc.running)
+                lockProc.running = false;
+        }
+        function onVizStyleChanged() {
+            if (root.wanted && cavaProc.running)
+                cavaProc.running = false;
+        }
+    }
 
     Process {
         running: true
@@ -213,14 +279,14 @@ Singleton {
     }
 
     /**
-     * Lock-glow capture, driven straight from assets/cava.conf (12 bars,
-     * ascii range 100) so the glow shader's twelve bands get one real cava
-     * bar each instead of a spread-downsampled 4/7-bar feed.
+     * Lock-glow capture, piped the generated 12-bar config so the glow
+     * shader's bands get one real cava bar each instead of a
+     * spread-downsampled 4/7-bar feed.
      */
     Process {
         id: lockProc
 
-        command: ["cava", "-p", root.lockConfigPath]
+        command: ["sh", "-c", "printf '%s' \"$1\" | cava -p /dev/stdin", "_", root.lockConfig]
 
         stdout: SplitParser {
             onRead: (line) => {

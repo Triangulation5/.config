@@ -2,7 +2,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import qs.services
 
 /**
  * Shared session flags persisted to a small JSON file and watched for external
@@ -49,6 +48,7 @@ Singleton {
     property alias weatherCity: adapter.weatherCity
     property alias musicViz: adapter.musicViz
     property alias vizStyle: adapter.vizStyle
+    property alias vizFps: adapter.vizFps
     property alias gameMode: adapter.gameMode
     property alias gamePrevDnd: adapter.gamePrevDnd
     property alias gamePrevViz: adapter.gamePrevViz
@@ -117,6 +117,8 @@ Singleton {
             property bool musicViz: true
             /** Rest-pill spectrum renderer: bars, centered bars, or the flowing string. */
             property string vizStyle: "bars"
+            /** Spectrum capture framerate (the pill EQ is visually identical at 30). */
+            property int vizFps: 30
             property bool gameMode: false
             property bool gamePrevDnd: false
             property bool gamePrevViz: true

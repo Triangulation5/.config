@@ -12,8 +12,6 @@ import qs.modules.pill.widgets
 import qs.modules.settings
 import qs.modules.pill.surfaces
 import qs.modules.pill.visualizers
-import qs.components.icons
-import qs.components.controls
 import qs.components.layout
 import qs.modules.controlcenter
 import qs.modules.launcher
@@ -143,7 +141,7 @@ Item {
      * so the polkit window underneath is clickable and typeable, instead of the
      * backdrop swallowing the reach for it and dismissing the whole pill.
      */
-    readonly property bool authPending: updatesOpen && ldUpdates.item !== null && ldUpdates.item.applying
+    readonly property bool authPending: updatesOpen && Updates.applying
 
     /**
      * The special workspace shown on this pill's monitor, surfaced as a plain word
@@ -249,7 +247,7 @@ Item {
     }
 
     /** Seconds a surface stays loaded after last use before being reclaimed. */
-    property int surfaceIdleTimeout: 60
+    property int surfaceIdleTimeout: 10
 
     /** Timestamp of last open per surface name. */
     property var _surfaceLastOpened: ({})
@@ -259,6 +257,17 @@ Item {
     /** True while the idle-cleanup timer has run at least once. */
     property bool _surfaceCleanupReady: false
 
+    /**
+     * Latch that gates the wallpaper hold-to-delete so a held Enter fires the
+     * strip's HeatHold once per press-hold, not once per autorepeat event.
+     * Reset when the surface closes (below) and re-armed on key release in
+     * PillRoot, so every new hold re-fires the delete hold.
+     */
+    property bool _wpHoldStarted: false
+    onWallpaperOpenChanged: if (!wallpaperOpen) _wpHoldStarted = false
+    /** File path handed to the localsend surface between open and item load. */
+    property string _pendingSend: ""
+
     function _cleanupIdleSurfaces() {
         var now = Date.now();
         var timeout = pill.surfaceIdleTimeout * 1000;
@@ -267,6 +276,9 @@ Item {
             ld = pill._surfaceLoaders[name];
             if (!ld || !ld.active)
                 continue;
+            /** Never evict the surface currently open on the pill. */
+            if (name === pill.surface)
+                continue;
             /** Never evict a running timer — it must persist in the background. */
             if (name === "timer" && ld.item && ld.item.timerState === "running")
                 continue;
@@ -274,11 +286,24 @@ Item {
             if (now - last >= timeout)
                 ld.active = false;
         }
+        /**
+         * The hover media bud stays loaded while anything plays, even with the
+         * pill at rest and the bud off-screen. Reclaim it once it has been out
+         * of hover mode for the idle timeout so an idle iGPU isn't paying for a
+         * full Media widget (player lookups, cover art) that nobody can see.
+         * The media timestamp is only stamped by the full media surface, never
+         * by the bud itself, so a bud that is only ever seen on hover is simply
+         * reclaimed sooner — harmless, since it rebuilds on the next media
+         * toggle. The visible bud is never touched: this only fires when the
+         * pill is out of hover mode.
+         */
+        if (hoverMedia.active && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= timeout)
+            hoverMedia.active = false;
     }
 
     Timer {
         id: idleCleanupTimer
-        interval: 30000
+        interval: 10000
         repeat: true
         running: pill._surfaceCleanupReady
         onTriggered: pill._cleanupIdleSurfaces()
@@ -334,558 +359,14 @@ Item {
     signal requestSurface(string name)
     signal requestClose()
 
-    /**
-     * Open the calendar surface, focused on `date` when non-null, or on the
-     * real today when null. Used by the hover strip (the clicked day) and the
-     * clock area (today).
-     */
-    function openCalendarAt(date) {
-        calendarFocusDate = date
-        requestSurface("calendar")
-    }
-
-    /**
-     * Forward an arrow-key nudge to the open mixer's targeted fader. Returns true
-     * when the mixer is open and a fader consumed the step.
-     */
-    function mixerStep(deltaPct) {
-        return (pill.mixerOpen && ldMixer.item) ? ldMixer.item.stepFocused(deltaPct) : false;
-    }
-
-    /**
-     * Move the open mixer's keyboard focus across the fader row; `dir` is +1
-     * (right) or -1 (left). No-op unless the mixer is open.
-     */
-    function mixerFocusMove(dir) {
-        if (pill.mixerOpen && ldMixer.item)
-            ldMixer.item.moveFocus(dir);
-    }
-
-    /**
-     * Forward an arrow-key nudge to the open recorder's focused audio fader.
-     * Returns true when the recorder is open and a revealed fader consumed it.
-     */
-    function recorderStep(deltaPct) {
-        return (pill.recorderOpen && ldRecorder.item) ? ldRecorder.item.stepFocused(deltaPct) : false;
-    }
-
-    /**
-     * Resolve which settings-family surface owns keyboard row navigation right
-     * now: the category index or one of its morphing sub-surfaces. Returns null
-     * when none of them is open.
-     */
-    function rowNavSurface() {
-        if (pill.settingsOpen)
-            return ldSettings.item;
-        if (pill.appearanceOpen)
-            return ldAppearance.item;
-        if (pill.lookOpen)
-            return ldLook.item;
-        if (pill.inputOpen)
-            return ldInput.item;
-        if (pill.displayOpen)
-            return ldDisplay.item;
-        if (pill.animationOpen)
-            return ldAnimation.item;
-        if (pill.idlelockOpen)
-            return ldIdlelock.item;
-        if (pill.fontpickerOpen)
-            return ldFontpicker.item;
-        return null;
-    }
-
-    /**
-     * Move the focused settings row by `dir` (+1 down, -1 up), carrying the soul
-     * seam. Returns true when a settings-family surface is open and consumed it.
-     */
-    function settingsMove(dir) {
-        var nav = pill.rowNavSurface();
-        if (!nav)
-            return false;
-        nav.kbMove(dir);
-        return true;
-    }
-
-    /**
-     * Step the focused settings row's control: a segmented choice cycles by
-     * `dir`, a toggle is set on (dir > 0) or off. Returns true when consumed.
-     */
-    /**
-     * Left/right on an open settings surface: adjust the focused row's value
-     * (seg cycle, toggle flip, scrub bump). Returns false when the focused row
-     * is a nav row (nothing to adjust) so vim h/l fall through to back/enter
-     * instead of being swallowed.
-     */
-    function settingsAdjust(dir) {
-        var nav = pill.rowNavSurface();
-        if (!nav || !nav.rows || nav.rows.length === 0)
-            return false;
-        var idx = nav.kbIndex < 0 ? 0 : nav.kbIndex;
-        if (idx >= nav.rows.length)
-            return false;
-        var r = nav.rows[idx];
-        if (!r || r.kind === "nav")
-            return false;
-        if (nav.kbIndex < 0) {
-            nav.kbIndex = 0;
-            nav.focusRowItem = nav.rows[0].item;
-        }
-        nav.kbAdjust(dir);
-        return true;
-    }
-
-    /**
-     * Activate the focused settings row: a toggle flips, a nav row opens its
-     * sub-surface. Returns true when a settings-family surface is open.
-     */
-    function settingsActivate() {
-        var nav = pill.rowNavSurface();
-        if (!nav)
-            return false;
-        nav.kbActivate();
-        return true;
-    }
-
-    /**
-     * Slide the open keybinds list's focused row by `dir` (+1 down, -1 up),
-     * carrying the soul seam. No-op unless the keybinds surface is open.
-     */
-    function keybindsMove(dir) {
-        if (pill.keybindsOpen && ldKeybinds.item)
-            ldKeybinds.item.move(dir);
-    }
-
-    /**
-     * Enter on the open keybinds surface: arm chord capture on the focused row.
-     * No-op unless the keybinds surface is open.
-     */
-    function keybindsActivate() {
-        if (pill.keybindsOpen && ldKeybinds.item)
-            ldKeybinds.item.activate();
-    }
-
     readonly property bool keybindsListening: pill.keybindsOpen && ldKeybinds.item !== null && ldKeybinds.item.listening
-
-    /**
-     * A tile was picked in the standalone quick-record chooser. Screen with several
-     * monitors flips to the inline sub-choice; otherwise each source kicks off its
-     * resolver (which counts down once the target is ready) and the chooser closes.
-     */
-    function quickChooseSource(kind) {
-        if (kind === "screen") {
-            if (ScreenRec.monitors.length > 1) {
-                ScreenRec.quickScreenChoosing = true;
-                return;
-            }
-            ScreenRec.prepareScreen(pill.screenName);
-        } else if (kind === "window") {
-            ScreenRec.prepareWindow();
-        }
-        ScreenRec.quickChoosing = false;
-        ScreenRec.quickScreenChoosing = false;
-    }
-
-    function quickPickMonitor(name) {
-        ScreenRec.quickChoosing = false;
-        ScreenRec.quickScreenChoosing = false;
-        ScreenRec.prepareScreen(name);
-    }
-
-    /**
-     * Pop the open link surface one subview back. Returns true when the step was
-     * consumed, false when the surface is already at its root (or not open) and
-     * Escape should close the surface instead.
-     */
-    function linkBack() {
-        return (pill.linkOpen && ldLink.item) ? ldLink.item.back() : false;
-    }
-
-    /**
-     * Step the open surface back one level when its header bar is clicked: a
-     * settings sub-surface returns to the index, the font picker to appearance,
-     * a keybinds form to its list, and any other surface dismisses to the hover
-     * pill. Empty space in the body never triggers this.
-     */
-    function surfaceBack() {
-        if (pill.keybindsOpen) {
-            if (ldKeybinds.item && ldKeybinds.item.formOpen)
-                ldKeybinds.item.closeForm();
-            else
-                pill.requestSurface("settings");
-            return;
-        }
-        if (pill.fontpickerOpen) {
-            pill.requestSurface("appearance");
-            return;
-        }
-        if (pill.stashOpen) {
-            if (ldStash.item && ldStash.item.addOpen)
-                ldStash.item.closeAdd();
-            else
-                pill.requestSurface("workspaces");
-            return;
-        }
-        if (pill.spaceappsOpen) {
-            if (ldSpaceapps.item && ldSpaceapps.item.addOpen)
-                ldSpaceapps.item.closeAdd();
-            else
-                pill.requestSurface("workspaces");
-            return;
-        }
-        if (pill.workspacesOpen && ldWorkspaces.item && ldWorkspaces.item.formOpen) {
-            ldWorkspaces.item.closeForm();
-            return;
-        }
-        if (pill.calendarOpen && ldCalendar.item && ldCalendar.item.editorShown) {
-            ldCalendar.item.closeEditor();
-            return;
-        }
-        if (pill.appearanceOpen || pill.updatesOpen || pill.displayOpen || pill.inputOpen || pill.lookOpen || pill.idlelockOpen || pill.animationOpen || pill.workspacesOpen) {
-            pill.requestSurface("settings");
-            return;
-        }
-        pill.requestClose();
-    }
-
-    /**
-     * Pop the open keybinds editor form back to the bind list. Returns true when a
-     * form was open and dismissed, false otherwise so Escape closes the surface.
-     */
-    function keybindsBack() {
-        if (pill.keybindsOpen && ldKeybinds.item && ldKeybinds.item.formOpen) {
-            ldKeybinds.item.closeForm();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Slide the open wallpaper strip's focus by `dir` thumbs; +1 is right (older)
-     * and -1 is left (newer). No-op unless the wallpaper surface is open.
-     */
-    function wallpaperMove(dir) {
-        if (pill.wallpaperOpen && ldWall.item)
-            ldWall.item.move(dir);
-    }
-
-    /**
-     * Apply the wallpaper strip's focused thumb through wallpaper.sh. The
-     * surface stays open so the pick can be iterated. No-op unless the
-     * wallpaper surface is open.
-     */
-    function wallpaperActivate() {
-        if (pill.wallpaperOpen && ldWall.item)
-            ldWall.item.activate();
-    }
-
-    /** Keyboard hold-to-delete on the wallpaper strip. */
-    function wallpaperHoldPress() {
-        if (pill.wallpaperOpen && ldWall.item)
-            ldWall.item.holdPress();
-    }
-
     readonly property bool wallpaperSearching: pill.wallpaperOpen && ldWall.item !== null && ldWall.item.searching
-
-    /**
-     * Route the first printable keystroke over the open wallpaper strip into a
-     * DuckDuckGo search seeded with that character. No-op unless the wallpaper
-     * surface is open.
-     */
-    function wallpaperType(ch) {
-        if (pill.wallpaperOpen && ldWall.item)
-            ldWall.item.startSearch(ch);
-    }
-
-    /**
-     * Slide the open power surface's keyboard focus by `dir` tiles; +1 is right
-     * and -1 is left. No-op unless the power surface is open.
-     */
-    function powerMove(dir) {
-        if (pill.powerOpen && ldPower.item)
-            ldPower.item.move(dir);
-    }
-
-    /**
-     * Enter pressed on the open power surface's focused tile: fires a safe tile
-     * at once, latches a destructive tile's heat hold. Returns true when a tile
-     * consumed the key. No-op (false) unless the power surface is open.
-     */
-    function powerPress() {
-        return (pill.powerOpen && ldPower.item) ? ldPower.item.pressFocused() : false;
-    }
-
-    /**
-     * Enter released on the open power surface: drains an unfinished destructive
-     * hold so a key let go before the fill completes never confirms.
-     */
-    function powerRelease() {
-        if (pill.powerOpen && ldPower.item)
-            ldPower.item.releaseFocused();
-    }
-
-    /**
-     * Slide the open clipboard's selection by `delta` rows. Returns true when
-     * the clipboard surface consumed it.
-     */
-    function clipboardMove(delta) {
-        if (!pill.clipboardOpen || !ldClip.item)
-            return false;
-        ldClip.item.move(delta);
-        return true;
-    }
-
-    /** Return on the open clipboard: copy the selected entry and close. */
-    function clipboardActivate() {
-        if (!pill.clipboardOpen || !ldClip.item)
-            return false;
-        ldClip.item.activate();
-        return true;
-    }
-
-    /**
-     * Slide the open font picker's highlight by `dir`. Returns true when the
-     * picker consumed it.
-     */
-    function fontpickerMove(dir) {
-        if (!pill.fontpickerOpen || !ldFontpicker.item)
-            return false;
-        ldFontpicker.item.move(dir);
-        return true;
-    }
-
-    /** Return on the open font picker: pick the highlighted family. */
-    function fontpickerActivate() {
-        if (!pill.fontpickerOpen || !ldFontpicker.item)
-            return false;
-        ldFontpicker.item.activate();
-        return true;
-    }
-
-    function localsendMove(dir) {
-        if (!pill.localsendOpen || !ldLSend.item)
-            return false;
-        ldLSend.item.move(dir);
-        return true;
-    }
-
-    function localsendActivate() {
-        if (!pill.localsendOpen || !ldLSend.item)
-            return false;
-        ldLSend.item.activate();
-        return true;
-    }
-
-    function timerBack() {
-        if (!pill.timerOpen || !ldTimer.item)
-            return false;
-        pill.requestClose();
-        return true;
-    }
-
-    function timerActivate() {
-        if (!pill.timerOpen || !ldTimer.item)
-            return false;
-        ldTimer.item.toggle();
-        return true;
-    }
-
-    function timerReset() {
-        if (!pill.timerOpen || !ldTimer.item)
-            return false;
-        ldTimer.item.reset();
-        return true;
-    }
-
-    /**
-     * Slide the open launcher's selection by `delta`. Returns true when the
-     * launcher consumed it.
-     */
-    function launcherMove(delta) {
-        if (!pill.launcherOpen || !ldLauncher.item)
-            return false;
-        ldLauncher.item.move(delta);
-        return true;
-    }
-
-    /** Return on the open launcher: launch the selected entry. */
-    function launcherActivate() {
-        if (!pill.launcherOpen || !ldLauncher.item)
-            return false;
-        ldLauncher.item.activate();
-        return true;
-    }
-
-    /**
-     * Return on the open recorder: press its action bar (start / stop / open
-     * the source chooser).
-     */
-    function recorderPress() {
-        if (!pill.recorderOpen || !ldRecorder.item)
-            return false;
-        ldRecorder.item.press();
-        return true;
-    }
-
-    /**
-     * Slide the open workspaces hub's focus by `dir`. Returns true when the
-     * hub consumed it.
-     */
-    function workspacesMove(dir) {
-        if (!pill.workspacesOpen || !ldWorkspaces.item)
-            return false;
-        ldWorkspaces.item.move(dir);
-        return true;
-    }
-
-    /**
-     * Return on the open workspaces hub: open the focused row's surface or the
-     * add-workspace form.
-     */
-    function workspacesActivate() {
-        if (!pill.workspacesOpen || !ldWorkspaces.item)
-            return false;
-        ldWorkspaces.item.activate();
-        return true;
-    }
-
     /**
      * The recorder's inline source chooser (or its monitor sub-chooser) is
      * covering the action bar. Return/Backspace must drive the chooser, not the
      * bar or the audio faders.
      */
     readonly property bool recorderChooserOpen: pill.recorderOpen && ldRecorder.item !== null && ldRecorder.item.chooserOpen
-
-    /**
-     * Slide the open stash list's focus by `dir` (+1 down, -1 up), across the
-     * stashed apps and the add-app bar. Returns true when consumed.
-     */
-    function stashMove(dir) {
-        if (!pill.stashOpen || !ldStash.item)
-            return false;
-        ldStash.item.move(dir);
-        return true;
-    }
-
-    /**
-     * Return on the open stash list: remove the focused app, or open the add
-     * picker when the add bar is focused. Returns true when consumed.
-     */
-    function stashActivate() {
-        if (!pill.stashOpen || !ldStash.item)
-            return false;
-        ldStash.item.activate();
-        return true;
-    }
-
-    /** Slide the open space-apps list's focus by `dir`. Returns true when consumed. */
-    function spaceappsMove(dir) {
-        if (!pill.spaceappsOpen || !ldSpaceapps.item)
-            return false;
-        ldSpaceapps.item.move(dir);
-        return true;
-    }
-
-    /** Return on the open space-apps list: remove the focused app, or open the picker. */
-    function spaceappsActivate() {
-        if (!pill.spaceappsOpen || !ldSpaceapps.item)
-            return false;
-        ldSpaceapps.item.activate();
-        return true;
-    }
-
-    /**
-     * Move the open calendar's keyboard day by `dir` along `axis` ("h" rows
-     * by one day, "v" by a week). Returns true when the calendar consumed it.
-     */
-    function calendarMove(axis, dir) {
-        if (!pill.calendarOpen || !ldCalendar.item)
-            return false;
-        ldCalendar.item.kbMove(axis, dir);
-        return true;
-    }
-
-    /** Return on the open calendar: select the keyboard-focused day. */
-    function calendarActivate() {
-        if (!pill.calendarOpen || !ldCalendar.item)
-            return false;
-        ldCalendar.item.kbActivate();
-        return true;
-    }
-
-    /**
-     * Slide the open link surface's row focus by `dir`, across the rows of the
-     * active subview (connectivity rows, wifi networks, bt devices). Returns
-     * true when the link surface consumed it.
-     */
-    function linkMove(dir) {
-        if (!pill.linkOpen || !ldLink.item)
-            return false;
-        ldLink.item.kbMove(dir);
-        return true;
-    }
-
-    /** Return on the open link surface: activate the focused row. */
-    function linkActivate() {
-        if (!pill.linkOpen || !ldLink.item)
-            return false;
-        ldLink.item.kbActivate();
-        return true;
-    }
-
-    /**
-     * Move the recorder's inline source chooser focus by `dir`: across the
-     * Screen / Window tiles, or the monitor tiles in the sub-chooser. Returns
-     * true when the chooser consumed it.
-     */
-    function recorderChooserMove(dir) {
-        return (pill.recorderOpen && ldRecorder.item) ? ldRecorder.item.chooserMove(dir) : false;
-    }
-
-    /** Return on the recorder's inline source chooser: pick the focused tile. */
-    function recorderChooserActivate() {
-        return (pill.recorderOpen && ldRecorder.item) ? ldRecorder.item.chooserActivate() : false;
-    }
-
-    /**
-     * Backspace on the recorder's inline source chooser: the monitor sub-
-     * chooser returns to the sources, the sources close the chooser. Returns
-     * true when a chooser was open and consumed it.
-     */
-    function recorderChooserBack() {
-        return (pill.recorderOpen && ldRecorder.item) ? ldRecorder.item.chooserBack() : false;
-    }
-
-    /**
-     * Move the standalone quick-record chooser's focus by `dir`: across the
-     * Screen / Window tiles, or the monitor tiles in the sub-choice. Returns
-     * true when the chooser consumed it.
-     */
-    function quickChooseMove(dir) {
-        if (!pill.quickChoosing)
-            return false;
-        quickChooser.move(dir);
-        return true;
-    }
-
-    /** Return on the quick-record chooser: pick the focused tile. */
-    function quickChooseActivate() {
-        if (!pill.quickChoosing)
-            return false;
-        quickChooser.activate();
-        return true;
-    }
-
-    /**
-     * Backspace on the quick-record chooser: the monitor sub-choice returns to
-     * the sources, the sources cancel the chooser. Returns true when consumed.
-     */
-    function quickChooseBack() {
-        if (!pill.quickChoosing)
-            return false;
-        quickChooser.back();
-        return true;
-    }
-
     /**
      * Hover-face keyboard focus: left/right walks the interactive targets of
      * the expanded pill (media bud, minimized tray, tray icons, clock); Enter
@@ -894,229 +375,85 @@ Item {
      */
     property int faceFocus: -1
 
-    readonly property var faceTargets: {
-        var out = [];
-        if (pill.hasMedia) out.push("media");
-        if (minimized.count > 0) out.push("minimized");
-        if (SystemTray.items.values.length > 0) out.push("tray");
-        out.push("clock");
-        return out;
-    }
-    readonly property int faceCount: faceTargets.length
+    /**
+     * Child-widget aliases for the nav module (Nav.qml), which drives the
+     * quick-record chooser and the hover face's per-icon rows through the host.
+     */
+    property alias quickChooserItem: quickChooser
+    property alias minimizedRow: minimized
+    property alias trayRow: tray
 
-    function faceMove(dir) {
-        if (pill.surfaceOpen || pill.mode !== "hover" || faceCount < 2)
-            return false;
-        if (faceFocus < 0 || faceFocus >= faceCount)
-            faceFocus = 0;
-        var key = faceTargets[faceFocus];
-        /**
-         * While the ring sits on a per-icon widget, arrows walk its icons and
-         * step out to the neighbouring face target at the edges.
-         */
-        if (key === "minimized") {
-            if (minimized.focusIndex < 0)
-                minimized.focusIndex = 0;
-            if (dir < 0 && minimized.focusIndex === 0)
-                faceFocus = (faceFocus - 1 + faceCount) % faceCount;
-            else if (dir > 0 && minimized.focusIndex === minimized.count - 1)
-                faceFocus = (faceFocus + 1) % faceCount;
-            else
-                minimized.moveFocus(dir);
-            return true;
-        }
-        if (key === "tray") {
-            var nItems = SystemTray.items.values.length;
-            if (tray.focusIndex < 0)
-                tray.focusIndex = 0;
-            if (dir < 0 && tray.focusIndex === 0)
-                faceFocus = (faceFocus - 1 + faceCount) % faceCount;
-            else if (dir > 0 && tray.focusIndex === nItems - 1)
-                faceFocus = (faceFocus + 1) % faceCount;
-            else
-                tray.moveFocus(dir);
-            return true;
-        }
-        faceFocus = (faceFocus + dir + faceCount) % faceCount;
-        var landed = faceTargets[faceFocus];
-        if (landed === "minimized" && minimized.focusIndex < 0)
-            minimized.focusIndex = 0;
-        if (landed === "tray" && tray.focusIndex < 0)
-            tray.focusIndex = 0;
-        return true;
-    }
-
-    function faceActivate() {
-        if (pill.surfaceOpen || pill.mode !== "hover")
-            return false;
-        var key = faceFocus >= 0 && faceFocus < faceCount ? faceTargets[faceFocus] : "clock";
-        if (key === "media") {
-            pill.requestSurface("media");
-        } else if (key === "minimized") {
-            if (minimized.focusIndex < 0)
-                minimized.focusIndex = 0;
-            minimized.activate();
-        } else if (key === "tray") {
-            if (tray.focusIndex < 0)
-                tray.focusIndex = 0;
-            tray.activate();
-        } else {
-            pill.openCalendarAt(null);
-        }
-        return true;
+    /** Keyboard routing + hover-face navigation, extracted to its own file. */
+    Nav {
+        id: navHost
+        host: pill
     }
 
     /**
-     * Escape/Backspace on the hover face: unpin if held and collapse the pill
-     * back to rest. Returns true when the face was showing and consumed it.
+     * Thin forwards to the nav module. PillRoot and the shell call these on
+     * the pill; all real routing lives in Nav.qml.
      */
-    function faceBack() {
-        if (pill.surfaceOpen || pill.mode !== "hover")
-            return false;
-        if (pill.pinned)
-            pill.pinned = false;
-        pill.hoverLatch = false;
-        pill.faceFocus = -1;
-        return true;
-    }
-
-    /**
-     * Focus the open picker's search field, for a forward-slash keypress.
-     * Returns true when a picker consumed it.
-     */
-    function focusSearch() {
-        if (pill.keybindsOpen && ldKeybinds.item) {
-            ldKeybinds.item.focusSearch();
-            return true;
-        }
-        if (pill.fontpickerOpen && ldFontpicker.item) {
-            ldFontpicker.item.focusSearch();
-            return true;
-        }
-        if (pill.clipboardOpen && ldClip.item) {
-            ldClip.item.focusField();
-            return true;
-        }
-        if (pill.launcherOpen && ldLauncher.item) {
-            ldLauncher.item.focusField();
-            return true;
-        }
-        if (pill.wallpaperOpen && ldWall.item) {
-            ldWall.item.focusSearch();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Composed menu navigation, shared by the arrow keys and (with the vim
-     * flag on) h/j/k/l. Each returns true when an open surface consumed it,
-     * which the key handlers in PillRoot read to accept the event. The pill
-     * owns the routing so the per-monitor key handling stays a thin shell.
-     */
-    function navUp() {
-        if (pill.keybindsOpen && !pill.keybindsListening) { pill.keybindsMove(-1); return true; }
-        /** The recorder's chooser tiles are horizontal; don't step the faders behind it. */
-        if (pill.recorderOpen && pill.recorderChooserOpen)
-            return false;
-        return pill.calendarMove("v", -1) || pill.linkMove(-1) || pill.mixerStep(1)
-            || pill.recorderStep(5) || pill.clipboardMove(-1)
-            || pill.fontpickerMove(-1) || pill.launcherMove(-1) || pill.localsendMove(-1)
-            || pill.workspacesMove(-1) || pill.stashMove(-1) || pill.spaceappsMove(-1)
-            || pill.settingsMove(-1)
-            || (pill.timerOpen && pill.timerActivate());
-    }
-    function navDown() {
-        if (pill.keybindsOpen && !pill.keybindsListening) { pill.keybindsMove(1); return true; }
-        if (pill.recorderOpen && pill.recorderChooserOpen)
-            return false;
-        return pill.calendarMove("v", 1) || pill.linkMove(1) || pill.mixerStep(-1)
-            || pill.recorderStep(-5) || pill.clipboardMove(1)
-            || pill.fontpickerMove(1) || pill.launcherMove(1) || pill.localsendMove(1)
-            || pill.workspacesMove(1) || pill.stashMove(1) || pill.spaceappsMove(1)
-            || pill.settingsMove(1)
-            || (pill.timerOpen && pill.timerActivate());
-    }
-    function navLeft() {
-        if (pill.quickChoosing) return pill.quickChooseMove(-1);
-        if (pill.recorderChooserOpen) return pill.recorderChooserMove(-1);
-        if (pill.calendarOpen) return pill.calendarMove("h", -1);
-        if (pill.mixerOpen) { pill.mixerFocusMove(-1); return true; }
-        if (pill.wallpaperOpen) { pill.wallpaperMove(-1); return true; }
-        if (pill.powerOpen) { pill.powerMove(-1); return true; }
-        if (pill.recorderOpen) { pill.recorderStep(-5); return true; }
-        if (pill.settingsLike) return pill.settingsAdjust(-1);
-        if (pill.mode === "hover" && !pill.surfaceOpen) return pill.faceMove(-1);
-        return false;
-    }
-    function navRight() {
-        if (pill.quickChoosing) return pill.quickChooseMove(1);
-        if (pill.recorderChooserOpen) return pill.recorderChooserMove(1);
-        if (pill.calendarOpen) return pill.calendarMove("h", 1);
-        if (pill.mixerOpen) { pill.mixerFocusMove(1); return true; }
-        if (pill.wallpaperOpen) { pill.wallpaperMove(1); return true; }
-        if (pill.powerOpen) { pill.powerMove(1); return true; }
-        if (pill.recorderOpen) { pill.recorderStep(5); return true; }
-        if (pill.settingsLike) return pill.settingsAdjust(1);
-        if (pill.mode === "hover" && !pill.surfaceOpen) return pill.faceMove(1);
-        return false;
-    }
-
-    /**
-     * Vim `h` with no horizontal nav available: back out of the current menu,
-     * mirroring the Backspace chain (quick-record cancel, recorder chooser
-     * step-back, link subview pop, hover-face collapse, then surface back).
-     */
-    function vimBack() {
-        if (pill.quickChoosing) {
-            pill.quickChooseBack();
-        } else if (!pill.recorderChooserBack() && !pill.linkBack() && !pill.faceBack()) {
-            pill.surfaceBack();
-        }
-    }
-
-    /**
-     * Vim `l` with no horizontal nav available: enter the current menu,
-     * mirroring the Return chain (activate the focused item of the open
-     * surface, or the hover face when resting).
-     */
-    function vimEnter() {
-        if (pill.quickChoosing) {
-            pill.quickChooseActivate();
-        } else if (pill.wallpaperOpen) {
-            pill.wallpaperActivate();
-        } else if (pill.powerOpen) {
-            pill.powerPress();
-        } else if (pill.recorderChooserOpen) {
-            pill.recorderChooserActivate();
-        } else if (pill.recorderOpen) {
-            pill.recorderPress();
-        } else if (pill.calendarOpen) {
-            pill.calendarActivate();
-        } else if (pill.linkOpen) {
-            pill.linkActivate();
-        } else if (pill.clipboardOpen) {
-            pill.clipboardActivate();
-        } else if (pill.fontpickerOpen) {
-            pill.fontpickerActivate();
-        } else if (pill.localsendOpen) {
-            pill.localsendActivate();
-        } else if (pill.timerOpen) {
-            pill.timerActivate();
-        } else if (pill.workspacesOpen) {
-            pill.workspacesActivate();
-        } else if (pill.stashOpen) {
-            pill.stashActivate();
-        } else if (pill.spaceappsOpen) {
-            pill.spaceappsActivate();
-        } else if (pill.keybindsOpen && !pill.keybindsListening) {
-            pill.keybindsActivate();
-        } else if (pill.settingsLike) {
-            pill.settingsActivate();
-        } else if (pill.mode === "hover" && !pill.surfaceOpen) {
-            pill.faceActivate();
-        }
-    }
+    function openCalendarAt(date) { return navHost.openCalendarAt(date); }
+    function mixerStep(deltaPct) { return navHost.mixerStep(deltaPct); }
+    function mixerFocusMove(dir) { return navHost.mixerFocusMove(dir); }
+    function recorderStep(deltaPct) { return navHost.recorderStep(deltaPct); }
+    function rowNavSurface() { return navHost.rowNavSurface(); }
+    function settingsMove(dir) { return navHost.settingsMove(dir); }
+    function settingsAdjust(dir) { return navHost.settingsAdjust(dir); }
+    function settingsActivate() { return navHost.settingsActivate(); }
+    function keybindsMove(dir) { return navHost.keybindsMove(dir); }
+    function keybindsActivate() { return navHost.keybindsActivate(); }
+    function quickChooseSource(kind) { return navHost.quickChooseSource(kind); }
+    function quickPickMonitor(name) { return navHost.quickPickMonitor(name); }
+    function linkBack() { return navHost.linkBack(); }
+    function surfaceBack() { return navHost.surfaceBack(); }
+    function keybindsBack() { return navHost.keybindsBack(); }
+    function wallpaperMove(dir) { return navHost.wallpaperMove(dir); }
+    function wallpaperActivate() { return navHost.wallpaperActivate(); }
+    function wallpaperHoldPress() { return navHost.wallpaperHoldPress(); }
+    function wallpaperType(ch) { return navHost.wallpaperType(ch); }
+    function powerMove(dir) { return navHost.powerMove(dir); }
+    function powerPress() { return navHost.powerPress(); }
+    function powerRelease() { return navHost.powerRelease(); }
+    function clipboardMove(delta) { return navHost.clipboardMove(delta); }
+    function clipboardActivate() { return navHost.clipboardActivate(); }
+    function fontpickerMove(dir) { return navHost.fontpickerMove(dir); }
+    function fontpickerActivate() { return navHost.fontpickerActivate(); }
+    function localsendMove(dir) { return navHost.localsendMove(dir); }
+    function localsendActivate() { return navHost.localsendActivate(); }
+    function timerBack() { return navHost.timerBack(); }
+    function timerActivate() { return navHost.timerActivate(); }
+    function timerReset() { return navHost.timerReset(); }
+    function launcherMove(delta) { return navHost.launcherMove(delta); }
+    function launcherActivate() { return navHost.launcherActivate(); }
+    function recorderPress() { return navHost.recorderPress(); }
+    function workspacesMove(dir) { return navHost.workspacesMove(dir); }
+    function workspacesActivate() { return navHost.workspacesActivate(); }
+    function stashMove(dir) { return navHost.stashMove(dir); }
+    function stashActivate() { return navHost.stashActivate(); }
+    function spaceappsMove(dir) { return navHost.spaceappsMove(dir); }
+    function spaceappsActivate() { return navHost.spaceappsActivate(); }
+    function calendarMove(axis, dir) { return navHost.calendarMove(axis, dir); }
+    function calendarActivate() { return navHost.calendarActivate(); }
+    function linkMove(dir) { return navHost.linkMove(dir); }
+    function linkActivate() { return navHost.linkActivate(); }
+    function linkAdjust(dir) { return navHost.linkAdjust(dir); }
+    function recorderChooserMove(dir) { return navHost.recorderChooserMove(dir); }
+    function recorderChooserActivate() { return navHost.recorderChooserActivate(); }
+    function recorderChooserBack() { return navHost.recorderChooserBack(); }
+    function quickChooseMove(dir) { return navHost.quickChooseMove(dir); }
+    function quickChooseActivate() { return navHost.quickChooseActivate(); }
+    function quickChooseBack() { return navHost.quickChooseBack(); }
+    function faceMove(dir) { return navHost.faceMove(dir); }
+    function faceActivate() { return navHost.faceActivate(); }
+    function faceBack() { return navHost.faceBack(); }
+    function focusSearch() { return navHost.focusSearch(); }
+    function navUp() { return navHost.navUp(); }
+    function navDown() { return navHost.navDown(); }
+    function navLeft() { return navHost.navLeft(); }
+    function navRight() { return navHost.navRight(); }
+    function vimBack() { return navHost.vimBack(); }
+    function vimEnter() { return navHost.vimEnter(); }
 
     onSurfaceOpenChanged: if (surfaceOpen) {
         pinned = false;
@@ -1220,7 +557,7 @@ Item {
 
     onModeChanged: {
         /**
-         * Keep the 60fps cava capture only while the bars can actually render:
+         * Keep the cava capture only while the bars can actually render:
          * at rest with auto-hide on the pill is retracted off-screen, so the
          * capture would feed an invisible visualizer.
          */

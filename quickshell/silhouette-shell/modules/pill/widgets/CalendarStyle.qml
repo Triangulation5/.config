@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import qs.services
-import qs.components.animation
 
 /**
  * Hover date strip on the pill. A horizontal snapping wheel of days around today
