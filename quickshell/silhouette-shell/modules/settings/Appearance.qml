@@ -193,7 +193,10 @@ SettingsSurface {
             LinkToggle {
                 s: root.s
                 on: Flags.notchStyle
-                onToggled: Flags.notchStyle = !Flags.notchStyle
+                onToggled: {
+                    Flags.notchStyle = !Flags.notchStyle;
+                    Flags.topGap = Flags.notchStyle ? 0 : 0.7;
+                }
             }
         }
 
