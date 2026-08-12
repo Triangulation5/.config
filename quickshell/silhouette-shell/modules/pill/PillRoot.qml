@@ -332,8 +332,12 @@ ShellRoot {
                     if (pill.quickChoosing) {
                         ScreenRec.quickChoosing = false;
                         ScreenRec.quickScreenChoosing = false;
-                    } else {
+                    } else if (pill.surfaceOpen) {
                         root.close();
+                    } else if (pill.mode === "hover") {
+                        pill.pinned = false;
+                        pill.hoverLatch = false;
+                        pill.faceFocus = -1;
                     }
                 }
                 /**

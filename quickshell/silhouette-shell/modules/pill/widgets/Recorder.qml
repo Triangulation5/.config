@@ -251,183 +251,6 @@ PillSurface {
         }
     }
 
-    /**
-     * Mini-segmented choice control, copied from Settings: `options` is a list of
-     * `{ label, value }`; the pill whose value equals `value` lights with a solid
-     * card-top fill and cream text. Picking a pill emits `picked(value)`.
-     */
-    component MiniSeg: Rectangle {
-        id: seg
-        property var options: []
-        property var value
-        signal picked(var value)
-
-        readonly property real pad: 2 * root.s
-
-        width: pills.implicitWidth + 2 * pad
-        height: pills.implicitHeight + 2 * pad
-        radius: 9 * root.s
-        color: "transparent"
-
-        Row {
-            id: pills
-            anchors.centerIn: parent
-            spacing: 2 * root.s
-
-            Repeater {
-                model: seg.options
-
-                Rectangle {
-                    id: opt
-                    required property var modelData
-                    readonly property bool current: seg.value === modelData.value
-
-                    width: optLabel.implicitWidth + 18 * root.s
-                    height: optLabel.implicitHeight + 12 * root.s
-                    radius: 7 * root.s
-                    color: opt.current ? Theme.cardTop : "transparent"
-                    Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-                    Text {
-                        id: optLabel
-                        anchors.centerIn: parent
-                        text: opt.modelData.label
-                        color: opt.current ? Theme.cream : Theme.subtle
-                        font.family: Theme.font
-                        font.pixelSize: 10.5 * root.s
-                        font.weight: Font.Bold
-                        font.letterSpacing: 0.3 * root.s
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: seg.picked(opt.modelData.value)
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * One options-drawer line: a cream label on the left and a control pushed to
-     * the right, capped by a top hairline on every row but the first.
-     */
-    component ORow: Item {
-        id: orow
-        property string name: ""
-        property bool first: false
-        default property alias control: controlSlot.data
-
-        width: parent ? parent.width : 0
-        height: 35 * root.s
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: Theme.hairSoft
-            visible: !orow.first
-        }
-
-        Text {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            text: orow.name
-            color: Theme.cream
-            font.family: Theme.font
-            font.pixelSize: 12 * root.s
-            font.weight: Font.DemiBold
-        }
-
-        Item {
-            id: controlSlot
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: childrenRect.width
-            height: childrenRect.height
-        }
-    }
-
-    /**
-     * Compact audio row: a glyph, a label, a flat-tick fader and a percent
-     * readout. The fader dims and stops accepting input when its audio is off.
-     */
-    component AudioRow: Item {
-        id: arow
-        property string glyph: ""
-        property string name: ""
-        property bool on: false
-        property int faderIndex: -1
-        property real level: 0.5
-        signal toggled()
-        signal faderMoved(real v)
-
-        width: parent ? parent.width : 0
-        height: 27 * root.s
-
-        GlyphIcon {
-            id: rowGlyph
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: 16 * root.s
-            height: 16 * root.s
-            name: arow.glyph
-            color: arow.on ? Theme.vermLit : Theme.iconDim
-            stroke: 1.7
-        }
-
-        Text {
-            id: rowName
-            anchors.left: rowGlyph.right
-            anchors.leftMargin: 11 * root.s
-            anchors.verticalCenter: parent.verticalCenter
-            width: 76 * root.s
-            text: arow.name
-            color: arow.on ? Theme.cream : Theme.subtle
-            font.family: Theme.font
-            font.pixelSize: 11.5 * root.s
-            font.weight: Font.DemiBold
-            elide: Text.ElideRight
-        }
-
-        HFader {
-            id: fader
-            anchors.left: rowName.right
-            anchors.leftMargin: 4 * root.s
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            s: root.s
-            on: arow.on
-            value: arow.level
-            focused: arow.on && root.faderFocus === arow.faderIndex
-            onMoved: (v) => arow.faderMoved(v)
-            onFocusRequested: root.faderFocus = arow.faderIndex
-
-            HoverHandler {
-                onHoveredChanged: if (hovered && arow.on) root.faderFocus = arow.faderIndex
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                acceptedButtons: Qt.NoButton
-                enabled: arow.on
-                property real acc: 0
-                onWheel: (event) => {
-                    root.faderFocus = arow.faderIndex;
-                    acc += event.angleDelta.y / 120;
-                    const notches = Math.trunc(acc);
-                    if (notches !== 0) {
-                        root.stepFocused(notches * 5);
-                        acc -= notches;
-                    }
-                    event.accepted = true;
-                }
-            }
-        }
-    }
-
     Column {
         id: content
         anchors.top: parent.top
@@ -690,9 +513,11 @@ PillSurface {
                     bottomPadding: 10 * root.s
 
                     ORow {
+                        s: root.s
                         name: "Frame rate"
                         first: true
                         MiniSeg {
+                            s: root.s
                             options: [
                                 { label: "30", value: 30 },
                                 { label: "60", value: 60 },
@@ -704,8 +529,10 @@ PillSurface {
                         }
                     }
                     ORow {
+                        s: root.s
                         name: "Quality"
                         MiniSeg {
+                            s: root.s
                             options: [
                                 { label: "Med", value: "medium" },
                                 { label: "High", value: "high" },
@@ -717,6 +544,7 @@ PillSurface {
                         }
                     }
                     ORow {
+                        s: root.s
                         name: "Capture cursor"
                         LinkToggle {
                             s: root.s
@@ -725,8 +553,10 @@ PillSurface {
                         }
                     }
                     ORow {
+                        s: root.s
                         name: "Countdown"
                         MiniSeg {
+                            s: root.s
                             options: [
                                 { label: "Off", value: 0 },
                                 { label: "3s", value: 3 },
@@ -1047,6 +877,9 @@ PillSurface {
         Item { width: 1; height: 11 * root.s }
 
         AudioRow {
+            s: root.s
+            faderFocus: root.faderFocus
+            onStepFocused: (delta) => root.stepFocused(delta)
             glyph: "mic"
             name: "Microphone"
             on: ScreenRec.micOn
@@ -1065,6 +898,9 @@ PillSurface {
         }
 
         AudioRow {
+            s: root.s
+            faderFocus: root.faderFocus
+            onStepFocused: (delta) => root.stepFocused(delta)
             glyph: "speaker"
             name: "Desktop"
             on: ScreenRec.desktopOn
