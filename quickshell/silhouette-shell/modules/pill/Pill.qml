@@ -47,7 +47,7 @@ Item {
     property bool pinned: false
     property bool forcePinned: false
 
-    /** Custom made notch style bar. */
+    /** True renders the pill as a notch-style bar (ears out, square top corners); false keeps the rounded pill. */
     property bool notchStyle: Flags.notchStyle
 
     /**
@@ -252,7 +252,7 @@ Item {
     /** Timestamp of last open per surface name. */
     property var _surfaceLastOpened: ({})
 
-    /** Loader id → surface name map, built in Component.onCompleted. */
+    /** Surface name → loader map, self-registered by each PillSurfaceLoader. */
     property var _surfaceLoaders: ({})
     /** True while the idle-cleanup timer has run at least once. */
     property bool _surfaceCleanupReady: false

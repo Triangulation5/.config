@@ -9,6 +9,7 @@ CalendarStyle 1.0 CalendarStyle.qml
 ClipList 1.0 recorder/ClipList.qml
 ClipRow 1.0 recorder/ClipRow.qml
 Clipboard 1.0 Clipboard.qml
+ConfigStage 1.0 recorder/ConfigStage.qml
 DeviceMenu 1.0 mixer/DeviceMenu.qml
 DevicePickerChip 1.0 mixer/DevicePickerChip.qml
 DragInstall 1.0 DragInstall.qml
@@ -33,6 +34,7 @@ OsdWorkspace 1.0 osd/OsdWorkspace.qml
 Pomodoro 1.0 Pomodoro.qml
 QuickChooser 1.0 QuickChooser.qml
 QuickCount 1.0 QuickCount.qml
+RecordBar 1.0 recorder/RecordBar.qml
 Recorder 1.0 Recorder.qml
 SaveRow 1.0 recorder/SaveRow.qml
 SearchHeader 1.0 SearchHeader.qml

@@ -486,7 +486,7 @@ Item {
                         property real dotScale: 0.72
                         property real dotOpacity: 0
                         property real slideX: 0
-                        /** Declared so `index` resolves inside the compiled onCompleted handler (see Launcher delegates). */
+                        /** Declared so `index` resolves inside the compiled onCompleted handler. */
                         required property int index
 
                         opacity: dotOpacity

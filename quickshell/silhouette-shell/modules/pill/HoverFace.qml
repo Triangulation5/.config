@@ -21,7 +21,7 @@ Item {
     /** The rest-face clock Text, used to capture the handoff flight origin. */
     property var restClock: null
 
-    /** Current time text (clock.hhmm), fed by the pill. */
+    /** Current time text fed by the pill, formatted by the rest clock. */
     property string timeText: ""
 
     /** Exposed for the pill's idle cleaner (reclaims the media bud). */

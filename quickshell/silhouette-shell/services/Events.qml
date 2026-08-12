@@ -42,8 +42,8 @@ Singleton {
     property int nextId: 1
 
     /**
-     * Birthday-looking titles across the languages Erik's contacts use, so a new
-     * entry can suggest yearly and old ones get classified on load. Plain substring
+     * Birthday-looking titles across the languages the user's contacts use, so a
+     * new entry can suggest yearly and old ones get classified on load. Plain substring
      * alternation, case-insensitive; accented forms are caught by a safe stem.
      */
     readonly property var birthdayRe: /geburtstag|geb\.|birthday|b-?day|🎂|cumplea|anniversaire|compleanno|anivers|verjaardag|рожд|誕生|생일|urodziny|do[ğg]um/i
