@@ -94,6 +94,14 @@ Item {
     readonly property bool animationOpen: surface === "animation"
     readonly property bool fontpickerOpen: surface === "fontpicker"
     readonly property bool localsendOpen: surface === "localsend"
+    readonly property bool hasPendingSend: ldLSend.item !== null && ldLSend.item.sendFile.length > 0
+    /** Exposes the localsend widget's active state for the Link surface header badge. */
+    readonly property string localsendActivity: {
+        if (!ldLSend.item) return "";
+        if (ldLSend.item.sending) return "sending";
+        if (ldLSend.item.scanning) return "scanning";
+        return ldLSend.item.sendFile.length > 0 ? "scanning" : "";
+    }
     readonly property bool timerOpen: surface === "timer"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
@@ -241,7 +249,7 @@ Item {
     }
 
     /** Seconds a surface stays loaded after last use before being reclaimed. */
-    property int surfaceIdleTimeout: 120
+    property int surfaceIdleTimeout: 60
 
     /** Timestamp of last open per surface name. */
     property var _surfaceLastOpened: ({})
@@ -2150,7 +2158,9 @@ Item {
             open: pill.linkOpen
             initialView: pill.linkInitialView
             morphCloseness: pill.morphCloseness
+            sendStatus: pill.localsendActivity
             onRequestClose: pill.requestClose()
+            onOpenSend: pill.requestSurface("localsend")
         }
     }
 
