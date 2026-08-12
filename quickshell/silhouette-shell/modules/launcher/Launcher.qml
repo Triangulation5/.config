@@ -604,6 +604,8 @@ PillSurface {
         model: root.windowResults.length
 
         delegate: WindowRow {
+            required property int index
+            required property var modelData
             surface: root
             modelData: modelData
             index: index
@@ -637,6 +639,8 @@ PillSurface {
         model: root.results.length
 
         delegate: AppRow {
+            required property int index
+            required property var modelData
             surface: root
             modelData: modelData
             index: index
