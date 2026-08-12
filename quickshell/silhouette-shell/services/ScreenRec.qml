@@ -9,7 +9,11 @@ import Quickshell.Io
  * encoder (cross-vendor nvenc/vaapi/cpu); this singleton owns the capture
  * settings, builds the argv from them, starts and stops the recorder and keeps
  * a live `recording` flag polled from the real process so an externally started
- * or stopped recorder is reflected too.
+ * or stopped recorder is reflected too. gsr is launched with
+ * `-fallback-cpu-encoding yes` so a machine with broken hardware encoding but a
+ * working CPU encoder (libx264) degrades to CPU instead of failing; a distro
+ * whose ffmpeg build omits the h264 encoders entirely still needs its full
+ * ffmpeg installed (see commands.md).
  *
  * The capture target is chosen at leisure BEFORE any countdown, so the user
  * picks WHAT to record with no recording running yet. The surface calls one of
@@ -234,7 +238,8 @@ Singleton {
     function buildArgs(captureToken, file) {
         var args = ["gpu-screen-recorder", "-w", captureToken,
                     "-f", String(fps), "-q", qualityPreset[quality] || "high",
-                    "-cursor", captureCursor ? "yes" : "no"];
+                    "-cursor", captureCursor ? "yes" : "no",
+                    "-fallback-cpu-encoding", "yes"];
         var a = audioArg();
         if (a.length > 0)
             args = args.concat(["-a", a]);
