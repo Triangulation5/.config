@@ -191,12 +191,11 @@ SettingsSurface {
             icon: "dynamic-island"
 
             LinkToggle {
+                id: notchToggle
                 s: root.s
                 on: Flags.notchStyle
-                onToggled: {
-                    Flags.notchStyle = !Flags.notchStyle;
-                    Flags.topGap = Flags.notchStyle ? 0 : 0.7;
-                }
+                onToggled: Flags.notchStyle = !Flags.notchStyle
+                onOnChanged: Flags.topGap = notchToggle.on ? 0 : 0.7
             }
         }
 
