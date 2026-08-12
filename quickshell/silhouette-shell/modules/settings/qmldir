@@ -1,14 +1,9 @@
 module qs.modules.settings
 
 AnimationSurface 1.0 AnimationSurface.qml
+Appearance 1.0 Appearance.qml
 BinarySeg 1.0 BinarySeg.qml
 BlurGroup 1.0 look/BlurGroup.qml
-NightLightGroup 1.0 look/NightLightGroup.qml
-OpacityGroup 1.0 look/OpacityGroup.qml
-PillGroup 1.0 look/PillGroup.qml
-ShadowGroup 1.0 look/ShadowGroup.qml
-WindowGroup 1.0 look/WindowGroup.qml
-Appearance 1.0 Appearance.qml
 CardRow 1.0 CardRow.qml
 Display 1.0 Display.qml
 DisplayLabel 1.0 DisplayLabel.qml
@@ -18,16 +13,21 @@ FontPicker 1.0 FontPicker.qml
 Group 1.0 Group.qml
 GroupLabel 1.0 GroupLabel.qml
 Input 1.0 Input.qml
-Keybinds 1.0 Keybinds.qml
 KeybindForm 1.0 KeybindForm.qml
 KeybindRow 1.0 KeybindRow.qml
+Keybinds 1.0 Keybinds.qml
 Look 1.0 Look.qml
+NightLightGroup 1.0 look/NightLightGroup.qml
+OpacityGroup 1.0 look/OpacityGroup.qml
+PillGroup 1.0 look/PillGroup.qml
 Settings 1.0 Settings.qml
 SettingsHeader 1.0 SettingsHeader.qml
 SettingsRow 1.0 SettingsRow.qml
 SettingsSeg 1.0 SettingsSeg.qml
 SettingsSurface 1.0 SettingsSurface.qml
+ShadowGroup 1.0 look/ShadowGroup.qml
 Updates 1.0 Updates.qml
+WindowGroup 1.0 look/WindowGroup.qml
 WorkspaceNavRow 1.0 WorkspaceNavRow.qml
 WorkspaceRuleRow 1.0 WorkspaceRuleRow.qml
 WorkspacesSurface 1.0 WorkspacesSurface.qml

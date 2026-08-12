@@ -13,8 +13,10 @@ import qs.components.controls
  * WLAN drill-in for the link surface: back chevron, wifi enable toggle and the
  * live network list sorted by signal strength. Security and known-profile
  * ground truth come from nmcli; clicking a secured unknown network expands an
- * inline password row that connects through `nmcli dev wifi connect`. The pill
- * body provides the surface material, so this item draws no background.
+ * inline password row that connects through `nmcli dev wifi connect`. The
+ * shared hotspot is rendered by WifiHotspot with its state and nmcli processes
+ * owned by HotspotControl. The pill body provides the surface material, so
+ * this item draws no background.
  */
 Item {
     id: root
@@ -52,14 +54,7 @@ Item {
     property string revealedPw: ""
     property bool revealResolved: false
 
-    readonly property string hsCon: "silhouette-shell"
     readonly property string hsIface: wifiDev ? (wifiDev.name || "wlan0") : "wlan0"
-    property string hsName: "SilhouetteShell"
-    property string hsPw: ""
-    property bool hsActive: false
-    property bool hsBusy: false
-    property string hsEdit: ""
-    property string hsDraft: ""
 
     /**
      * Draft of the password being typed for `expandedSsid`. Lives on the root so
@@ -116,7 +111,7 @@ Item {
         if (kbIndex >= n) {
             var row = kbIndex - n;
             if (row === 0) {
-                root.toggleHotspot();
+                hs.toggle();
             } else if (row === 1) {
                 hsBlock.startEdit("name");
             } else {
@@ -171,8 +166,8 @@ Item {
             return false;
         }
         if (kbIndex === n && root.wifiOn) {
-            if ((dir > 0 && !root.hsActive) || (dir < 0 && root.hsActive))
-                root.toggleHotspot();
+            if ((dir > 0 && !hs.active) || (dir < 0 && hs.active))
+                hs.toggle();
             return true;
         }
         return false;
@@ -344,14 +339,14 @@ Item {
     onActiveChanged: {
         if (active) {
             refresh();
-            refreshHotspot();
+            hs.refresh();
         } else {
             stopScan();
             expandedSsid = "";
             confirmFocus = -1;
             kbIndex = -1;
             connectFailed = false;
-            hsEdit = "";
+            hs.edit = "";
             hidePassword();
         }
     }
@@ -379,126 +374,6 @@ Item {
     Process {
         id: rescanProc
         command: ["nmcli", "dev", "wifi", "rescan"]
-    }
-
-    /**
-     * Brings the shared AP up with the current name and password, creating the
-     * persistent connection on first use and modifying it on later changes. Name
-     * and password are passed as positional arguments, never spliced into the
-     * shell string, so an odd character cannot break or inject the command.
-     */
-    function applyHotspot() {
-        if (hsBusy || hsPw.length < 8)
-            return;
-        hsBusy = true;
-        hsApplyProc.command = ["sh", "-c",
-            'c="' + hsCon + '"; '
-            + 'if nmcli -t connection show "$c" >/dev/null 2>&1; then '
-            +   'nmcli connection modify "$c" 802-11-wireless.ssid "$1" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$2"; '
-            + 'else '
-            +   'nmcli connection add type wifi ifname "$3" con-name "$c" autoconnect no 802-11-wireless.ssid "$1" 802-11-wireless.mode ap 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$2" ipv4.method shared; '
-            + 'fi; '
-            + 'nmcli connection up "$c"',
-            "sh", hsName, hsPw, hsIface];
-        hsApplyProc.running = true;
-    }
-
-    function stopHotspot() {
-        if (hsBusy)
-            return;
-        hsBusy = true;
-        hsDownProc.running = true;
-    }
-
-    /**
-     * Flips the shared hotspot: stop when active, else generate a password
-     * (when none is set) and bring the AP up. Shared by the toggle and the
-     * keyboard cursor.
-     */
-    function toggleHotspot() {
-        if (hsBusy)
-            return;
-        if (hsActive) {
-            stopHotspot();
-        } else {
-            if (hsPw.length < 8)
-                hsPw = generatePw();
-            applyHotspot();
-        }
-    }
-
-    function refreshHotspot() {
-        hsStateProc.running = true;
-        hsReadProc.running = true;
-    }
-
-    /**
-     * Commits an inline name or password edit, ignoring a password shorter than
-     * the 8-character WPA2 minimum. A live hotspot is re-applied so the change
-     * takes effect at once.
-     */
-    function commitHotspotEdit() {
-        if (hsEdit === "name") {
-            if (hsDraft.length)
-                hsName = hsDraft;
-        } else if (hsEdit === "pw") {
-            if (hsDraft.length >= 8)
-                hsPw = hsDraft;
-        }
-        hsEdit = "";
-        if (hsActive)
-            applyHotspot();
-    }
-
-    /**
-     * Builds an eight-character WPA2 password from an unambiguous alphabet, used
-     * when the hotspot is switched on before a password has been set.
-     */
-    function generatePw() {
-        var cs = "abcdefghijkmnpqrstuvwxyz23456789";
-        var s = "";
-        for (var i = 0; i < 8; i++)
-            s += cs.charAt(Math.floor(Math.random() * cs.length));
-        return s;
-    }
-
-    Process {
-        id: hsApplyProc
-        onExited: {
-            root.hsBusy = false;
-            root.refreshHotspot();
-        }
-    }
-
-    Process {
-        id: hsDownProc
-        command: ["nmcli", "connection", "down", root.hsCon]
-        onExited: {
-            root.hsBusy = false;
-            root.refreshHotspot();
-        }
-    }
-
-    Process {
-        id: hsStateProc
-        command: ["sh", "-c", "nmcli -t -f NAME connection show --active | grep -qx \"$1\" && echo on || echo off", "sh", root.hsCon]
-        stdout: StdioCollector {
-            onStreamFinished: root.hsActive = this.text.trim() === "on"
-        }
-    }
-
-    Process {
-        id: hsReadProc
-        command: ["nmcli", "-t", "-s", "-g", "802-11-wireless.ssid,802-11-wireless-security.psk", "connection", "show", root.hsCon]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var lines = this.text.split("\n");
-                if (lines.length >= 1 && lines[0].length)
-                    root.hsName = lines[0];
-                if (lines.length >= 2 && lines[1].length)
-                    root.hsPw = lines[1];
-            }
-        }
     }
 
     Process {
@@ -811,18 +686,23 @@ Item {
         height: root.wifiOn ? implicitHeight + 9 * root.s : 0
         clip: true
         s: root.s
-        active: root.hsActive
-        busy: root.hsBusy
-        name: root.hsName
-        pw: root.hsPw
-        edit: root.hsEdit
-        draft: root.hsDraft
+        active: hs.active
+        busy: hs.busy
+        name: hs.name
+        pw: hs.pw
+        edit: hs.edit
+        draft: hs.draft
         kbIndex: root.kbIndex
         toggleIndex: root.hsToggleIndex
-        onToggle: root.toggleHotspot()
-        onCommitEdit: root.commitHotspotEdit()
-        onEditRequested: function(f, v) { root.hsDraft = v; root.hsEdit = f; }
-        onDraftEdited: function(t) { root.hsDraft = t }
+        onToggle: hs.toggle()
+        onCommitEdit: hs.commitEdit()
+        onEditRequested: function(f, v) { hs.draft = v; hs.edit = f; }
+        onDraftEdited: function(t) { hs.draft = t }
         onFocusRequested: function(i) { root.kbIndex = i }
+    }
+
+    HotspotControl {
+        id: hs
+        iface: root.hsIface
     }
 }

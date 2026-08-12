@@ -187,7 +187,7 @@ Item {
     readonly property real restW: 160 * s
     readonly property real restH: 38 * s
     readonly property real hoverPad: 20 * s
-    readonly property real hoverW: hoverRow.implicitWidth + 3 * hoverPad
+    readonly property real hoverW: hoverFace.hoverRow.implicitWidth + 3 * hoverPad
     readonly property real hoverH: 172 * s
     readonly property real mixerH: 214 * s
     readonly property real launcherW: 360 * s
@@ -297,8 +297,8 @@ Item {
          * toggle. The visible bud is never touched: this only fires when the
          * pill is out of hover mode.
          */
-        if (hoverMedia.active && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= timeout)
-            hoverMedia.active = false;
+        if (pill.hoverFace && pill.hoverFace.mediaBud.active && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= timeout)
+            pill.hoverFace.mediaBud.active = false;
     }
 
     Timer {
@@ -378,10 +378,12 @@ Item {
     /**
      * Child-widget aliases for the nav module (Nav.qml), which drives the
      * quick-record chooser and the hover face's per-icon rows through the host.
+     * The hover-face widgets live in HoverFace.qml, so the aliases reach
+     * through the face instance.
      */
     property alias quickChooserItem: quickChooser
-    property alias minimizedRow: minimized
-    property alias trayRow: tray
+    property alias minimizedRow: hoverFace.minimizedRow
+    property alias trayRow: hoverFace.trayRow
 
     /** Keyboard routing + hover-face navigation, extracted to its own file. */
     Nav {
@@ -570,7 +572,7 @@ Item {
         if (mode !== "hover") {
             hoverSoulGate = false;
             soulTarget = "";
-            calendarStyle.hoveredIndex = -1;
+            hoverFace.calendarStrip.hoveredIndex = -1;
             faceFocus = -1;
         }
     }
@@ -590,7 +592,7 @@ Item {
 
     Component.onCompleted: {
         Cava.pillWanted = mode === "rest" && !Flags.autoHide;
-        // Each PillSurfaceLoader registers itself by name into _surfaceLoaders.
+        // Loaders register themselves by name, so the map is complete by now.
         pill._surfaceCleanupReady = true;
     }
 
@@ -843,7 +845,7 @@ Item {
          * highlighted next-day (or under the hovered day, tracked by
          * CalendarStyle's ameAnchor).
          */
-        return calendarStyle.mapToItem(pill, calendarStyle.ameAnchor.x, calendarStyle.ameAnchor.y);
+        return hoverFace.calendarStrip.mapToItem(pill, hoverFace.calendarStrip.ameAnchor.x, hoverFace.calendarStrip.ameAnchor.y);
     }
 
     /**
@@ -1046,11 +1048,11 @@ Item {
 
                 /**
                  * Hands off to the hover clock in the first moments of the hop
-                 * (hover.clockHandoff), while the hover clock still sits
+                 * (hoverFace.clockHandoff), while the hover clock still sits
                  * exactly on this spot at this size — the swap is invisible
                  * and the growing clock reads as one clock, never a ghost.
                  */
-                opacity: 1 - hover.clockHandoff
+                opacity: 1 - hoverFace.clockHandoff
             }
             Text {
                 visible: pill.specialView !== ""
@@ -1064,325 +1066,18 @@ Item {
         }
     }
 
-    Item {
-        id: hover
+    /**
+     * Expanded (hover) face: the clock growth + handoff, media bud, minimized
+     * row, tray and calendar strip, extracted to its own file. The pill feeds
+     * it the time text and rest-clock reference; Nav drives its per-icon rows
+     * through the aliases below.
+     */
+    HoverFace {
+        id: hoverFace
         anchors.fill: parent
-
-        readonly property bool live: pill.mode === "hover"
-
-        /**
-         * How far the pill has grown along the rest→hover hop, from the two
-         * constant heights. The clock rides this instead of contentMorph — which
-         * is 1 the instant hover mode begins and would pop the clock — so the
-         * flight tracks the pill's actual growth. Only the pill's own geometry
-         * is read, so it behaves identically on any monitor, at any scale, in
-         * any notch style.
-         */
-        readonly property real clockHop: {
-            const den = Math.max(1, pill.hoverH - pill.restH);
-            return Math.max(0, Math.min(1, (pill.height - pill.restH) / den));
-        }
-
-        /**
-         * The clock grows out of the rest clock's spot and shrinks back into
-         * it: one continuous scale+slide driven by clockMorph. The morph leads
-         * the pill's hop slightly (1.08x) so the clock lands just before the
-         * pill finishes growing, and a soft out-back settle gives a subtle,
-         * barely-there overshoot as it arrives. The rest-to-hover handoff is a
-         * separate quick crossfade (clockHandoff) in the first moments, while
-         * the hover clock still sits exactly on the rest clock at the same
-         * size — so the swap is invisible and the growth reads as one clock.
-         */
-        readonly property real clockProgress: Math.max(0, Math.min(1, clockHop * 1.08))
-        readonly property real clockMorph: {
-            /** Subtle overshoot: peaks ~2.5% past 1, settles. */
-            const c1 = 0.8;
-            const c3 = c1 + 1;
-            const x = clockProgress - 1;
-            return 1 + c3 * x * x * x + c1 * x * x;
-        }
-        /**
-         * Near-instant handoff tied to clockMorph: the hover clock is pixel-
-         * identical to the rest clock at morph=0, so the swap completes while
-         * the two are still coincident (the out-back front-loads, so a wider
-         * window would crossfade a clock already in motion).
-         */
-        readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.08)); return t * t * (3 - 2 * t); }
-
-        /**
-         * The media bud, tray and calendar strip render at full strength the
-         * moment hover mode begins (contentMorph is 1 in hover); the clock is
-         * the one piece that moves, so it alone animates on clockHop above.
-         */
-        readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return ease; }
-        readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
-        readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (pill.contentMorph - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
-
-        /**
-         * The rest clock's centre, captured once the moment hover mode begins
-         * (while the pill is still at rest geometry) so the flight is a clean
-         * straight line instead of chasing a live mapToItem mid-morph — the old
-         * binding re-mapped an invisible hover target every frame and jumped.
-         * Measured in hoverClock's frame — the same frame the flight Translate
-         * lives in — so start and end are directly comparable.
-         */
-        property real clockStartX: 0
-        property real clockStartY: 0
-
-        function captureClockStart() {
-            const p = restTime.mapToItem(hoverClock, restTime.width / 2, restTime.height / 2);
-            clockStartX = p.x;
-            clockStartY = p.y;
-        }
-
-        /**
-         * Fires on every rest-to-hover hop. The pill is still at rest geometry
-         * here (the height Behavior starts a tick later), so the capture is
-         * exact. The onCompleted guard covers the one path where live is true
-         * from birth — a monitor hotplug while its pill is peeked — so a
-         * collapse then still flies from the rest clock's real position.
-         */
-        onLiveChanged: if (live) captureClockStart()
-        Component.onCompleted: if (live) captureClockStart()
-
-        /**
-         * The hover clock's settled centre in hoverClock's frame: the clock
-         * column's centre, offset by the same 20*s the clock is anchored with
-         * (the clock is the column's first row, so its vertical centre is half
-         * its own height down the column).
-         */
-        readonly property real clockEndX: hoverClock.width / 2 + 20 * pill.s
-        readonly property real clockEndY: hoverTime.height / 2
-
-        opacity: live ? 1 : 0
-        visible: opacity > 0.01
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: pill.mode === "hover" ? Motion.fast : 40
-                easing.type: Motion.easeStandard
-            }
-        }
-
-        Row {
-            id: hoverRow
-
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.horizontalCenterOffset: -20 * pill.s
-
-            spacing: 20 * pill.s
-
-            Row {
-                id: statusRow
-
-                anchors.verticalCenter: parent.verticalCenter
-
-                spacing: 12 * pill.s
-
-                opacity: hover.mediaMorph
-
-                transform: Translate {
-                    x: 56 * pill.s * (1 - hover.mediaMorph)
-                }
-
-                Loader {
-                    id: hoverMedia
-
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    x: -72 * pill.s * (1 - hover.mediaMorph)
-
-                    opacity: hover.mediaMorph
-                    scale: 0.78 + 0.22 * hover.mediaMorph
-
-                    active: pill.hasMedia
-                    visible: active
-
-                    /**
-                     * Collapse to 0×0 when nothing plays: an invisible-but-sized
-                     * loader still counts toward hoverRow's implicitWidth, which
-                     * would leave a gap inside the expanded pill.
-                     */
-                    width: pill.hasMedia ? pill.mediaW : 0
-                    height: pill.hasMedia ? pill.mediaH : 0
-
-                    sourceComponent: Media {
-                        id: bud
-
-                        s: pill.s
-                        open: true
-                        morphCloseness: hover.mediaMorph
-                        shown: pill.mode === "hover"
-
-                        onRequestClose: {
-                            hoverMedia.active = false
-                        }
-                    }
-                }
-
-                /** Keyboard ring around the focused hover-face media bud. */
-                Rectangle {
-                    anchors.fill: hoverMedia
-                    anchors.margins: -3 * pill.s
-                    visible: pill.faceFocus >= 0 && pill.faceFocus < pill.faceCount
-                        && pill.faceTargets[pill.faceFocus] === "media"
-                    radius: 14 * pill.s
-                    color: "transparent"
-                    border.width: 1.5
-                    border.color: Qt.alpha(Theme.vermLit, 0.65)
-                }
-
-                MinimizedTray {
-                    id: minimized
-
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    s: pill.s
-                    screenName: pill.screenName
-
-                    enabled: hover.live
-                    visible: count > 0
-
-                    opacity: hover.trayMorph
-                    scale: 0.9 + 0.1 * hover.trayMorph
-
-                    faceActive: pill.faceFocus >= 0 && pill.faceFocus < pill.faceCount
-                        && pill.faceTargets[pill.faceFocus] === "minimized"
-                }
-
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: minimized.count > 0 && SystemTray.items.values.length > 0
-                    width: 1
-                    height: 14 * pill.s
-                    color: Theme.hair
-                    opacity: 0.7 * hover.trayMorph
-                }
-
-                Tray {
-                    id: tray
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    s: pill.s
-                    barWindow: pill.barWindow
-
-                    enabled: hover.live
-
-                    opacity: hover.trayMorph
-                    scale: 0.9 + 0.1 * hover.trayMorph
-
-                    faceActive: pill.faceFocus >= 0 && pill.faceFocus < pill.faceCount
-                        && pill.faceTargets[pill.faceFocus] === "tray"
-                }
-            }
-
-            Item {
-                id: clockContainer
-
-                anchors.verticalCenter: parent.verticalCenter
-
-                implicitWidth: hoverClock.implicitWidth
-                implicitHeight: hoverClock.implicitHeight
-
-                Column {
-                    id: hoverClock
-
-                    anchors.centerIn: parent
-
-                    spacing: 8 * pill.s
-
-                    Item {
-                        /**
-                         * The flight lives on this wrapper: a Translate declared
-                         * on the scaled Text would itself be scaled (the
-                         * transform list applies in the item's local frame), so
-                         * the clock would sit short of the rest clock at the
-                         * start of the hop. Here the offset is in the column's
-                         * unscaled frame, and the Text below scales around its
-                         * own centre — position and size stay independent.
-                         */
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: 20 * pill.s
-
-                        implicitWidth: hoverTime.implicitWidth
-                        implicitHeight: hoverTime.implicitHeight
-
-                        transform: Translate {
-                            x: (hover.clockStartX - hover.clockEndX) * (1 - hover.clockMorph)
-                            y: (hover.clockStartY - hover.clockEndY) * (1 - hover.clockMorph)
-                        }
-
-                        Text {
-                            id: hoverTime
-
-                            anchors.centerIn: parent
-
-                            text: clock.hhmm
-
-                            color: Theme.cream
-
-                            font.family: Theme.font
-                            font.pixelSize: 28 * pill.s
-                            font.weight: Font.DemiBold
-                            font.features: { "tnum": 1 }
-
-                            opacity: hover.clockHandoff
-                            /** 18px rest clock scaled up to 28px, tracking the pill's hop. */
-                            scale: (18 / 28) + (1 - 18 / 28) * hover.clockMorph
-                        }
-                    }
-
-                    CalendarStyle {
-                        id: calendarStyle
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: 20 * pill.s
-
-                        width: 220 * pill.s
-                        height: 48 * pill.s
-
-                        pillRef: pill
-                        ameEnabled: true
-
-                        onOpenCalendar: (date) => pill.openCalendarAt(date)
-
-                        scale: pill.s
-                        opacity: hover.calendarMorph
-                    }
-                }
-
-                MouseArea {
-                    anchors.centerIn: parent
-
-                    width: hoverClock.implicitWidth + 22 * pill.s
-                    height: hoverClock.implicitHeight + 10 * pill.s
-
-                    /**
-                     * While a day cell is hovered the strip's delegates own the
-                     * click (they open the calendar focused on that day);
-                     * anywhere else opens it on the current date.
-                     */
-                    enabled: hover.live && !calendarStyle.hovered
-
-                    cursorShape: Qt.PointingHandCursor
-
-                    onClicked: pill.openCalendarAt(null)
-                }
-
-                /** Keyboard ring around the focused hover-face clock target. */
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: -4 * pill.s
-                    visible: pill.faceFocus >= 0 && pill.faceFocus < pill.faceCount
-                        && pill.faceTargets[pill.faceFocus] === "clock"
-                    radius: 16 * pill.s
-                    color: "transparent"
-                    border.width: 1.5
-                    border.color: Qt.alpha(Theme.vermLit, 0.65)
-                }
-            }
-        }
+        host: pill
+        restClock: restTime
+        timeText: clock.hhmm
     }
 
     /**

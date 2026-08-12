@@ -1,7 +1,7 @@
 module qs.components.layout
 
 Filament 1.0 Filament.qml
-RoundCorner 1.0 RoundCorner.qml
-SurfaceHeader 1.0 SurfaceHeader.qml
-StatRow 1.0 StatRow.qml
 Hairline 1.0 Hairline.qml
+RoundCorner 1.0 RoundCorner.qml
+StatRow 1.0 StatRow.qml
+SurfaceHeader 1.0 SurfaceHeader.qml
