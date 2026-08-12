@@ -5,9 +5,9 @@ import qs.services
 import qs.components.icons
 
 /**
- * Brightness OSD face: sun glyph, percentage and a live fill bar that follows
- * the backlight level. Driven by the Osd root through `active` and
- * `brightness`.
+ * Brightness OSD face: sun glyph, percentage and a flame-gradient fill bar
+ * that follows the backlight level, matching the battery face's filament
+ * language. Driven by the Osd root through `active` and `brightness`.
  */
 Item {
     id: face
@@ -61,7 +61,11 @@ Item {
             anchors.bottom: parent.bottom
             width: parent.width * face.brightness
             radius: parent.radius
-            color: Theme.vermLit
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: Theme.vermDeep }
+                GradientStop { position: 1.0; color: Theme.flameGlow }
+            }
             Behavior on width { NumberAnimation { duration: Motion.fast } }
         }
     }
