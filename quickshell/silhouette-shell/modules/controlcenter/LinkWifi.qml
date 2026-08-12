@@ -1039,76 +1039,6 @@ Item {
             anchors.right: parent.right
             spacing: 6 * root.s
 
-            component CredRow: Item {
-                id: cr
-                property string field: ""
-                property string label: ""
-                property string value: ""
-                property bool secret: false
-                readonly property bool editing: root.hsEdit === cr.field
-                width: parent ? parent.width : 0
-                height: 22 * root.s
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: cr.label
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 9 * root.s
-                    font.weight: Font.Medium
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1 * root.s
-                }
-
-                Text {
-                    visible: !cr.editing
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: cr.value.length ? cr.value : "tap to set"
-                    color: cr.value.length ? (cr.secret ? Theme.flameCore : Theme.cream) : Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 12 * root.s
-                    font.weight: Font.Medium
-                    font.features: { "tnum": 1 }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -6 * root.s
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.hsDraft = cr.value;
-                            root.hsEdit = cr.field;
-                            Qt.callLater(crField.forceActiveFocus);
-                        }
-                    }
-                }
-
-                TextField {
-                    id: crField
-                    visible: cr.editing
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 150 * root.s
-                    horizontalAlignment: TextInput.AlignRight
-                    background: null
-                    padding: 0
-                    color: Theme.cream
-                    font.family: Theme.font
-                    font.pixelSize: 12 * root.s
-                    placeholderText: cr.field === "pw" ? "8+ characters" : "Name"
-                    placeholderTextColor: Theme.faint
-                    selectByMouse: true
-                    selectionColor: Theme.verm
-                    text: cr.editing ? root.hsDraft : ""
-                    onTextEdited: root.hsDraft = text
-                    onAccepted: root.commitHotspotEdit()
-                }
-            }
-
             Rectangle {
                 width: parent.width
                 height: 34 * root.s
@@ -1171,6 +1101,12 @@ Item {
                 field: "name"
                 label: "Network"
                 value: root.hsName
+                editing: root.hsEdit === "name"
+                scale: root.s
+                draft: root.hsEdit === "name" ? root.hsDraft : ""
+                onEditRequested: function(f, v) { root.hsDraft = v; root.hsEdit = f; }
+                onDraftEdited: function(t) { root.hsDraft = t }
+                onCommitted: root.commitHotspotEdit()
             }
 
             CredRow {
@@ -1178,6 +1114,12 @@ Item {
                 label: "Password"
                 value: root.hsPw
                 secret: true
+                editing: root.hsEdit === "pw"
+                scale: root.s
+                draft: root.hsEdit === "pw" ? root.hsDraft : ""
+                onEditRequested: function(f, v) { root.hsDraft = v; root.hsEdit = f; }
+                onDraftEdited: function(t) { root.hsDraft = t }
+                onCommitted: root.commitHotspotEdit()
             }
         }
     }

@@ -10,12 +10,13 @@ import qs.components.controls
 import qs.components.layout
 
 /**
- * 送 SEND — Localsend airdrop surface. Scans the local network for devices
- * and sends the queued file with one tap. All dimensions are proportional to
- * the content column width so the surface scales uniformly. The header shows
- * 送 in file mode / 捜 while scanning, a live device-count badge, and an inline
- * refresh button. A file pill appears when a path is queued.  Device rows use
- * rounded cards with smooth hover transitions and a Send action chip.
+ * 送 SEND — Localsend airdrop surface. Scans the local network for peer devices
+ * and sends the queued file with one tap. The header swaps between 送 (file
+ * queued) and 捜 (scanning). A warm gradient file pill sits beneath the header
+ * when a path is queued, echoing the vermilion flame tokens. Device rows use
+ * the Link surface's row style: rounded cards with a glyph, name, subtitle,
+ * and a Send action chip. The empty state centres a large ghost 送 glyph and
+ * message. A radar pulse animates while scanning.
  */
 PillSurface {
     id: root
@@ -35,6 +36,8 @@ PillSurface {
     property bool sending: false
     property bool installed: true
     property int selectedIndex: 0
+
+    property real sentPulse: 0
 
     function refresh() {
         if (scanProc.running) return;
@@ -87,7 +90,7 @@ PillSurface {
                     root.devices = [];
                 }
                 if (root.devices.length === 0)
-                    root.status = root.sendFile.length ? "No devices found" : "Drop a file to send";
+                    root.status = root.sendFile.length ? "No devices found" : "Drop a file to share";
             }
         }
         stderr: StdioCollector {
@@ -99,7 +102,7 @@ PillSurface {
                     root.installed = false;
                     root.status = "Localsend not installed";
                 } else {
-                    root.status = root.sendFile.length ? "No devices found" : "Drop a file to send";
+                    root.status = root.sendFile.length ? "No devices found" : "Drop a file to share";
                 }
             }
         }
@@ -111,11 +114,19 @@ PillSurface {
             root.sending = false;
             if (exitCode === 0) {
                 root.status = "Sent ✓";
+                root.sentPulse = 1;
+                pulseAnim.restart();
                 Qt.callLater(function() { root.requestClose(); });
             } else {
                 root.status = "Send failed";
             }
         }
+    }
+
+    SequentialAnimation {
+        id: pulseAnim
+        NumberAnimation { target: root; property: "sentPulse"; to: 1; duration: 120; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "sentPulse"; to: 0; duration: 400; easing.type: Easing.OutCubic }
     }
 
     ameForm: open ? "soul" : "off"
@@ -130,17 +141,16 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        /* ── Header row — kanji, label, badge, refresh ── */
+        /* ── Header ── */
         Item {
             width: parent.width
-            height: cw * 0.073
+            height: 24 * root.s
 
             SurfaceHeader {
                 id: sendHeader
-                /** 送 while a file is queued, 捜 while scanning, 送 otherwise. */
                 readonly property string glyph: root.sendFile.length > 0 ? "送"
                     : (root.scanning ? "捜" : "送")
-                width: parent.width - (root.sendFile.length > 0 ? 0 : cw * 0.122)
+                width: parent.width - (root.sendFile.length > 0 ? 0 : 40 * root.s)
                 kanji: glyph
                 label: "SEND"
                 badge: root.scanning ? "Scanning…"
@@ -153,14 +163,13 @@ PillSurface {
             Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: root.sendFile.length > 0 ? 0 : cw * 0.110
-                height: root.sendFile.length > 0 ? 0 : cw * 0.067
+                width: root.sendFile.length > 0 ? 0 : 36 * root.s
+                height: root.sendFile.length > 0 ? 0 : 22 * root.s
                 visible: height > 0
 
                 GlyphIcon {
-                    id: refreshIcon
                     anchors.centerIn: parent
-                    width: cw * 0.034; height: cw * 0.034
+                    width: 11 * root.s; height: 11 * root.s
                     name: "reboot"
                     color: refreshArea.containsMouse ? Theme.cream : Theme.iconDim
                     stroke: 1.8
@@ -185,122 +194,164 @@ PillSurface {
             }
         }
 
-        /* ── Hairline ── */
         Rectangle {
             width: parent.width
             height: 1
             color: Theme.hair
         }
 
-        /* ── File pill ── */
+        /* ── File pill — warm gradient card ── */
         Item {
             width: parent.width
-            height: root.sendFile.length > 0 ? cw * 0.183 : 0
+            height: root.sendFile.length > 0 ? 52 * root.s + 10 * root.s : 0
             visible: height > 0
 
             Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                height: cw * 0.110
-                radius: cw * 0.030
-                color: Qt.rgba(0.94, 0.55, 0.38, 0.08)
+                height: 52 * root.s
+                radius: 10 * root.s
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(0.94, 0.55, 0.38, 0.09) }
+                    GradientStop { position: 1.0; color: Qt.rgba(0.94, 0.55, 0.38, 0.04) }
+                }
                 border.width: 1
-                border.color: Qt.rgba(0.94, 0.55, 0.38, 0.15)
+                border.color: Qt.rgba(0.94, 0.55, 0.38, 0.18)
 
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: cw * 0.037
+                    anchors.leftMargin: 14 * root.s
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: cw * 0.024
+                    spacing: 10 * root.s
 
-                    GlyphIcon {
+                    Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: cw * 0.040; height: cw * 0.040
-                        name: "download"
-                        color: Theme.flameGlow
-                        stroke: 2.2
+                        width: 28 * root.s; height: 28 * root.s
+                        radius: 7 * root.s
+                        color: Qt.rgba(0.94, 0.55, 0.38, 0.15)
+
+                        GlyphIcon {
+                            anchors.centerIn: parent
+                            width: 14 * root.s; height: 14 * root.s
+                            name: "download"
+                            color: Theme.flameGlow
+                            stroke: 2.2
+                        }
                     }
+
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.sendFile.split("/").pop()
                         color: Theme.flameGlow
                         font.family: Theme.font
-                        font.pixelSize: cw * 0.034
+                        font.pixelSize: 13 * root.s
                         font.weight: Font.DemiBold
                         elide: Text.ElideMiddle
-                        width: parent.width - cw * 0.183
+                        width: parent.width - 70 * root.s
                     }
                 }
             }
         }
 
-        Item { width: 1; height: root.sendFile.length > 0 ? cw * 0.030 : cw * 0.018 }
+        Item { width: 1; height: root.sendFile.length > 0 ? 12 * root.s : 8 * root.s }
 
-        /* ── Scanning row — pulsing dot + label ── */
+        /* ── Scanning — radar pulse ── */
         Item {
             width: parent.width
-            height: root.scanning ? cw * 0.098 : 0
+            height: root.scanning ? 44 * root.s : 0
             visible: height > 0
 
             Row {
                 anchors.centerIn: parent
-                spacing: cw * 0.030
+                spacing: 10 * root.s
 
-                Rectangle {
-                    id: scanDot
+                /* Radar rings */
+                Item {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: cw * 0.021; height: cw * 0.021; radius: width / 2
-                    color: Theme.flameGlow
-                    opacity: 0.4
+                    width: 16 * root.s; height: 16 * root.s
 
-                    SequentialAnimation on opacity {
-                        running: root.scanning
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 0.95; duration: 800; easing.type: Easing.InOutSine }
-                        NumberAnimation { to: 0.4; duration: 800; easing.type: Easing.InOutSine }
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 16 * root.s; height: 16 * root.s; radius: 8 * root.s
+                        color: "transparent"
+                        border.width: 1.2
+                        border.color: Theme.flameGlow
+                        opacity: 0.15 + 0.35 * root.sentPulse
+
+                        SequentialAnimation on scale {
+                            running: root.scanning
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 0.4; to: 1.2; duration: 1400; easing.type: Easing.OutCubic }
+                            PropertyAction { property: "scale"; value: 0.4 }
+                        }
+                        SequentialAnimation on opacity {
+                            running: root.scanning
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 0.5; to: 0.0; duration: 1400; easing.type: Easing.OutCubic }
+                            PropertyAction { property: "opacity"; value: 0.5 }
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 5 * root.s; height: 5 * root.s; radius: 2.5 * root.s
+                        color: Theme.flameGlow
+                        opacity: 0.9
                     }
                 }
+
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Looking for devices…"
-                    color: Theme.faint
+                    text: root.sending ? "Sending…" : "Looking for devices…"
+                    color: Theme.dim
                     font.family: Theme.font
-                    font.pixelSize: cw * 0.032
+                    font.pixelSize: 11 * root.s
                     font.weight: Font.Medium
                 }
             }
         }
 
-        /* ── Empty / status state ── */
+        /* ── Empty / status state — hero glyph ── */
         Item {
             width: parent.width
             height: (root.status.length > 0 && root.devices.length === 0 && !root.scanning)
-                ? Math.max(cw * 0.220, statusText.implicitHeight + cw * 0.104) : 0
+                ? Math.max(130 * root.s, statusText.implicitHeight + 80 * root.s) : 0
             visible: height > 0
 
             Column {
                 anchors.centerIn: parent
-                spacing: cw * 0.024
+                spacing: 12 * root.s
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: Flags.showGlyphs && root.installed
+                    text: "送"
+                    color: Theme.ghost
+                    opacity: 0.18
+                    font.family: Theme.fontJp
+                    font.weight: Font.Bold
+                    font.pixelSize: 48 * root.s
+                }
 
                 GlyphIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    visible: root.installed && Flags.showGlyphs
-                    width: cw * 0.067; height: cw * 0.067
+                    visible: !Flags.showGlyphs && root.installed
+                    width: 32 * root.s; height: 32 * root.s
                     name: "share"
                     color: Theme.ghost
                     stroke: 1.6
-                    opacity: 0.25
+                    opacity: 0.2
                 }
 
                 Text {
                     id: statusText
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.parent.width - cw * 0.073
+                    width: parent.parent.width - 24 * root.s
                     text: root.status
                     color: Theme.faint
                     font.family: Theme.font
-                    font.pixelSize: cw * 0.032
+                    font.pixelSize: 11 * root.s
                     font.weight: Font.Medium
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
@@ -309,9 +360,9 @@ PillSurface {
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: !root.installed
-                    width: installHint.implicitWidth + cw * 0.073
-                    height: cw * 0.085
-                    radius: height / 2
+                    width: installHint.implicitWidth + 24 * root.s
+                    height: 28 * root.s
+                    radius: 14 * root.s
                     color: Qt.rgba(1, 1, 1, 0.04)
                     border.width: 1
                     border.color: Theme.frameBorder
@@ -322,7 +373,7 @@ PillSurface {
                         text: "flatpak install localsend"
                         color: Theme.subtle
                         font.family: Theme.font
-                        font.pixelSize: cw * 0.029
+                        font.pixelSize: 10 * root.s
                         font.weight: Font.Medium
                         font.features: { "tnum": 1 }
                     }
@@ -330,24 +381,24 @@ PillSurface {
             }
         }
 
-        /* ── Device list ── */
+        /* ── Device list — Link-surface-style rows ── */
         ListView {
             id: devList
             width: parent.width
-            height: count > 0 ? Math.min(count * cw * 0.152 + (count - 1) * cw * 0.006, cw * 0.793) : 0
+            height: count > 0 ? Math.min(count * 54 * root.s + (count - 1) * 4 * root.s, 280 * root.s) : 0
             visible: height > 0 && !root.scanning
-            spacing: cw * 0.006
+            spacing: 4 * root.s
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.devices.length
-            interactive: count * cw * 0.152 > cw * 0.793
+            interactive: count * 54 * root.s > 280 * root.s
 
             delegate: Rectangle {
                 id: devRow
                 required property int index
                 width: devList.width
-                height: cw * 0.152
-                radius: cw * 0.030
+                height: 54 * root.s
+                radius: 10 * root.s
                 color: index === root.selectedIndex ? Theme.frameBg
                     : (devArea.containsMouse ? Qt.rgba(1, 1, 1, 0.035) : "transparent")
                 border.width: index === root.selectedIndex ? 1 : 0
@@ -369,13 +420,13 @@ PillSurface {
 
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: cw * 0.037
+                    anchors.leftMargin: 12 * root.s
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: cw * 0.030
+                    spacing: 12 * root.s
 
                     GlyphIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: cw * 0.049; height: cw * 0.049
+                        width: 18 * root.s; height: 18 * root.s
                         name: "smartphone"
                         color: index === root.selectedIndex ? Theme.cream : Theme.iconDim
                         stroke: 2
@@ -384,16 +435,16 @@ PillSurface {
 
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: cw * 0.006
+                        spacing: 3 * root.s
 
                         Text {
                             text: devRow.dev.name || devRow.dev.hostname || devRow.dev.alias || "Unknown device"
                             color: index === root.selectedIndex ? Theme.cream : Theme.subtle
                             font.family: Theme.font
-                            font.pixelSize: cw * 0.035
+                            font.pixelSize: 12.5 * root.s
                             font.weight: index === root.selectedIndex ? Font.DemiBold : Font.Normal
                             elide: Text.ElideRight
-                            width: devList.width - cw * 0.366
+                            width: devList.width - 140 * root.s
                             Behavior on color { ColorAnimation { duration: 150 } }
                         }
                         Text {
@@ -403,26 +454,26 @@ PillSurface {
                                 : (devRow.dev.hostname || devRow.dev.ip || ""))
                             color: Theme.faint
                             font.family: Theme.font
-                            font.pixelSize: cw * 0.027
+                            font.pixelSize: 10 * root.s
                             font.weight: Font.Medium
                             elide: Text.ElideRight
-                            width: devList.width - cw * 0.366
+                            width: devList.width - 140 * root.s
                         }
                     }
                 }
 
-                /* Send action chip */
+                /* Send action chip — aligned right on selected row */
                 Rectangle {
                     anchors.right: parent.right
-                    anchors.rightMargin: cw * 0.030
+                    anchors.rightMargin: 12 * root.s
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.sendFile.length > 0 && index === root.selectedIndex
-                    width: sendPillText.implicitWidth + cw * 0.049
-                    height: cw * 0.079
-                    radius: height / 2
-                    color: root.sending ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0.94, 0.55, 0.38, 0.12)
+                    width: sendPillText.implicitWidth + 20 * root.s
+                    height: 28 * root.s
+                    radius: 14 * root.s
+                    color: root.sending ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0.94, 0.55, 0.38, 0.14)
                     border.width: 1
-                    border.color: root.sending ? Theme.frameBorder : Qt.rgba(0.94, 0.55, 0.38, 0.18)
+                    border.color: root.sending ? Theme.frameBorder : Qt.rgba(0.94, 0.55, 0.38, 0.22)
 
                     Behavior on color { ColorAnimation { duration: 150 } }
 
@@ -432,7 +483,7 @@ PillSurface {
                         text: root.sending ? "…" : "Send"
                         color: root.sending ? Theme.subtle : Theme.flameGlow
                         font.family: Theme.font
-                        font.pixelSize: cw * 0.032
+                        font.pixelSize: 11 * root.s
                         font.weight: Font.DemiBold
                     }
                 }
@@ -448,7 +499,7 @@ PillSurface {
 
         Item {
             width: parent.width
-            height: root.devices.length > 0 ? cw * 0.018 : 0
+            height: root.devices.length > 0 ? 8 * root.s : 0
             visible: height > 0
         }
     }

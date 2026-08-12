@@ -1,7 +1,10 @@
 module qs.modules.controlcenter
 
+CredRow 1.0 CredRow.qml
+Ember 1.0 Ember.qml
 Link 1.0 Link.qml
 LinkBt 1.0 LinkBt.qml
 LinkToggle 1.0 LinkToggle.qml
 LinkWifi 1.0 LinkWifi.qml
+NotifRow 1.0 NotifRow.qml
 Power 1.0 Power.qml

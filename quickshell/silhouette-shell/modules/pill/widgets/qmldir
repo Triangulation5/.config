@@ -1,6 +1,9 @@
 module qs.modules.pill.widgets
 
+AudioRow 1.0 recorder/AudioRow.qml
 Calendar 1.0 Calendar.qml
+DeviceMenu 1.0 mixer/DeviceMenu.qml
+DevicePickerChip 1.0 mixer/DevicePickerChip.qml
 CalendarEditor 1.0 CalendarEditor.qml
 CalendarStyle 1.0 CalendarStyle.qml
 Clipboard 1.0 Clipboard.qml
@@ -10,7 +13,10 @@ IdleLock 1.0 IdleLock.qml
 Localsend 1.0 Localsend.qml
 Media 1.0 Media.qml
 MinimizedTray 1.0 MinimizedTray.qml
+IconChip 1.0 mixer/IconChip.qml
+MiniSeg 1.0 recorder/MiniSeg.qml
 Mixer 1.0 Mixer.qml
+ORow 1.0 recorder/ORow.qml
 Osd 1.0 Osd.qml
 QuickChooser 1.0 QuickChooser.qml
 QuickCount 1.0 QuickCount.qml

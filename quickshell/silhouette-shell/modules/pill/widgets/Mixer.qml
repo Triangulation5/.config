@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.services
@@ -187,93 +186,6 @@ PillSurface {
         objects: [root.sink, root.source].concat(root.outputSinks).concat(root.inputSources).filter(Boolean)
     }
 
-    component IconChip: Rectangle {
-        id: chip
-        property string glyph: ""
-        property bool on: false
-        property string tipTitle: ""
-        property string tipDesc: ""
-        signal toggled()
-
-        width: 26 * root.s
-        height: 26 * root.s
-        radius: 8 * root.s
-        color: chip.on ? Theme.frameBg : "transparent"
-        border.width: 1
-        border.color: chip.on ? Theme.frameBorder : Theme.border
-
-        GlyphIcon {
-            anchors.centerIn: parent
-            width: 15 * root.s
-            height: 15 * root.s
-            name: chip.glyph
-            color: chip.on ? Theme.vermLit : Theme.iconDim
-            stroke: 1.7
-        }
-        HoverHandler {
-            id: chipHover
-        }
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: chip.toggled()
-        }
-
-        Tooltip {
-            s: root.s
-            placement: "below"
-            title: chip.tipTitle
-            desc: chip.tipDesc
-            show: chipHover.hovered
-        }
-    }
-
-    /**
-     * Header device picker: an icon-only button that toggles its dropdown. It
-     * reads as an open field (onGlow tint and border) while its list is showing,
-     * the same affordance the display surface uses, so no chevron is needed.
-     */
-    component DevicePickerChip: Rectangle {
-        id: dchip
-        property string glyph: ""
-        property bool open: false
-        property string tip: ""
-        signal toggled()
-
-        width: 26 * root.s
-        height: 26 * root.s
-        radius: 8 * root.s
-        color: dchip.open ? Qt.alpha(Theme.onGlow, 0.14)
-            : (dchipHover.hovered ? Theme.frameBg : "transparent")
-        border.width: 1
-        border.color: dchip.open ? Qt.alpha(Theme.onGlow, 0.5) : Theme.border
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-        GlyphIcon {
-            anchors.centerIn: parent
-            width: 15 * root.s
-            height: 15 * root.s
-            name: dchip.glyph
-            color: dchip.open ? Theme.vermLit : Theme.iconDim
-            stroke: 1.7
-        }
-        HoverHandler {
-            id: dchipHover
-        }
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: dchip.toggled()
-        }
-
-        Tooltip {
-            s: root.s
-            placement: "below"
-            title: dchip.tip
-            show: dchipHover.hovered && !dchip.open
-        }
-    }
-
     Item {
         id: header
         z: 5
@@ -312,18 +224,21 @@ PillSurface {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6 * root.s
             DevicePickerChip {
+                s: root.s
                 glyph: "speaker"
                 open: root.openPicker === "out"
                 tip: "Output device"
                 onToggled: root.openPicker = root.openPicker === "out" ? "" : "out"
             }
             DevicePickerChip {
+                s: root.s
                 glyph: "mic"
                 open: root.openPicker === "in"
                 tip: "Input device"
                 onToggled: root.openPicker = root.openPicker === "in" ? "" : "in"
             }
             IconChip {
+                s: root.s
                 glyph: "dnd"
                 on: Flags.dnd
                 tipTitle: "Do not disturb"
@@ -331,6 +246,7 @@ PillSurface {
                 onToggled: Flags.dnd = !Flags.dnd
             }
             IconChip {
+                s: root.s
                 glyph: "awake"
                 on: Flags.keepAwake
                 tipTitle: "Keep awake"
@@ -338,6 +254,7 @@ PillSurface {
                 onToggled: Flags.keepAwake = !Flags.keepAwake
             }
             IconChip {
+                s: root.s
                 glyph: "sun"
                 on: Flags.nightLightMode !== "off"
                 tipTitle: "Night light"
@@ -345,6 +262,7 @@ PillSurface {
                 onToggled: NightLight.setMode(Flags.nightLightMode === "off" ? "on" : "off")
             }
             IconChip {
+                s: root.s
                 glyph: "gamepad"
                 on: Flags.gameMode
                 tipTitle: "Game mode"
@@ -364,122 +282,30 @@ PillSurface {
         color: Theme.hair
     }
 
-    /**
-     * Device dropdown overlay. Both the output and input pickers reuse this: the
-     * `kind` ("out"/"in") keys it to root.openPicker, `model` is the node list,
-     * `current` is the active default, and `onPick` writes the matching
-     * preferredDefault. It floats above the faders right-aligned under the header
-     * so the mixer height stays fixed while a list is open.
-     */
-    component DeviceMenu: Item {
-        id: menu
-        property string kind: ""
-        property var model: []
-        property var current
-        signal pick(var node)
-
-        readonly property bool open: root.openPicker === kind
-        z: 7
-        visible: open
+    DeviceMenu {
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.right: parent.right
-        width: 300 * root.s
-        height: panel.height
-
-        /**
-         * Shadow caster kept apart from the option text. A layer over the labels
-         * would rasterise the glyphs and soften them, so the halo lives on this
-         * textless backing rect and the panel above stays unlayered and crisp.
-         */
-        Rectangle {
-            anchors.fill: panel
-            visible: menu.open
-            radius: panel.radius
-            color: Theme.cardBot
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: Theme.shadow
-                shadowBlur: 0.6
-                shadowVerticalOffset: 4 * root.s
-            }
-        }
-
-        Rectangle {
-            id: panel
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: Math.min(menu.model.length * 24 * root.s + 4 * root.s, 150 * root.s)
-            clip: true
-            radius: 9 * root.s
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Theme.cardTop }
-                GradientStop { position: 1.0; color: Theme.cardBot }
-            }
-            border.width: 1
-            border.color: Theme.frameBorder
-
-            ListView {
-                anchors.fill: parent
-                anchors.margins: 2 * root.s
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                model: menu.model
-
-                delegate: Rectangle {
-                    id: devRow
-                    required property var modelData
-                    readonly property bool current: menu.current === modelData
-
-                    width: ListView.view.width
-                    height: 24 * root.s
-                    radius: 7 * root.s
-                    color: devRowHover.hovered ? Theme.frameBg
-                        : (devRow.current ? Qt.alpha(Theme.onGlow, 0.16) : "transparent")
-
-                    HoverHandler { id: devRowHover }
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 9 * root.s
-                        anchors.right: parent.right
-                        anchors.rightMargin: 9 * root.s
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.deviceLabel(devRow.modelData)
-                        elide: Text.ElideRight
-                        color: devRow.current ? Theme.cream : Theme.subtle
-                        font.family: Theme.font
-                        font.pixelSize: 10.5 * root.s
-                        font.weight: devRow.current ? Font.Bold : Font.Medium
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            menu.pick(devRow.modelData);
-                            root.openPicker = "";
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    DeviceMenu {
+        s: root.s
         kind: "out"
+        open: root.openPicker === "out"
         model: root.outputSinks
         current: root.sink
-        onPick: (node) => Pipewire.preferredDefaultAudioSink = node
+        deviceLabel: root.deviceLabel
+        onPick: (node) => { Pipewire.preferredDefaultAudioSink = node; root.openPicker = ""; }
     }
 
     DeviceMenu {
+        anchors.top: divider.bottom
+        anchors.topMargin: 6 * root.s
+        anchors.right: parent.right
+        s: root.s
         kind: "in"
+        open: root.openPicker === "in"
         model: root.inputSources
         current: root.source
-        onPick: (node) => Pipewire.preferredDefaultAudioSource = node
+        deviceLabel: root.deviceLabel
+        onPick: (node) => { Pipewire.preferredDefaultAudioSource = node; root.openPicker = ""; }
     }
 
     Row {
