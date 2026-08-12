@@ -453,238 +453,46 @@ PillSurface {
         }
     }
 
-    Item {
+    PrefixRow {
         id: aiRow
-        visible: root.aiActive
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
-        height: visible ? 44 * root.s : 0
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 9 * root.s
-            color: Theme.frameBg
-            border.width: 1
-            border.color: Theme.frameBorder
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.runAI()
-        }
-
-        Item {
-            anchors.fill: parent
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-
-            GlyphIcon {
-                id: aiGlyph
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 18 * root.s
-                height: 18 * root.s
-                name: "sparkles"
-                color: Theme.vermLit
-                stroke: 1.7
-            }
-
-            Column {
-                anchors.left: aiGlyph.right
-                anchors.leftMargin: 10 * root.s
-                anchors.right: aiHint.left
-                anchors.rightMargin: 8 * root.s
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 1 * root.s
-
-                Text {
-                    width: parent.width
-                    text: "Ask Perplexity"
-                    color: Theme.bright
-                    font.family: Theme.font
-                    font.pixelSize: 13.5 * root.s
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    text: root.aiQuery
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 10.5 * root.s
-                    elide: Text.ElideRight
-                }
-            }
-
-            Text {
-                id: aiHint
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: "↵ ask"
-                color: Theme.vermLit
-                font.family: Theme.font
-                font.pixelSize: 11 * root.s
-            }
-        }
+        s: root.s
+        glyph: "sparkles"
+        title: root.aiActive ? "Ask Perplexity" : ""
+        query: root.aiQuery
+        hint: "↵ ask"
+        onClicked: root.runAI()
     }
 
-    Item {
+    PrefixRow {
         id: commandRow
-        visible: root.commandActive
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
-        height: visible ? 44 * root.s : 0
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 9 * root.s
-            color: Theme.frameBg
-            border.width: 1
-            border.color: Theme.frameBorder
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.runWebSearch()
-        }
-
-        Item {
-            anchors.fill: parent
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-
-            GlyphIcon {
-                id: cmdGlyph
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 18 * root.s
-                height: 18 * root.s
-                name: "search"
-                color: Theme.vermLit
-                stroke: 1.7
-            }
-
-            Column {
-                anchors.left: cmdGlyph.right
-                anchors.leftMargin: 10 * root.s
-                anchors.right: cmdHint.left
-                anchors.rightMargin: 8 * root.s
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 1 * root.s
-
-                Text {
-                    width: parent.width
-                    text: "Search the web"
-                    color: Theme.bright
-                    font.family: Theme.font
-                    font.pixelSize: 13.5 * root.s
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    text: root.commandQuery
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 10.5 * root.s
-                    elide: Text.ElideRight
-                }
-            }
-
-            Text {
-                id: cmdHint
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: "↵ search"
-                color: Theme.vermLit
-                font.family: Theme.font
-                font.pixelSize: 11 * root.s
-            }
-        }
+        s: root.s
+        glyph: "search"
+        title: root.commandActive ? "Search the web" : ""
+        query: root.commandQuery
+        hint: "↵ search"
+        onClicked: root.runWebSearch()
     }
 
-    Item {
+    PrefixRow {
         id: terminalRow
-        visible: root.terminalActive
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
-        height: visible ? 44 * root.s : 0
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 9 * root.s
-            color: Theme.frameBg
-            border.width: 1
-            border.color: Theme.frameBorder
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.runInTerminal()
-        }
-
-        Item {
-            anchors.fill: parent
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-
-            GlyphIcon {
-                id: termGlyph
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 18 * root.s
-                height: 18 * root.s
-                name: "terminal"
-                color: Theme.vermLit
-                stroke: 1.7
-            }
-
-            Column {
-                anchors.left: termGlyph.right
-                anchors.leftMargin: 10 * root.s
-                anchors.right: termHint.left
-                anchors.rightMargin: 8 * root.s
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 1 * root.s
-
-                Text {
-                    width: parent.width
-                    text: "Run in terminal"
-                    color: Theme.bright
-                    font.family: Theme.font
-                    font.pixelSize: 13.5 * root.s
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    text: root.terminalCommand
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 10.5 * root.s
-                    elide: Text.ElideRight
-                }
-            }
-
-            Text {
-                id: termHint
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: "↵ run"
-                color: Theme.vermLit
-                font.family: Theme.font
-                font.pixelSize: 11 * root.s
-            }
-        }
+        s: root.s
+        glyph: "terminal"
+        title: root.terminalActive ? "Run in terminal" : ""
+        query: root.terminalCommand
+        hint: "↵ run"
+        onClicked: root.runInTerminal()
     }
 
     Text {
@@ -795,134 +603,13 @@ PillSurface {
         boundsBehavior: Flickable.StopAtBounds
         model: root.windowResults.length
 
-        delegate: Item {
-            id: winRow
+        delegate: WindowRow {
             required property int index
-            width: winList.width
-            height: 38 * root.s
+            required property var modelData
 
-            readonly property var win: root.windowResults[index]
-            readonly property bool selected: index === root.selectedIndex
-            readonly property string resolvedIcon: root.iconForWindow(winRow.win.cls)
-
-            Rectangle {
-                anchors.fill: parent
-                radius: 9 * root.s
-                visible: winRow.selected || winArea.containsMouse
-                color: winRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03)
-                border.width: winRow.selected ? 1 : 0
-                border.color: Theme.frameBorder
-            }
-
-            MouseArea {
-                id: winArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onEntered: root.selectedIndex = winRow.index
-                onClicked: {
-                    root.selectedIndex = winRow.index;
-                    root.focusWindow();
-                }
-            }
-
-            Item {
-                anchors.fill: parent
-                anchors.leftMargin: 11 * root.s
-                anchors.rightMargin: 11 * root.s
-
-                Rectangle {
-                    id: winIconBg
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 22 * root.s
-                    height: 22 * root.s
-                    radius: 5 * root.s
-                    color: Qt.rgba(1, 1, 1, 0.05)
-                    visible: !(winIcon.status === Image.Ready && winIcon.source != "")
-                }
-                Image {
-                    id: winIcon
-                    anchors.fill: winIconBg
-                    sourceSize.width: Math.round(40 * root.s)
-                    sourceSize.height: Math.round(40 * root.s)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    smooth: true
-                    visible: status === Image.Ready && source != ""
-                    source: winRow.resolvedIcon
-                }
-                GlyphIcon {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.horizontalCenter: winIconBg.horizontalCenter
-                    width: 14 * root.s
-                    height: 14 * root.s
-                    name: "window"
-                    color: winRow.selected ? Theme.dim : Theme.faint
-                    stroke: 1.7
-                    visible: winRow.resolvedIcon.length === 0 || (winIcon.status !== Image.Ready)
-                }
-
-                Column {
-                    anchors.left: winIconBg.right
-                    anchors.leftMargin: 10 * root.s
-                    anchors.right: wsPill.left
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1 * root.s
-
-                    Text {
-                        width: parent.width
-                        text: winRow.win.title
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 13 * root.s
-                        font.weight: winRow.selected ? Font.DemiBold : Font.Normal
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width
-                        visible: winRow.win.cls.length > 0
-                        text: winRow.win.cls
-                        color: winRow.selected ? Theme.dim : Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 10.5 * root.s
-                        elide: Text.ElideRight
-                    }
-                }
-
-                Rectangle {
-                    id: wsPill
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: winRet.left
-                    anchors.rightMargin: winRow.selected ? 6 * root.s : 0
-                    width: visible ? wsLabel.implicitWidth + 10 * root.s : 0
-                    height: 18 * root.s
-                    radius: 4 * root.s
-                    color: winRow.selected ? Qt.rgba(0.94, 0.88, 0.84, 0.08) : Qt.rgba(1, 1, 1, 0.04)
-                    visible: winRow.win.workspace.length > 0 && winRow.win.workspace !== "special:minimized"
-
-                    Text {
-                        id: wsLabel
-                        anchors.centerIn: parent
-                        text: winRow.win.workspace
-                        color: winRow.selected ? Theme.dim : Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 9.5 * root.s
-                        font.weight: Font.Medium
-                    }
-                }
-
-                Text {
-                    id: winRet
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
-                    text: "↵"
-                    color: Theme.vermLit
-                    font.family: Theme.font
-                    font.pixelSize: 12 * root.s
-                    visible: winRow.selected
-                }
-            }
+            surface: root
+            modelData: modelData
+            index: index
         }
     }
 
@@ -952,220 +639,14 @@ PillSurface {
         boundsBehavior: Flickable.StopAtBounds
         model: root.results.length
 
-        delegate: Item {
-            id: appRow
+        delegate: AppRow {
             required property int index
-            width: list.width
-            height: 38 * root.s
+            required property var modelData
 
-            readonly property var entry: root.results[index]
-            readonly property bool selected: index === root.selectedIndex
-            readonly property bool isAppImage: entry && entry.id && entry.id.indexOf("ricelin-") === 0
-            readonly property bool editing: root.editIndex === index && isAppImage
-            property bool armed: false
-            onEditingChanged: if (!editing) armed = false
-
-            readonly property string secondary: {
-                if (!entry)
-                    return "";
-                if (entry.genericName && entry.genericName.length > 0)
-                    return entry.genericName;
-                if (entry.categories && entry.categories.length > 0)
-                    return root.mapCategory(entry.categories);
-                return "";
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: 9 * root.s
-                visible: appRow.selected || rowArea.containsMouse
-                color: appRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03)
-                border.width: appRow.selected ? 1 : 0
-                border.color: Theme.frameBorder
-            }
-
-            MouseArea {
-                id: rowArea
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                cursorShape: Qt.PointingHandCursor
-                onPositionChanged: (m) => {
-                    var g = rowArea.mapToItem(null, m.x, m.y);
-                    if (g.x !== root.lastPointer.x || g.y !== root.lastPointer.y) {
-                        root.lastPointer = Qt.point(g.x, g.y);
-                        root.selectedIndex = appRow.index;
-                    }
-                }
-                onClicked: (m) => {
-                    if (m.button === Qt.RightButton) {
-                        if (appRow.isAppImage)
-                            root.editIndex = appRow.editing ? -1 : appRow.index;
-                        return;
-                    }
-                    if (appRow.editing)
-                        return;
-                    root.selectedIndex = appRow.index;
-                    root.activate();
-                }
-            }
-
-            Item {
-                anchors.fill: parent
-                anchors.leftMargin: 11 * root.s
-                anchors.rightMargin: 11 * root.s
-
-                Rectangle {
-                    id: iconBg
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 22 * root.s
-                    height: 22 * root.s
-                    radius: 5 * root.s
-                    color: Qt.rgba(1, 1, 1, 0.05)
-                    visible: !(icon.status === Image.Ready && icon.source != "")
-                }
-                Image {
-                    id: icon
-                    anchors.fill: iconBg
-                    sourceSize.width: Math.round(40 * root.s)
-                    sourceSize.height: Math.round(40 * root.s)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    smooth: true
-                    visible: status === Image.Ready && source != ""
-                    source: {
-                        if (!appRow.entry || !appRow.entry.icon)
-                            return "";
-                        var ic = appRow.entry.icon;
-                        if (appRow.isAppImage && ic.indexOf("/") === 0)
-                            return "file://" + ic;
-                        return Quickshell.iconPath(ic, true);
-                    }
-                }
-
-                TextMetrics {
-                    id: retMetrics
-                    font.family: Theme.font
-                    font.pixelSize: 12 * root.s
-                    text: "↵"
-                }
-                Text {
-                    id: ret
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
-                    text: retMetrics.text
-                    color: Theme.vermLit
-                    font.family: Theme.font
-                    font.pixelSize: 12 * root.s
-                    visible: appRow.selected && !appRow.editing
-                    width: visible ? retMetrics.advanceWidth + 6 * root.s : 0
-                    horizontalAlignment: Text.AlignRight
-                }
-
-                GlyphIcon {
-                    id: trashGlyph
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
-                    width: appRow.editing ? 16 * root.s : 0
-                    height: 16 * root.s
-                    visible: appRow.editing
-                    stroke: 2
-                    name: "trash"
-                    color: appRow.armed ? "#e0533f" : Theme.dim
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -6 * root.s
-                        enabled: appRow.editing
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (!appRow.armed) {
-                                appRow.armed = true;
-                                return;
-                            }
-                            var slug = root.appimageSlug(appRow.entry);
-                            if (slug) {
-                                appimageProc.command = ["bash", root.appimageScript, "remove", slug];
-                                appimageProc.running = true;
-                            }
-                            root.editIndex = -1;
-                        }
-                    }
-                }
-
-                /**
-                 * Name over description, each clipped on its own line, so a long
-                 * comment can no longer bleed into the name the way one shared row
-                 * let it. The block centres on the icon whether it shows one line or
-                 * two, and an app with no description just reads as a centred name.
-                 */
-                Column {
-                    anchors.left: iconBg.right
-                    anchors.leftMargin: 10 * root.s
-                    anchors.right: appRow.editing ? trashGlyph.left : ret.left
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1 * root.s
-
-                    Item {
-                        width: parent.width
-                        height: nameText.implicitHeight
-
-                        Text {
-                            id: nameText
-                            anchors.fill: parent
-                            visible: !appRow.editing
-                            text: appRow.entry ? appRow.entry.name : ""
-                            color: Theme.cream
-                            font.family: Theme.font
-                            font.pixelSize: 13 * root.s
-                            font.weight: appRow.selected ? Font.DemiBold : Font.Normal
-                            elide: Text.ElideRight
-                        }
-                        TextInput {
-                            id: nameEdit
-                            anchors.fill: parent
-                            visible: appRow.editing
-                            text: appRow.entry ? appRow.entry.name : ""
-                            color: Theme.bright
-                            font.family: Theme.font
-                            font.pixelSize: 13 * root.s
-                            selectByMouse: true
-                            clip: true
-                            onVisibleChanged: if (visible) {
-                                selectAll();
-                                forceActiveFocus();
-                            }
-                            onEditingFinished: {
-                                var slug = root.appimageSlug(appRow.entry);
-                                var nm = nameEdit.text.trim();
-                                if (slug && nm.length > 0 && nm !== appRow.entry.name) {
-                                    appimageProc.command = ["bash", root.appimageScript, "rename", slug, nm];
-                                    appimageProc.running = true;
-                                }
-                                root.editIndex = -1;
-                            }
-                        }
-                    }
-                    Text {
-                        id: sec
-                        width: parent.width
-                        visible: appRow.secondary.length > 0
-                        text: appRow.secondary
-                        color: appRow.selected ? Theme.dim : Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 10.5 * root.s
-                        elide: Text.ElideRight
-                    }
-                }
-            }
+            surface: root
+            modelData: modelData
+            index: index
         }
-    }
-
-    WheelScroller {
-        anchors.fill: list
-        s: root.s
-        flick: list
     }
 
     /** Faint nudge so the drag-to-install gesture is discoverable at all. */

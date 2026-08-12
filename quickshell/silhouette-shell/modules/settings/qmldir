@@ -20,6 +20,7 @@ GroupLabel 1.0 GroupLabel.qml
 Input 1.0 Input.qml
 Keybinds 1.0 Keybinds.qml
 KeybindForm 1.0 KeybindForm.qml
+KeybindRow 1.0 KeybindRow.qml
 Look 1.0 Look.qml
 Settings 1.0 Settings.qml
 SettingsHeader 1.0 SettingsHeader.qml
@@ -27,4 +28,6 @@ SettingsRow 1.0 SettingsRow.qml
 SettingsSeg 1.0 SettingsSeg.qml
 SettingsSurface 1.0 SettingsSurface.qml
 Updates 1.0 Updates.qml
+WorkspaceNavRow 1.0 WorkspaceNavRow.qml
+WorkspaceRuleRow 1.0 WorkspaceRuleRow.qml
 WorkspacesSurface 1.0 WorkspacesSurface.qml
