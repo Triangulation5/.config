@@ -25,14 +25,14 @@ Singleton {
     readonly property color bright:   dyn ? Dyn.bright : "#cdcdcd"
     readonly property color dim:      dyn ? Dyn.dim : "#878787"
 
-    readonly property color cardTop:  dyn ? Dyn.surfaceContainerHigh : "rgba(37,37,48,0.85)"
-    readonly property color cardBot:  dyn ? Dyn.surfaceContainerLow : "rgba(37,37,48,0.85)"
+    readonly property color cardTop:  dyn ? Dyn.surfaceContainerHigh : "rgba(37,37,48,1.00)"
+    readonly property color cardBot:  dyn ? Dyn.surfaceContainerLow : "rgba(37,37,48,1.00)"
 
-    readonly property color border: dyn ? Qt.rgba(Dyn.outlineVariant.r, Dyn.outlineVariant.g, Dyn.outlineVariant.b, 0.5) : "rgba(96,96,121,0.55)"
+    readonly property color border: dyn ? Qt.rgba(Dyn.outlineVariant.r, Dyn.outlineVariant.g, Dyn.outlineVariant.b, 1.00) : "rgba(96,96,121,1.00)"
 
-    readonly property color shadow: Qt.rgba(0, 0, 0, 0.55)
+    readonly property color shadow: Qt.rgba(0, 0, 0, 1.00)
 
-    readonly property color tileBg: dyn ? Dyn.surface : "rgba(20,20,21,0.85)"
+    readonly property color tileBg: dyn ? Dyn.surface : "rgba(20,20,21,1.00)"
 
     readonly property color subtle: dyn ? Dyn.subtle : "#878787"
     readonly property color faint: dyn ? Dyn.faint : "#606079"
@@ -60,10 +60,10 @@ Singleton {
 
     readonly property color todayWarm: dyn ? onGlow : "#f3be7c"
 
-    readonly property color ghost: dyn ? Dyn.surfaceContainerHighest : "rgba(37,37,48,0.85)"
+    readonly property color ghost: dyn ? Dyn.surfaceContainerHighest : "rgba(37,37,48,1.00)"
 
-    readonly property color capsule: dyn ? Dyn.surfaceContainerHigh : "rgba(34,34,44,0.92)"
-    readonly property color capsuleBorder: dyn ? Qt.rgba(Dyn.outline.r, Dyn.outline.g, Dyn.outline.b, 0.35) : "rgba(96,96,121,0.4)"
+    readonly property color capsule: dyn ? Dyn.surfaceContainerHigh : "rgba(34,34,44,1.00)"
+    readonly property color capsuleBorder: dyn ? Qt.rgba(Dyn.outline.r, Dyn.outline.g, Dyn.outline.b, 1.00) : "rgba(96,96,121,1.00)"
     readonly property color error: "#e0533f"
     readonly property color placeholder: dyn ? Dyn.dim : "#6a6a7a"
     readonly property color trackBg: Qt.alpha(cream, 0.10)
