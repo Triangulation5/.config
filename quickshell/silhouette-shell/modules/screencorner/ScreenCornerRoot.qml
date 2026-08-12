@@ -56,8 +56,7 @@ PanelWindow {
     /**
      * Shared state.
      */
-    /** Collapse corners during game mode and when the lock screen is active. */
-    readonly property bool gameMode: Flags.gameMode || Cava.enabled
+    readonly property bool gameMode: Flags.gameMode
     readonly property bool notchStyle: Flags.notchStyle
 
     /**
