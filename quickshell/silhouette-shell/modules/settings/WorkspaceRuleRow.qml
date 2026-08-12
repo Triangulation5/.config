@@ -5,20 +5,22 @@ import qs.services
 import qs.components.icons
 
 /**
- * One workspace rule row: space name, description, keybinding chip, and a
- * remove button (visible on hover). Clicking opens the space-apps editor.
- * Extracted from WorkspacesSurface.qml's second Repeater delegate.
+ * One workspace rule row in the workspaces hub. All data is passed
+ * from the delegate body.
  */
 Item {
     id: crow
 
     property var surface: null
-    required property var modelData
-    required property int index
+    property real s: 1
+    property int rowIndex: -1
+    property string wsName: ""
+    property string wsDesc: ""
+    property string wsKey: ""
+    property string wsId: ""
 
-    readonly property bool last: crow.index === Spaces.list.length - 1
-    readonly property bool focused: surface ? surface.focusIndex === 1 + crow.index : false
-    readonly property real s: surface ? surface.s : 1
+    readonly property bool last: crow.rowIndex === Spaces.list.length - 1
+    readonly property bool focused: surface ? surface.focusIndex === 1 + crow.rowIndex : false
 
     width: parent ? parent.width : 0
     height: 50 * s
@@ -40,7 +42,7 @@ Item {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: {
-            Spaces.editing = crow.modelData.id;
+            Spaces.editing = crow.wsId;
             if (surface) surface.requestSurface("spaceapps");
         }
     }
@@ -55,7 +57,7 @@ Item {
 
         Text {
             width: parent.width
-            text: crow.modelData.name
+            text: crow.wsName
             color: Theme.cream
             font.family: Theme.font
             font.pixelSize: 12.5 * s
@@ -64,8 +66,8 @@ Item {
         }
         Text {
             width: parent.width
-            visible: crow.modelData.desc.length > 0
-            text: crow.modelData.desc
+            visible: crow.wsDesc.length > 0
+            text: crow.wsDesc
             color: Theme.faint
             font.family: Theme.font
             font.pixelSize: 10.5 * s
@@ -106,7 +108,7 @@ Item {
                 enabled: cHover.hovered
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: Spaces.removeSpace(crow.modelData.id)
+                onClicked: Spaces.removeSpace(crow.wsId)
             }
         }
 
@@ -122,7 +124,7 @@ Item {
             Text {
                 id: cKeyText
                 anchors.centerIn: parent
-                text: crow.modelData.key
+                text: crow.wsKey
                 color: Theme.subtle
                 font.family: Theme.font
                 font.pixelSize: 11 * s
