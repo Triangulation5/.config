@@ -29,10 +29,12 @@ Item {
 
     implicitWidth: size
     implicitHeight: size
+    clip: true
 
     Canvas {
         anchors.fill: parent
         antialiasing: true
+        renderTarget: Canvas.FramebufferObject
 
         onPaint: {
             const ctx = getContext("2d")
