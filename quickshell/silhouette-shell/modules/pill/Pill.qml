@@ -247,7 +247,7 @@ Item {
     }
 
     /** Seconds a surface stays loaded after last use before being reclaimed. */
-    property int surfaceIdleTimeout: 10
+    property int surfaceIdleTimeout: 15
 
     /** Timestamp of last open per surface name. */
     property var _surfaceLastOpened: ({})
