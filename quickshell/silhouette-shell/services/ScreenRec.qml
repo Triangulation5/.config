@@ -13,7 +13,7 @@ import Quickshell.Io
  * `-fallback-cpu-encoding yes` so a machine with broken hardware encoding but a
  * working CPU encoder (libx264) degrades to CPU instead of failing; a distro
  * whose ffmpeg build omits the h264 encoders entirely still needs its full
- * ffmpeg installed (see commands.md).
+ * ffmpeg installed (see docs/commands.md).
  *
  * The capture target is chosen at leisure BEFORE any countdown, so the user
  * picks WHAT to record with no recording running yet. The surface calls one of
