@@ -6,7 +6,9 @@ DeviceMenu 1.0 mixer/DeviceMenu.qml
 DevicePickerChip 1.0 mixer/DevicePickerChip.qml
 CalendarEditor 1.0 CalendarEditor.qml
 CalendarStyle 1.0 CalendarStyle.qml
+ClipRow 1.0 recorder/ClipRow.qml
 Clipboard 1.0 Clipboard.qml
+MonTile 1.0 recorder/MonTile.qml
 DragInstall 1.0 DragInstall.qml
 GameBar 1.0 GameBar.qml
 IdleLock 1.0 IdleLock.qml

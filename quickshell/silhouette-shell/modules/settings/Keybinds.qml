@@ -39,6 +39,7 @@ PillSurface {
     implicitHeight: content.implicitHeight
 
     signal requestSurface(string name)
+    property alias bindList: list
 
     readonly property string bindsPath: Quickshell.env("HOME") + "/.config/hypr/modules/binds.lua"
 
@@ -471,100 +472,13 @@ PillSurface {
 
             property Item focusRowItem: null
 
-            delegate: Item {
-                id: brow
+            delegate: KeybindRow {
                 required property int index
                 required property var modelData
 
-                readonly property bool focused: root.focusIndex === brow.index
-
-                width: ListView.view.width
-                height: 38 * root.s
-
-                onFocusedChanged: if (focused) list.focusRowItem = brow
-
-                HoverHandler {
-                    id: rowHover
-                    onHoveredChanged: if (hovered && !root.listening) root.focusIndex = brow.index
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.topMargin: 3 * root.s
-                    anchors.bottomMargin: 3 * root.s
-                    radius: 9 * root.s
-                    color: (rowHover.hovered || brow.focused) ? Theme.frameBg : "transparent"
-                    Behavior on color { ColorAnimation { duration: Motion.fast } }
-                }
-
-                Rectangle {
-                    id: comboChip
-                    anchors.left: parent.left
-                    anchors.leftMargin: 12 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: comboText.implicitWidth + 16 * root.s
-                    height: comboText.implicitHeight + 8 * root.s
-                    radius: 7 * root.s
-                    color: brow.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.frameBg
-                    border.width: 1
-                    border.color: brow.focused ? Qt.alpha(Theme.vermLit, 0.45) : Theme.hairSoft
-                    Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-                    Text {
-                        id: comboText
-                        anchors.centerIn: parent
-                        text: root.comboPretty(brow.modelData.combo)
-                        color: brow.focused ? Theme.cream : Theme.subtle
-                        font.family: Theme.font
-                        font.pixelSize: 11 * root.s
-                        font.weight: Font.Bold
-                        font.letterSpacing: 0.3 * root.s
-                    }
-                }
-
-                Column {
-                    anchors.left: comboChip.right
-                    anchors.leftMargin: 12 * root.s
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1 * root.s
-
-                    Text {
-                        anchors.right: parent.right
-                        width: parent.width
-                        horizontalAlignment: Text.AlignRight
-                        text: brow.modelData.label
-                        color: brow.focused ? Theme.subtle : Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 11 * root.s
-                        font.weight: Font.Medium
-                        elide: Text.ElideRight
-                    }
-
-                    Text {
-                        anchors.right: parent.right
-                        width: parent.width
-                        horizontalAlignment: Text.AlignRight
-                        visible: rowHover.hovered && brow.modelData.cmd.length > 0
-                        text: brow.modelData.cmd
-                        color: Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 9 * root.s
-                        font.weight: Font.Normal
-                        elide: Text.ElideLeft
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: !root.listening
-                    cursorShape: brow.modelData.isMouse ? Qt.ArrowCursor : Qt.PointingHandCursor
-                    onClicked: {
-                        root.focusIndex = brow.index;
-                        root.openEdit(brow.modelData);
-                    }
-                }
+                surface: root
+                modelData: modelData
+                index: index
             }
         }
 

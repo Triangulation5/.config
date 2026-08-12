@@ -786,52 +786,13 @@ PillSurface {
                     boundsBehavior: Flickable.StopAtBounds
                     model: ScreenRec.monitors
 
-                    delegate: Rectangle {
-                        id: monTile
+                    delegate: MonTile {
                         required property var modelData
                         required property int index
-                        readonly property bool focused: root.monFocus === index
-                        width: 152 * root.s
-                        height: monList.height
-                        radius: 9 * root.s
-                        color: monArea.containsMouse || monTile.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.tileBg
-                        border.width: 1
-                        border.color: monArea.containsMouse || monTile.focused ? Qt.alpha(Theme.vermLit, 0.5) : Theme.border
-                        Behavior on color { ColorAnimation { duration: Motion.fast } }
 
-                        HoverHandler {
-                            onHoveredChanged: if (hovered) root.monFocus = index
-                        }
-
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 2 * root.s
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: monTile.modelData.name
-                                color: Theme.cream
-                                font.family: Theme.font
-                                font.pixelSize: 11.5 * root.s
-                                font.weight: Font.Bold
-                            }
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: monTile.modelData.w + " × " + monTile.modelData.h
-                                color: Theme.subtle
-                                font.family: Theme.font
-                                font.pixelSize: 9.5 * root.s
-                                font.features: { "tnum": 1 }
-                            }
-                        }
-
-                        MouseArea {
-                            id: monArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.pickMonitor(monTile.modelData.name)
-                        }
+                        surface: root
+                        modelData: modelData
+                        index: index
                     }
                 }
 
@@ -1134,184 +1095,13 @@ PillSurface {
                 boundsBehavior: Flickable.StopAtBounds
                 model: ScreenRec.recent
 
-                delegate: Item {
-                    id: frame
-                    required property int index
+                delegate: ClipRow {
                     required property var modelData
+                    required property int index
 
-                    /**
-                     * The clip name is `recording_YYYY-MM-DD_HH-MM-SS`; only the
-                     * day and time matter beside the size, so it is shown as
-                     * `MM-DD HH:MM` to leave room for the size on the same line.
-                     */
-                    readonly property string stamp: {
-                        var m = /_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/.exec(frame.modelData.name);
-                        return m ? m[2] + "-" + m[3] + " " + m[4] + ":" + m[5]
-                                 : frame.modelData.name.replace("recording_", "").replace(".mp4", "");
-                    }
-                    readonly property bool coverReady: cover.status === Image.Ready && cover.source !== ""
-
-                    /** Two-step delete: first ✕ click arms it red, the next removes the clip. */
-                    property bool armed: false
-
-                    width: 108 * root.s
-                    height: filmstrip.height
-
-                    ClippingRectangle {
-                        id: thumb
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 48 * root.s
-                        radius: 9 * root.s
-                        color: Theme.tileBg
-
-                        Rectangle {
-                            anchors.fill: parent
-                            visible: !frame.coverReady
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: Theme.cardTop }
-                                GradientStop { position: 1.0; color: Theme.tileBg }
-                            }
-                        }
-
-                        Image {
-                            id: cover
-                            anchors.fill: parent
-                            source: frame.modelData.thumb ? "file://" + frame.modelData.thumb : ""
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            cache: true
-                            smooth: true
-                            sourceSize.width: 216 * root.s
-                            sourceSize.height: 96 * root.s
-                        }
-
-                        GlyphIcon {
-                            anchors.centerIn: parent
-                            width: 14 * root.s
-                            height: 14 * root.s
-                            visible: !frame.coverReady
-                            name: "play"
-                            color: frameArea.containsMouse ? Theme.cream : Theme.iconDim
-                        }
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 22 * root.s
-                            height: 22 * root.s
-                            radius: width / 2
-                            visible: frame.coverReady
-                            color: Qt.rgba(0, 0, 0, 0.34)
-                            opacity: frameArea.containsMouse ? 1 : 0.7
-                            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-
-                            GlyphIcon {
-                                anchors.centerIn: parent
-                                width: 11 * root.s
-                                height: 11 * root.s
-                                name: "play"
-                                color: Theme.cream
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        anchors.fill: thumb
-                        radius: thumb.radius
-                        color: "transparent"
-                        border.width: 1.5
-                        border.color: frame.index === 0 ? Qt.alpha(Theme.vermLit, 0.4)
-                            : (frameArea.containsMouse ? Theme.vermDim : Theme.border)
-                        Behavior on border.color { ColorAnimation { duration: Motion.fast } }
-                    }
-
-                    Item {
-                        id: meta
-                        anchors.top: thumb.bottom
-                        anchors.topMargin: 5 * root.s
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: stampTxt.height
-
-                        Text {
-                            id: stampTxt
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.right: sizeTxt.left
-                            anchors.rightMargin: 4 * root.s
-                            text: frame.stamp
-                            color: Theme.subtle
-                            font.family: Theme.font
-                            font.pixelSize: 9 * root.s
-                            font.weight: Font.DemiBold
-                            font.features: { "tnum": 1 }
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                        }
-
-                        Text {
-                            id: sizeTxt
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: frame.modelData.sizeLabel
-                            color: Theme.faint
-                            font.family: Theme.font
-                            font.pixelSize: 8.5 * root.s
-                            font.weight: Font.DemiBold
-                            font.features: { "tnum": 1 }
-                        }
-                    }
-
-                    MouseArea {
-                        id: frameArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: ScreenRec.openFile(frame.modelData.path)
-                    }
-
-                    Rectangle {
-                        id: delBadge
-                        anchors.top: thumb.top
-                        anchors.right: thumb.right
-                        anchors.margins: 4 * root.s
-                        width: 15 * root.s
-                        height: 15 * root.s
-                        radius: width / 2
-                        color: frame.armed ? "#e0533f" : Qt.rgba(0, 0, 0, 0.4)
-                        opacity: frameArea.containsMouse || delClipArea.containsMouse ? 1 : 0
-                        visible: opacity > 0
-                        Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-                        Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-                        GlyphIcon {
-                            anchors.centerIn: parent
-                            width: 8 * root.s
-                            height: 8 * root.s
-                            name: "close"
-                            stroke: 2
-                            color: frame.armed || delClipArea.containsMouse ? Theme.cream : Theme.dim
-                        }
-
-                        MouseArea {
-                            id: delClipArea
-                            anchors.fill: parent
-                            anchors.margins: -4 * root.s
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onExited: frame.armed = false
-                            onClicked: {
-                                if (!frame.armed) {
-                                    frame.armed = true;
-                                    return;
-                                }
-                                frame.armed = false;
-                                rmClipProc.command = ["rm", "--", frame.modelData.path];
-                                rmClipProc.running = true;
-                            }
-                        }
-                    }
+                    surface: root
+                    modelData: modelData
+                    index: index
                 }
             }
 
