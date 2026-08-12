@@ -130,6 +130,8 @@ Item {
         if (!active) {
             scanTimer.stop();
             expandedAddress = "";
+            confirmFocus = -1;
+            kbIndex = -1;
             if (adapter && adapter.discovering)
                 adapter.discovering = false;
         }
@@ -265,15 +267,68 @@ Item {
         return true;
     }
 
-    /** Return on the bt list: activate (connect / pair / manage) the focused device. */
+    /**
+     * Return on the bt list: fire the focused confirm button when one is
+     * armed, else activate (connect / pair / manage) the focused device.
+     */
     function kbActivate() {
         var n = root.devicesSorted.length;
         if (n === 0)
             return false;
         if (kbIndex < 0 || kbIndex >= n)
             kbIndex = 0;
-        root.activateDevice(root.devicesSorted[kbIndex]);
+        var d = root.devicesSorted[kbIndex];
+        var addr = d ? (d.address || "") : "";
+        if (addr.length && root.expandedAddress === addr && root.confirmFocus >= 0) {
+            if (root.confirmFocus === 0) {
+                if (d.connected) root.disconnectDevice(d);
+                else root.connectDevice(d);
+            } else {
+                root.forgetDevice(d);
+            }
+            return true;
+        }
+        root.activateDevice(d);
         return true;
+    }
+
+    /**
+     * Confirm-button focus for the expanded row: 0 = primary (Connect/
+     * Disconnect), 1 = Forget. Resets whenever the expanded row changes.
+     */
+    property int confirmFocus: -1
+    onExpandedAddressChanged: confirmFocus = -1
+
+    /**
+     * Left/right on the bt list: cycle the expanded row's confirm buttons.
+     * Returns false when there is nothing to adjust, so vim h/l fall through
+     * to back/enter.
+     */
+    function kbAdjust(dir) {
+        var n = root.devicesSorted.length;
+        if (n === 0 || kbIndex < 0 || kbIndex >= n)
+            return false;
+        var d = root.devicesSorted[kbIndex];
+        var addr = d ? (d.address || "") : "";
+        if (addr.length === 0 || root.expandedAddress !== addr)
+            return false;
+        if (confirmFocus < 0)
+            confirmFocus = 0;
+        else
+            confirmFocus = (confirmFocus + dir + 2) % 2;
+        return true;
+    }
+
+    /**
+     * Backspace on the bt list: collapse the expanded row before the caller
+     * pops the subview. Returns true when a row was open and got collapsed.
+     */
+    function kbBack() {
+        if (root.expandedAddress.length) {
+            root.expandedAddress = "";
+            return true;
+        }
+        return false;
     }
 
     Rectangle {
@@ -334,9 +389,28 @@ Item {
                             : false
                         readonly property bool confirming: addr.length > 0 && root.expandedAddress === addr
                         readonly property bool focused: root.kbIndex === index
+                        readonly property bool focusPrimary: root.confirmFocus === 0
+                        readonly property bool focusForget: root.confirmFocus === 1
                         readonly property int battery: root.batteryLevel(modelData)
                         width: devCol.width
                         spacing: 2 * root.s
+
+                        /**
+                         * Keep the keyboard-focused (or just-expanded) row in
+                         * view when the list overflows its fixed-height frame.
+                         * `mapToItem` gives viewport coords, so scroll by the
+                         * deficit against the visible bounds.
+                         */
+                        function ensureVisible() {
+                            var y = devItem.mapToItem(devFlick, 0, 0).y;
+                            var h = devItem.height;
+                            if (y < 0)
+                                devFlick.contentY += y;
+                            else if (y + h > devFlick.height)
+                                devFlick.contentY += y + h - devFlick.height;
+                        }
+                        onFocusedChanged: if (focused) Qt.callLater(devItem.ensureVisible)
+                        onConfirmingChanged: if (confirming) Qt.callLater(devItem.ensureVisible)
 
                         Rectangle {
                             width: parent.width
@@ -502,9 +576,9 @@ Item {
                                     width: primaryLabel.implicitWidth + 20 * root.s
                                     height: 22 * root.s
                                     radius: 7 * root.s
-                                    color: primaryArea.containsMouse ? Theme.tileBg : "transparent"
+                                    color: (primaryArea.containsMouse || devItem.focusPrimary) ? Theme.tileBg : "transparent"
                                     border.width: 1
-                                    border.color: primaryArea.containsMouse ? Theme.vermDim : Theme.border
+                                    border.color: (primaryArea.containsMouse || devItem.focusPrimary) ? Theme.vermDim : Theme.border
 
                                     Text {
                                         id: primaryLabel
@@ -533,7 +607,7 @@ Item {
                                     width: forgetLabel.implicitWidth + 20 * root.s
                                     height: 22 * root.s
                                     radius: 7 * root.s
-                                    color: forgetArea.containsMouse
+                                    color: (forgetArea.containsMouse || devItem.focusForget)
                                         ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.2)
                                         : Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.12)
                                     border.width: 1

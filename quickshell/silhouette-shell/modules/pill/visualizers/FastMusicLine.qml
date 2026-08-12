@@ -41,7 +41,7 @@ Rectangle {
      * resumes instantly on return to rest without parsing hidden frames.
      * Warmth only pays off for short peek-aways: after expandKill's interval
      * away from rest the capture is put down (forcedDown), so a long surface
-     * session, parked hover or game mode can't burn a hidden 60fps cava.
+     * session, parked hover or game mode can't burn a hidden capture.
      * Returning to rest clears forcedDown and respawns it.
      */
     property bool resting: false
@@ -78,7 +78,7 @@ Rectangle {
              * keys, so they'd be silently ignored anyway.
              */
             'printf "[general]\n' +
-            'framerate=60\n' +
+            'framerate=' + Flags.vizFps + '\n' +
             'bars=' + segments + '\n' +
             '[output]\n' +
             'method=raw\n' +
@@ -109,14 +109,15 @@ Rectangle {
     /**
      * Kill-after-long-expand: quick hover-peeks keep the warm capture (instant
      * resume), but once the pill has been away from rest for this long the
-     * hidden 60fps process stops paying for itself (long surface session,
+     * hidden capture stops paying for itself (long surface session,
      * parked hover, or game mode where the string can't be seen anyway). Fires
      * once per stretch; returning to rest clears forcedDown and respawns, so
-     * the only cost is a ~150ms warm-up on that first return.
+     * the only cost is a ~150ms warm-up on that first return. Matches the
+     * pill bars capture's grace policy.
      */
     Timer {
         id: expandKill
-        interval: 10000
+        interval: 5000
         running: !musicLineContainer.resting
         repeat: false
         onTriggered: musicLineContainer.forcedDown = true

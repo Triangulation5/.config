@@ -104,6 +104,7 @@ Item {
         "window": { d: "M4 5h16a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 3h14M5 8v10h14V8", fill: false },
         "share": { d: "M12 3l4 4h-3v8h-2V7H8z M6 19h12v-5 M12 22v-3", fill: false },
         "smartphone": { d: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M12 18h.01", fill: false },
+        "activity": { d: "M22 12h-4l-3 9L9 3l-3 9H2", fill: false },
     })
 
     readonly property var g: glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false })

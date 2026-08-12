@@ -175,7 +175,7 @@ PillSurface {
 
         Item { width: 1; height: 8 * root.s }
 
-        /* ── Divider — wipe-progress sweep runs along it ── */
+        /** ── Divider — wipe-progress sweep runs along it ── */
         Rectangle {
             width: parent.width
             height: 1
@@ -197,7 +197,7 @@ PillSurface {
 
         Item { width: 1; height: 6 * root.s }
 
-        /* ── Empty state — ghost glyph + message ── */
+        /** ── Empty state — ghost glyph + message ── */
         Item {
             width: parent.width
             height: (root.results.length === 0 && !Cliphist.count) ? 120 * root.s : 0
@@ -239,7 +239,7 @@ PillSurface {
             }
         }
 
-        /* ── No matches state ── */
+        /** ── No matches state ── */
         Text {
             width: parent.width
             visible: root.results.length === 0 && Cliphist.count > 0
@@ -253,7 +253,7 @@ PillSurface {
             font.weight: Font.Medium
         }
 
-        /* ── Results list ── */
+        /** ── Results list ── */
         ListView {
             id: list
             width: parent.width

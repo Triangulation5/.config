@@ -74,31 +74,120 @@ Item {
     implicitHeight: hsBlock.y + hsBlock.height
 
     /**
-     * Keyboard focus over the network rows; -1 until the first arrow so the
-     * first press lands on the top network.
+     * Keyboard focus over the network rows and hotspot block; -1 until the
+     * first arrow so the first press lands on the top network.
      */
     property int kbIndex: -1
 
+    /**
+     * Hotspot rows follow the network list in the keyboard cursor: index
+     * offset 0 = the hotspot toggle, 1 = network name, 2 = password. The
+     * whole block is skipped while wifi is off (it is hidden then).
+     */
+    readonly property int hsRowCount: root.wifiOn ? 3 : 0
+    readonly property int hsToggleIndex: root.netsSorted.length
+
     function kbMove(dir) {
         var n = root.netsSorted.length;
-        if (n === 0)
+        var total = n + root.hsRowCount;
+        if (total === 0)
             return false;
-        if (kbIndex < 0 || kbIndex >= n)
+        if (kbIndex < 0 || kbIndex >= total)
             kbIndex = 0;
         else
-            kbIndex = (kbIndex + dir + n) % n;
+            kbIndex = (kbIndex + dir + total) % total;
         return true;
     }
 
-    /** Return on the wifi list: activate (expand / connect) the focused network. */
+    /**
+     * Return on the wifi list: fire the focused confirm button when one is
+     * armed, else activate (expand / connect) the focused network. Connect/
+     * Disconnect at index 0, Show/Hide at 1 for saved networks, Forget at the
+     * last index. Hotspot rows toggle the AP or start an inline name/password
+     * edit.
+     */
     function kbActivate() {
         var n = root.netsSorted.length;
-        if (n === 0)
+        var total = n + root.hsRowCount;
+        if (total === 0)
             return false;
-        if (kbIndex < 0 || kbIndex >= n)
+        if (kbIndex < 0 || kbIndex >= total)
             kbIndex = 0;
-        root.activateNetwork(root.netsSorted[kbIndex]);
+        if (kbIndex >= n) {
+            var row = kbIndex - n;
+            if (row === 0) {
+                root.toggleHotspot();
+            } else if (row === 1) {
+                hsBlock.startEdit("name");
+            } else {
+                hsBlock.startEdit("pw");
+            }
+            return true;
+        }
+        var net = root.netsSorted[kbIndex];
+        var ssid = net ? (net.name || "") : "";
+        if (ssid.length && root.expandedSsid === ssid && root.confirmFocus >= 0) {
+            if (root.confirmFocus === 0) {
+                if (net.connected) root.disconnectNetwork(net);
+                else root.connectKnown(net);
+            } else if (root.confirmFocus === 1) {
+                if (root.knownProfiles[ssid] === true) root.revealPassword(ssid);
+                else root.forgetNetwork(ssid);
+            } else {
+                root.forgetNetwork(ssid);
+            }
+            return true;
+        }
+        root.activateNetwork(net);
         return true;
+    }
+
+    /**
+     * Confirm-button focus for the expanded row: 0 = primary (Connect/
+     * Disconnect), 1 = Show/Hide (saved only) or Forget, 2 = Forget (saved
+     * only). Resets whenever the expanded row changes.
+     */
+    property int confirmFocus: -1
+
+    /**
+     * Left/right on the wifi list: cycle the expanded row's confirm buttons,
+     * or flip the hotspot toggle (left = off, right = on). Returns false when
+     * there is nothing to adjust, so vim h/l fall through to back/enter.
+     */
+    function kbAdjust(dir) {
+        var n = root.netsSorted.length;
+        if (kbIndex >= 0 && kbIndex < n) {
+            var net = root.netsSorted[kbIndex];
+            var ssid = net ? (net.name || "") : "";
+            if (ssid.length && root.expandedSsid === ssid
+                && (net.connected === true || root.knownProfiles[ssid] === true)) {
+                var count = root.knownProfiles[ssid] === true ? 3 : 2;
+                if (confirmFocus < 0)
+                    confirmFocus = 0;
+                else
+                    confirmFocus = (confirmFocus + dir + count) % count;
+                return true;
+            }
+            return false;
+        }
+        if (kbIndex === n && root.wifiOn) {
+            if ((dir > 0 && !root.hsActive) || (dir < 0 && root.hsActive))
+                root.toggleHotspot();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Backspace on the wifi list: collapse the expanded row before the caller
+     * pops the subview. Returns true when a row was open and got collapsed.
+     */
+    function kbBack() {
+        if (root.expandedSsid.length) {
+            root.expandedSsid = "";
+            return true;
+        }
+        return false;
     }
 
     function isSecured(ssid) {
@@ -259,6 +348,8 @@ Item {
         } else {
             stopScan();
             expandedSsid = "";
+            confirmFocus = -1;
+            kbIndex = -1;
             connectFailed = false;
             hsEdit = "";
             hidePassword();
@@ -267,7 +358,10 @@ Item {
 
     onWifiOnChanged: if (!wifiOn) stopScan()
 
-    onExpandedSsidChanged: if (revealedSsid !== expandedSsid) hidePassword()
+    onExpandedSsidChanged: {
+        confirmFocus = -1;
+        if (revealedSsid !== expandedSsid) hidePassword();
+    }
 
     Binding {
         target: root.wifiDev
@@ -314,6 +408,23 @@ Item {
             return;
         hsBusy = true;
         hsDownProc.running = true;
+    }
+
+    /**
+     * Flips the shared hotspot: stop when active, else generate a password
+     * (when none is set) and bring the AP up. Shared by the toggle and the
+     * keyboard cursor.
+     */
+    function toggleHotspot() {
+        if (hsBusy)
+            return;
+        if (hsActive) {
+            stopHotspot();
+        } else {
+            if (hsPw.length < 8)
+                hsPw = generatePw();
+            applyHotspot();
+        }
     }
 
     function refreshHotspot() {
@@ -655,351 +766,29 @@ Item {
                 Repeater {
                     model: netModel
 
-                    Column {
-                        id: netItem
-                        required property var modelData
-                        required property int index
-                        readonly property string ssid: (modelData && modelData.name) ? modelData.name : ""
-                        readonly property bool isActive: modelData ? modelData.connected === true : false
-                        readonly property bool secured: root.isSecured(ssid)
-                        readonly property bool known: root.knownProfiles[ssid] === true
-                        readonly property bool expanded: ssid.length > 0 && root.expandedSsid === ssid
-                        readonly property bool confirming: expanded && (isActive || known)
-                        readonly property bool asking: expanded && !confirming
-                        readonly property bool focused: root.kbIndex === index
-                        width: netCol.width
-                        spacing: 2 * root.s
-
-                        function syncPwField() {
-                            pwField.text = root.pwDraft;
-                            pwField.cursorPosition = pwField.text.length;
-                            pwField.forceActiveFocus();
+                    WifiNetRow {
+                        s: root.s
+                        secured: root.isSecured((modelData && modelData.name) || "")
+                        known: root.knownProfiles[(modelData && modelData.name) || ""] === true
+                        expanded: (modelData && modelData.name) ? root.expandedSsid === modelData.name : false
+                        focused: root.kbIndex === index
+                        confirmFocus: root.confirmFocus
+                        revealed: root.revealedSsid === ((modelData && modelData.name) || "")
+                        revealedPw: root.revealedPw
+                        revealResolved: root.revealResolved
+                        pwDraft: root.pwDraft
+                        connecting: root.connecting
+                        connectFailed: root.connectFailed
+                        flick: netFlick
+                        onRequestActivate: root.activateNetwork(modelData)
+                        onRequestConnectKnown: root.connectKnown(modelData)
+                        onRequestDisconnect: root.disconnectNetwork(modelData)
+                        onRequestForget: root.forgetNetwork((modelData && modelData.name) || "")
+                        onRequestReveal: root.revealPassword((modelData && modelData.name) || "")
+                        onRequestConnectWithPassword: function(pw) {
+                            root.connectWithPassword((modelData && modelData.name) || "", pw);
                         }
-
-                        onExpandedChanged: if (asking) Qt.callLater(syncPwField)
-                        Component.onCompleted: if (asking) Qt.callLater(syncPwField)
-
-                        Rectangle {
-                            width: parent.width
-                            height: 30 * root.s
-                            radius: 9 * root.s
-                            color: netItem.isActive ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.14)
-                                : ((rowHover.hovered || netItem.focused) ? Theme.frameBg : "transparent")
-
-                            HoverHandler {
-                                id: rowHover
-                                onHoveredChanged: if (hovered) root.kbIndex = netItem.index
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.activateNetwork(netItem.modelData)
-                            }
-
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10 * root.s
-                                anchors.right: rowRight.left
-                                anchors.rightMargin: 8 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: netItem.ssid.length ? netItem.ssid : "Hidden"
-                                color: netItem.isActive ? Theme.vermLit : Theme.subtle
-                                font.family: Theme.font
-                                font.pixelSize: 11.5 * root.s
-                                font.weight: netItem.isActive ? Font.DemiBold : Font.Medium
-                                elide: Text.ElideRight
-                            }
-
-                            Row {
-                                id: rowRight
-                                anchors.right: parent.right
-                                anchors.rightMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 7 * root.s
-
-                                Item {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.verticalCenterOffset: -1.4 * root.s
-                                    visible: netItem.secured
-                                    width: 14 * root.s
-                                    height: 14 * root.s
-
-                                    GlyphIcon {
-                                        anchors.fill: parent
-                                        name: "lock-outline"
-                                        color: netItem.isActive ? Theme.vermLit : Theme.iconDim
-                                        stroke: 1.9
-                                    }
-                                }
-
-                                WifiGlyph {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 15 * root.s
-                                    height: 15 * root.s
-                                    s: root.s
-                                    on: true
-                                    level: (netItem.modelData && netItem.modelData.signalStrength) || 0
-                                }
-                            }
-                        }
-
-                        Item {
-                            visible: netItem.confirming
-                            width: parent.width
-                            height: 30 * root.s
-
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10 * root.s
-                                anchors.right: confirmBtns.left
-                                anchors.rightMargin: 8 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: netItem.isActive ? "Connected" : "Saved network"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 9.5 * root.s
-                                font.weight: Font.Medium
-                                elide: Text.ElideRight
-                            }
-
-                            Row {
-                                id: confirmBtns
-                                anchors.right: parent.right
-                                anchors.rightMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 6 * root.s
-
-                                Rectangle {
-                                    id: primaryBtn
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: primaryLabel.implicitWidth + 20 * root.s
-                                    height: 22 * root.s
-                                    radius: 7 * root.s
-                                    color: primaryArea.containsMouse ? Theme.tileBg : "transparent"
-                                    border.width: 1
-                                    border.color: primaryArea.containsMouse ? Theme.vermDim : Theme.border
-
-                                    Text {
-                                        id: primaryLabel
-                                        anchors.centerIn: parent
-                                        text: netItem.isActive ? "Disconnect" : "Connect"
-                                        color: Theme.cream
-                                        font.family: Theme.font
-                                        font.pixelSize: 10 * root.s
-                                        font.weight: Font.DemiBold
-                                        font.letterSpacing: 0.3 * root.s
-                                    }
-
-                                    MouseArea {
-                                        id: primaryArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: netItem.isActive
-                                            ? root.disconnectNetwork(netItem.modelData)
-                                            : root.connectKnown(netItem.modelData)
-                                    }
-                                }
-
-                                Rectangle {
-                                    id: revealBtn
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: netItem.known
-                                    readonly property bool shown: root.revealedSsid === netItem.ssid
-                                    width: revealLabel.implicitWidth + 20 * root.s
-                                    height: 22 * root.s
-                                    radius: 7 * root.s
-                                    color: revealArea.containsMouse ? Theme.tileBg : "transparent"
-                                    border.width: 1
-                                    border.color: revealBtn.shown
-                                        ? Theme.vermDim
-                                        : (revealArea.containsMouse ? Theme.vermDim : Theme.border)
-
-                                    Text {
-                                        id: revealLabel
-                                        anchors.centerIn: parent
-                                        text: revealBtn.shown ? "Hide" : "Show"
-                                        color: Theme.cream
-                                        font.family: Theme.font
-                                        font.pixelSize: 10 * root.s
-                                        font.weight: Font.DemiBold
-                                        font.letterSpacing: 0.3 * root.s
-                                    }
-
-                                    MouseArea {
-                                        id: revealArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.revealPassword(netItem.ssid)
-                                    }
-                                }
-
-                                Rectangle {
-                                    id: forgetBtn
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: forgetLabel.implicitWidth + 20 * root.s
-                                    height: 22 * root.s
-                                    radius: 7 * root.s
-                                    color: forgetArea.containsMouse
-                                        ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.2)
-                                        : Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.12)
-                                    border.width: 1
-                                    border.color: Qt.rgba(Theme.vermLit.r, Theme.vermLit.g, Theme.vermLit.b, 0.45)
-
-                                    Text {
-                                        id: forgetLabel
-                                        anchors.centerIn: parent
-                                        text: "Forget"
-                                        color: Theme.vermLit
-                                        font.family: Theme.font
-                                        font.pixelSize: 10 * root.s
-                                        font.weight: Font.DemiBold
-                                        font.letterSpacing: 0.3 * root.s
-                                    }
-
-                                    MouseArea {
-                                        id: forgetArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.forgetNetwork(netItem.ssid)
-                                    }
-                                }
-                            }
-                        }
-
-                        Item {
-                            readonly property bool shown: netItem.confirming && root.revealedSsid === netItem.ssid
-                            visible: shown
-                            width: parent.width
-                            height: shown ? 24 * root.s : 0
-
-                            Text {
-                                id: revealCaption
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "PASSWORD"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 9 * root.s
-                                font.weight: Font.Medium
-                                font.capitalization: Font.AllUppercase
-                                font.letterSpacing: 1 * root.s
-                            }
-
-                            Text {
-                                visible: root.revealResolved && root.revealedPw.length === 0
-                                anchors.right: parent.right
-                                anchors.rightMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "no saved password"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 10 * root.s
-                                font.weight: Font.Medium
-                            }
-
-                            TextEdit {
-                                visible: root.revealedPw.length > 0
-                                anchors.left: revealCaption.right
-                                anchors.leftMargin: 10 * root.s
-                                anchors.right: parent.right
-                                anchors.rightMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                horizontalAlignment: TextEdit.AlignRight
-                                readOnly: true
-                                selectByMouse: true
-                                selectionColor: Theme.verm
-                                wrapMode: TextEdit.NoWrap
-                                clip: true
-                                text: root.revealedSsid === netItem.ssid ? root.revealedPw : ""
-                                color: Theme.flameCore
-                                font.family: Theme.font
-                                font.pixelSize: 11.5 * root.s
-                                font.weight: Font.Medium
-                            }
-                        }
-
-                        Item {
-                            visible: netItem.asking
-                            width: parent.width
-                            height: 30 * root.s
-
-                            TextField {
-                                id: pwField
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10 * root.s
-                                anchors.right: pwRight.left
-                                anchors.rightMargin: 8 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                background: null
-                                padding: 0
-                                color: Theme.cream
-                                font.family: Theme.font
-                                font.pixelSize: 11.5 * root.s
-                                echoMode: TextInput.Password
-                                placeholderText: "Password"
-                                placeholderTextColor: Theme.faint
-                                selectByMouse: true
-                                selectionColor: Theme.verm
-                                onTextEdited: root.pwDraft = text
-                                onAccepted: root.connectWithPassword(netItem.ssid, text)
-                            }
-
-                            Row {
-                                id: pwRight
-                                anchors.right: parent.right
-                                anchors.rightMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 7 * root.s
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: root.connecting && netItem.asking
-                                    width: 4 * root.s
-                                    height: 4 * root.s
-                                    radius: width / 2
-                                    color: Theme.flameGlow
-
-                                    SequentialAnimation on opacity {
-                                        running: root.connecting && netItem.asking
-                                        loops: Animation.Infinite
-                                        NumberAnimation { from: 0.35; to: 1; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                                        NumberAnimation { from: 1; to: 0.35; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                                    }
-                                }
-
-                                GlyphIcon {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 14 * root.s
-                                    height: 14 * root.s
-                                    name: "return"
-                                    color: enterArea.containsMouse ? Theme.cream : Theme.vermLit
-                                    stroke: 1.8
-
-                                    MouseArea {
-                                        id: enterArea
-                                        anchors.fill: parent
-                                        anchors.margins: -6 * root.s
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.connectWithPassword(netItem.ssid, pwField.text)
-                                    }
-                                }
-                            }
-                        }
-
-                        Text {
-                            visible: netItem.asking && root.connectFailed
-                            text: "Connection failed"
-                            color: Theme.vermLit
-                            font.family: Theme.font
-                            font.pixelSize: 9.5 * root.s
-                            leftPadding: 10 * root.s
-                        }
+                        onRequestFocus: root.kbIndex = index
                     }
                 }
             }
@@ -1012,115 +801,28 @@ Item {
         }
     }
 
-    Item {
+    WifiHotspot {
         id: hsBlock
         anchors.top: listFrame.bottom
         anchors.topMargin: 8 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
         visible: root.wifiOn
-        height: root.wifiOn ? hsCol.implicitHeight + 9 * root.s : 0
+        height: root.wifiOn ? implicitHeight + 9 * root.s : 0
         clip: true
-
-        Rectangle {
-            id: hsDivider
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: Theme.hair
-        }
-
-        Column {
-            id: hsCol
-            anchors.top: hsDivider.bottom
-            anchors.topMargin: 9 * root.s
-            anchors.left: parent.left
-            anchors.right: parent.right
-            spacing: 6 * root.s
-
-            Rectangle {
-                width: parent.width
-                height: 34 * root.s
-                radius: 10 * root.s
-                color: root.hsActive ? Theme.frameBg : "transparent"
-
-                GlyphIcon {
-                    id: hsGlyph
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 17 * root.s
-                    height: 17 * root.s
-                    name: "hotspot"
-                    color: root.hsActive ? Theme.flameGlow : Theme.iconDim
-                    stroke: 1.7
-                }
-
-                Column {
-                    anchors.left: hsGlyph.right
-                    anchors.leftMargin: 11 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1 * root.s
-
-                    Text {
-                        text: "Hotspot"
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 12.5 * root.s
-                        font.weight: Font.DemiBold
-                    }
-                    Text {
-                        text: root.hsBusy ? "…" : (root.hsActive ? "Active" : "Off")
-                        color: root.hsActive ? Theme.flameGlow : Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 9.5 * root.s
-                        font.weight: Font.Medium
-                    }
-                }
-
-                LinkToggle {
-                    s: root.s
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    on: root.hsActive
-                    onToggled: {
-                        if (root.hsActive) {
-                            root.stopHotspot();
-                        } else {
-                            if (root.hsPw.length < 8)
-                                root.hsPw = root.generatePw();
-                            root.applyHotspot();
-                        }
-                    }
-                }
-            }
-
-            CredRow {
-                field: "name"
-                label: "Network"
-                value: root.hsName
-                editing: root.hsEdit === "name"
-                scale: root.s
-                draft: root.hsEdit === "name" ? root.hsDraft : ""
-                onEditRequested: function(f, v) { root.hsDraft = v; root.hsEdit = f; }
-                onDraftEdited: function(t) { root.hsDraft = t }
-                onCommitted: root.commitHotspotEdit()
-            }
-
-            CredRow {
-                field: "pw"
-                label: "Password"
-                value: root.hsPw
-                secret: true
-                editing: root.hsEdit === "pw"
-                scale: root.s
-                draft: root.hsEdit === "pw" ? root.hsDraft : ""
-                onEditRequested: function(f, v) { root.hsDraft = v; root.hsEdit = f; }
-                onDraftEdited: function(t) { root.hsDraft = t }
-                onCommitted: root.commitHotspotEdit()
-            }
-        }
+        s: root.s
+        active: root.hsActive
+        busy: root.hsBusy
+        name: root.hsName
+        pw: root.hsPw
+        edit: root.hsEdit
+        draft: root.hsDraft
+        kbIndex: root.kbIndex
+        toggleIndex: root.hsToggleIndex
+        onToggle: root.toggleHotspot()
+        onCommitEdit: root.commitHotspotEdit()
+        onEditRequested: function(f, v) { root.hsDraft = v; root.hsEdit = f; }
+        onDraftEdited: function(t) { root.hsDraft = t }
+        onFocusRequested: function(i) { root.kbIndex = i }
     }
 }

@@ -264,7 +264,7 @@ PillSurface {
                     id: focusChip
                     anchors.centerIn: parent
                     text: "Focus"
-                    color: root.focusSession ? "#fff" : Theme.dim
+                    color: root.focusSession ? Theme.cream : Theme.dim
                     font.family: Theme.font; font.pixelSize: 11 * root.s; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                 }
                 MouseArea {
@@ -287,7 +287,7 @@ PillSurface {
                     id: breakChip
                     anchors.centerIn: parent
                     text: "Break"
-                    color: !root.focusSession ? "#fff" : Theme.dim
+                    color: !root.focusSession ? Theme.cream : Theme.dim
                     font.family: Theme.font; font.pixelSize: 11 * root.s; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                 }
                 MouseArea {
@@ -315,9 +315,9 @@ PillSurface {
                     width: presetText.implicitWidth + parent.width * 0.06
                     height: 24 * root.s
                     radius: 12 * root.s
-                    color: active ? Qt.rgba(1, 0.851, 0.761, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+                    color: active ? Qt.alpha(root.accentGlow, 0.12) : Theme.frameBg
                     border.width: active ? 1 : 0
-                    border.color: active ? Qt.rgba(1, 0.851, 0.761, 0.22) : "transparent"
+                    border.color: active ? Qt.alpha(root.accentGlow, 0.22) : "transparent"
 
                     Text {
                         id: presetText
@@ -429,7 +429,7 @@ PillSurface {
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: visible ? parent.parent.width * 0.11 : 0; height: 28 * root.s; radius: 14 * root.s
-                    color: Qt.rgba(1, 1, 1, 0.04); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.06)
+                    color: Theme.frameBg; border.width: 1; border.color: Theme.frameBorder
                     visible: root.showCountdown || root.totalSecs !== root.remainingSecs; clip: true
                     Behavior on width { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
 
@@ -444,15 +444,15 @@ PillSurface {
                     id: startBtn
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(parent.parent.width * 0.55, startLabel.implicitWidth + parent.parent.width * 0.16); height: 28 * root.s; radius: 14 * root.s
-                    color: root.running ? Qt.rgba(0.94, 0.55, 0.38, 0.10) : (root.timerState === "finished" ? accentBurn : accent)
+                    color: root.running ? Qt.alpha(accent, 0.10) : (root.timerState === "finished" ? accentBurn : accent)
                     border.width: root.running ? 1 : 0
-                    border.color: root.running ? Qt.rgba(0.94, 0.55, 0.38, 0.18) : "transparent"
+                    border.color: root.running ? Qt.alpha(accent, 0.18) : "transparent"
                     Behavior on color { ColorAnimation { duration: 200 } }
 
                     Text {
                         id: startLabel; anchors.centerIn: parent
                         text: root.running ? "Pause" : (root.timerState === "finished" ? "Restart" : "Start")
-                        color: root.running ? accentGlow : "#fff"
+                        color: root.running ? accentGlow : Theme.cream
                         font.family: Theme.font; font.pixelSize: ringArea.width * 0.066; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                     }
                     MouseArea {
@@ -470,7 +470,7 @@ PillSurface {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: root.timerState === "idle"
             text: "space start · r reset"
-            color: Theme.subtle
+            color: Theme.faint
             font.family: Theme.font
             font.pixelSize: 10 * root.s
             font.weight: Font.Medium

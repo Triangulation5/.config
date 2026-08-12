@@ -4,8 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell.Hyprland
 import qs.services
-import qs.components.controls
-import qs.components.icons
 
 /**
  * Workspace dots for one monitor. No numbers, no icons. Active one is a larger

@@ -34,6 +34,16 @@ Item {
     signal committed()
     signal draftEdited(string newText)
 
+    /**
+     * Begin editing this row the same way a click does: request the edit so
+     * the host flips `editing`, then focus the field once it is visible.
+     * Used by the host's keyboard navigation.
+     */
+    function startEdit() {
+        cr.editRequested(cr.field, cr.value);
+        Qt.callLater(crField.forceActiveFocus);
+    }
+
     width: parent ? parent.width : 0
     height: 22 * cr.scale
 
@@ -66,10 +76,7 @@ Item {
             anchors.fill: parent
             anchors.margins: -6 * cr.scale
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                cr.editRequested(cr.field, cr.value);
-                Qt.callLater(crField.forceActiveFocus);
-            }
+            onClicked: cr.startEdit()
         }
     }
 
