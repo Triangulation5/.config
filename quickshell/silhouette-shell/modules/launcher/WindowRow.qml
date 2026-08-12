@@ -17,7 +17,7 @@ Item {
     required property var modelData
 
     readonly property real s: surface ? surface.s : 1
-    readonly property var win: modelData
+    readonly property var win: surface && winRow.index < surface.windowResults.length ? surface.windowResults[winRow.index] : null
     readonly property bool selected: surface ? surface.selectedIndex === winRow.index : false
     readonly property string resolvedIcon: surface ? surface.iconForWindow(winRow.win.cls) : ""
 

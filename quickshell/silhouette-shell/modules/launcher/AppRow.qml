@@ -18,7 +18,7 @@ Item {
     required property var modelData
 
     readonly property real s: surface ? surface.s : 1
-    readonly property var entry: modelData
+    readonly property var entry: surface && appRow.index < surface.results.length ? surface.results[appRow.index] : null
     readonly property bool selected: surface ? surface.selectedIndex === appRow.index : false
     readonly property bool isAppImage: entry && entry.id && entry.id.indexOf("ricelin-") === 0
     readonly property bool editing: surface && isAppImage ? surface.editIndex === appRow.index : false
