@@ -11,11 +11,11 @@ import qs.components.layout
 
 /**
  * 送 SEND — Localsend airdrop surface. Scans the local network for devices
- * and sends the queued file with one tap. The header shows kanji, label,
- * a live device-count badge, and a refresh button. A file pill appears when
- * a path is queued. The device list uses rounded rows with smooth hover
- * transitions, a smartphone glyph, and a Send action chip on selection.
- * Scanning pulses a dot; empty states show a centred glyph and message.
+ * and sends the queued file with one tap. All dimensions are proportional to
+ * the content column width so the surface scales uniformly. The header shows
+ * 送 in file mode / 捜 while scanning, a live device-count badge, and an inline
+ * refresh button. A file pill appears when a path is queued.  Device rows use
+ * rounded cards with smooth hover transitions and a Send action chip.
  */
 PillSurface {
     id: root
@@ -24,6 +24,9 @@ PillSurface {
     mLeft: 16
     mRight: 16
     mBottom: 14
+
+    /** Content column width — every dimension keys off this. */
+    readonly property real cw: width - (mLeft + mRight) * s
 
     property string sendFile: ""
     property var devices: []
@@ -41,13 +44,11 @@ PillSurface {
         scanProc.running = true;
     }
 
-    /** Keyboard: move selection up/down through the device list. */
     function move(dir) {
         if (root.devices.length === 0) return;
         root.selectedIndex = Math.max(0, Math.min(root.devices.length - 1, root.selectedIndex + dir));
     }
 
-    /** Keyboard: send to the selected device. */
     function activate() {
         if (root.devices.length === 0 || root.selectedIndex < 0 || root.selectedIndex >= root.devices.length)
             return;
@@ -129,16 +130,18 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        /* ── Header with inline refresh ── */
-        Row {
-            id: headerRow
+        /* ── Header row — kanji, label, badge, refresh ── */
+        Item {
             width: parent.width
-            height: 24 * root.s
+            height: cw * 0.073
 
             SurfaceHeader {
                 id: sendHeader
-                width: parent.width - (root.sendFile.length > 0 ? 0 : 40 * root.s)
-                kanji: "送"
+                /** 送 while a file is queued, 捜 while scanning, 送 otherwise. */
+                readonly property string glyph: root.sendFile.length > 0 ? "送"
+                    : (root.scanning ? "捜" : "送")
+                width: parent.width - (root.sendFile.length > 0 ? 0 : cw * 0.122)
+                kanji: glyph
                 label: "SEND"
                 badge: root.scanning ? "Scanning…"
                     : (root.devices.length > 0 ? root.devices.length + (root.devices.length === 1 ? " device" : " devices") : "")
@@ -146,36 +149,29 @@ PillSurface {
                 s: root.s
             }
 
-            /* Refresh button — only when no file is queued */
+            /* Inline refresh — only when no file is queued */
             Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: root.sendFile.length > 0 ? 0 : 36 * root.s
-                height: root.sendFile.length > 0 ? 0 : 22 * root.s
+                width: root.sendFile.length > 0 ? 0 : cw * 0.110
+                height: root.sendFile.length > 0 ? 0 : cw * 0.067
                 visible: height > 0
 
-                Row {
+                GlyphIcon {
+                    id: refreshIcon
                     anchors.centerIn: parent
-                    spacing: 3 * root.s
+                    width: cw * 0.034; height: cw * 0.034
+                    name: "reboot"
+                    color: refreshArea.containsMouse ? Theme.cream : Theme.iconDim
+                    stroke: 1.8
 
-                    GlyphIcon {
-                        id: refreshIcon
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 11 * root.s; height: 11 * root.s
-                        name: "reboot"
-                        color: refreshArea.containsMouse ? Theme.cream : Theme.iconDim
-                        stroke: 1.8
-                        rotation: 0
-
-                        RotationAnimation on rotation {
-                            running: root.scanning
-                            from: 0; to: 360; duration: 1000
-                            loops: Animation.Infinite
-                            easing.type: Easing.Linear
-                        }
-
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                    RotationAnimation on rotation {
+                        running: root.scanning
+                        from: 0; to: 360; duration: 1000
+                        loops: Animation.Infinite
+                        easing.type: Easing.Linear
                     }
+                    Behavior on color { ColorAnimation { duration: 150 } }
                 }
 
                 MouseArea {
@@ -189,31 +185,38 @@ PillSurface {
             }
         }
 
-        /* ── File pill — only visible when a path is queued ── */
+        /* ── Hairline ── */
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.hair
+        }
+
+        /* ── File pill ── */
         Item {
             width: parent.width
-            height: root.sendFile.length > 0 ? 24 * root.s + 36 * root.s : 0
+            height: root.sendFile.length > 0 ? cw * 0.183 : 0
             visible: height > 0
 
             Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                height: 36 * root.s
-                radius: 10 * root.s
+                height: cw * 0.110
+                radius: cw * 0.030
                 color: Qt.rgba(0.94, 0.55, 0.38, 0.08)
                 border.width: 1
                 border.color: Qt.rgba(0.94, 0.55, 0.38, 0.15)
 
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: 12 * root.s
+                    anchors.leftMargin: cw * 0.037
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8 * root.s
+                    spacing: cw * 0.024
 
                     GlyphIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 13 * root.s; height: 13 * root.s
+                        width: cw * 0.040; height: cw * 0.040
                         name: "download"
                         color: Theme.flameGlow
                         stroke: 2.2
@@ -223,31 +226,31 @@ PillSurface {
                         text: root.sendFile.split("/").pop()
                         color: Theme.flameGlow
                         font.family: Theme.font
-                        font.pixelSize: 11 * root.s
+                        font.pixelSize: cw * 0.034
                         font.weight: Font.DemiBold
                         elide: Text.ElideMiddle
-                        width: parent.width - 60 * root.s
+                        width: parent.width - cw * 0.183
                     }
                 }
             }
         }
 
-        Item { width: 1; height: root.sendFile.length > 0 ? 10 * root.s : 6 * root.s }
+        Item { width: 1; height: root.sendFile.length > 0 ? cw * 0.030 : cw * 0.018 }
 
         /* ── Scanning row — pulsing dot + label ── */
         Item {
             width: parent.width
-            height: root.scanning ? 32 * root.s : 0
+            height: root.scanning ? cw * 0.098 : 0
             visible: height > 0
 
             Row {
                 anchors.centerIn: parent
-                spacing: 10 * root.s
+                spacing: cw * 0.030
 
                 Rectangle {
                     id: scanDot
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 7 * root.s; height: 7 * root.s; radius: 3.5 * root.s
+                    width: cw * 0.021; height: cw * 0.021; radius: width / 2
                     color: Theme.flameGlow
                     opacity: 0.4
 
@@ -263,7 +266,7 @@ PillSurface {
                     text: "Looking for devices…"
                     color: Theme.faint
                     font.family: Theme.font
-                    font.pixelSize: 10.5 * root.s
+                    font.pixelSize: cw * 0.032
                     font.weight: Font.Medium
                 }
             }
@@ -273,17 +276,17 @@ PillSurface {
         Item {
             width: parent.width
             height: (root.status.length > 0 && root.devices.length === 0 && !root.scanning)
-                ? Math.max(72 * root.s, statusText.implicitHeight + 34 * root.s) : 0
+                ? Math.max(cw * 0.220, statusText.implicitHeight + cw * 0.104) : 0
             visible: height > 0
 
             Column {
                 anchors.centerIn: parent
-                spacing: 8 * root.s
+                spacing: cw * 0.024
 
                 GlyphIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: root.installed && Flags.showGlyphs
-                    width: 22 * root.s; height: 22 * root.s
+                    width: cw * 0.067; height: cw * 0.067
                     name: "share"
                     color: Theme.ghost
                     stroke: 1.6
@@ -293,23 +296,22 @@ PillSurface {
                 Text {
                     id: statusText
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.parent.width - 24 * root.s
+                    width: parent.parent.width - cw * 0.073
                     text: root.status
                     color: Theme.faint
                     font.family: Theme.font
-                    font.pixelSize: 10.5 * root.s
+                    font.pixelSize: cw * 0.032
                     font.weight: Font.Medium
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
                 }
 
-                /* Install hint pill */
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: !root.installed
-                    width: installHint.implicitWidth + 24 * root.s
-                    height: 28 * root.s
-                    radius: 14 * root.s
+                    width: installHint.implicitWidth + cw * 0.073
+                    height: cw * 0.085
+                    radius: height / 2
                     color: Qt.rgba(1, 1, 1, 0.04)
                     border.width: 1
                     border.color: Theme.frameBorder
@@ -320,7 +322,7 @@ PillSurface {
                         text: "flatpak install localsend"
                         color: Theme.subtle
                         font.family: Theme.font
-                        font.pixelSize: 9.5 * root.s
+                        font.pixelSize: cw * 0.029
                         font.weight: Font.Medium
                         font.features: { "tnum": 1 }
                     }
@@ -332,20 +334,20 @@ PillSurface {
         ListView {
             id: devList
             width: parent.width
-            height: count > 0 ? Math.min(count * 50 * root.s + (count - 1) * 2 * root.s, 260 * root.s) : 0
+            height: count > 0 ? Math.min(count * cw * 0.152 + (count - 1) * cw * 0.006, cw * 0.793) : 0
             visible: height > 0 && !root.scanning
-            spacing: 2 * root.s
+            spacing: cw * 0.006
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.devices.length
-            interactive: count * 50 * root.s > 260 * root.s
+            interactive: count * cw * 0.152 > cw * 0.793
 
             delegate: Rectangle {
                 id: devRow
                 required property int index
                 width: devList.width
-                height: 50 * root.s
-                radius: 10 * root.s
+                height: cw * 0.152
+                radius: cw * 0.030
                 color: index === root.selectedIndex ? Theme.frameBg
                     : (devArea.containsMouse ? Qt.rgba(1, 1, 1, 0.035) : "transparent")
                 border.width: index === root.selectedIndex ? 1 : 0
@@ -367,13 +369,13 @@ PillSurface {
 
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: 12 * root.s
+                    anchors.leftMargin: cw * 0.037
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 10 * root.s
+                    spacing: cw * 0.030
 
                     GlyphIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 16 * root.s; height: 16 * root.s
+                        width: cw * 0.049; height: cw * 0.049
                         name: "smartphone"
                         color: index === root.selectedIndex ? Theme.cream : Theme.iconDim
                         stroke: 2
@@ -382,16 +384,16 @@ PillSurface {
 
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2 * root.s
+                        spacing: cw * 0.006
 
                         Text {
                             text: devRow.dev.name || devRow.dev.hostname || devRow.dev.alias || "Unknown device"
                             color: index === root.selectedIndex ? Theme.cream : Theme.subtle
                             font.family: Theme.font
-                            font.pixelSize: 11.5 * root.s
+                            font.pixelSize: cw * 0.035
                             font.weight: index === root.selectedIndex ? Font.DemiBold : Font.Normal
                             elide: Text.ElideRight
-                            width: devList.width - 120 * root.s
+                            width: devList.width - cw * 0.366
                             Behavior on color { ColorAnimation { duration: 150 } }
                         }
                         Text {
@@ -401,23 +403,23 @@ PillSurface {
                                 : (devRow.dev.hostname || devRow.dev.ip || ""))
                             color: Theme.faint
                             font.family: Theme.font
-                            font.pixelSize: 9 * root.s
+                            font.pixelSize: cw * 0.027
                             font.weight: Font.Medium
                             elide: Text.ElideRight
-                            width: devList.width - 120 * root.s
+                            width: devList.width - cw * 0.366
                         }
                     }
                 }
 
-                /* Send action chip — right-aligned, only on selected row */
+                /* Send action chip */
                 Rectangle {
                     anchors.right: parent.right
-                    anchors.rightMargin: 10 * root.s
+                    anchors.rightMargin: cw * 0.030
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.sendFile.length > 0 && index === root.selectedIndex
-                    width: sendPillText.implicitWidth + 16 * root.s
-                    height: 26 * root.s
-                    radius: 13 * root.s
+                    width: sendPillText.implicitWidth + cw * 0.049
+                    height: cw * 0.079
+                    radius: height / 2
                     color: root.sending ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0.94, 0.55, 0.38, 0.12)
                     border.width: 1
                     border.color: root.sending ? Theme.frameBorder : Qt.rgba(0.94, 0.55, 0.38, 0.18)
@@ -430,7 +432,7 @@ PillSurface {
                         text: root.sending ? "…" : "Send"
                         color: root.sending ? Theme.subtle : Theme.flameGlow
                         font.family: Theme.font
-                        font.pixelSize: 10.5 * root.s
+                        font.pixelSize: cw * 0.032
                         font.weight: Font.DemiBold
                     }
                 }
@@ -444,10 +446,9 @@ PillSurface {
             visible: height > 0 && devList.interactive
         }
 
-        /* Bottom breathing room when devices are shown */
         Item {
             width: parent.width
-            height: root.devices.length > 0 ? 6 * root.s : 0
+            height: root.devices.length > 0 ? cw * 0.018 : 0
             visible: height > 0
         }
     }

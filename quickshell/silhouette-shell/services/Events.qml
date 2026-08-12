@@ -192,17 +192,24 @@ Singleton {
             root.firedToday[e.id] = true;
 
             alertChime.running = true;
+            var details = e.endTime && e.endTime.length > 0 ? e.time + " – " + e.endTime : e.time;
             alertNotif.command = ["notify-send", "-a", "SilhouetteShell",
                 "⏰ " + e.text,
-                (e.endTime && e.endTime.length > 0 ? e.time + " – " + e.endTime : e.time) + " · tap to dismiss",
+                details + " · escape dismisses",
                 "-u", "normal"];
             alertNotif.running = true;
         }
     }
 
-    Process { id: alertChime; command: ["paplay", "/usr/share/sounds/freedesktop/stereo/complete.oga"] }
+    Process { id: alertChime; command: ["paplay", "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"] }
     Process { id: alertNotif }
 
+    /**
+     * Poll every 30 seconds for timed events that match the current HH:MM.
+     * Each event fires at most once per day. A matching event plays an alarm
+     * chime and posts a desktop notification with the event title and time,
+     * so it lands even when the calendar surface is closed.
+     */
     Timer {
         id: alertTimer
         interval: 30000
