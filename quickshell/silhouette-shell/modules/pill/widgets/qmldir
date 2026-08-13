@@ -31,6 +31,7 @@ OsdRecord 1.0 osd/OsdRecord.qml
 OsdTrack 1.0 osd/OsdTrack.qml
 OsdVolume 1.0 osd/OsdVolume.qml
 OsdWorkspace 1.0 osd/OsdWorkspace.qml
+PolkitPrompt 1.0 PolkitPrompt.qml
 Pomodoro 1.0 Pomodoro.qml
 QuickChooser 1.0 QuickChooser.qml
 QuickCount 1.0 QuickCount.qml

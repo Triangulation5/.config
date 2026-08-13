@@ -35,4 +35,5 @@ nvim/startup.log.log
 *.log.*
 *.cache
 .cache/
+__pycache__/
 manicode/

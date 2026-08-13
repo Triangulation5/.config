@@ -21,6 +21,7 @@ promised — it is a wishlist to pick from.
   like `josh@core`, plus a `fastfetch`-style info page with stats.
 - Add more dynamic features like dragging installers onto the pill to
   install applications.
+- Polkit password prompts on the pill's surface.
 
 ## Hard
 

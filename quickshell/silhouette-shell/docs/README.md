@@ -35,6 +35,8 @@ instead.
 - [Settings](settings.md)
 - [Utilities](utilities.md)
 - [Troubleshooting](commands.md)
+- [Authentication](authentication.md)
+- [Face Unlock](face-unlock.md)
 - [Roadmap](roadmap.md)
 
 ## Credits

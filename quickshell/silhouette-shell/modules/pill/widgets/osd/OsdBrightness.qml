@@ -5,9 +5,10 @@ import qs.services
 import qs.components.icons
 
 /**
- * Brightness OSD face: sun glyph, percentage and a flame-gradient fill bar
- * that follows the backlight level, matching the battery face's filament
- * language. Driven by the Osd root through `active` and `brightness`.
+ * Brightness OSD face: a level sun glyph (rays lengthen with the backlight),
+ * percentage and a flame-gradient fill bar that follows the backlight level,
+ * matching the battery face's filament language. Driven by the Osd root
+ * through `active` and `brightness`.
  */
 Item {
     id: face
@@ -26,7 +27,8 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 17 * face.s
         height: 17 * face.s
-        name: "sun"
+        name: "sun-level"
+        progress: face.brightness
         color: Theme.iconDim
         stroke: 1.7
     }

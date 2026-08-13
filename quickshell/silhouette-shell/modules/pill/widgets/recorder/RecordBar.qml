@@ -23,6 +23,10 @@ Item {
     property bool recording: false
     property var monitors: []
 
+    /** ffmpeg fallback: shows a warning strip under the action bar. */
+    property bool fallback: false
+    property string fallbackNote: ""
+
     /** Exposed so the host can map the Ame anchor to the record dot. */
     property alias recDot: recDot
 
@@ -123,11 +127,15 @@ Item {
     }
 
     width: parent.width
-    height: 44 * bar.s
+    height: (bar.fallback ? 16 : 0) + 44 * bar.s
+    Behavior on height { NumberAnimation { duration: Motion.fast } }
 
     Rectangle {
         id: actionBar
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 44 * bar.s
         radius: 14 * bar.s
         clip: true
         gradient: Gradient {
@@ -233,8 +241,37 @@ Item {
     }
 
     Rectangle {
+        id: fallbackStrip
+        anchors.top: actionBar.bottom
+        anchors.topMargin: 4 * bar.s
+        anchors.left: parent.left
+        anchors.right: parent.right
+        visible: bar.fallback
+        height: 12 * bar.s
+        radius: 6 * bar.s
+        color: Qt.alpha(Theme.verm, 0.12)
+
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 8 * bar.s
+            anchors.right: parent.right
+            anchors.rightMargin: 8 * bar.s
+            anchors.verticalCenter: parent.verticalCenter
+            text: bar.fallbackNote
+            color: Theme.vermLit
+            font.family: Theme.font
+            font.pixelSize: 9.5 * bar.s
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
+        }
+    }
+
+    Rectangle {
         id: chooser
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 44 * bar.s
         visible: bar.chooserOpen
         radius: 14 * bar.s
         color: Theme.cardBot
@@ -310,7 +347,10 @@ Item {
 
     Rectangle {
         id: screenChooser
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 44 * bar.s
         visible: bar.screenChooserOpen
         radius: 14 * bar.s
         color: Theme.cardBot
