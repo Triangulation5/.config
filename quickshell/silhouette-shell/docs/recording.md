@@ -23,6 +23,24 @@ gets captured. A save row shows the output directory with change and open
 actions, and the clip list shows recent recordings with ffmpeg-generated
 thumbnails.
 
+### ffmpeg fallback
+
+If gpu-screen-recorder is not installed — or dies before it ever starts
+recording — the shell records with plain ffmpeg instead, and warns you about
+it: a strip under the action bar, a "· ffmpeg" tag in the spec line, and one
+notification per session. The fallback is a kmsgrab grab of the whole
+display plus the default sink/source through pulse, encoded on the CPU with
+libx264. That means **full screen only** (a Window / Region pick records
+everything) and **no cursor capture**; quality maps to a crf value instead
+of gsr's presets.
+
+kmsgrab needs DRM master, so the capture runs as root through `pkexec` — a
+polkit authentication agent must be running or the password prompt never
+appears (see [commands.md](commands.md)). The root capture is stopped the
+same way, so stopping a fallback recording asks for the password again.
+
+## Quick record
+
 ## Quick record
 
 A keybind flow that records without opening the surface. It reuses the same

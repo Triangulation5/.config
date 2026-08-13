@@ -80,6 +80,7 @@ PillSurface {
     readonly property string stageTitle: ScreenRec.recording ? "Recording" : "Screen recorder"
 
     readonly property string stageSpec: ScreenRec.fps + " fps · " + root.qualityLabel
+        + (ScreenRec.usingFallback ? " · ffmpeg" : "")
 
     /** Deletes one clip file (argv form, no shell), then re-reads the strip. */
     Process {
@@ -274,6 +275,8 @@ PillSurface {
             countdown: root.countdown
             recording: ScreenRec.recording
             monitors: ScreenRec.monitors
+            fallback: ScreenRec.usingFallback
+            fallbackNote: ScreenRec.backendNote
             onPressRequested: root.press()
             onSourcePicked: (kind) => root.chooseSource(kind)
             onMonitorPicked: (name) => root.pickMonitor(name)

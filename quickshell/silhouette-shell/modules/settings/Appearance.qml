@@ -214,7 +214,7 @@ SettingsSurface {
                 s: root.s
                 on: Flags.notchStyle
                 onToggled: Flags.notchStyle = !Flags.notchStyle
-                onOnChanged: Flags.topGap = notchToggle.on ? 0 : 0.7
+                onOnChanged: Flags.topGap = notchToggle.on ? -0.2 : 0.7
             }
         }
 

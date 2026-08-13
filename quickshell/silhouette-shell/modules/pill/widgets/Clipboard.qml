@@ -58,6 +58,26 @@ PillSurface {
         return out;
     }
 
+    /**
+     * Real height of every row at its actual size plus the list spacing, so the
+     * ListView's height tracks its content instead of a guessed 36·s per row.
+     */
+    readonly property real listContentH: {
+        var rs = results;
+        var h = 0;
+        for (var i = 0; i < rs.length; i++)
+            h += (rs[i] && rs[i].isImage ? 44 : 28) * root.s;
+        return rs.length ? h + (rs.length - 1) * 2 * root.s : 0;
+    }
+
+    /**
+     * Max list height that still fits the surface: surface interior (332·s minus
+     * the mTop/mBottom insets) minus the search field, its spacers and the
+     * divider. Capping here keeps the viewport inside the pill body so rows
+     * never escape below it.
+     */
+    readonly property real listMaxH: 259 * root.s - 1
+
     function focusField() { search.input.forceActiveFocus(); }
 
     function move(delta) {
@@ -257,13 +277,13 @@ PillSurface {
         ListView {
             id: list
             width: parent.width
-            height: count > 0 ? Math.min(count * 36 * root.s + (count - 1) * 2 * root.s, 300 * root.s) : 0
+            height: count > 0 ? Math.min(root.listContentH, root.listMaxH) : 0
             visible: height > 0
             spacing: 2 * root.s
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root.results.length
-            interactive: count * 36 * root.s > 300 * root.s
+            interactive: root.listContentH > root.listMaxH
 
             delegate: Item {
                 id: row
