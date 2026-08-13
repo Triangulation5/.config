@@ -218,6 +218,7 @@ Item {
     readonly property real fontpickerW: 360 * s
     readonly property real localsendW: 360 * s
     readonly property real timerW: 340 * s
+    readonly property real polkitW: 440 * s
     readonly property real timerH: 460 * s
     readonly property real toastW: 342 * s
     readonly property real quickChooseW: 344 * s
@@ -344,7 +345,8 @@ Item {
         animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation, "animation").implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation, "animation") },
         fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker, "fontpicker").implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
         localsend:  { size: () => { surfaceItem(ldLSend, "localsend"); return Qt.size(localsendW, surfaceItem(ldLSend, "localsend").implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend, "localsend") },
-        timer:    { size: () => { const it = surfaceItem(ldTimer, "timer"); return Qt.size(timerW, it.implicitHeight + 28 * s); }, ame: () => null }
+        timer:    { size: () => { const it = surfaceItem(ldTimer, "timer"); return Qt.size(timerW, it.implicitHeight + 28 * s); }, ame: () => null },
+        polkit:    { size: () => { const it = surfaceItem(ldPolkit, "polkit"); return Qt.size(polkitW, it.implicitHeight + 28 * s); }, ame: () => surfaceItem(ldPolkit, "polkit") }
     })
 
     readonly property string mode: dragInstall.dragActive ? "dragOver"
@@ -860,6 +862,12 @@ Item {
     Ame {
         id: ame
         anchors.fill: parent
+        /**
+         * Above the surface loaders so the caret/bead isn't hidden under opaque
+         * surface content (the polkit prompt's field capsule), but below the
+         * body so it keeps the body's translucency like every other element.
+         */
+        z: 1
         s: pill.s
         heat: (pill.powerOpen && ldPower.item) ? ldPower.item.holdProgress : 0
         wake: pill.wakePoint
@@ -1123,6 +1131,8 @@ Item {
     PillSurfaceLoader { id: ldSpaceapps; name: "spaceapps"; host: pill; sourceComponent: SpaceApps { onRequestSurface: (name) => pill.requestSurface(name) } }
 
     PillSurfaceLoader { id: ldRecorder; name: "recorder"; host: pill; sourceComponent: Recorder { screenName: pill.screenName; onRequestClose: pill.requestClose() } }
+
+    PillSurfaceLoader { id: ldPolkit; name: "polkit"; host: pill; sourceComponent: PolkitPrompt { onRequestClose: Polkit.cancel() } }
 
     PillSurfaceLoader { id: ldSysmon; name: "sysmon"; host: pill; sourceComponent: SysmonSurface { onRequestClose: pill.requestClose() } }
 

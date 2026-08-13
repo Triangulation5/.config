@@ -472,7 +472,11 @@ Item {
                 const wdt = (2.5 + 6 * (1 - fadeIn)) * S;
                 ctx.globalAlpha = blink;
                 ctx.beginPath();
-                ctx.roundedRect(bx - wdt / 2, by - hgt / 2, wdt, Math.max(2 * S, hgt), Math.min(wdt, hgt) / 2, Math.min(wdt, hgt) / 2);
+                if (typeof ctx.roundedRect === "function") {
+                    ctx.roundedRect(bx - wdt / 2, by - hgt / 2, wdt, Math.max(2 * S, hgt), Math.min(wdt, hgt) / 2, Math.min(wdt, hgt) / 2);
+                } else {
+                    ctx.ellipse(bx, by, wdt, Math.max(2 * S, hgt));
+                }
                 ctx.fillStyle = Theme.flameInk;
                 ctx.fill();
                 ctx.globalAlpha = 1;

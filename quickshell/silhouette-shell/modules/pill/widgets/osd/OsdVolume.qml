@@ -5,9 +5,9 @@ import qs.services
 import qs.components.icons
 
 /**
- * Volume OSD face: speaker glyph, percentage and a live fill bar that follows
- * the sink volume. Driven by the Osd root through `active`, `muted` and
- * `volume`.
+ * Volume OSD face: a level speaker glyph (waves sweep open with the volume),
+ * percentage and a live fill bar that follows the sink volume. Driven by the
+ * Osd root through `active`, `muted` and `volume`.
  */
 Item {
     id: face
@@ -27,7 +27,8 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 17 * face.s
         height: 17 * face.s
-        name: face.muted ? "speaker-off" : "speaker"
+        name: face.muted ? "speaker-off" : "speaker-level"
+        progress: face.volume
         color: face.muted ? Theme.dim : Theme.iconDim
         stroke: 1.7
     }

@@ -15,6 +15,14 @@ import Quickshell.Io
  * whose ffmpeg build omits the h264 encoders entirely still needs its full
  * ffmpeg installed (see docs/commands.md).
  *
+ * If gpu-screen-recorder is missing (or fails to start), the shell falls back
+ * to a plain ffmpeg capture: kmsgrab grabs the whole display and the default
+ * sink/source are captured through pulse. kmsgrab needs DRM master, so the
+ * capture runs as root through pkexec — window/region picks narrow to the
+ * full screen, and the recorder UI shows a fallback chip so the user knows
+ * why. A gsr that dies before it ever starts recording is retried once
+ * through this path instead of just failing.
+ *
  * The capture target is chosen at leisure BEFORE any countdown, so the user
  * picks WHAT to record with no recording running yet. The surface calls one of
  * two resolvers, each emitting `targetReady(token)` on a valid pick or
@@ -75,6 +83,35 @@ Singleton {
     property string currentFile: ""
     property var recent: []
     readonly property int recentCount: recent.length
+
+    /**
+     * Recording backend: `gsr` (gpu-screen-recorder) or `ffmpeg` (kmsgrab +
+     * pulse fallback). Probed once at startup; a gsr that fails to start is
+     * switched over mid-session with `fallbackRetried` guarding a single
+     * retry. `usingFallback` and `backendNote` drive the recorder UI's
+     * warning chip.
+     */
+    property string backend: "gsr"
+    readonly property bool usingFallback: backend === "ffmpeg"
+    property string backendNote: ""
+    property bool fallbackRetried: false
+    property bool fallbackWarned: false
+
+    /** The capture token of the recording about to start, for the gsr retry. */
+    property string lastToken: ""
+
+    /** ffmpeg fallback inputs, resolved at start: DRM card + pulse targets. */
+    property string ffDrmDev: "/dev/dri/card0"
+    property string ffSinkMon: ""
+    property string ffMicSrc: ""
+
+    /** Switch the whole session to the ffmpeg backend with a reason. */
+    function useFallback(note) {
+        if (backend === "ffmpeg")
+            return;
+        backend = "ffmpeg";
+        backendNote = note;
+    }
 
     /**
      * Pre-roll countdown, owned here rather than in the surface so the quick-record
@@ -232,10 +269,17 @@ Singleton {
     function prepareWindow() {
         if (busy)
             return;
+        if (backend === "ffmpeg") {
+            /** kmsgrab can only grab the whole display; skip the picker. */
+            targetReady("screen");
+            return;
+        }
         windowProc.running = true;
     }
 
     function buildArgs(captureToken, file) {
+        if (backend === "ffmpeg")
+            return buildFfmpegArgs(file);
         var args = ["gpu-screen-recorder", "-w", captureToken,
                     "-f", String(fps), "-q", qualityPreset[quality] || "high",
                     "-cursor", captureCursor ? "yes" : "no",
@@ -248,6 +292,50 @@ Singleton {
     }
 
     /**
+     * ffmpeg fallback argv: kmsgrab grabs the whole display (window/region
+     * picks narrow to full screen), the default sink monitor and mic source
+     * come in through pulse against the session's pipewire socket, and libx264
+     * encodes on the CPU. kmsgrab needs DRM master, so the whole capture runs
+     * under pkexec; stop() signals the same process as root.
+     */
+    function buildFfmpegArgs(file) {
+        var server = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/pulse/native";
+        var args = ["pkexec", "ffmpeg",
+                    "-f", "kmsgrab", "-device", ffDrmDev,
+                    "-framerate", String(fps), "-i", "-",
+                    "-vf", "hwdownload,format=nv12",
+                    "-c:v", "libx264", "-preset", "veryfast",
+                    "-crf", String(qualityCrf())];
+        var inputs = [];
+        if (desktopOn && ffSinkMon.length > 0)
+            inputs.push(["-f", "pulse", "-server", server, "-i", ffSinkMon + ".monitor"]);
+        if (micOn && ffMicSrc.length > 0)
+            inputs.push(["-f", "pulse", "-server", server, "-i", ffMicSrc]);
+        if (inputs.length === 1) {
+            args = args.concat(inputs[0],
+                ["-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "192k"]);
+        } else if (inputs.length === 2) {
+            args = args.concat(inputs[0], inputs[1],
+                ["-filter_complex", "[1:a][2:a]amix=inputs=2:normalize=0[a]",
+                 "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "192k"]);
+        } else {
+            args = args.concat(["-an"]);
+        }
+        args = args.concat(["-y", file]);
+        return args;
+    }
+
+    /** Map the UI quality label onto a libx264 crf for the ffmpeg fallback. */
+    function qualityCrf() {
+        switch (quality) {
+            case "lossless": return 0;
+            case "ultra": return 12;
+            case "medium": return 23;
+            default: return 18;
+        }
+    }
+
+    /**
      * Begin recording the already-resolved capture token (a monitor name,
      * `screen` or a WxH+X+Y geometry). Builds the output path, ensures the
      * directory exists, then launches gsr.
@@ -255,17 +343,34 @@ Singleton {
     function start(captureToken) {
         if (recording || recProc.running)
             return;
+        lastToken = captureToken;
         var file = outDir + "/recording_" + timestamp() + ".mp4";
         mkdirProc.command = ["mkdir", "-p", outDir];
         mkdirProc.pendingToken = captureToken;
         mkdirProc.pendingFile = file;
         mkdirProc.running = true;
+        if (usingFallback && !fallbackWarned) {
+            fallbackWarned = true;
+            warnProc.command = ["notify-send", "-a", "SilhouetteShell", "Recording with ffmpeg fallback", backendNote];
+            warnProc.running = true;
+        }
     }
 
     function stop() {
         if (!recording)
             return;
-        stopProc.command = ["pkill", "-SIGINT", "-f", "(^|/)gpu-screen-recorder"];
+        if (backend === "ffmpeg") {
+            /**
+             * The capture runs as root, so stopping needs root too. The unique
+             * output filename only ever matches the live recorder's command
+             * line (never the thumbnail ffmpeg), and SIGINT makes ffmpeg
+             * finalise and save.
+             */
+            var name = currentFile.substring(currentFile.lastIndexOf("/") + 1);
+            stopProc.command = ["pkexec", "sh", "-c", "pkill -SIGINT -f \"$1\"", "sh", name];
+        } else {
+            stopProc.command = ["pkill", "-SIGINT", "-f", "(^|/)gpu-screen-recorder"];
+        }
         stopProc.running = true;
     }
 
@@ -365,8 +470,45 @@ Singleton {
         property string pendingFile: ""
         onExited: {
             root.currentFile = pendingFile;
-            recProc.command = root.buildArgs(pendingToken, pendingFile);
-            recProc.running = true;
+            if (root.backend === "ffmpeg") {
+                ffPrepProc.pendingToken = pendingToken;
+                ffPrepProc.pendingFile = pendingFile;
+                ffPrepProc.running = true;
+            } else {
+                recProc.command = root.buildArgs(pendingToken, pendingFile);
+                recProc.running = true;
+            }
+        }
+    }
+
+    /**
+     * ffmpeg fallback pre-flight: resolve the DRM card and the pulse sink /
+     * source at start (they can change between recordings), then launch.
+     */
+    Process {
+        id: ffPrepProc
+        property string pendingToken: ""
+        property string pendingFile: ""
+        command: ["sh", "-c",
+            "dev=$(ls /dev/dri/card* 2>/dev/null | head -n 1); echo \"dev=$dev\"; " +
+            "sink=$(pactl get-default-sink 2>/dev/null); echo \"sink=$sink\"; " +
+            "src=$(pactl get-default-source 2>/dev/null); echo \"src=$src\""]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = this.text.split("\n");
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (line.indexOf("dev=") === 0)
+                        root.ffDrmDev = line.slice(4);
+                    else if (line.indexOf("sink=") === 0)
+                        root.ffSinkMon = line.slice(5);
+                    else if (line.indexOf("src=") === 0)
+                        root.ffMicSrc = line.slice(4);
+                }
+                root.currentFile = pendingFile;
+                recProc.command = root.buildArgs(pendingToken, pendingFile);
+                recProc.running = true;
+            }
         }
     }
 
@@ -383,17 +525,50 @@ Singleton {
         stderr: StdioCollector { id: recErr }
         onStarted: {
             root.recording = true;
+            root.fallbackRetried = false;
         }
         onExited: function(exitCode) {
+            var wasLive = root.recording;
             root.recording = false;
             if (exitCode !== 0) {
+                /**
+                 * gsr died before it ever reached the recording state: that's
+                 * a start failure, so retry once through the ffmpeg fallback
+                 * instead of dropping the recording.
+                 */
+                if (!wasLive && root.backend === "gsr" && !root.fallbackRetried && root.lastToken.length > 0) {
+                    root.fallbackRetried = true;
+                    root.useFallback("gpu-screen-recorder failed to start — recording with ffmpeg (full screen, root capture)");
+                    root.start(root.lastToken);
+                    return;
+                }
                 var msg = recErr.text.trim();
                 failProc.command = ["notify-send", "-a", "SilhouetteShell", "-u", "critical",
-                    "Recording failed", msg.length > 0 ? msg : "gpu-screen-recorder exited " + exitCode];
+                    "Recording failed", msg.length > 0 ? msg : (root.backend === "ffmpeg" ? "ffmpeg exited " + exitCode : "gpu-screen-recorder exited " + exitCode)];
                 failProc.running = true;
             } else {
                 savedProc.running = true;
                 Qt.callLater(root.refreshRecent);
+            }
+        }
+    }
+
+    /** One-shot notify when the ffmpeg fallback engages on a recording. */
+    Process {
+        id: warnProc
+    }
+
+    /**
+     * Backend probe: if gpu-screen-recorder is not on PATH the session records
+     * with the ffmpeg fallback from the start.
+     */
+    Process {
+        id: probeProc
+        command: ["sh", "-c", "command -v gpu-screen-recorder || true"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (this.text.trim().length === 0)
+                    root.useFallback("gpu-screen-recorder not found — recording with ffmpeg");
             }
         }
     }
@@ -466,7 +641,7 @@ Singleton {
      */
     Process {
         id: pollProc
-        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder"]
+        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder|kmsgrab"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var running = this.text.trim().length > 0;
@@ -486,5 +661,8 @@ Singleton {
         onTriggered: if (!pollProc.running) pollProc.running = true
     }
 
-    Component.onCompleted: refreshRecent()
+    Component.onCompleted: {
+        refreshRecent();
+        probeProc.running = true;
+    }
 }

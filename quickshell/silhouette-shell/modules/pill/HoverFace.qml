@@ -79,13 +79,18 @@ Item {
     readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.08)); return t * t * (3 - 2 * t); }
 
     /**
-     * The media bud, tray and calendar strip render at full strength the
-     * moment hover mode begins (contentMorph is 1 in hover); the clock is
-     * the one piece that moves, so it alone animates on clockHop above.
+     * The media bud, tray and calendar strip ride the pill's own rest→hover
+     * growth (clockHop) instead of contentMorph, which is pinned at 1 the
+     * moment hover mode begins and would pop them in at full strength while
+     * the pill body is still mid-morph. The staggered windows give a
+     * coordinated entrance — media first, then tray, then calendar — that
+     * lands as the pill settles. Because clockHop clamps to 1 whenever the
+     * pill is at or above hover height, a surface closing back into the pill
+     * still shows them at full strength immediately.
      */
-    readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (host.contentMorph - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return ease; }
-    readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (host.contentMorph - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
-    readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (host.contentMorph - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
+    readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (clockHop - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return ease; }
+    readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (clockHop - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
+    readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (clockHop - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
 
     /**
      * The rest clock's centre, captured once the moment hover mode begins

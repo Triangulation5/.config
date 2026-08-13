@@ -357,272 +357,102 @@ PillSurface {
                 color: Theme.hair
             }
 
-            Rectangle {
+            LinkRow {
                 id: netzRow
-                width: parent.width
-                height: 44 * root.s
-                radius: 10 * root.s
-                color: netzHover.hovered || root.kbIndex === 0 ? Theme.frameBg : "transparent"
-
-                HoverHandler {
-                    id: netzHover
-                    onHoveredChanged: {
-                        root.reportRowHover(netzRow, hovered);
-                        if (hovered) root.kbIndex = 0;
+                s: root.s
+                focused: root.kbIndex === 0
+                icon: root.wired ? "ethernet" : "wifi"
+                iconColor: !root.wired && root.wifiOn ? Theme.vermLit : Theme.iconDim
+                name: "Network"
+                sub: root.netzSubText
+                subColor: !root.wired && root.wifiActive ? Theme.vermLit : Theme.dim
+                subBold: !root.wired && root.wifiActive
+                onRowHovered: (hovered) => {
+                    if (hovered) {
+                        root.reportRowHover(netzRow, true);
+                        root.kbIndex = 0;
                     }
                 }
+                onClicked: root.subview = "wifi"
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.subview = "wifi"
-                }
-
-                GlyphIcon {
-                    id: netzGlyph
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8 * root.s
+                Filament {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 17 * root.s
-                    height: 17 * root.s
-                    name: root.wired ? "ethernet" : "wifi"
-                    color: !root.wired && root.wifiOn ? Theme.vermLit : Theme.iconDim
-                    stroke: 1.7
+                    visible: !root.wired && root.wifiOn && root.wifiActive !== null
+                    s: root.s
+                    kind: "signal"
+                    level: (root.wifiActive && root.wifiActive.signalStrength) || 0
                 }
 
-                Column {
-                    anchors.left: netzGlyph.right
-                    anchors.leftMargin: 11 * root.s
-                    anchors.right: netzRight.left
-                    anchors.rightMargin: 8 * root.s
+                LinkToggle {
+                    s: root.s
+                    visible: !root.wired
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2 * root.s
-
-                    Text {
-                        width: parent.width
-                        text: "Network"
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 12.5 * root.s
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width
-                        text: root.netzSubText
-                        color: !root.wired && root.wifiActive ? Theme.vermLit : Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 10 * root.s
-                        font.weight: !root.wired && root.wifiActive ? Font.DemiBold : Font.Medium
-                        elide: Text.ElideRight
-                    }
-                }
-
-                Row {
-                    id: netzRight
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 9 * root.s
-
-                    Filament {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: !root.wired && root.wifiOn && root.wifiActive !== null
-                        s: root.s
-                        kind: "signal"
-                        level: (root.wifiActive && root.wifiActive.signalStrength) || 0
-                    }
-
-                    LinkToggle {
-                        s: root.s
-                        visible: !root.wired
-                        anchors.verticalCenter: parent.verticalCenter
-                        on: root.wifiOn
-                        onToggled: {
-                            if (typeof Networking !== "undefined" && Networking)
-                                Networking.wifiEnabled = !Networking.wifiEnabled;
-                        }
-                    }
-
-                    GlyphIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 14 * root.s
-                        height: 14 * root.s
-                        name: "chevron-right"
-                        color: Theme.iconDim
-                        stroke: 1.8
+                    on: root.wifiOn
+                    onToggled: {
+                        if (typeof Networking !== "undefined" && Networking)
+                            Networking.wifiEnabled = !Networking.wifiEnabled;
                     }
                 }
             }
 
-            Rectangle {
+            LinkRow {
                 id: btRow
-                width: parent.width
-                height: 44 * root.s
-                radius: 10 * root.s
-                color: btHover.hovered || root.kbIndex === 1 ? Theme.frameBg : "transparent"
-
-                HoverHandler {
-                    id: btHover
-                    onHoveredChanged: {
-                        root.reportRowHover(btRow, hovered);
-                        if (hovered) root.kbIndex = 1;
+                s: root.s
+                focused: root.kbIndex === 1
+                icon: "bluetooth"
+                iconColor: root.btConnected.length > 0 ? Theme.vermLit : Theme.iconDim
+                name: "Bluetooth"
+                sub: root.btSubText
+                subColor: root.btPrimary ? Theme.vermLit : Theme.dim
+                subBold: root.btPrimary !== null
+                onRowHovered: (hovered) => {
+                    if (hovered) {
+                        root.reportRowHover(btRow, true);
+                        root.kbIndex = 1;
                     }
                 }
+                onClicked: root.subview = "bt"
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.subview = "bt"
-                }
-
-                GlyphIcon {
-                    id: btGlyph
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8 * root.s
+                Filament {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 17 * root.s
-                    height: 17 * root.s
-                    name: "bluetooth"
-                    color: root.btConnected.length > 0 ? Theme.vermLit : Theme.iconDim
-                    stroke: 1.7
+                    visible: root.btPrimary !== null && root.btBattery >= 0
+                    s: root.s
+                    kind: "battery"
+                    level: Math.max(0, root.btBattery) / 100
                 }
 
-                Column {
-                    anchors.left: btGlyph.right
-                    anchors.leftMargin: 11 * root.s
-                    anchors.right: btRight.left
-                    anchors.rightMargin: 8 * root.s
+                LinkToggle {
+                    s: root.s
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2 * root.s
-
-                    Text {
-                        width: parent.width
-                        text: "Bluetooth"
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 12.5 * root.s
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width
-                        text: root.btSubText
-                        color: root.btPrimary ? Theme.vermLit : Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 10 * root.s
-                        font.weight: root.btPrimary ? Font.DemiBold : Font.Medium
-                        elide: Text.ElideRight
-                    }
-                }
-
-                Row {
-                    id: btRight
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 9 * root.s
-
-                    Filament {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: root.btPrimary !== null && root.btBattery >= 0
-                        s: root.s
-                        kind: "battery"
-                        level: Math.max(0, root.btBattery) / 100
-                    }
-
-                    LinkToggle {
-                        s: root.s
-                        anchors.verticalCenter: parent.verticalCenter
-                        on: root.btOn
-                        onToggled: if (root.btAdapter) root.btAdapter.enabled = !root.btAdapter.enabled
-                    }
-
-                    GlyphIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 14 * root.s
-                        height: 14 * root.s
-                        name: "chevron-right"
-                        color: Theme.iconDim
-                        stroke: 1.8
-                    }
+                    on: root.btOn
+                    onToggled: if (root.btAdapter) root.btAdapter.enabled = !root.btAdapter.enabled
                 }
             }
 
-            Rectangle {
+            LinkRow {
                 id: airplaneRow
-                width: parent.width
-                height: 44 * root.s
-                radius: 10 * root.s
-                color: airplaneHover.hovered || root.kbIndex === 2 ? Theme.frameBg : "transparent"
-
-                HoverHandler {
-                    id: airplaneHover
-                    onHoveredChanged: {
-                        root.reportRowHover(airplaneRow, hovered);
-                        if (hovered) root.kbIndex = 2;
+                s: root.s
+                focused: root.kbIndex === 2
+                icon: "airplane"
+                iconColor: root.airplaneMode ? Theme.vermLit : Theme.iconDim
+                name: "Airplane Mode"
+                sub: root.airplaneMode ? "On" : "Off"
+                subColor: root.airplaneMode ? Theme.vermLit : Theme.dim
+                subBold: root.airplaneMode
+                chevron: false
+                onRowHovered: (hovered) => {
+                    if (hovered) {
+                        root.reportRowHover(airplaneRow, true);
+                        root.kbIndex = 2;
                     }
                 }
+                onClicked: root.airplaneMode = !root.airplaneMode
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.airplaneMode = !root.airplaneMode
-                }
-
-                GlyphIcon {
-                    id: airplaneGlyph
-                    anchors.left: parent.left
-                    anchors.leftMargin: 8 * root.s
+                LinkToggle {
+                    s: root.s
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 17 * root.s
-                    height: 17 * root.s
-                    name: "airplane"
-                    color: root.airplaneMode ? Theme.vermLit : Theme.iconDim
-                    stroke: 1.7
-                }
-
-                Column {
-                    anchors.left: airplaneGlyph.right
-                    anchors.leftMargin: 11 * root.s
-                    anchors.right: airplaneRight.left
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2 * root.s
-
-                    Text {
-                        width: parent.width
-                        text: "Airplane Mode"
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 12.5 * root.s
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                    }
-                    Text {
-                        width: parent.width
-                        text: root.airplaneMode ? "On" : "Off"
-                        color: root.airplaneMode ? Theme.vermLit : Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 10 * root.s
-                        font.weight: root.airplaneMode ? Font.DemiBold : Font.Medium
-                        elide: Text.ElideRight
-                    }
-                }
-
-                Row {
-                    id: airplaneRight
-                    anchors.right: parent.right
-                    anchors.rightMargin: 8 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 9 * root.s
-
-                    LinkToggle {
-                        s: root.s
-                        anchors.verticalCenter: parent.verticalCenter
-                        on: root.airplaneMode
-                        onToggled: root.airplaneMode = !root.airplaneMode
-                    }
+                    on: root.airplaneMode
+                    onToggled: root.airplaneMode = !root.airplaneMode
                 }
             }
 

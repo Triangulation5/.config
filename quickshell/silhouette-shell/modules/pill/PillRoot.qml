@@ -37,6 +37,15 @@ ShellRoot {
     property string peekMon: ""
 
     /**
+     * Eagerly instantiate the Polkit service (and with it, the agent daemon)
+     * at startup. The service is a lazy singleton: without this reference
+     * nothing loads it until the first prompt IPC arrives — but only the
+     * agent can send that, so it would never start and pkexec would report
+     * "No authentication agent found".
+     */
+    readonly property var polkitBootstrap: Polkit
+
+    /**
      * Per-monitor auto-hide reserve collapse (retracted or floating), bridged
      * from each overlay delegate to its reserve window so the reserved band
      * stays at zero while the pill hides or floats. Written by reassigning a
@@ -147,7 +156,9 @@ ShellRoot {
      */
     function toggleSurface(mon, surface) {
         if (!mon || mon.length === 0)
-            mon = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
+            mon = Hyprland.focusedMonitor
+                ? Hyprland.focusedMonitor.name
+                : (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
         if (root.openMon === mon && root.openSurface === surface) {
             root.close();
             return;
@@ -156,7 +167,17 @@ ShellRoot {
         root.openSurface = surface;
     }
 
+    /**
+     * A live polkit prompt is non-dismissible: the only way out is an explicit
+     * Cancel / Authenticate on the prompt, or the agent resolving the
+     * conversation (its `clear` IPC drops Polkit.pending first). Guarding here
+     * makes Escape, backdrop presses, the hide IPC and every surfaceBack path
+     * no-op while the prompt is pending, so the user cannot click or key their
+     * way around entering the password.
+     */
     function close() {
+        if (root.openSurface === "polkit" && Polkit.pending)
+            return;
         root.openMon = "";
         root.openSurface = "";
     }
@@ -670,6 +691,29 @@ ShellRoot {
             if (p.length < 2 || p[0].length === 0)
                 return;
             Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + p[1] + ', window = "address:' + p[0] + '" })');
+        }
+    }
+
+    /**
+     * IPC: the polkit agent (utils/polkit/agent.py) pokes the pill when an app
+     * needs admin rights. `prompt` parks the request on the Polkit service and
+     * morphs the pill into the authorize face; `clear` closes it once the
+     * agent resolves the conversation (success, failure or cancel).
+     */
+    IpcHandler {
+        target: "polkit"
+        function prompt(message: string, action: string, user: string): void {
+            Polkit.message = message || "";
+            Polkit.action = action || "";
+            Polkit.user = user || "";
+            Polkit.pending = true;
+            if (root.openSurface !== "polkit")
+                root.toggleSurface("", "polkit");
+        }
+        function clear(): void {
+            Polkit.pending = false;
+            if (root.openSurface === "polkit")
+                root.close();
         }
     }
 }

@@ -9,6 +9,10 @@ import qs.services
  * (media transport) paint solid. Paths live in a 24x24 space and scale to the
  * item's size. Each glyph's actual bounding box is centred within the item on
  * both axes, so glyphs with differing path extents share one optical baseline.
+ *
+ * `speaker-level` and `sun-level` are progress-driven: pass a 0-1 `progress` and
+ * the icon itself renders the level — volume waves sweep open from the cone,
+ * sun rays lengthen — inside a fixed optical box so nothing shifts with it.
  */
 Item {
     id: root
@@ -16,7 +20,7 @@ Item {
     property string name: ""
     property color color: Theme.iconDim
     property real stroke: 1.8
-    property real fillProgress: 1
+    property real progress: 1
 
     readonly property real u: Math.min(width, height) / 24
 
@@ -107,7 +111,71 @@ Item {
         "activity": { d: "M22 12h-4l-3 9L9 3l-3 9H2", fill: false },
     })
 
-    readonly property var g: glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false })
+    /** Round to two decimals so computed path strings stay compact. */
+    function r2(x) { return Math.round(x * 100) / 100; }
+
+    /** Arc path from angle a1 to a2 (radians, y-down), sweeping clockwise. */
+    function arc(cx, cy, r, a1, a2) {
+        var x1 = cx + r * Math.cos(a1);
+        var y1 = cy + r * Math.sin(a1);
+        var x2 = cx + r * Math.cos(a2);
+        var y2 = cy + r * Math.sin(a2);
+        var large = Math.abs(a2 - a1) > Math.PI ? 1 : 0;
+        return "M" + r2(x1) + " " + r2(y1)
+            + " A" + r2(r) + " " + r2(r) + " 0 " + large + " 1 " + r2(x2) + " " + r2(y2);
+    }
+
+    /**
+     * Level speaker: the cone stays put and three sound waves sweep open from
+     * it as volume rises, so the glyph itself reads as the level.
+     */
+    function levelSpeaker(v) {
+        var t = Math.max(0, Math.min(1, v));
+        var parts = ["M4 9v6h4l5 4V5L8 9z"];
+        var waves = [
+            { cx: 15, r: 2.5, lo: 0.00, hi: 0.34 },
+            { cx: 17, r: 4.3, lo: 0.30, hi: 0.66 },
+            { cx: 18.6, r: 5.4, lo: 0.62, hi: 1.00 }
+        ];
+        for (var i = 0; i < waves.length; i++) {
+            var w = waves[i];
+            var reveal = Math.max(0, Math.min(1, (t - w.lo) / (w.hi - w.lo)));
+            if (reveal > 0)
+                parts.push(arc(w.cx, 12, w.r, -Math.PI / 2, -Math.PI / 2 + Math.PI * reveal));
+        }
+        return parts.join(" ");
+    }
+
+    /**
+     * Level sun: the core stays put and its eight rays lengthen with
+     * brightness, so the glyph itself reads as the level.
+     */
+    function levelSun(v) {
+        var t = Math.max(0, Math.min(1, v));
+        var ri = 4.8;
+        var ro = 4.8 + 5.4 * (0.25 + 0.75 * t);
+        var parts = ["M16 12a4 4 0 1 0-8 0a4 4 0 1 0 8 0"];
+        for (var i = 0; i < 8; i++) {
+            var a = i * Math.PI / 4;
+            var x1 = 12 + ri * Math.cos(a);
+            var y1 = 12 + ri * Math.sin(a);
+            var x2 = 12 + ro * Math.cos(a);
+            var y2 = 12 + ro * Math.sin(a);
+            parts.push("M" + r2(x1) + " " + r2(y1) + " L" + r2(x2) + " " + r2(y2));
+        }
+        return parts.join(" ");
+    }
+
+    readonly property var g: {
+        switch (name) {
+        case "speaker-level":
+            return { d: levelSpeaker(root.progress), fill: false, fixed: true };
+        case "sun-level":
+            return { d: levelSun(root.progress), fill: false, fixed: true };
+        default:
+            return glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false });
+        }
+    }
 
     Shape {
         id: glyph
@@ -116,12 +184,14 @@ Item {
         height: 24
         scale: root.u
         transformOrigin: Item.TopLeft
-        x: glyph.boundingRect.width > 0
-           ? root.width / 2 - (glyph.boundingRect.x + glyph.boundingRect.width / 2) * root.u
-           : (root.width - 24 * root.u) / 2
-        y: glyph.boundingRect.height > 0
-           ? root.height / 2 - (glyph.boundingRect.y + glyph.boundingRect.height / 2) * root.u
-           : (root.height - 24 * root.u) / 2
+        x: root.g.fixed ? (root.width - 24 * root.u) / 2
+           : (glyph.boundingRect.width > 0
+              ? root.width / 2 - (glyph.boundingRect.x + glyph.boundingRect.width / 2) * root.u
+              : (root.width - 24 * root.u) / 2)
+        y: root.g.fixed ? (root.height - 24 * root.u) / 2
+           : (glyph.boundingRect.height > 0
+              ? root.height / 2 - (glyph.boundingRect.y + glyph.boundingRect.height / 2) * root.u
+              : (root.height - 24 * root.u) / 2)
         antialiasing: true
         preferredRendererType: Shape.CurveRenderer
 
