@@ -35,6 +35,22 @@ Item {
     property string ameForm: "off"
     property point amePoint: Qt.point(width / 2, height / 2)
 
+    /**
+     * Caret docking for the "caret" ame form: returns a text field's insertion
+     * point centre in surface coords, re-evaluating as the field's cursor
+     * moves, the field resizes, or the surface itself morphs. Surfaces with a
+     * query/password field just set `ameForm: "caret"` and
+     * `amePoint: caretPointOf(field)`.
+     */
+    function caretPointOf(field) {
+        void width;
+        void height;
+        void field.width;
+        return field.mapToItem(surface,
+            field.cursorRectangle.x + field.cursorRectangle.width / 2,
+            field.cursorRectangle.y + field.cursorRectangle.height / 2);
+    }
+
     readonly property bool active: open
 
     /**

@@ -6,6 +6,7 @@ import qs.modules.launcher
 import qs.components.animation
 import qs.components.controls
 import qs.modules.pill.surfaces
+import qs.modules.pill.widgets
 import qs.components.icons
 
 /**
@@ -31,18 +32,8 @@ PillSurface {
     /** Last hover event's window position; used to suppress selection steal. */
     property point lastPointer: Qt.point(-1, -1)
 
-    /** Ame soul docked at the search field's caret. */
-    readonly property point caretPoint: {
-        void root.width;
-        void root.height;
-        void search.input.width;
-        return search.input.mapToItem(root,
-            search.input.cursorRectangle.x + search.input.cursorRectangle.width / 2,
-            search.input.cursorRectangle.y + search.input.cursorRectangle.height / 2);
-    }
-
     ameForm: "caret"
-    amePoint: Qt.point(caretPoint.x, caretPoint.y)
+    amePoint: caretPointOf(search.input)
 
     implicitHeight: content.implicitHeight
 
@@ -436,10 +427,17 @@ PillSurface {
             }
         }
 
-        WheelScroller {
-            anchors.fill: list
-            s: root.s
-            flick: list
-        }
+    }
+
+    /**
+     * Outside the content Column: a Column child with anchors breaks the whole
+     * column layout ("Column will not function"), collapsing the search field,
+     * divider and list on top of each other. As a sibling anchored to the list
+     * it still routes wheel notches to the list without touching the layout.
+     */
+    WheelScroller {
+        anchors.fill: list
+        s: root.s
+        flick: list
     }
 }

@@ -51,18 +51,8 @@ PillSurface {
         Polkit.cancel();
     }
 
-    /** Ame flame docked at the field's insertion point, like the launcher's caret. */
-    readonly property point caretPoint: {
-        void root.width;
-        void root.height;
-        void field.width;
-        return field.mapToItem(root,
-            field.cursorRectangle.x + field.cursorRectangle.width / 2,
-            field.cursorRectangle.y + field.cursorRectangle.height / 2);
-    }
-
     ameForm: "caret"
-    amePoint: Qt.point(caretPoint.x, caretPoint.y)
+    amePoint: caretPointOf(field)
 
     readonly property real padTop: 11 * root.s
     readonly property real padBottom: 10 * root.s

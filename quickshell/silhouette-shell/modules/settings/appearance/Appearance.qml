@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
 import qs.services
+import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.icons
 

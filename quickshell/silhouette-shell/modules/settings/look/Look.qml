@@ -3,8 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../../utils/lua/setDeco.js" as SetDeco
+import "../../../utils/lua/setDeco.js" as SetDeco
 import qs.services
+import qs.modules.settings
 import qs.components.controls
 
 /**

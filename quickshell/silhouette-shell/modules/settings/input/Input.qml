@@ -3,8 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../../utils/lua/setInput.js" as SetInput
+import "../../../utils/lua/setInput.js" as SetInput
 import qs.services
+import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.controls
 
