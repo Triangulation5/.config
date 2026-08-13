@@ -4,8 +4,9 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
-import "../../utils/lua/setAnim.js" as SetAnim
+import "../../../utils/lua/setAnim.js" as SetAnim
 import qs.services
+import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.controls
 import qs.components.icons

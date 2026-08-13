@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import ".."
+import qs.modules.settings
 import qs.components.controls
 
 /**

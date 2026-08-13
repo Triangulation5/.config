@@ -11,8 +11,9 @@ import qs.modules.pill.widgets
  * can't spam it; the track flash holds open until a late cover decodes.
  *
  * This root owns the flash state machine and the per-face wiring; each face is a
- * small component under osd/ (OsdVolume, OsdMic, OsdTrack, OsdBrightness,
- * OsdBattery, OsdWorkspace, OsdRecord) that renders one state from props.
+ * small component under osd/ (OsdLevelFace for the bar-style volume, brightness
+ * and battery states; OsdMic, OsdTrack, OsdWorkspace and OsdRecord for the
+ * others) that renders one state from props.
  */
 
 Item {
@@ -54,6 +55,13 @@ Item {
 
     readonly property real brightness: Backlight.brightness
     property bool recordStarted: false
+
+    /** Flame gradient shared by the brightness and battery level fills. */
+    readonly property Gradient flameGradient: Gradient {
+        orientation: Gradient.Horizontal
+        GradientStop { position: 0.0; color: Theme.vermDeep }
+        GradientStop { position: 1.0; color: Theme.flameGlow }
+    }
 
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
@@ -219,12 +227,17 @@ Item {
         }
     }
 
-    OsdVolume {
+    OsdLevelFace {
         anchors.fill: parent
         s: root.s
         active: root.kind === "volume"
-        muted: root.muted
-        volume: root.volume
+        glyph: root.muted ? "speaker-off" : "speaker-level"
+        glyphProgress: root.volume
+        glyphColor: root.muted ? Theme.dim : Theme.iconDim
+        pctText: Math.round(root.volume * 100) + "%"
+        pctColor: root.muted ? Theme.dim : Theme.cream
+        fill: root.volume
+        fillColor: root.muted ? Theme.vermDim : Theme.vermLit
     }
 
     OsdMic {
@@ -250,20 +263,28 @@ Item {
         }
     }
 
-    OsdBrightness {
+    OsdLevelFace {
         anchors.fill: parent
         s: root.s
         active: root.kind === "brightness"
-        brightness: root.brightness
+        glyph: "sun-level"
+        glyphProgress: root.brightness
+        pctText: Math.round(root.brightness * 100) + "%"
+        fill: root.brightness
+        fillGradient: root.flameGradient
     }
 
-    OsdBattery {
+    OsdLevelFace {
         anchors.fill: parent
         s: root.s
         active: root.kind === "battery"
-        charging: Battery.charging
-        pct: Battery.pct
-        frac: Battery.frac
+        glyph: "bolt"
+        glyphColor: Theme.flameGlow
+        pctText: Battery.pct + "%"
+        pctWidth: 40 * root.s
+        fill: Battery.frac
+        fillGradient: root.flameGradient
+        shimmerOn: Battery.charging
     }
 
     OsdWorkspace {
