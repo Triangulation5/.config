@@ -5,7 +5,8 @@ import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.services
 import qs.modules.pill.surfaces
-import "../../../utils/format.js" as Fmt
+import qs.modules.pill.widgets
+import "../../../../utils/format.js" as Fmt
 
 /**
  * 録 RECORD surface: drives gpu-screen-recorder through the ScreenRec singleton,

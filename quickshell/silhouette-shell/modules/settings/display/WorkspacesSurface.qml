@@ -2,8 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
-import "../../utils/keybinds/keychord.js" as Chord
+import "../../../utils/keybinds/keychord.js" as Chord
 import qs.services
+import qs.modules.settings
 import qs.modules.pill.widgets
 import qs.modules.pill.surfaces
 import qs.components.icons

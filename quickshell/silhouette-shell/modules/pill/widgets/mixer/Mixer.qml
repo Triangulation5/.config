@@ -4,6 +4,7 @@ import Quickshell.Services.Pipewire
 import qs.services
 import qs.modules.settings
 import qs.modules.pill.surfaces
+import qs.modules.pill.widgets
 import qs.components.animation
 
 /**

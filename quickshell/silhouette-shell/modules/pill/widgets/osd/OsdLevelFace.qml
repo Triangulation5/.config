@@ -5,42 +5,56 @@ import qs.services
 import qs.components.icons
 
 /**
- * Battery OSD face: bolt glyph, percentage and a flame-gradient fill bar with
- * a charging shimmer. Driven by the Osd root through `active`, `charging`,
- * `pct` and `frac` so the face stays free of service imports.
+ * Level OSD face: a glyph at the left, a percentage at the right and a fill
+ * bar between them that tracks `fill`. Shared by the volume, brightness and
+ * battery faces, which only differ in glyph, percentage and fill styling:
+ * `fillGradient` wins over `fillColor`, and `shimmerOn` runs the charging
+ * sweep the battery face uses. Driven by the Osd root through `active`.
  */
 Item {
     id: face
 
     property real s: 1.1
     property bool active: false
-    property bool charging: false
-    property int pct: 0
-    property real frac: 0
+
+    property string glyph: ""
+    property color glyphColor: Theme.iconDim
+    property real glyphProgress: 1
+
+    property string pctText: ""
+    property color pctColor: Theme.cream
+    property real pctWidth: 32 * face.s
+
+    property real fill: 0
+    property color fillColor: Theme.vermLit
+    property Gradient fillGradient: null
+
+    property bool shimmerOn: false
 
     opacity: face.active ? 1 : 0
     visible: opacity > 0.01
     Behavior on opacity { NumberAnimation { duration: 150 } }
 
     GlyphIcon {
-        id: battGlyph
+        id: levelGlyph
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         width: 17 * face.s
         height: 17 * face.s
-        name: "bolt"
-        color: Theme.flameGlow
+        name: face.glyph
+        progress: face.glyphProgress
+        color: face.glyphColor
         stroke: 1.7
     }
 
     Text {
-        id: battPct
+        id: pctLabel
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: 40 * face.s
+        width: face.pctWidth
         horizontalAlignment: Text.AlignRight
-        text: face.pct + "%"
-        color: Theme.cream
+        text: face.pctText
+        color: face.pctColor
         font.family: Theme.font
         font.pixelSize: 11 * face.s
         font.weight: Font.DemiBold
@@ -48,9 +62,9 @@ Item {
     }
 
     Rectangle {
-        anchors.left: battGlyph.right
+        anchors.left: levelGlyph.right
         anchors.leftMargin: 12 * face.s
-        anchors.right: battPct.left
+        anchors.right: pctLabel.left
         anchors.rightMargin: 12 * face.s
         anchors.verticalCenter: parent.verticalCenter
         height: 4 * face.s
@@ -59,37 +73,34 @@ Item {
         clip: true
 
         Rectangle {
-            id: battFill
+            id: levelFill
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: parent.width * face.frac
+            width: parent.width * face.fill
             radius: parent.radius
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Theme.vermDeep }
-                GradientStop { position: 1.0; color: Theme.flameGlow }
-            }
+            gradient: face.fillGradient
+            color: face.fillGradient ? "transparent" : face.fillColor
             Behavior on width { NumberAnimation { duration: Motion.fast } }
+            Behavior on color { ColorAnimation { duration: Motion.fast } }
 
             Rectangle {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: 34 * face.s
+                visible: face.shimmerOn
                 color: "transparent"
                 gradient: Gradient {
-                    orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "#00ffffff" }
                     GradientStop { position: 0.5; color: "#55ffe6d6" }
                     GradientStop { position: 1.0; color: "#00ffffff" }
                 }
-
                 NumberAnimation on x {
                     from: -34 * face.s
-                    to: battFill.width
+                    to: levelFill.width
                     duration: 1200
                     loops: Animation.Infinite
-                    running: face.active && face.charging
+                    running: face.active && face.shimmerOn
                 }
             }
         }

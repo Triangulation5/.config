@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.services
+import qs.modules.settings
 import qs.components.icons
 
 /**
