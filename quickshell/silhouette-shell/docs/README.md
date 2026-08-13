@@ -35,6 +35,7 @@ instead.
 - [Settings](settings.md)
 - [Utilities](utilities.md)
 - [Troubleshooting](commands.md)
+- [Roadmap](roadmap.md)
 
 ## Credits
 
