@@ -218,7 +218,7 @@ Item {
     readonly property real animationW: 392 * s
     readonly property real fontpickerW: 360 * s
     readonly property real localsendW: 360 * s
-    readonly property real timerW: 335 * s
+    readonly property real timerW: 340 * s
     readonly property real polkitW: 440 * s
     readonly property real timerH: 460 * s
     readonly property real toastW: 342 * s
