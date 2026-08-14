@@ -27,12 +27,6 @@ MonthGrid 1.0 calendar/MonthGrid.qml
 Mixer 1.0 mixer/Mixer.qml
 MonTile 1.0 recorder/MonTile.qml
 ORow 1.0 recorder/ORow.qml
-Osd 1.0 osd/Osd.qml
-OsdLevelFace 1.0 osd/OsdLevelFace.qml
-OsdMic 1.0 osd/OsdMic.qml
-OsdRecord 1.0 osd/OsdRecord.qml
-OsdTrack 1.0 osd/OsdTrack.qml
-OsdWorkspace 1.0 osd/OsdWorkspace.qml
 PolkitPrompt 1.0 polkit/PolkitPrompt.qml
 Pomodoro 1.0 timer/Pomodoro.qml
 QuickChooser 1.0 quickrecord/QuickChooser.qml
