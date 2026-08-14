@@ -405,7 +405,6 @@ PillSurface {
         font.pixelSize: 10.5 * root.s
     }
 
-    /** ── Emoji grid ── */
 
     EmojiGrid {
         anchors.top: divider.bottom
@@ -417,7 +416,6 @@ PillSurface {
         host: root
     }
 
-    /** ── Window list ── */
 
     WinList {
         anchors.top: divider.bottom
@@ -429,7 +427,6 @@ PillSurface {
         host: root
     }
 
-    /** ── App list ── */
 
     ListView {
         id: list

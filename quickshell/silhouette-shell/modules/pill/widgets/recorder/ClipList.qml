@@ -20,7 +20,6 @@ Item {
     width: parent ? parent.width : 0
     height: 16 * s + 9 * s + 64 * s
 
-    /** ── Header: kanji, count, CLEAR ────────────────────────────── */
 
     Item {
         width: parent.width
@@ -97,7 +96,6 @@ Item {
 
     Item { width: 1; height: 9 * s }
 
-    /** ── Filmstrip ──────────────────────────────────────────────── */
 
     Item {
         width: parent.width

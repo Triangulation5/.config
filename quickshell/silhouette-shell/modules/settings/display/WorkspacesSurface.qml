@@ -211,7 +211,6 @@ PillSurface {
 
         Item { width: 1; height: 8 * root.s }
 
-        /** ── list view ── */
 
         Column {
             id: listCol
@@ -323,7 +322,6 @@ PillSurface {
             }
         }
 
-        /** ── create form ── */
         WorkspaceForm {
             s: root.s
             host: root

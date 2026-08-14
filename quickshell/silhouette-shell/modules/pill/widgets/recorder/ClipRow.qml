@@ -21,7 +21,6 @@ Item {
     property string clipPath: ""
     property int rowIndex: -1
 
-    /** ── Derived display strings ──────────────────────────────── */
 
     readonly property string stamp: {
         var m = /_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/.exec(frame.clipName);
@@ -36,7 +35,6 @@ Item {
     height: parent ? parent.height : implicitHeight
     implicitHeight: thumb.height + meta.height
 
-    /** ── Thumbnail tile ────────────────────────────────────────── */
 
     ClippingRectangle {
         id: thumb
@@ -107,7 +105,6 @@ Item {
         Behavior on border.color { ColorAnimation { duration: Motion.fast } }
     }
 
-    /** ── Timestamp + size row ──────────────────────────────────── */
 
     Item {
         id: meta
@@ -146,7 +143,6 @@ Item {
         }
     }
 
-    /** ── Open-on-click area ────────────────────────────────────── */
 
     MouseArea {
         id: frameArea
@@ -156,7 +152,6 @@ Item {
         onClicked: ScreenRec.openFile(frame.clipPath)
     }
 
-    /** ── Two-step delete badge ──────────────────────────────────── */
 
     Rectangle {
         id: delBadge
