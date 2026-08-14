@@ -34,6 +34,8 @@ Singleton {
     function respond(password) {
         if (!pending)
             return;
+        /** Reset first so a second answer (e.g. Cancel after a failed attempt) always re-runs the write. */
+        writeProc.running = false;
         writeProc.command = ["sh", "-c", "printf '%s' \"$1\" > \"$2\"", "sh", password, root.respFile];
         writeProc.running = true;
     }
