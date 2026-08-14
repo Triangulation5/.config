@@ -630,19 +630,18 @@ Item {
         readonly property color surfaceBottom: Theme.cardBot
 
         /**
-         * Single-wave melt for the notch <-> pill style swap, driven by the
-         * pill's notchProgress (1 = notch look). The ears deflate downward and
-         * fade while the top corners round on the same broad, overlapping band,
-         * so the rounding body progressively absorbs the shrinking ear - one
-         * continuous gesture with no staged handoff. Mirrored when entering
-         * notch.
+         * Notch <-> pill morph, driven by the pill's notchProgress (1 = notch
+         * look). The ears retract into the body while the top corners round,
+         * overlapping through the middle so the rounding corner absorbs the
+         * shrinking ear - one wave that runs the full transition with no dead
+         * time at either end. Mirrored when entering notch.
          */
         readonly property real earRise: {
-            var t = Math.max(0, Math.min(1, (pill.notchProgress - 0.38) / 0.42));
+            var t = Math.max(0, Math.min(1, (pill.notchProgress - 0.4) / 0.6));
             return t * t * (3 - 2 * t);
         }
         readonly property real cornerRound: {
-            var t = Math.max(0, Math.min(1, (0.62 - pill.notchProgress) / 0.42));
+            var t = Math.max(0, Math.min(1, (0.7 - pill.notchProgress) / 0.7));
             return t * t * (3 - 2 * t);
         }
 
@@ -672,15 +671,13 @@ Item {
         RoundCorner {
             visible: pillSurface.earRise > 0.01
             opacity: pillSurface.earRise
-            scale: pillSurface.earRise
-            transformOrigin: Item.TopRight
-            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
 
             anchors.right: body.left
             anchors.top: body.top
             anchors.rightMargin: -1
 
-            size: pill.morphRadius + Flags.notchFlare
+            /** Shrink the radius instead of scaling so the arc keeps its shape as it deflates into the corner. */
+            size: (pill.morphRadius + Flags.notchFlare) * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopRight
             color: Theme.border
             z: 1
@@ -694,15 +691,12 @@ Item {
         RoundCorner {
             visible: pillSurface.earRise > 0.01
             opacity: pillSurface.earRise
-            scale: pillSurface.earRise
-            transformOrigin: Item.TopRight
-            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
 
             anchors.right: body.left
             anchors.top: body.top
             anchors.rightMargin: -1
 
-            size: pill.morphRadius
+            size: pill.morphRadius * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopRight
             color: "transparent"
             z: 1
@@ -714,15 +708,12 @@ Item {
         RoundCorner {
             visible: pillSurface.earRise > 0.01
             opacity: pillSurface.earRise
-            scale: pillSurface.earRise
-            transformOrigin: Item.TopLeft
-            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
 
             anchors.left: body.right
             anchors.top: body.top
             anchors.leftMargin: -1
 
-            size: pill.morphRadius + Flags.notchFlare
+            size: (pill.morphRadius + Flags.notchFlare) * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopLeft
             color: Theme.border
             z: 1
@@ -736,15 +727,12 @@ Item {
         RoundCorner {
             visible: pillSurface.earRise > 0.01
             opacity: pillSurface.earRise
-            scale: pillSurface.earRise
-            transformOrigin: Item.TopLeft
-            transform: Translate { y: (1 - pillSurface.earRise) * pill.morphRadius * 0.45 }
 
             anchors.left: body.right
             anchors.top: body.top
             anchors.leftMargin: -1
 
-            size: pill.morphRadius
+            size: pill.morphRadius * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopLeft
             color: "transparent"
             z: 1
