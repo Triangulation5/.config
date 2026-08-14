@@ -142,7 +142,6 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        /** ── Header ── */
         Item {
             width: parent.width
             height: 24 * root.s
@@ -201,7 +200,6 @@ PillSurface {
             color: Theme.hair
         }
 
-        /** ── File pill — warm gradient card ── */
         Item {
             width: parent.width
             height: root.sendFile.length > 0 ? 52 * root.s + 10 * root.s : 0
@@ -257,7 +255,6 @@ PillSurface {
 
         Item { width: 1; height: root.sendFile.length > 0 ? 12 * root.s : 8 * root.s }
 
-        /** ── Scanning — radar pulse ── */
         Item {
             width: parent.width
             height: root.scanning ? 44 * root.s : 0
@@ -267,7 +264,6 @@ PillSurface {
                 anchors.centerIn: parent
                 spacing: 10 * root.s
 
-                /** Radar rings. */
                 Item {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16 * root.s; height: 16 * root.s
@@ -313,7 +309,6 @@ PillSurface {
             }
         }
 
-        /** ── Empty / status state — hero glyph ── */
         Item {
             width: parent.width
             height: (root.status.length > 0 && root.devices.length === 0 && !root.scanning)
@@ -382,7 +377,6 @@ PillSurface {
             }
         }
 
-        /** ── Device list — Link-surface-style rows ── */
         LocalDeviceList {
             width: parent.width
             s: root.s

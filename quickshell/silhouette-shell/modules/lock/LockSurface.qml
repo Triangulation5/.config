@@ -146,7 +146,6 @@ Item {
             bottomRightRadius: (height / 2) * (1 - surface.maskP) * (1 - gameFlat)
         }
 
-        /** Left notch ear. */
         RoundCorner {
             visible: Flags.notchStyle
 
@@ -179,7 +178,6 @@ Item {
             }
         }
 
-        /** Right notch ear. */
         RoundCorner {
             visible: Flags.notchStyle
 

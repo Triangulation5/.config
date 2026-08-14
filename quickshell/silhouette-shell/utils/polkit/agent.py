@@ -66,7 +66,6 @@ class Agent(dbus.service.Object):
         self._idle = 0
         GLib.timeout_add(POLL_MS, self._poll)
 
-    # -- polkit -> agent --------------------------------------------------
     @dbus.service.method(IFACE, in_signature="sssa{ss}sa(sa{sv})", out_signature="",
                          async_callbacks=("reply_handler", "error_handler"))
     def BeginAuthentication(self, action_id, message, icon_name, details, cookie,
@@ -89,7 +88,6 @@ class Agent(dbus.service.Object):
             return
         self._cancel(reply_to_polkitd=True)
 
-    # -- helper conversation ---------------------------------------------
     def _spawn_helper(self, identities):
         user = self._identity_name(identities) or pwd.getpwuid(os.getuid()).pw_name
         try:
@@ -133,7 +131,6 @@ class Agent(dbus.service.Object):
         self._idle = 0
         return False
 
-    # -- response file polling --------------------------------------------
     def _poll(self):
         if not self.pending or not self.awaiting_input:
             return True
@@ -163,7 +160,6 @@ class Agent(dbus.service.Object):
                     pass
         return True
 
-    # -- completion -------------------------------------------------------
     def _finish(self, success):
         # The helper already told polkitd the result on success; replying
         # normally lets polkitd conclude (is_authenticated was set by the
@@ -213,7 +209,6 @@ class Agent(dbus.service.Object):
         self.proc = None
         self.reader = None
 
-    # -- shell bridge -----------------------------------------------------
     def _poke(self, args):
         # The shell runs as `qs -p <configdir>`; without the path quickshell
         # cannot find the config to talk to, so the pokes would vanish. The

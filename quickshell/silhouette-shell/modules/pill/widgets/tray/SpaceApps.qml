@@ -154,7 +154,6 @@ PillSurface {
 
         Item { width: 1; height: 9 * root.s }
 
-        /** ── list view ── */
 
         Item {
             width: parent.width
