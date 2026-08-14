@@ -53,8 +53,8 @@ PillSurface {
 
     ameForm: "off"
 
-    readonly property real padTop: 11 * root.s
-    readonly property real padBottom: 10 * root.s
+    readonly property real padTop: 6 * root.s
+    readonly property real padBottom: 5 * root.s
     readonly property real sidePad: 18 * root.s
 
     Column {
@@ -140,7 +140,7 @@ PillSurface {
             height: 38 * root.s
             radius: height / 2
             /** Lifted capsule grey + the standard tile border so the field reads as a filled input against the pill body. */
-            color: Qt.lighter(Theme.capsule, 1.25)
+            color: Qt.lighter(Theme.capsule, 2.25)
             border.width: 1
             border.color: Theme.border
 
