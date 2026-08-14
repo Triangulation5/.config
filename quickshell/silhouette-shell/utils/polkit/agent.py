@@ -166,13 +166,15 @@ class Agent(dbus.service.Object):
         # helper). On failure no response ever arrived, so a plain reply means
         # denied.
         self._kill_helper()
-        self._poke(["clear"])
+        # Reply before poking the shell: the conversation (and the app waiting
+        # on it) resolves immediately, and the pill closes a beat later when
+        # the poke lands, instead of stalling on the quickshell IPC process.
         self._close_conversation(error=None if success else None)
+        self._poke(["clear"])
         return False
 
     def _cancel(self, reply_to_polkitd):
         self._kill_helper()
-        self._poke(["clear"])
         if reply_to_polkitd and self._error is not None:
             exc = dbus.exceptions.DBusException(
                 "Authentication cancelled",
@@ -180,6 +182,7 @@ class Agent(dbus.service.Object):
             self._close_conversation(error=exc)
         else:
             self._close_conversation(error=None)
+        self._poke(["clear"])
 
     def _close_conversation(self, error):
         reply, self._reply = self._reply, None
@@ -200,12 +203,14 @@ class Agent(dbus.service.Object):
         if self.proc is not None:
             try:
                 self.proc.terminate()
-                self.proc.wait(timeout=2)
+                self.proc.wait(timeout=0.5)
             except Exception:
-                try:
-                    self.proc.kill()
-                except Exception:
-                    pass
+                pass
+            try:
+                self.proc.kill()
+                self.proc.wait(timeout=0.5)
+            except Exception:
+                pass
         self.proc = None
         self.reader = None
 
@@ -213,13 +218,19 @@ class Agent(dbus.service.Object):
         # The shell runs as `qs -p <configdir>`; without the path quickshell
         # cannot find the config to talk to, so the pokes would vanish. The
         # agent lives at <config>/utils/polkit/agent.py, so the config root is
-        # three directories up.
+        # three directories up. Runs on a daemon thread so the quickshell IPC
+        # process can never stall the agent's event loop (which would delay
+        # every conversation reply and leave the pill stuck on the prompt).
         config = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        try:
-            subprocess.run(["quickshell", "-p", config, "ipc", "call", "polkit"] + args,
-                           timeout=5, capture_output=True, text=True)
-        except Exception:
-            pass
+
+        def run():
+            try:
+                subprocess.run(["quickshell", "-p", config, "ipc", "call", "polkit"] + args,
+                               timeout=5, capture_output=True, text=True)
+            except Exception:
+                pass
+
+        threading.Thread(target=run, daemon=True).start()
 
     @staticmethod
     def _identity_name(identities):
