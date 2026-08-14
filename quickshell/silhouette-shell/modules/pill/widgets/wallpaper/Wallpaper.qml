@@ -6,7 +6,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
 import qs.services
-import qs.modules.pill.widgets
 import qs.modules.launcher
 import qs.components.animation
 import qs.modules.pill.surfaces
@@ -309,16 +308,188 @@ PillSurface {
         font.family: Theme.fontJp
         font.weight: Font.Medium
         font.pixelSize: 30 * root.s
-    }    Repeater {
+    }
+
+    Repeater {
         id: tileRepeater
         model: root.items
 
-        delegate: WallTile {
+        delegate: Item {
+            id: tile
+
             required property int index
             required property var modelData
-            host: root
-            dlProc: dlProc
-            searchProc: searchProc
+
+            readonly property string thumb: modelData.thumb !== undefined ? modelData.thumb : ""
+            readonly property bool remote: modelData.image !== undefined
+            readonly property string thumbSource: remote ? thumb : ("file://" + thumb)
+
+            readonly property real off: index - root.pos
+            readonly property real ao: Math.abs(off)
+            readonly property bool focused: index === root.focusIndex
+            readonly property real bright: root.slotLerp(root.slotBright, ao)
+            readonly property real sat: root.slotLerp(root.slotSat, ao)
+            readonly property real corner: (8 + 2 * Math.max(0, 1 - ao)) * root.s
+
+            property alias trashHeat: trashHeat
+            readonly property real hold: trashHeat.hold
+            readonly property bool committing: hold >= trashHeat.tapThreshold
+            readonly property real commitProgress: Math.max(0, (hold - trashHeat.tapThreshold) / (1 - trashHeat.tapThreshold))
+
+            /**
+             * Fade a tile out as its outer edge nears the clipped strip
+             * boundary, so the strip ends soften instead of getting hard-cut by
+             * the pill's clip.
+             */
+            readonly property real edgeFade: {
+                var soft = 70 * root.s;
+                var gap = Math.min(x, root.width - (x + width));
+                return Math.max(0, Math.min(1, gap / soft));
+            }
+
+            width: root.slotLerp(root.slotW, ao) * root.s
+            height: root.slotLerp(root.slotH, ao) * root.s
+            x: root.width / 2 + root.offsetX(off) - width / 2
+            y: (root.height - height) / 2
+            z: 10 - ao
+            visible: ao <= 5
+            opacity: edgeFade * (ao <= 4 ? 1 : Math.max(0, 5 - ao))
+
+            onFocusedChanged: if (!focused) trashHeat.cancel()
+
+            ClippingRectangle {
+                id: card
+                anchors.fill: parent
+                radius: tile.corner
+                color: Theme.tileBg
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    saturation: tile.sat - 1
+                    shadowEnabled: tile.focused
+                    shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
+                    shadowBlur: 0.7
+                    shadowVerticalOffset: 4 * root.s
+                }
+
+                Image {
+                    id: thumbImage
+                    anchors.fill: parent
+                    source: tile.ao <= 6 ? tile.thumbSource : ""
+                    sourceSize.width: 512
+                    sourceSize.height: 220
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    smooth: true
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: Theme.tileBg
+                    visible: thumbImage.status === Image.Error
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: Qt.rgba(0, 0, 0, 1)
+                    opacity: 1 - tile.bright
+                }
+
+                Rectangle {
+                    id: consume
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: card.height * tile.commitProgress
+                    visible: tile.committing
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.alpha(Theme.vermBurn, 0.66) }
+                        GradientStop { position: 0.74; color: Qt.alpha(Theme.vermLit, 0.30) }
+                        GradientStop { position: 1.0; color: Qt.alpha(Theme.flameGlow, 0.0) }
+                    }
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        height: 2 * root.s
+                        opacity: Math.min(1, tile.commitProgress * 3)
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: Qt.alpha(Theme.flameGlow, 0.0) }
+                            GradientStop { position: 0.5; color: Theme.flameGlow }
+                            GradientStop { position: 1.0; color: Qt.alpha(Theme.flameGlow, 0.0) }
+                        }
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    visible: tile.focused && tile.remote && dlProc.running && dlProc.target === tile.modelData.image
+                    text: "saving…"
+                    color: Theme.cream
+                    font.family: Theme.font
+                    font.pixelSize: 11 * root.s
+                }
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottomMargin: 6 * root.s
+                    visible: tile.focused && tile.remote && tile.modelData.w > 0 && !(dlProc.running && dlProc.target === tile.modelData.image)
+                    width: resText.implicitWidth + 12 * root.s
+                    height: resText.implicitHeight + 5 * root.s
+                    radius: height / 2
+                    color: Qt.rgba(0, 0, 0, 0.55)
+                    Text {
+                        id: resText
+                        anchors.centerIn: parent
+                        text: tile.modelData.w + "×" + tile.modelData.h
+                        color: Theme.bright
+                        font.family: Theme.font
+                        font.pixelSize: 9.5 * root.s
+                        font.features: { "tnum": 1 }
+                    }
+                }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: tile.corner
+                color: "transparent"
+                border.width: 1
+                border.color: {
+                    if (tile.remote && dlProc.failed.length && dlProc.failed === tile.modelData.image)
+                        return Theme.vermLit;
+                    return tile.committing ? Theme.vermLit : Theme.border;
+                }
+                Behavior on border.color { ColorAnimation { duration: Motion.fast } }
+            }
+
+            HeatHold {
+                id: trashHeat
+                tapThreshold: 0.25
+                enabled: !tile.remote
+                onConfirmed: if (!tile.remote) Walls.trash(tile.modelData.path)
+                onTapped: root.activate()
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onPressed: {
+                    if (!tile.focused)
+                        return;
+                    if (tile.remote)
+                        root.activate();
+                    else
+                        trashHeat.press();
+                }
+                onReleased: if (tile.focused && !tile.remote) trashHeat.release()
+                onExited: trashHeat.cancel()
+                onClicked: if (!tile.focused) root.focusIndex = tile.index
+            }
         }
     }
 
