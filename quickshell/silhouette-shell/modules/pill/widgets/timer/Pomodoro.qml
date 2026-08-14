@@ -465,16 +465,30 @@ PillSurface {
 
         Item { width: 1; height: root.showCountdown ? 0 : 8 * root.s }
 
-        /** Keyboard hint. */
-        Text {
+        /** Keyboard hint: a spacebar keycap glyph instead of the word, then the R reset hint. */
+        Row {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: root.timerState === "idle"
-            text: "space start · r reset"
-            color: Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 10 * root.s
-            font.weight: Font.Medium
-            font.letterSpacing: 0.4 * root.s
+            spacing: 5 * root.s
+
+            GlyphIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 18 * root.s
+                height: 14 * root.s
+                name: "space"
+                color: Theme.faint
+                stroke: 1.5
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "start · r reset"
+                color: Theme.faint
+                font.family: Theme.font
+                font.pixelSize: 10 * root.s
+                font.weight: Font.Medium
+                font.letterSpacing: 0.4 * root.s
+            }
         }
     }
 }

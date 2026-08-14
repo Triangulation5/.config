@@ -3,7 +3,7 @@ import Quickshell.Widgets
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
 import qs.services
-import qs.modules.pill.widgets
+import qs.modules.pill.widgets.osd
 
 /**
  * Pill OSD face. Morphs the pill open for a flash of volume, brightness, battery,
