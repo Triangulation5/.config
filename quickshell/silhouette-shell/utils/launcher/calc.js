@@ -34,7 +34,8 @@ function deg(fn) {
 /** Named constants recognised as standalone identifiers. */
 var CONSTS = {
     pi:   Math.PI,
-    "\u03c0": Math.PI,  // π
+    /** π alias. */
+    "\u03c0": Math.PI,
     e:    Math.E,
 };
 
@@ -51,10 +52,10 @@ function tokenize(src) {
     while (i < len) {
         var c = src.charCodeAt(i);
 
-        // whitespace
+        /** Whitespace. */
         if (c === 32 || c === 9) { i++; continue; }
 
-        // number literal (leading digit or dot)
+        /** Number literal (leading digit or dot). */
         if ((c >= 48 && c <= 57) || c === 46) {
             var start = i;
             var dots = 0;
@@ -73,7 +74,7 @@ function tokenize(src) {
             continue;
         }
 
-        // named identifier: function or constant (including π)
+        /** Named identifier: function or constant (including π). */
         if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 0x3c0) {
             var start = i;
             while (i < len) {
@@ -88,7 +89,7 @@ function tokenize(src) {
             continue;
         }
 
-        // single-character operators and parens
+        /** Single-character operators and parens. */
         switch (src[i]) {
             case '+': case '-': case '*': case '/': case '^':
             case '%': case '(': case ')': case ',':
@@ -164,21 +165,22 @@ function evaluate(src) {
         var tok = peek();
         if (tok === undefined) throw 0;
 
-        // number literal (sentinel 0 followed by value)
+        /** Number literal (sentinel 0 followed by value). */
         if (tok === 0) { index += 2; return tokens[index - 1]; }
 
-        // named constant
+        /** Named constant. */
         if (typeof tok === "string" && CONSTS.hasOwnProperty(tok)) {
             index++;
             return CONSTS[tok];
         }
 
-        // function call
+        /** Function call. */
         if (typeof tok === "string" && FNS.hasOwnProperty(tok)) {
             var meta = FNS[tok];
             index++;
             if (peek() !== '(') throw 0;
-            index++; // consume '('
+            /** Consume the open paren. */
+            index++;
             var args = [];
             args.push(parseExpr());
             while (peek() === ',') {
@@ -186,13 +188,14 @@ function evaluate(src) {
                 args.push(parseExpr());
             }
             if (peek() !== ')') throw 0;
-            index++; // consume ')'
+            /** Consume the close paren. */
+            index++;
             if (args.length !== meta.arity) throw 0;
             ops++;
             return meta.fn.apply(null, args);
         }
 
-        // parenthesised expression
+        /** Parenthesised expression. */
         if (tok === '(') {
             index++;
             var value = parseExpr();

@@ -11,8 +11,9 @@ import qs.services
  * both axes, so glyphs with differing path extents share one optical baseline.
  *
  * `speaker-level` and `sun-level` are progress-driven: pass a 0-1 `progress` and
- * the icon itself renders the level — volume waves sweep open from the cone,
- * sun rays lengthen — inside a fixed optical box so nothing shifts with it.
+ * the icon itself renders the level — volume lights one curved sound wave per
+ * 33.33% off the cone, all at full colour; sun rays lengthen — inside a fixed
+ * optical box so nothing shifts with it.
  */
 Item {
     id: root
@@ -126,24 +127,27 @@ Item {
     }
 
     /**
-     * Level speaker: the cone stays put and three sound waves sweep open from
-     * it as volume rises, so the glyph itself reads as the level.
+     * Level speaker: the cone stays put and up to three curved sound waves arc
+     * off it, one per 33.33% of volume, all at full glyph colour. Waves match
+     * the base speaker glyph's gentle ±50° arc style, not full half-circles.
+     * Returns the cone and wave paths separately so each wave can carry its
+     * own path and a thinner stroke that keeps gaps.
      */
     function levelSpeaker(v) {
         var t = Math.max(0, Math.min(1, v));
-        var parts = ["M4 9v6h4l5 4V5L8 9z"];
-        var waves = [
-            { cx: 15, r: 2.5, lo: 0.00, hi: 0.34 },
-            { cx: 17, r: 4.3, lo: 0.30, hi: 0.66 },
-            { cx: 18.6, r: 5.4, lo: 0.62, hi: 1.00 }
-        ];
-        for (var i = 0; i < waves.length; i++) {
-            var w = waves[i];
-            var reveal = Math.max(0, Math.min(1, (t - w.lo) / (w.hi - w.lo)));
-            if (reveal > 0)
-                parts.push(arc(w.cx, 12, w.r, -Math.PI / 2, -Math.PI / 2 + Math.PI * reveal));
+        /**
+         * Epsilon absorbs Pipewire's fixed-point rounding (volume is stored as
+         * round(pct * 65536) / 65536, so exactly "33%" lands a hair under 1/3)
+         * plus float error, without reaching the next wave's step of 1.0.
+         */
+        var n = Math.floor(t * 3 + 0.001);
+        var bars = [];
+        var sweep = 50 * Math.PI / 180;
+        for (var i = 0; i < n; i++) {
+            var r = 3 + i * 3;
+            bars.push(arc(14.4, 12, r, -sweep, sweep));
         }
-        return parts.join(" ");
+        return { cone: "M4 9v6h4l5 4V5L8 9z", bars: bars, fill: false, fixed: true };
     }
 
     /**
@@ -169,12 +173,30 @@ Item {
     readonly property var g: {
         switch (name) {
         case "speaker-level":
-            return { d: levelSpeaker(root.progress), fill: false, fixed: true };
+            return levelSpeaker(root.progress);
         case "sun-level":
             return { d: levelSun(root.progress), fill: false, fixed: true };
         default:
             return glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false });
         }
+    }
+
+    /**
+     * Path for bar `i` of the level speaker (empty when the glyph isn't a
+     * speaker-level or the bar isn't lit).
+     */
+    function barPath(i) {
+        var b = root.g.bars;
+        return b !== undefined && i < b.length ? b[i] : "";
+    }
+
+    /**
+     * Brightness of bar `i`: lit waves render at the full glyph colour, unlit
+     * ones are invisible — no per-level dimming, so the set always reads even.
+     */
+    function barAlpha(i) {
+        var b = root.g.bars;
+        return b !== undefined && i < b.length ? 1 : 0;
     }
 
     Shape {
@@ -201,7 +223,48 @@ Item {
             strokeWidth: root.stroke
             capStyle: ShapePath.RoundCap
             joinStyle: ShapePath.RoundJoin
-            PathSvg { path: root.g.d }
+            PathSvg { path: root.g.d !== undefined ? root.g.d : root.g.cone }
+        }
+
+        /**
+         * Volume level waves: one ShapePath each so every wave carries its own
+         * brightness. Stroked thinner than the cone so the arcs stay distinct
+         * instead of blurring into one block.
+         */
+        ShapePath {
+            strokeColor: Qt.alpha(root.color, root.barAlpha(0))
+            fillColor: "transparent"
+            strokeWidth: Math.max(0.9, root.stroke * 0.55)
+            capStyle: ShapePath.RoundCap
+            PathSvg { path: root.barPath(0) }
+        }
+        ShapePath {
+            strokeColor: Qt.alpha(root.color, root.barAlpha(1))
+            fillColor: "transparent"
+            strokeWidth: Math.max(0.9, root.stroke * 0.55)
+            capStyle: ShapePath.RoundCap
+            PathSvg { path: root.barPath(1) }
+        }
+        ShapePath {
+            strokeColor: Qt.alpha(root.color, root.barAlpha(2))
+            fillColor: "transparent"
+            strokeWidth: Math.max(0.9, root.stroke * 0.55)
+            capStyle: ShapePath.RoundCap
+            PathSvg { path: root.barPath(2) }
+        }
+        ShapePath {
+            strokeColor: Qt.alpha(root.color, root.barAlpha(3))
+            fillColor: "transparent"
+            strokeWidth: Math.max(0.9, root.stroke * 0.55)
+            capStyle: ShapePath.RoundCap
+            PathSvg { path: root.barPath(3) }
+        }
+        ShapePath {
+            strokeColor: Qt.alpha(root.color, root.barAlpha(4))
+            fillColor: "transparent"
+            strokeWidth: Math.max(0.9, root.stroke * 0.55)
+            capStyle: ShapePath.RoundCap
+            PathSvg { path: root.barPath(4) }
         }
     }
 }
