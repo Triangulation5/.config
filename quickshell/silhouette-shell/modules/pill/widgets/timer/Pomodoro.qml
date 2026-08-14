@@ -473,11 +473,12 @@ PillSurface {
 
             GlyphIcon {
                 anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: -0.5 * root.s
                 width: 18 * root.s
                 height: 14 * root.s
                 name: "space"
                 color: Theme.faint
-                stroke: 1.5
+                stroke: 1.8
             }
 
             Text {
