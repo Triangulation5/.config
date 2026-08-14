@@ -41,8 +41,6 @@ same way, so stopping a fallback recording asks for the password again.
 
 ## Quick record
 
-## Quick record
-
 A keybind flow that records without opening the surface. It reuses the same
 source chooser, countdown and state as the full recorder, so the behavior is
 identical whether you start from the pill or the keybind.

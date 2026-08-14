@@ -21,23 +21,40 @@ instead.
 
 ## Docs
 
-- [Dependencies](dependencies.md)
-- [Core Shell](core-shell.md)
-- [Desktop Controls](desktop-controls.md)
-- [System Integration](system-integration.md)
-- [Visualizers](visualizers.md)
-- [Display & Hardware](display-hardware.md)
-- [Calendar & Time](calendar-time.md)
-- [Workspaces](workspaces.md)
-- [Customization](customization.md)
-- [Recording](recording.md)
-- [System Monitoring](system-monitoring.md)
-- [Settings](settings.md)
-- [Utilities](utilities.md)
-- [Troubleshooting](commands.md)
-- [Authentication](authentication.md)
-- [Face Unlock](face-unlock.md)
-- [Roadmap](roadmap.md)
+### Setup
+
+- [Dependencies](setup/dependencies.md) — what the shell needs to run
+
+### Architecture
+
+- [Core Shell](architecture/core-shell.md) — the pill, modes, Ame, keyboard nav
+
+### Features
+
+- [Desktop Controls](features/desktop-controls.md) — launcher, AppImage installer, power menu, lockscreen
+- [System Integration](features/system-integration.md) — notifications, clipboard, media, tray, mixer
+- [Visualizers](features/visualizers.md) — cava bars and the music line
+- [Display & Hardware](features/display-hardware.md) — display switcher, OSD, bluetooth, wifi, input
+- [Calendar & Time](features/calendar-time.md) — calendar and weather
+- [Workspaces](features/workspaces.md) — workspace switcher, stash, space apps
+- [Customization](features/customization.md) — theme, wallpaper, icons, motion, corners, game mode
+- [Recording](features/recording.md) — screen recorder and quick record
+- [System Monitoring](features/system-monitoring.md) — live machine vitals
+- [Settings](features/settings.md) — settings menu and persistent config
+- [Utilities](features/utilities.md) — calculator, tooltips, keybind system
+
+### Security
+
+- [Authentication](security/authentication.md) — polkit prompts on the pill
+- [Face Unlock](security/face-unlock.md) — howdy on the lockscreen
+
+### Troubleshooting
+
+- [Commands](troubleshooting/commands.md) — recording failure fixes
+
+### Development
+
+- [Roadmap](development/roadmap.md) — ideas grouped by difficulty
 
 ## Credits
 

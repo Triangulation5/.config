@@ -13,7 +13,7 @@ import Quickshell.Io
  * `-fallback-cpu-encoding yes` so a machine with broken hardware encoding but a
  * working CPU encoder (libx264) degrades to CPU instead of failing; a distro
  * whose ffmpeg build omits the h264 encoders entirely still needs its full
- * ffmpeg installed (see docs/commands.md).
+ * ffmpeg installed (see docs/troubleshooting/commands.md).
  *
  * If gpu-screen-recorder is missing (or fails to start), the shell falls back
  * to a plain ffmpeg capture: kmsgrab grabs the whole display and the default

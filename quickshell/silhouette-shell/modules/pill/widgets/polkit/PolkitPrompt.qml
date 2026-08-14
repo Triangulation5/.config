@@ -68,7 +68,7 @@ PillSurface {
         anchors.rightMargin: root.sidePad
         spacing: 0
 
-        // -- header: lock badge + title --------------------------------------
+        /** Section: header — lock badge + title. */
         Row {
             width: parent.width
             spacing: 12 * root.s
@@ -110,7 +110,7 @@ PillSurface {
 
         Item { width: 1; height: 7 * root.s }
 
-        // -- subtext: description + action id, flush left under the header ----
+        /** Section: subtext — description + action id, flush left under the header. */
         Text {
             width: parent.width
             text: Polkit.message.length > 0 ? Polkit.message : "Enter your password to continue"
@@ -136,7 +136,7 @@ PillSurface {
 
         Item { width: 1; height: 10 * root.s }
 
-        // -- password field (borderless capsule, focus shown by the caret) ----
+        /** Section: password field — borderless capsule, focus shown by the caret. */
         Rectangle {
             id: fieldRect
             width: parent.width
@@ -205,7 +205,7 @@ PillSurface {
             font.letterSpacing: 0.5 * root.s
         }
 
-        // -- bottom-right buttons ---------------------------------------------
+        /** Section: bottom-right buttons. */
         Row {
             width: parent.width
             visible: !root.submitted

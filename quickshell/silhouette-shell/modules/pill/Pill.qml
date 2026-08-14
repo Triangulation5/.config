@@ -594,7 +594,7 @@ Item {
 
     Component.onCompleted: {
         Cava.pillWanted = mode === "rest" && !Flags.autoHide;
-        // Loaders register themselves by name, so the map is complete by now.
+        /** Loaders register themselves by name, so the map is complete by now. */
         pill._surfaceCleanupReady = true;
     }
 
