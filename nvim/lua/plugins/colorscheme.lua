@@ -1,2 +1,2 @@
-require("vague").setup()
+require("vague").setup({ transparent = false })
 vim.cmd.colorscheme("vague")
