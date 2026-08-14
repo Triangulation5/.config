@@ -13,8 +13,10 @@ FontPicker 1.0 appearance/FontPicker.qml
 Group 1.0 base/Group.qml
 GroupLabel 1.0 base/GroupLabel.qml
 Input 1.0 input/Input.qml
+KeybindAddBar 1.0 input/KeybindAddBar.qml
 KeybindForm 1.0 input/KeybindForm.qml
 KeybindRow 1.0 input/KeybindRow.qml
+KeybindSearch 1.0 input/KeybindSearch.qml
 Keybinds 1.0 input/Keybinds.qml
 Look 1.0 look/Look.qml
 MonitorCard 1.0 display/MonitorCard.qml
@@ -28,8 +30,11 @@ SettingsRow 1.0 base/SettingsRow.qml
 SettingsSeg 1.0 base/SettingsSeg.qml
 SettingsSurface 1.0 base/SettingsSurface.qml
 ShadowGroup 1.0 look/ShadowGroup.qml
+UpdateConflicts 1.0 updates/UpdateConflicts.qml
+UpdateStatus 1.0 updates/UpdateStatus.qml
 Updates 1.0 updates/Updates.qml
 WindowGroup 1.0 look/WindowGroup.qml
+WorkspaceForm 1.0 display/WorkspaceForm.qml
 WorkspaceNavRow 1.0 display/WorkspaceNavRow.qml
 WorkspaceRuleRow 1.0 display/WorkspaceRuleRow.qml
 WorkspacesSurface 1.0 display/WorkspacesSurface.qml

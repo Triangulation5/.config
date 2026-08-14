@@ -2,6 +2,11 @@ module qs.modules.pill
 
 HoverFace 1.0 HoverFace.qml
 Nav 1.0 Nav.qml
+NavFace 1.0 NavFace.qml
+NavKeys 1.0 NavKeys.qml
+NavQuick 1.0 NavQuick.qml
+NavSettings 1.0 NavSettings.qml
 Pill 1.0 Pill.qml
+PillOverlay 1.0 PillOverlay.qml
 PillRoot 1.0 PillRoot.qml
 PillSurfaceLoader 1.0 PillSurfaceLoader.qml

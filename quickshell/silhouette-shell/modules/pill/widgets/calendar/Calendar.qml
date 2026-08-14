@@ -148,7 +148,7 @@ PillSurface {
         return fmtDay(loKey, false) + " – " + fmtDay(hiKey, false);
     }
 
-    readonly property real gridHeight: grid.y + rows * cellH + (rows - 1) * rowGap
+    readonly property real gridHeight: monthGrid.gridHeight
 
     /** The weather panel and the editor each add their column plus a divider gutter only when visible. */
     implicitWidth: gridW
@@ -175,16 +175,16 @@ PillSurface {
         : (todayVisible ? today.getDate() : 0)
     readonly property bool focused: focusDay > 0
     readonly property int focusIndex: offset + focusDay - 1
-    readonly property real cellW: grid.width / 7
-    readonly property real focusX: gridPane.x + grid.x + (focusIndex % 7 + 0.5) * cellW
-    readonly property real focusY: gridPane.y + grid.y + (Math.floor(focusIndex / 7) + 0.5) * (cellH + rowGap) - rowGap / 2
+    readonly property real cellW: monthGrid.cellWidth
+    readonly property real focusX: gridPane.x + monthGrid.gridX + (focusIndex % 7 + 0.5) * cellW
+    readonly property real focusY: gridPane.y + monthGrid.gridY + (Math.floor(focusIndex / 7) + 0.5) * (cellH + rowGap) - rowGap / 2
 
     readonly property point soulPoint: {
         void width;
         void height;
         if (Flags.showGlyphs)
-            return calGlyph.mapToItem(root, calGlyph.width / 2, -3 * s);
-        return monthLabel.mapToItem(root, -8 * s, monthLabel.height / 2);
+            return monthGrid.mapToItem(root, monthGrid.glyphCenter.x, monthGrid.glyphCenter.y);
+        return monthGrid.mapToItem(root, monthGrid.monthLabelCenter.x, monthGrid.monthLabelCenter.y);
     }
 
     ameForm: focused ? "ring" : "soul"
@@ -319,253 +319,11 @@ PillSurface {
         anchors.bottom: parent.bottom
         width: root.gridW
 
-        Item {
-            id: header
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 24 * root.s
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8 * root.s
-
-                Text {
-                    id: calGlyph
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Flags.showGlyphs
-                    text: "暦"
-                    color: Theme.cream
-                    font.family: Theme.fontJp
-                    font.weight: Font.Medium
-                    font.pixelSize: 16 * root.s
-                }
-                Text {
-                    id: monthLabel
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.loc.standaloneMonthName(root.viewMonth, Locale.LongFormat)
-                        + " " + root.viewYear
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 11 * root.s
-                    font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1.0 * root.s
-                }
-            }
-
-            Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2 * root.s
-
-                Repeater {
-                    model: [-1, 1]
-
-                    Rectangle {
-                        id: nav
-                        required property int modelData
-                        width: 22 * root.s
-                        height: 22 * root.s
-                        radius: Motion.rSmall * root.s
-                        color: navArea.containsMouse ? Theme.frameBg : "transparent"
-                        border.width: navArea.containsMouse ? 1 : 0
-                        border.color: Theme.frameBorder
-
-                        GlyphIcon {
-                            anchors.centerIn: parent
-                            width: 16 * root.s
-                            height: 16 * root.s
-                            name: nav.modelData < 0 ? "chevron-left" : "chevron-right"
-                            color: navArea.containsMouse ? Theme.cream : Theme.iconDim
-                            stroke: 1.8
-                        }
-
-                        MouseArea {
-                            id: navArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.shiftMonth(nav.modelData)
-                        }
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            id: divider
-            anchors.top: header.bottom
-            anchors.topMargin: 9 * root.s
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: Theme.hair
-        }
-
-        Row {
-            id: weekdays
-            anchors.top: divider.bottom
-            anchors.topMargin: 8 * root.s
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            Repeater {
-                model: 7
-
-                Item {
-                    id: wd
-                    required property int index
-                    readonly property bool weekend: index >= 5
-                    width: weekdays.width / 7
-                    height: 16 * root.s
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.loc.standaloneDayName((wd.index + 1) % 7, Locale.NarrowFormat)
-                        color: wd.weekend ? Theme.faint : Theme.dim
-                        font.family: Theme.font
-                        font.pixelSize: 9 * root.s
-                        font.weight: Font.Medium
-                        font.letterSpacing: 0.5 * root.s
-                    }
-                }
-            }
-        }
-
-        Grid {
-            id: grid
-            y: weekdays.y + weekdays.height + 4 * root.s
-            anchors.left: parent.left
-            anchors.right: parent.right
-            columns: 7
-            rowSpacing: root.rowGap
-            columnSpacing: 0
-
-            Repeater {
-                model: root.rows * 7
-
-                Item {
-                    id: cell
-                    required property int index
-                    readonly property int weekday: index % 7
-                    readonly property bool weekend: weekday >= 5
-                    width: grid.width / 7
-                    height: root.cellH
-
-                    readonly property int dayNum: index - root.offset + 1
-                    readonly property bool inMonth: dayNum >= 1 && dayNum <= root.monthLen
-                    readonly property bool current: inMonth && root.isToday(dayNum)
-                    readonly property string dayKey: inMonth ? root.dateKey(dayNum) : ""
-                    readonly property bool hasEvent: inMonth && Events.hasEvents(cell.dayKey)
-                    readonly property bool sel: inMonth && root.inRange(cell.dayKey)
-                    readonly property bool selEdge: cell.sel
-                        && (cell.dayKey === root.rangeLo || cell.dayKey === root.rangeHi)
-                    readonly property int ghostNum: dayNum < 1
-                        ? root.daysInMonth(root.viewYear, root.viewMonth - 1) + dayNum
-                        : dayNum - root.monthLen
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 22 * root.s
-                        height: 22 * root.s
-                        radius: Motion.rSmall * root.s
-                        color: cellArea.containsMouse && cell.inMonth && !cell.current
-                            ? Qt.rgba(0.94, 0.88, 0.84, 0.04) : "transparent"
-                    }
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 24 * root.s
-                        height: 24 * root.s
-                        radius: Motion.rSmall * root.s
-                        visible: cell.current || cell.sel
-                        color: cell.sel && !cell.current ? Qt.alpha(Theme.vermLit, 0.12) : Theme.frameBg
-                        border.width: 1
-                        border.color: cell.selEdge ? Qt.alpha(Theme.vermLit, 0.55)
-                            : (cell.sel ? Qt.alpha(Theme.vermLit, 0.22) : Theme.frameBorder)
-                    }
-
-                    /** Keyboard cursor ring: only on a plain day, so it never fights the sel / today frames. */
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 26 * root.s
-                        height: 26 * root.s
-                        radius: Motion.rSmall * root.s
-                        visible: cell.inMonth && root.keyDay === cell.dayNum && !cell.current && !cell.sel
-                        color: "transparent"
-                        border.width: 1.5
-                        border.color: Qt.alpha(Theme.vermLit, 0.55)
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: cell.inMonth ? cell.dayNum : cell.ghostNum
-                        color: cell.inMonth
-                            ? (cell.current ? Theme.todayWarm
-                                : (cell.hasEvent ? Theme.flameGlow
-                                    : (cell.weekend ? Theme.subtle : Theme.cream)))
-                            : Theme.ghost
-                        opacity: cell.inMonth && !cell.current && !cell.weekend && !cell.hasEvent ? 0.85 : 1.0
-                        font.family: Theme.font
-                        font.pixelSize: 11 * root.s
-                        font.weight: cell.current || cell.hasEvent ? Font.DemiBold : Font.Normal
-                        font.features: { "tnum": 1 }
-                    }
-
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.top: parent.verticalCenter
-                        anchors.topMargin: 9 * root.s
-                        visible: cell.hasEvent && !cell.current
-                        width: 3 * root.s
-                        height: 3 * root.s
-                        radius: width / 2
-                        color: Theme.flameGlow
-                    }
-
-                    MouseArea {
-                        id: cellArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        enabled: cell.inMonth
-                        cursorShape: cell.inMonth ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: if (cell.inMonth) {
-                            root.keyDay = cell.dayNum;
-                            root.selectDay(cell.dayNum);
-                        }
-                        onContainsMouseChanged: if (root.pickingEnd && cell.inMonth && containsMouse)
-                            root.hoverDay = cell.dayNum
-                    }
-                }
-            }
-        }
-
-        Text {
-            anchors.horizontalCenter: grid.horizontalCenter
-            anchors.top: grid.bottom
-            anchors.topMargin: 6 * root.s
-            visible: root.pickingEnd
-            text: "click the end day"
-            color: Theme.flameGlow
-            font.family: Theme.font
-            font.pixelSize: 9 * root.s
-            font.weight: Font.DemiBold
-            font.letterSpacing: 0.4 * root.s
-        }
-
-        MouseArea {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: grid.bottom
-            anchors.bottom: parent.bottom
-            enabled: root.editorShown && !root.pickingEnd
-            onClicked: {
-                root.selectedDate = "";
-                root.selEndDate = "";
-                root.pickingEnd = false;
-            }
+        MonthGrid {
+            id: monthGrid
+            anchors.fill: parent
+            s: root.s
+            host: root
         }
     }
 

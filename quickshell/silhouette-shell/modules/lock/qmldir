@@ -7,6 +7,8 @@ Clock 1.0 Clock.qml
 Content 1.0 Content.qml
 GlowField 1.0 GlowField.qml
 LinkSurface 1.0 LinkSurface.qml
+LockPlayer 1.0 LockPlayer.qml
 LockRoot 1.0 LockRoot.qml
+PasswordDots 1.0 PasswordDots.qml
 LockSurface 1.0 LockSurface.qml
 Profile 1.0 Profile.qml

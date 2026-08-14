@@ -10,7 +10,7 @@ import qs.services
  * reads directly. `quickChooserItem`, `minimizedRow` and `trayRow` are aliases
  * on the host for the child widgets this module drives.
  */
-QtObject {
+Item {
     id: nav
 
     required property var host
@@ -55,129 +55,14 @@ QtObject {
         return (host.recorderOpen && itemFor("recorder")) ? itemFor("recorder").stepFocused(deltaPct) : false;
     }
 
-    /**
-     * Resolve which settings-family surface owns keyboard row navigation right
-     * now: the category index or one of its morphing sub-surfaces. Returns null
-     * when none of them is open.
-     */
-    function rowNavSurface() {
-        if (host.settingsOpen)
-            return itemFor("settings");
-        if (host.appearanceOpen)
-            return itemFor("appearance");
-        if (host.lookOpen)
-            return itemFor("look");
-        if (host.inputOpen)
-            return itemFor("input");
-        if (host.displayOpen)
-            return itemFor("display");
-        if (host.animationOpen)
-            return itemFor("animation");
-        if (host.idlelockOpen)
-            return itemFor("idlelock");
-        if (host.fontpickerOpen)
-            return itemFor("fontpicker");
-        return null;
+    NavSettings {
+        id: navSettings
+        host: nav.host
     }
 
-    /**
-     * Move the focused settings row by `dir` (+1 down, -1 up), carrying the soul
-     * seam. Returns true when a settings-family surface is open and consumed it.
-     */
-    function settingsMove(dir) {
-        var nav = host.rowNavSurface();
-        if (!nav)
-            return false;
-        nav.kbMove(dir);
-        return true;
-    }
-
-    /**
-     * Left/right on an open settings surface: adjust the focused row's value
-     * (seg cycle, toggle flip, scrub bump). Returns false when the focused row
-     * is a nav row (nothing to adjust) so vim h/l fall through to back/enter
-     * instead of being swallowed.
-     */
-    function settingsAdjust(dir) {
-        var nav = host.rowNavSurface();
-        if (!nav || !nav.rows || nav.rows.length === 0)
-            return false;
-        var idx = nav.kbIndex < 0 ? 0 : nav.kbIndex;
-        if (idx >= nav.rows.length)
-            return false;
-        var r = nav.rows[idx];
-        if (!r || r.kind === "nav")
-            return false;
-        if (nav.kbIndex < 0) {
-            nav.kbIndex = 0;
-            nav.focusRowItem = nav.rows[0].item;
-        }
-        nav.kbAdjust(dir);
-        return true;
-    }
-
-    /**
-     * Activate the focused settings row: a toggle flips, a nav row opens its
-     * sub-surface. Returns true when a settings-family surface is open.
-     */
-    function settingsActivate() {
-        var nav = host.rowNavSurface();
-        if (!nav)
-            return false;
-        nav.kbActivate();
-        return true;
-    }
-
-    /**
-     * Slide the open keybinds list's focused row by `dir` (+1 down, -1 up),
-     * carrying the soul seam. No-op unless the keybinds surface is open.
-     */
-    function keybindsMove(dir) {
-        if (host.keybindsOpen && itemFor("keybinds"))
-            itemFor("keybinds").move(dir);
-    }
-
-    /**
-     * Enter on the open keybinds surface: arm chord capture on the focused row.
-     * No-op unless the keybinds surface is open.
-     */
-    function keybindsActivate() {
-        if (host.keybindsOpen && itemFor("keybinds"))
-            itemFor("keybinds").activate();
-    }
-
-    /**
-     * A tile was picked in the standalone quick-record chooser. Screen with several
-     * monitors flips to the inline sub-choice; otherwise each source kicks off its
-     * resolver (which counts down once the target is ready) and the chooser closes.
-     */
-    function quickChooseSource(kind) {
-        if (kind === "screen") {
-            if (ScreenRec.monitors.length > 1) {
-                ScreenRec.quickScreenChoosing = true;
-                return;
-            }
-            ScreenRec.prepareScreen(host.screenName);
-        } else if (kind === "window") {
-            ScreenRec.prepareWindow();
-        }
-        ScreenRec.quickChoosing = false;
-        ScreenRec.quickScreenChoosing = false;
-    }
-
-    function quickPickMonitor(name) {
-        ScreenRec.quickChoosing = false;
-        ScreenRec.quickScreenChoosing = false;
-        ScreenRec.prepareScreen(name);
-    }
-
-    /**
-     * Pop the open link surface one subview back. Returns true when the step was
-     * consumed, false when the surface is already at its root (or not open) and
-     * Escape should close the surface instead.
-     */
-    function linkBack() {
-        return (host.linkOpen && itemFor("link")) ? itemFor("link").back() : false;
+    NavQuick {
+        id: navQuick
+        host: nav.host
     }
 
     /**
@@ -225,18 +110,6 @@ QtObject {
             return;
         }
         host.requestClose();
-    }
-
-    /**
-     * Pop the open keybinds editor form back to the bind list. Returns true when a
-     * form was open and dismissed, false otherwise so Escape closes the surface.
-     */
-    function keybindsBack() {
-        if (host.keybindsOpen && itemFor("keybinds") && itemFor("keybinds").formOpen) {
-            itemFor("keybinds").closeForm();
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -350,13 +223,6 @@ QtObject {
         if (!host.localsendOpen || !itemFor("localsend"))
             return false;
         itemFor("localsend").activate();
-        return true;
-    }
-
-    function timerBack() {
-        if (!host.timerOpen || !itemFor("timer"))
-            return false;
-        host.requestClose();
         return true;
     }
 
@@ -533,125 +399,9 @@ QtObject {
      * chooser returns to the sources, the sources close the chooser. Returns
      * true when a chooser was open and consumed it.
      */
-    function recorderChooserBack() {
-        return (host.recorderOpen && itemFor("recorder")) ? itemFor("recorder").chooserBack() : false;
-    }
-
-    /**
-     * Move the standalone quick-record chooser's focus by `dir`: across the
-     * Screen / Window tiles, or the monitor tiles in the sub-choice. Returns
-     * true when the chooser consumed it.
-     */
-    function quickChooseMove(dir) {
-        if (!host.quickChoosing)
-            return false;
-        host.quickChooserItem.move(dir);
-        return true;
-    }
-
-    /** Return on the quick-record chooser: pick the focused tile. */
-    function quickChooseActivate() {
-        if (!host.quickChoosing)
-            return false;
-        host.quickChooserItem.activate();
-        return true;
-    }
-
-    /**
-     * Backspace on the quick-record chooser: the monitor sub-choice returns to
-     * the sources, the sources cancel the chooser. Returns true when consumed.
-     */
-    function quickChooseBack() {
-        if (!host.quickChoosing)
-            return false;
-        host.quickChooserItem.back();
-        return true;
-    }
-
-    readonly property var faceTargets: {
-        var out = [];
-        if (host.hasMedia) out.push("media");
-        if (host.minimizedRow.count > 0) out.push("minimized");
-        if (SystemTray.items.values.length > 0) out.push("tray");
-        out.push("clock");
-        return out;
-    }
-    readonly property int faceCount: faceTargets.length
-
-    function faceMove(dir) {
-        if (host.surfaceOpen || host.mode !== "hover" || faceCount < 2)
-            return false;
-        if (host.faceFocus < 0 || host.faceFocus >= faceCount)
-            host.faceFocus = 0;
-        var key = faceTargets[host.faceFocus];
-        /**
-         * While the ring sits on a per-icon widget, arrows walk its icons and
-         * step out to the neighbouring face target at the edges.
-         */
-        if (key === "minimized") {
-            if (host.minimizedRow.focusIndex < 0)
-                host.minimizedRow.focusIndex = 0;
-            if (dir < 0 && host.minimizedRow.focusIndex === 0)
-                host.faceFocus = (host.faceFocus - 1 + faceCount) % faceCount;
-            else if (dir > 0 && host.minimizedRow.focusIndex === host.minimizedRow.count - 1)
-                host.faceFocus = (host.faceFocus + 1) % faceCount;
-            else
-                host.minimizedRow.moveFocus(dir);
-            return true;
-        }
-        if (key === "tray") {
-            var nItems = SystemTray.items.values.length;
-            if (host.trayRow.focusIndex < 0)
-                host.trayRow.focusIndex = 0;
-            if (dir < 0 && host.trayRow.focusIndex === 0)
-                host.faceFocus = (host.faceFocus - 1 + faceCount) % faceCount;
-            else if (dir > 0 && host.trayRow.focusIndex === nItems - 1)
-                host.faceFocus = (host.faceFocus + 1) % faceCount;
-            else
-                host.trayRow.moveFocus(dir);
-            return true;
-        }
-        host.faceFocus = (host.faceFocus + dir + faceCount) % faceCount;
-        var landed = faceTargets[host.faceFocus];
-        if (landed === "minimized" && host.minimizedRow.focusIndex < 0)
-            host.minimizedRow.focusIndex = 0;
-        if (landed === "tray" && host.trayRow.focusIndex < 0)
-            host.trayRow.focusIndex = 0;
-        return true;
-    }
-
-    function faceActivate() {
-        if (host.surfaceOpen || host.mode !== "hover")
-            return false;
-        var key = host.faceFocus >= 0 && host.faceFocus < faceCount ? faceTargets[host.faceFocus] : "clock";
-        if (key === "media") {
-            host.requestSurface("media");
-        } else if (key === "minimized") {
-            if (host.minimizedRow.focusIndex < 0)
-                host.minimizedRow.focusIndex = 0;
-            host.minimizedRow.activate();
-        } else if (key === "tray") {
-            if (host.trayRow.focusIndex < 0)
-                host.trayRow.focusIndex = 0;
-            host.trayRow.activate();
-        } else {
-            host.openCalendarAt(null);
-        }
-        return true;
-    }
-
-    /**
-     * Escape/Backspace on the hover face: unpin if held and collapse the pill
-     * back to rest. Returns true when the face was showing and consumed it.
-     */
-    function faceBack() {
-        if (host.surfaceOpen || host.mode !== "hover")
-            return false;
-        if (host.pinned)
-            host.pinned = false;
-        host.hoverLatch = false;
-        host.host.faceFocus = -1;
-        return true;
+    NavFace {
+        id: navFace
+        host: nav.host
     }
 
     /**
@@ -688,109 +438,34 @@ QtObject {
      * which the key handlers in PillRoot read to accept the event. The pill
      * owns the routing so the per-monitor key handling stays a thin shell.
      */
-    function navUp() {
-        if (host.keybindsOpen && !host.keybindsListening) { host.keybindsMove(-1); return true; }
-        /** The recorder's chooser tiles are horizontal; don't step the faders behind it. */
-        if (host.recorderOpen && host.recorderChooserOpen)
-            return false;
-        return host.calendarMove("v", -1) || host.linkMove(-1) || host.mixerStep(1)
-            || host.recorderStep(5) || host.clipboardMove(-1)
-            || host.fontpickerMove(-1) || host.launcherMove(-1) || host.localsendMove(-1)
-            || host.workspacesMove(-1) || host.stashMove(-1) || host.spaceappsMove(-1)
-            || host.settingsMove(-1)
-            || (host.timerOpen && host.timerActivate());
-    }
-    function navDown() {
-        if (host.keybindsOpen && !host.keybindsListening) { host.keybindsMove(1); return true; }
-        if (host.recorderOpen && host.recorderChooserOpen)
-            return false;
-        return host.calendarMove("v", 1) || host.linkMove(1) || host.mixerStep(-1)
-            || host.recorderStep(-5) || host.clipboardMove(1)
-            || host.fontpickerMove(1) || host.launcherMove(1) || host.localsendMove(1)
-            || host.workspacesMove(1) || host.stashMove(1) || host.spaceappsMove(1)
-            || host.settingsMove(1)
-            || (host.timerOpen && host.timerActivate());
-    }
-    function navLeft() {
-        if (host.quickChoosing) return host.quickChooseMove(-1);
-        if (host.recorderChooserOpen) return host.recorderChooserMove(-1);
-        if (host.calendarOpen) return host.calendarMove("h", -1);
-        if (host.mixerOpen) { host.mixerFocusMove(-1); return true; }
-        if (host.wallpaperOpen) { host.wallpaperMove(-1); return true; }
-        if (host.powerOpen) { host.powerMove(-1); return true; }
-        if (host.recorderOpen) { host.recorderStep(-5); return true; }
-        if (host.linkOpen) return host.linkAdjust(-1);
-        if (host.settingsLike) return host.settingsAdjust(-1);
-        if (host.mode === "hover" && !host.surfaceOpen) return host.faceMove(-1);
-        return false;
-    }
-    function navRight() {
-        if (host.quickChoosing) return host.quickChooseMove(1);
-        if (host.recorderChooserOpen) return host.recorderChooserMove(1);
-        if (host.calendarOpen) return host.calendarMove("h", 1);
-        if (host.mixerOpen) { host.mixerFocusMove(1); return true; }
-        if (host.wallpaperOpen) { host.wallpaperMove(1); return true; }
-        if (host.powerOpen) { host.powerMove(1); return true; }
-        if (host.recorderOpen) { host.recorderStep(5); return true; }
-        if (host.linkOpen) return host.linkAdjust(1);
-        if (host.settingsLike) return host.settingsAdjust(1);
-        if (host.mode === "hover" && !host.surfaceOpen) return host.faceMove(1);
-        return false;
+    NavKeys {
+        id: navKeys
+        host: nav.host
     }
 
-    /**
-     * Vim `h` with no horizontal nav available: back out of the current menu,
-     * mirroring the Backspace chain (quick-record cancel, recorder chooser
-     * step-back, link subview pop, hover-face collapse, then surface back).
-     */
-    function vimBack() {
-        if (host.quickChoosing) {
-            host.quickChooseBack();
-        } else if (!host.recorderChooserBack() && !host.linkBack() && !host.faceBack()) {
-            host.surfaceBack();
-        }
-    }
-
-    /**
-     * Vim `l` with no horizontal nav available: enter the current menu,
-     * mirroring the Return chain (activate the focused item of the open
-     * surface, or the hover face when resting).
-     */
-    function vimEnter() {
-        if (host.quickChoosing) {
-            host.quickChooseActivate();
-        } else if (host.wallpaperOpen) {
-            host.wallpaperActivate();
-        } else if (host.powerOpen) {
-            host.powerPress();
-        } else if (host.recorderChooserOpen) {
-            host.recorderChooserActivate();
-        } else if (host.recorderOpen) {
-            host.recorderPress();
-        } else if (host.calendarOpen) {
-            host.calendarActivate();
-        } else if (host.linkOpen) {
-            host.linkActivate();
-        } else if (host.clipboardOpen) {
-            host.clipboardActivate();
-        } else if (host.fontpickerOpen) {
-            host.fontpickerActivate();
-        } else if (host.localsendOpen) {
-            host.localsendActivate();
-        } else if (host.timerOpen) {
-            host.timerActivate();
-        } else if (host.workspacesOpen) {
-            host.workspacesActivate();
-        } else if (host.stashOpen) {
-            host.stashActivate();
-        } else if (host.spaceappsOpen) {
-            host.spaceappsActivate();
-        } else if (host.keybindsOpen && !host.keybindsListening) {
-            host.keybindsActivate();
-        } else if (host.settingsLike) {
-            host.settingsActivate();
-        } else if (host.mode === "hover" && !host.surfaceOpen) {
-            host.faceActivate();
-        }
-    }
+    /** Forwards to the domain modules, keeping the pill's routing facade stable. */
+    function linkBack() { return navKeys.linkBack(); }
+    function keybindsBack() { return navKeys.keybindsBack(); }
+    function timerBack() { return navKeys.timerBack(); }
+    function recorderChooserBack() { return navKeys.recorderChooserBack(); }
+    function rowNavSurface() { return navSettings.rowNavSurface(); }
+    function settingsMove(dir) { return navSettings.settingsMove(dir); }
+    function settingsAdjust(dir) { return navSettings.settingsAdjust(dir); }
+    function settingsActivate() { return navSettings.settingsActivate(); }
+    function keybindsMove(dir) { return navSettings.keybindsMove(dir); }
+    function keybindsActivate() { return navSettings.keybindsActivate(); }
+    function quickChooseSource(kind) { return navQuick.quickChooseSource(kind); }
+    function quickPickMonitor(name) { return navQuick.quickPickMonitor(name); }
+    function quickChooseMove(dir) { return navQuick.quickChooseMove(dir); }
+    function quickChooseActivate() { return navQuick.quickChooseActivate(); }
+    function quickChooseBack() { return navQuick.quickChooseBack(); }
+    function faceMove(dir) { return navFace.faceMove(dir); }
+    function faceActivate() { return navFace.faceActivate(); }
+    function faceBack() { return navFace.faceBack(); }
+    function navUp() { return navKeys.navUp(); }
+    function navDown() { return navKeys.navDown(); }
+    function navLeft() { return navKeys.navLeft(); }
+    function navRight() { return navKeys.navRight(); }
+    function vimBack() { return navKeys.vimBack(); }
+    function vimEnter() { return navKeys.vimEnter(); }
 }
