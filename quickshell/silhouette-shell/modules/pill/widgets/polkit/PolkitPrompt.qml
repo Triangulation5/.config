@@ -77,17 +77,18 @@ PillSurface {
              */
             Rectangle {
                 id: lockBadge
-                width: 10 * root.s
-                height: 10 * root.s
-                radius: 8 * root.s
+                width: 32 * root.s
+                height: 32 * root.s
+                radius: 9 * root.s
                 color: Theme.frameBg
                 border.width: 1
                 border.color: Theme.frameBorder
 
                 GlyphIcon {
                     anchors.centerIn: parent
-                    width: 18 * root.s
-                    height: 18 * root.s
+                    anchors.verticalCenterOffset: -0.5 * root.s
+                    width: 20 * root.s
+                    height: 20 * root.s
                     name: "lock"
                     color: Theme.vermLit
                     stroke: 1.7
