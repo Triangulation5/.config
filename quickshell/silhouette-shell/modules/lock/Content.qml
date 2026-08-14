@@ -186,110 +186,13 @@ Item {
         }
     }
 
-    Column {
-        visible: content.isMain && content.hasPlayer && !content.clockExpanded
-        opacity: content.clockExpanded ? 0 : 1
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 220
-                easing.type: Easing.OutCubic
-            }
-        }
+    LockPlayer {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.leftMargin: parent.width * 0.045
         anchors.bottomMargin: parent.height * 0.075
-        spacing: 9 * content.s
-
-        Row {
-            spacing: 12 * content.s
-
-            Rectangle {
-                width: 53 * content.s
-                height: 53 * content.s
-                radius: 11 * content.s
-                anchors.verticalCenter: parent.verticalCenter
-                clip: true
-                color: "#1a100c"
-                Image {
-                    id: coverImg
-                    anchors.fill: parent
-                    visible: content.artUrl.length > 0
-                    source: content.artUrl
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true
-                    mipmap: true
-                    cache: false
-                    asynchronous: true
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        maskEnabled: true
-                        maskSource: coverMask
-                    }
-                }
-                Item {
-                    id: coverMask
-                    anchors.fill: parent
-                    layer.enabled: true
-                    visible: false
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 10 * content.s
-                    }
-                }
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 3 * content.s
-
-                Text {
-                    text: content.trackTitle.length > 0 ? content.trackTitle : "Unknown"
-                    color: Theme.bright
-                    font.family: Theme.font
-                    font.pixelSize: 12 * content.s
-                    font.weight: 600
-                    elide: Text.ElideRight
-                    width: 154 * content.s
-                }
-                Text {
-                    visible: content.metaLine.length > 0
-                    text: content.metaLine
-                    color: Theme.dim
-                    font.family: Theme.font
-                    font.pixelSize: 11 * content.s
-                    font.weight: 500
-                    elide: Text.ElideRight
-                    width: 154 * content.s
-                }
-            }
-        }
-
-        Item {
-            width: 220 * content.s
-            height: 2.2
-
-            Rectangle {
-                anchors.fill: parent
-                radius: 1
-                color: Theme.trackBg
-            }
-            Rectangle {
-                id: threadFill
-                width: parent.width * content.progress
-                height: parent.height
-                radius: 1
-                color: Theme.verm
-            }
-            Rectangle {
-                x: Math.min(parent.width - width, Math.max(0, threadFill.width - width / 2))
-                anchors.verticalCenter: parent.verticalCenter
-                width: 8 * content.s
-                height: 8 * content.s
-                radius: width / 2
-                color: Theme.cream
-            }
-        }
+        s: content.s
+        host: content
     }
 
     Rectangle {
@@ -439,118 +342,11 @@ Item {
                 }
             }
 
-            Row {
+            PasswordDots {
                 anchors.centerIn: parent
-                spacing: 7 * content.s
-                visible: input.text.length > 0 && !content.revealPassword
-
-                ListModel {
-                    id: passwordDots
-                }
-
-                Connections {
-                    target: input
-
-                    property int previousLength: 0
-
-                    function onTextChanged() {
-                        var current = input.text.length;
-
-                        if (current > previousLength) {
-                            for (var i = previousLength; i < current; ++i)
-                                passwordDots.append({});
-                        } else if (current < previousLength) {
-                            for (var j = previousLength; j > current; --j)
-                                passwordDots.remove(passwordDots.count - 1);
-                        }
-
-                        previousLength = current;
-                    }
-                }
-
-                Repeater {
-                    model: passwordDots
-
-                    Rectangle {
-                        id: dot
-
-                        width: 9 * content.s
-                        height: width
-                        radius: width / 2
-                        color: Theme.bright
-
-                        antialiasing: true
-                        smooth: true
-
-                        property real lift: -4 * content.s
-                        property real dotScale: 0.72
-                        property real dotOpacity: 0
-                        property real slideX: 0
-                        /** Declared so `index` resolves inside the compiled onCompleted handler. */
-                        required property int index
-
-                        opacity: dotOpacity
-                        scale: dotScale
-
-                        transform: Translate {
-                            x: dot.slideX
-                            y: dot.lift
-                        }
-
-                        layer.enabled: true
-                        layer.smooth: true
-                        layer.effect: MultiEffect {
-                            shadowEnabled: true
-                            shadowBlur: 0.55
-                            shadowVerticalOffset: 1
-                            shadowHorizontalOffset: 0
-                            shadowColor: Qt.rgba(0, 0, 0, 0.16)
-                        }
-
-                        Behavior on lift {
-                            SpringAnimation {
-                                spring: 4.8
-                                damping: 0.34
-                            }
-                        }
-
-                        Behavior on dotScale {
-                            SpringAnimation {
-                                spring: 5.5
-                                damping: 0.36
-                            }
-                        }
-
-                        Behavior on dotOpacity {
-                            NumberAnimation {
-                                duration: 90
-                                easing.type: Easing.OutQuad
-                            }
-                        }
-
-
-                        Behavior on slideX {
-                            NumberAnimation {
-                                duration: 220
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        Component.onCompleted: {
-                            dotOpacity = 1;
-                            dotScale = 1;
-                            lift = 0;
-
-                            if (index === passwordDots.count - 1) {
-                                slideX = 8 * content.s;
-
-                                Qt.callLater(function() {
-                                    slideX = 0;
-                                });
-                            }
-                        }
-                    }
-                }
+                s: content.s
+                host: content
+                field: input
             }
 
             Item {

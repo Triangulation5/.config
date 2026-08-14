@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.services
+import qs.modules.pill.widgets
 import qs.modules.pill.surfaces
 import qs.components.icons
 import qs.components.controls
@@ -382,119 +383,15 @@ PillSurface {
         }
 
         /** ── Device list — Link-surface-style rows ── */
-        ListView {
-            id: devList
+        LocalDeviceList {
             width: parent.width
-            height: count > 0 ? Math.min(count * 54 * root.s + (count - 1) * 4 * root.s, 280 * root.s) : 0
-            visible: height > 0 && !root.scanning
-            spacing: 4 * root.s
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            model: root.devices.length
-            interactive: count * 54 * root.s > 280 * root.s
-
-            delegate: Rectangle {
-                id: devRow
-                required property int index
-                width: devList.width
-                height: 54 * root.s
-                radius: 10 * root.s
-                color: index === root.selectedIndex ? Theme.frameBg
-                    : (devArea.containsMouse ? Qt.rgba(1, 1, 1, 0.035) : "transparent")
-                border.width: index === root.selectedIndex ? 1 : 0
-                border.color: index === root.selectedIndex ? Theme.frameBorder : "transparent"
-
-                Behavior on color { ColorAnimation { duration: 150 } }
-                Behavior on border.color { ColorAnimation { duration: 150 } }
-
-                readonly property var dev: root.devices[index]
-
-                MouseArea {
-                    id: devArea
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-                    onEntered: root.selectedIndex = index
-                    onClicked: root.sendTo(index)
-                }
-
-                Row {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 12 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 12 * root.s
-
-                    GlyphIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 18 * root.s; height: 18 * root.s
-                        name: "smartphone"
-                        color: index === root.selectedIndex ? Theme.cream : Theme.iconDim
-                        stroke: 2
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                    }
-
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3 * root.s
-
-                        Text {
-                            text: devRow.dev.name || devRow.dev.hostname || devRow.dev.alias || "Unknown device"
-                            color: index === root.selectedIndex ? Theme.cream : Theme.subtle
-                            font.family: Theme.font
-                            font.pixelSize: 12.5 * root.s
-                            font.weight: index === root.selectedIndex ? Font.DemiBold : Font.Normal
-                            elide: Text.ElideRight
-                            width: devList.width - 140 * root.s
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                        }
-                        Text {
-                            visible: (devRow.dev.hostname || devRow.dev.ip || devRow.dev.model || "").length > 0
-                            text: devRow.dev.model
-                                || (devRow.dev.hostname && devRow.dev.ip ? devRow.dev.hostname + " · " + devRow.dev.ip
-                                : (devRow.dev.hostname || devRow.dev.ip || ""))
-                            color: Theme.faint
-                            font.family: Theme.font
-                            font.pixelSize: 10 * root.s
-                            font.weight: Font.Medium
-                            elide: Text.ElideRight
-                            width: devList.width - 140 * root.s
-                        }
-                    }
-                }
-
-                /** Send action chip — aligned right on selected row. */
-                Rectangle {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 12 * root.s
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.sendFile.length > 0 && index === root.selectedIndex
-                    width: sendPillText.implicitWidth + 20 * root.s
-                    height: 28 * root.s
-                    radius: 14 * root.s
-                    color: root.sending ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0.94, 0.55, 0.38, 0.14)
-                    border.width: 1
-                    border.color: root.sending ? Theme.frameBorder : Qt.rgba(0.94, 0.55, 0.38, 0.22)
-
-                    Behavior on color { ColorAnimation { duration: 150 } }
-
-                    Text {
-                        id: sendPillText
-                        anchors.centerIn: parent
-                        text: root.sending ? "…" : "Send"
-                        color: root.sending ? Theme.subtle : Theme.flameGlow
-                        font.family: Theme.font
-                        font.pixelSize: 11 * root.s
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
-        }
-
-        WheelScroller {
-            anchors.fill: devList
             s: root.s
-            flick: devList
-            visible: height > 0 && devList.interactive
+            devices: root.devices
+            selectedIndex: root.selectedIndex
+            sendEnabled: root.sendFile.length > 0
+            sending: root.sending
+            scanning: root.scanning
+            onSendTo: (index) => root.sendTo(index)
         }
 
         Item {

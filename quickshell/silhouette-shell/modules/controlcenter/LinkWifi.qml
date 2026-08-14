@@ -358,127 +358,12 @@ Item {
         if (revealedSsid !== expandedSsid) hidePassword();
     }
 
-    Binding {
-        target: root.wifiDev
-        property: "scannerEnabled"
-        value: root.active && root.wifiOn
-        when: root.wifiDev !== null
+    WifiController {
+        id: wifiCtrl
+        host: root
     }
 
-    Timer {
-        id: scanTimer
-        interval: 10000
-        onTriggered: root.stopScan()
-    }
-
-    Process {
-        id: rescanProc
-        command: ["nmcli", "dev", "wifi", "rescan"]
-    }
-
-    Process {
-        id: secProc
-        command: ["nmcli", "-t", "-f", "SSID,SECURITY", "dev", "wifi", "list"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var map = {};
-                var lines = this.text.split("\n");
-                for (var i = 0; i < lines.length; i++) {
-                    if (!lines[i].length)
-                        continue;
-                    var parts = root.splitTerse(lines[i]);
-                    if (parts && parts.head.length)
-                        map[parts.head] = parts.tail;
-                }
-                root.securityMap = map;
-            }
-        }
-    }
-
-    Process {
-        id: profProc
-        command: ["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var set = {};
-                var lines = this.text.split("\n");
-                for (var i = 0; i < lines.length; i++) {
-                    var parts = root.splitTerse(lines[i]);
-                    if (parts && parts.head.length && parts.tail === "802-11-wireless")
-                        set[parts.head] = true;
-                }
-                root.knownProfiles = set;
-            }
-        }
-    }
-
-    Process {
-        id: connProc
-        stdinEnabled: true
-        stdout: StdioCollector {}
-        stderr: StdioCollector {}
-        onStarted: {
-            write(root.pendingPw + "\n");
-            root.pendingPw = "";
-        }
-        onExited: function(exitCode) {
-            root.connecting = false;
-            if (exitCode === 0) {
-                root.expandedSsid = "";
-                root.pwDraft = "";
-                root.connectFailed = false;
-                root.refresh();
-            } else {
-                root.connectFailed = true;
-                if (!root.attemptWasKnown && root.attemptSsid.length) {
-                    cleanupProc.command = ["nmcli", "connection", "delete", "id", root.attemptSsid];
-                    cleanupProc.running = true;
-                }
-            }
-        }
-    }
-
-    /**
-     * A failed `nmcli dev wifi connect` still leaves a connection profile
-     * named after the SSID behind; without deleting it the network would be
-     * treated as known on the next click and silently fail forever.
-     */
-    Process {
-        id: cleanupProc
-        onExited: root.refresh()
-    }
-
-    /**
-     * Drops a saved profile on Forget. The list refreshes on exit so the row
-     * loses its known/connected state and its lock falls back to dim.
-     */
-    Process {
-        id: forgetProc
-        onExited: root.refresh()
-    }
-
-    /**
-     * Reads one saved profile's PSK on demand. The result is held only as long as
-     * the row stays open; an empty result means the profile is open or stores no
-     * recoverable secret, surfaced by the row as a plain note.
-     */
-    Process {
-        id: revealProc
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.revealedPw = this.text.replace(/\n+$/, "");
-                root.revealResolved = true;
-            }
-        }
-    }
-
-    onNetsChanged: if (active) secRefresh.restart()
-
-    Timer {
-        id: secRefresh
-        interval: 1200
-        onTriggered: if (root.active) secProc.running = true
-    }
+    onNetsChanged: if (active) wifiCtrl.refreshSoon()
 
     /**
      * Keys the network list by SSID so a rescan diffs into the existing rows
@@ -492,111 +377,12 @@ Item {
         values: root.netsSorted
     }
 
-    Item {
-        id: header
+    WifiHeader {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 24 * root.s
-
-        Row {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 8 * root.s
-
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 17 * root.s
-                height: 17 * root.s
-
-                GlyphIcon {
-                    anchors.fill: parent
-                    name: "chevron-left"
-                    color: backArea.containsMouse ? Theme.cream : Theme.iconDim
-                    stroke: 1.8
-                }
-
-                MouseArea {
-                    id: backArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.back()
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "WIFI"
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.6 * root.s
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "· " + root.statusText
-                color: root.activeNet ? Theme.vermLit : Theme.faint
-                font.family: Theme.font
-                font.pixelSize: 9.5 * root.s
-                font.weight: Font.Medium
-                elide: Text.ElideRight
-            }
-        }
-
-        Row {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 12 * root.s
-
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.wifiOn
-                width: 16 * root.s
-                height: 16 * root.s
-
-                GlyphIcon {
-                    id: reloadGlyph
-                    anchors.fill: parent
-                    name: "reboot"
-                    color: root.scanning ? Theme.flameGlow : (reloadArea.containsMouse ? Theme.cream : Theme.iconDim)
-                    stroke: 1.8
-
-                    RotationAnimator {
-                        target: reloadGlyph
-                        running: root.scanning
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        loops: Animation.Infinite
-                        onRunningChanged: if (!running) reloadGlyph.rotation = 0
-                    }
-                }
-
-                MouseArea {
-                    id: reloadArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.scanning ? root.stopScan() : root.startScan()
-                }
-            }
-
-            LinkToggle {
-                s: root.s
-                anchors.verticalCenter: parent.verticalCenter
-                on: root.wifiOn
-                onToggled: {
-                    if (typeof Networking !== "undefined" && Networking)
-                        Networking.wifiEnabled = !Networking.wifiEnabled;
-                }
-            }
-        }
+        s: root.s
+        host: root
     }
 
     Rectangle {

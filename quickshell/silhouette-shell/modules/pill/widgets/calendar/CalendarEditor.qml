@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import qs.services
+import qs.modules.pill.widgets
 import qs.modules.settings
 import qs.components.icons
 import qs.components.controls
@@ -113,137 +114,12 @@ Item {
             width: parent.width
             height: 1
             color: Theme.hair
-        }
-
-        /** Capped so a day stacked with events scrolls instead of growing the surface. */
-        Item {
+        }        /** Capped so a day stacked with events scrolls instead of growing the surface. */
+        EventList {
             width: parent.width
-            height: edFlick.height
-
-            Flickable {
-                id: edFlick
-                width: parent.width
-                height: Math.min(edList.implicitHeight, 230 * surface.s)
-                contentHeight: edList.implicitHeight
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                onContentHeightChanged: returnToBounds()
-
-                Column {
-                    id: edList
-                    width: edFlick.width
-                    spacing: 4 * surface.s
-
-                    Text {
-                        visible: editor.dayEvents.length === 0
-                        text: "Nothing yet"
-                        color: Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 11 * surface.s
-                        font.weight: Font.Medium
-                        font.italic: true
-                    }
-
-                    Repeater {
-                        model: editor.dayEvents
-
-                        Rectangle {
-                            id: evRow
-                            required property var modelData
-                            width: edList.width
-                            height: evBody.implicitHeight + 12 * surface.s
-                            radius: Motion.rSmall * surface.s
-                            color: evArea.hovered ? Theme.frameBg : "transparent"
-
-                            /** "all day" or "09:00–10:00", a date span when multi-day, "every year" when recurring. */
-                            readonly property string meta: {
-                                var datePart = "";
-                                if (evRow.modelData.endDate && evRow.modelData.endDate.length > 0)
-                                    datePart = surface.fmtSpan(evRow.modelData.date, evRow.modelData.endDate);
-                                var t = evRow.modelData.time || "";
-                                var e = evRow.modelData.endTime || "";
-                                var timePart = t.length === 0 ? "all day"
-                                    : (e.length > 0 ? t + "–" + e : t);
-                                var base = datePart.length > 0 ? datePart + " · " + timePart : timePart;
-                                var r = evRow.modelData.recur;
-                                if (r === "year") return "every year · " + base;
-                                if (r === "month") return "every month · " + base;
-                                return base;
-                            }
-
-                            HoverHandler { id: evArea }
-
-                            Column {
-                                id: evBody
-                                anchors.left: parent.left
-                                anchors.leftMargin: 8 * surface.s
-                                anchors.right: evDel.left
-                                anchors.rightMargin: 6 * surface.s
-                                anchors.top: parent.top
-                                anchors.topMargin: 6 * surface.s
-                                spacing: 2 * surface.s
-
-                                Text {
-                                    text: evRow.modelData.text
-                                    width: parent.width
-                                    color: Theme.cream
-                                    font.family: Theme.font
-                                    font.pixelSize: 11 * surface.s
-                                    font.weight: Font.Medium
-                                    wrapMode: Text.Wrap
-                                    maximumLineCount: 4
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    text: evRow.meta
-                                    width: parent.width
-                                    color: Theme.flameGlow
-                                    font.family: Theme.font
-                                    font.pixelSize: 9 * surface.s
-                                    font.weight: Font.DemiBold
-                                    font.features: { "tnum": 1 }
-                                    wrapMode: Text.Wrap
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            Item {
-                                id: evDel
-                                anchors.right: parent.right
-                                anchors.rightMargin: 7 * surface.s
-                                anchors.top: parent.top
-                                anchors.topMargin: 7 * surface.s
-                                width: 16 * surface.s
-                                height: 16 * surface.s
-                                opacity: evArea.hovered ? 1 : 0.32
-                                Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-
-                                GlyphIcon {
-                                    anchors.fill: parent
-                                    name: "close"
-                                    color: delArea.containsMouse ? Theme.vermLit : Theme.iconDim
-                                    stroke: 1.6
-                                }
-
-                                MouseArea {
-                                    id: delArea
-                                    anchors.fill: parent
-                                    anchors.margins: -5 * surface.s
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: Events.remove(evRow.modelData.id)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            WheelScroller {
-                anchors.fill: parent
-                s: surface.s
-                flick: edFlick
-            }
+            s: surface ? surface.s : 0
+            surface: surface
+            events: editor.dayEvents
         }
 
         Rectangle {

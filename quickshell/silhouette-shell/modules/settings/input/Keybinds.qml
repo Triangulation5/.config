@@ -394,70 +394,9 @@ PillSurface {
 
         Item { width: 1; height: 8 * root.s }
 
-        Item {
-            width: parent.width
-            height: 28 * root.s
-            visible: !root.formOpen
-
-            Text {
-                id: searchGlyph
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                visible: Flags.showGlyphs
-                width: Flags.showGlyphs ? implicitWidth : 0
-                text: "探"
-                color: Theme.dim
-                font.family: Theme.fontJp
-                font.weight: Font.Medium
-                font.pixelSize: 15 * root.s
-            }
-
-            TextField {
-                id: searchField
-                anchors.left: searchGlyph.right
-                anchors.leftMargin: Flags.showGlyphs ? 9 * root.s : 0
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                background: null
-                padding: 0
-                color: Theme.cream
-                font.family: Theme.font
-                font.pixelSize: 13 * root.s
-                placeholderText: "search binds"
-                placeholderTextColor: Theme.faint
-                selectByMouse: true
-                selectionColor: Theme.verm
-                onTextChanged: {
-                    root.query = text;
-                    root.focusIndex = 0;
-                }
-                Keys.onPressed: (e) => {
-                    if (e.key === Qt.Key_Down) {
-                        root.move(1);
-                        e.accepted = true;
-                    } else if (e.key === Qt.Key_Up) {
-                        root.move(-1);
-                        e.accepted = true;
-                    } else if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) {
-                        root.activate();
-                        e.accepted = true;
-                    } else if (e.key === Qt.Key_Backspace && text.length === 0 && selectedText.length === 0) {
-                        root.requestSurface("settings");
-                        e.accepted = true;
-                    }
-                }
-            }
-
-            Rectangle {
-                anchors.left: searchField.left
-                anchors.right: searchField.right
-                anchors.top: searchField.bottom
-                anchors.topMargin: 3 * root.s
-                height: 1
-                color: Theme.faint
-                opacity: searchField.activeFocus ? 0.7 : 0.18
-                Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
-            }
+        KeybindSearch {
+            s: root.s
+            host: root
         }
 
         Item { width: 1; height: 8 * root.s }
@@ -486,51 +425,10 @@ PillSurface {
             }
         }
 
-        Item {
-            width: parent.width
-            height: 38 * root.s
-            visible: !root.formOpen
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.topMargin: 5 * root.s
-                anchors.bottomMargin: 5 * root.s
-                radius: 9 * root.s
-                color: addArea.containsMouse ? Qt.alpha(Theme.vermLit, 0.1) : "transparent"
-                border.width: 1
-                border.color: Qt.alpha(Theme.vermLit, (addArea.containsMouse || root.focusIndex === root.filtered.length) ? 0.6 : 0.32)
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 6 * root.s
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "+"
-                        color: Theme.vermLit
-                        font.family: Theme.font
-                        font.pixelSize: 14 * root.s
-                        font.weight: Font.Bold
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "add keybind"
-                        color: Theme.vermLit
-                        font.family: Theme.font
-                        font.pixelSize: 11 * root.s
-                        font.weight: Font.DemiBold
-                        font.letterSpacing: 0.5 * root.s
-                    }
-                }
-
-                MouseArea {
-                    id: addArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openAdd()
-                }
-            }
+        KeybindAddBar {
+            s: root.s
+            host: root
+            focused: root.focusIndex === root.filtered.length
         }
 
         KeybindForm {
