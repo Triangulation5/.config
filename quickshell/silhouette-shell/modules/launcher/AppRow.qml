@@ -163,7 +163,6 @@ Item {
             }
         }
 
-        /** Name over description, centred on the icon row. */
         Column {
             anchors.left: iconBg.right
             anchors.leftMargin: 10 * s

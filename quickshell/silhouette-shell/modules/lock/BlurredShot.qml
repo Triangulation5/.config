@@ -13,7 +13,6 @@ import QtQuick
 Item {
     id: root
 
-    /** The screenshot URL to blur. */
     property url source: ""
 
     /** Blur reach, in lock-surface scale units. */

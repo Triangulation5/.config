@@ -20,7 +20,6 @@ Group {
     s: look ? look.s : 1
     open: true
 
-    /** ── Exposed for Look.rows ── */
     property alias gapsInRow: gapsInRow
     property alias gapsInScrub: gapsInScrub
     property alias gapsOutRow: gapsOutRow

@@ -225,7 +225,6 @@ Column {
         }
     }
 
-    /** ── add view ── */
 
     Item {
         width: parent.width
