@@ -11,10 +11,10 @@ import qs.components.icons
  * prominent title, the action description and muted action-id caption flush
  * left beneath it, a full-width borderless themed password field, and
  * bottom-right Cancel / Authenticate buttons — rendered entirely
- * from the shell's Theme tokens so it stays native to the pill. The caret is
- * the shell's Ame flame: the pill's bead docks at the field's insertion point
- * and blinks in the "caret" form, exactly like the launcher's query field
- * (the default Qt caret is hidden). The prompt is deliberately
+ * from the shell's Theme tokens so it stays native to the pill. No caret is
+ * shown (the Ame flame stays hidden here): the field is a filled grey capsule,
+ * its fill and hairline border read the input even without a blinking cursor.
+ * The prompt is deliberately
  * non-dismissible: while `Polkit.pending` is live, PillRoot's close() refuses
  * to fire, so Escape, backdrop presses and the hide IPC all no-op. The only
  * way out is an explicit Cancel / Authenticate (or the agent resolving the
@@ -51,8 +51,7 @@ PillSurface {
         Polkit.cancel();
     }
 
-    ameForm: "caret"
-    amePoint: caretPointOf(field)
+    ameForm: "off"
 
     readonly property real padTop: 11 * root.s
     readonly property real padBottom: 10 * root.s
@@ -79,8 +78,8 @@ PillSurface {
              */
             Rectangle {
                 id: lockBadge
-                width: 26 * root.s
-                height: 26 * root.s
+                width: 10 * root.s
+                height: 10 * root.s
                 radius: 8 * root.s
                 color: Theme.frameBg
                 border.width: 1
@@ -88,8 +87,8 @@ PillSurface {
 
                 GlyphIcon {
                     anchors.centerIn: parent
-                    width: 15 * root.s
-                    height: 15 * root.s
+                    width: 18 * root.s
+                    height: 18 * root.s
                     name: "lock"
                     color: Theme.vermLit
                     stroke: 1.7
@@ -136,13 +135,16 @@ PillSurface {
 
         Item { width: 1; height: 10 * root.s }
 
-        /** Section: password field — borderless capsule, focus shown by the caret. */
+        /** Section: password field — filled grey capsule with a hairline border. */
         Rectangle {
             id: fieldRect
             width: parent.width
             height: 38 * root.s
             radius: height / 2
-            color: Theme.capsule
+            /** Lifted capsule grey + the standard tile border so the field reads as a filled input against the pill body. */
+            color: Qt.lighter(Theme.capsule, 1.25)
+            border.width: 1
+            border.color: Theme.border
 
             TextInput {
                 id: field

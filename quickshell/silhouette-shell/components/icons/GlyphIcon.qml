@@ -10,10 +10,10 @@ import qs.services
  * item's size. Each glyph's actual bounding box is centred within the item on
  * both axes, so glyphs with differing path extents share one optical baseline.
  *
- * `speaker-level` and `sun-level` are progress-driven: pass a 0-1 `progress` and
- * the icon itself renders the level — volume lights one curved sound wave per
- * 33.33% off the cone, all at full colour; sun rays lengthen — inside a fixed
- * optical box so nothing shifts with it.
+ * `speaker-level` renders the plain speaker icon (the OSD shows the volume on
+ * its own fill bar); `sun-level` is progress-driven — pass a 0-1 `progress` and
+ * the sun's eight rays lengthen with it, inside a fixed optical box so nothing
+ * shifts.
  */
 Item {
     id: root
@@ -115,41 +115,6 @@ Item {
     /** Round to two decimals so computed path strings stay compact. */
     function r2(x) { return Math.round(x * 100) / 100; }
 
-    /** Arc path from angle a1 to a2 (radians, y-down), sweeping clockwise. */
-    function arc(cx, cy, r, a1, a2) {
-        var x1 = cx + r * Math.cos(a1);
-        var y1 = cy + r * Math.sin(a1);
-        var x2 = cx + r * Math.cos(a2);
-        var y2 = cy + r * Math.sin(a2);
-        var large = Math.abs(a2 - a1) > Math.PI ? 1 : 0;
-        return "M" + r2(x1) + " " + r2(y1)
-            + " A" + r2(r) + " " + r2(r) + " 0 " + large + " 1 " + r2(x2) + " " + r2(y2);
-    }
-
-    /**
-     * Level speaker: the cone stays put and up to three curved sound waves arc
-     * off it, one per 33.33% of volume, all at full glyph colour. Waves match
-     * the base speaker glyph's gentle ±50° arc style, not full half-circles.
-     * Returns the cone and wave paths separately so each wave can carry its
-     * own path and a thinner stroke that keeps gaps.
-     */
-    function levelSpeaker(v) {
-        var t = Math.max(0, Math.min(1, v));
-        /**
-         * Epsilon absorbs Pipewire's fixed-point rounding (volume is stored as
-         * round(pct * 65536) / 65536, so exactly "33%" lands a hair under 1/3)
-         * plus float error, without reaching the next wave's step of 1.0.
-         */
-        var n = Math.floor(t * 3 + 0.001);
-        var bars = [];
-        var sweep = 50 * Math.PI / 180;
-        for (var i = 0; i < n; i++) {
-            var r = 3 + i * 3;
-            bars.push(arc(14.4, 12, r, -sweep, sweep));
-        }
-        return { cone: "M4 9v6h4l5 4V5L8 9z", bars: bars, fill: false, fixed: true };
-    }
-
     /**
      * Level sun: the core stays put and its eight rays lengthen with
      * brightness, so the glyph itself reads as the level.
@@ -173,30 +138,12 @@ Item {
     readonly property var g: {
         switch (name) {
         case "speaker-level":
-            return levelSpeaker(root.progress);
+            return { d: "M4 9v6h4l5 4V5L8 9z M16 9.5a3 3 0 0 1 0 5 M18.5 7.5a6 6 0 0 1 0 9", fill: false, fixed: true };
         case "sun-level":
             return { d: levelSun(root.progress), fill: false, fixed: true };
         default:
             return glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false });
         }
-    }
-
-    /**
-     * Path for bar `i` of the level speaker (empty when the glyph isn't a
-     * speaker-level or the bar isn't lit).
-     */
-    function barPath(i) {
-        var b = root.g.bars;
-        return b !== undefined && i < b.length ? b[i] : "";
-    }
-
-    /**
-     * Brightness of bar `i`: lit waves render at the full glyph colour, unlit
-     * ones are invisible — no per-level dimming, so the set always reads even.
-     */
-    function barAlpha(i) {
-        var b = root.g.bars;
-        return b !== undefined && i < b.length ? 1 : 0;
     }
 
     Shape {
@@ -224,47 +171,6 @@ Item {
             capStyle: ShapePath.RoundCap
             joinStyle: ShapePath.RoundJoin
             PathSvg { path: root.g.d !== undefined ? root.g.d : root.g.cone }
-        }
-
-        /**
-         * Volume level waves: one ShapePath each so every wave carries its own
-         * brightness. Stroked thinner than the cone so the arcs stay distinct
-         * instead of blurring into one block.
-         */
-        ShapePath {
-            strokeColor: Qt.alpha(root.color, root.barAlpha(0))
-            fillColor: "transparent"
-            strokeWidth: Math.max(0.9, root.stroke * 0.55)
-            capStyle: ShapePath.RoundCap
-            PathSvg { path: root.barPath(0) }
-        }
-        ShapePath {
-            strokeColor: Qt.alpha(root.color, root.barAlpha(1))
-            fillColor: "transparent"
-            strokeWidth: Math.max(0.9, root.stroke * 0.55)
-            capStyle: ShapePath.RoundCap
-            PathSvg { path: root.barPath(1) }
-        }
-        ShapePath {
-            strokeColor: Qt.alpha(root.color, root.barAlpha(2))
-            fillColor: "transparent"
-            strokeWidth: Math.max(0.9, root.stroke * 0.55)
-            capStyle: ShapePath.RoundCap
-            PathSvg { path: root.barPath(2) }
-        }
-        ShapePath {
-            strokeColor: Qt.alpha(root.color, root.barAlpha(3))
-            fillColor: "transparent"
-            strokeWidth: Math.max(0.9, root.stroke * 0.55)
-            capStyle: ShapePath.RoundCap
-            PathSvg { path: root.barPath(3) }
-        }
-        ShapePath {
-            strokeColor: Qt.alpha(root.color, root.barAlpha(4))
-            fillColor: "transparent"
-            strokeWidth: Math.max(0.9, root.stroke * 0.55)
-            capStyle: ShapePath.RoundCap
-            PathSvg { path: root.barPath(4) }
         }
     }
 }

@@ -376,112 +376,24 @@ PillSurface {
         color: Theme.hair
     }
 
-    Item {
+    CalcRow {
         id: calcRow
-        visible: root.calcActive
-        anchors.top: divider.bottom
-        anchors.topMargin: 6 * root.s
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: visible ? 44 * root.s : 0
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 9 * root.s
-            color: Theme.frameBg
-            border.width: 1
-            border.color: Theme.frameBorder
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.copyResult()
-        }
-
-        Item {
-            anchors.fill: parent
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-
-            Column {
-                anchors.left: parent.left
-                anchors.right: copyHint.left
-                anchors.rightMargin: 8 * root.s
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 1 * root.s
-
-                Text {
-                    width: parent.width
-                    text: "= " + root.calc.display
-                    color: Theme.bright
-                    font.family: Theme.font
-                    font.pixelSize: 15 * root.s
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-                Text {
-                    width: parent.width
-                    text: root.query
-                    color: Theme.faint
-                    font.family: Theme.font
-                    font.pixelSize: 10.5 * root.s
-                    elide: Text.ElideRight
-                }
-            }
-
-            Text {
-                id: copyHint
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.calcCopied ? "copied" : "↵ copy"
-                color: root.calcCopied ? Theme.dim : Theme.vermLit
-                font.family: Theme.font
-                font.pixelSize: 11 * root.s
-            }
-        }
-    }
-
-    PrefixRow {
-        id: aiRow
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
         s: root.s
-        glyph: "sparkles"
-        title: root.aiActive ? "Ask Perplexity" : ""
-        query: root.aiQuery
-        hint: "↵ ask"
-        onClicked: root.runAI()
+        host: root
     }
 
-    PrefixRow {
-        id: commandRow
+    ModeRows {
+        id: modeRows
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
         s: root.s
-        glyph: "search"
-        title: root.commandActive ? "Search the web" : ""
-        query: root.commandQuery
-        hint: "↵ search"
-        onClicked: root.runWebSearch()
-    }
-
-    PrefixRow {
-        id: terminalRow
-        anchors.top: divider.bottom
-        anchors.topMargin: 6 * root.s
-        anchors.left: parent.left
-        anchors.right: parent.right
-        s: root.s
-        glyph: "terminal"
-        title: root.terminalActive ? "Run in terminal" : ""
-        query: root.terminalCommand
-        hint: "↵ run"
-        onClicked: root.runInTerminal()
+        host: root
     }
 
     Text {
@@ -495,118 +407,26 @@ PillSurface {
 
     /** ── Emoji grid ── */
 
-    GridView {
-        id: emojiGrid
-        visible: root.emojiActive
+    EmojiGrid {
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        cellWidth: 40 * root.s
-        cellHeight: 40 * root.s
-        model: root.emojiResults.length
-        currentIndex: root.selectedIndex
-
-        delegate: Rectangle {
-            required property int index
-            width: emojiGrid.cellWidth - 2 * root.s
-            height: emojiGrid.cellHeight - 2 * root.s
-            radius: 8 * root.s
-            color: index === root.selectedIndex ? Theme.frameBg : (emoArea.containsMouse ? Qt.rgba(0.94, 0.88, 0.84, 0.04) : "transparent")
-            border.width: index === root.selectedIndex ? 1 : 0
-            border.color: Theme.frameBorder
-
-            readonly property var emoji: root.emojiResults[index]
-
-            Text {
-                anchors.centerIn: parent
-                text: parent.emoji ? parent.emoji.e : ""
-                font.pixelSize: 22 * root.s
-            }
-
-            MouseArea {
-                id: emoArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    root.selectedIndex = index;
-                    root.copyEmoji();
-                }
-                onEntered: root.selectedIndex = index
-            }
-        }
-
-        WheelScroller {
-            anchors.fill: parent
-            s: root.s
-            flick: emojiGrid
-        }
-    }
-
-    /** Emoji name label bar when emoji mode is active. */
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 2 * root.s
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: nameLabel.implicitWidth + 20 * root.s
-        height: visible ? 22 * root.s : 0
-        radius: 6 * root.s
-        color: Qt.rgba(0, 0, 0, 0.4)
-        visible: root.emojiActive && root.emojiResults.length > 0 && root.selectedIndex < root.emojiResults.length
-
-        Text {
-            id: nameLabel
-            anchors.centerIn: parent
-            text: root.emojiCopied ? "Copied!" : (root.emojiResults[root.selectedIndex] ? root.emojiResults[root.selectedIndex].n : "")
-            color: root.emojiCopied ? Theme.vermLit : Theme.cream
-            font.family: Theme.font
-            font.pixelSize: 10.5 * root.s
-        }
+        s: root.s
+        host: root
     }
 
     /** ── Window list ── */
 
-    Text {
-        anchors.centerIn: winList
-        visible: root.windowActive && root.windowResults.length === 0
-        text: root.windowQuery.length ? "No windows match" : "No windows open"
-        color: Theme.faint
-        font.family: Theme.font
-        font.pixelSize: 10.5 * root.s
-    }
-
-    ListView {
-        id: winList
-        visible: root.windowActive
+    WinList {
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        spacing: 5 * root.s
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        model: root.windowResults.length
-
-        delegate: WindowRow {
-            required property int index
-            surface: root
-            s: root.s
-            win: root.windowResults[index]
-            selected: root.selectedIndex === index
-            resolvedIcon: root.iconForWindow(root.windowResults[index] ? root.windowResults[index].cls : "")
-        }
-    }
-
-    WheelScroller {
-        anchors.fill: winList
-        visible: root.windowActive
         s: root.s
-        flick: winList
+        host: root
     }
 
     /** ── App list ── */
@@ -615,9 +435,7 @@ PillSurface {
         id: list
         visible: !root.aiActive && !root.commandActive && !root.terminalActive && !root.emojiActive && !root.windowActive
         anchors.top: root.calcActive ? calcRow.bottom
-            : (root.aiActive ? aiRow.bottom
-            : (root.commandActive ? commandRow.bottom
-            : (root.terminalActive ? terminalRow.bottom : divider.bottom)))
+            : (modeRows.active ? modeRows.bottom : divider.bottom)
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
         anchors.right: parent.right

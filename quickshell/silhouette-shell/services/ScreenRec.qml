@@ -245,8 +245,8 @@ Singleton {
      * True while a recording is live or a region/window picker is still up, so
      * the surface and the resolvers never stack a second pick on a busy backend.
      */
-    readonly property bool picking: windowProc.running
-    readonly property bool busy: recording || recProc.running || picking
+    readonly property bool picking: recEngine.windowProc.running
+    readonly property bool busy: recording || recEngine.recProc.running || picking
 
     /**
      * Resolve a whole-screen target synchronously to a monitor connector name
@@ -274,7 +274,7 @@ Singleton {
             targetReady("screen");
             return;
         }
-        windowProc.running = true;
+        recEngine.windowProc.running = true;
     }
 
     function buildArgs(captureToken, file) {
@@ -341,18 +341,18 @@ Singleton {
      * directory exists, then launches gsr.
      */
     function start(captureToken) {
-        if (recording || recProc.running)
+        if (recording || recEngine.recProc.running)
             return;
         lastToken = captureToken;
         var file = outDir + "/recording_" + timestamp() + ".mp4";
-        mkdirProc.command = ["mkdir", "-p", outDir];
-        mkdirProc.pendingToken = captureToken;
-        mkdirProc.pendingFile = file;
-        mkdirProc.running = true;
+        recEngine.mkdirProc.command = ["mkdir", "-p", outDir];
+        recEngine.mkdirProc.pendingToken = captureToken;
+        recEngine.mkdirProc.pendingFile = file;
+        recEngine.mkdirProc.running = true;
         if (usingFallback && !fallbackWarned) {
             fallbackWarned = true;
-            warnProc.command = ["notify-send", "-a", "SilhouetteShell", "Recording with ffmpeg fallback", backendNote];
-            warnProc.running = true;
+            recEngine.warnProc.command = ["notify-send", "-a", "SilhouetteShell", "Recording with ffmpeg fallback", backendNote];
+            recEngine.warnProc.running = true;
         }
     }
 
@@ -367,11 +367,11 @@ Singleton {
              * finalise and save.
              */
             var name = currentFile.substring(currentFile.lastIndexOf("/") + 1);
-            stopProc.command = ["pkexec", "sh", "-c", "pkill -SIGINT -f \"$1\"", "sh", name];
+            recEngine.stopProc.command = ["pkexec", "sh", "-c", "pkill -SIGINT -f \"$1\"", "sh", name];
         } else {
-            stopProc.command = ["pkill", "-SIGINT", "-f", "(^|/)gpu-screen-recorder"];
+            recEngine.stopProc.command = ["pkill", "-SIGINT", "-f", "(^|/)gpu-screen-recorder"];
         }
-        stopProc.running = true;
+        recEngine.stopProc.running = true;
     }
 
     /**
@@ -382,9 +382,9 @@ Singleton {
      * a thumb run already in flight is left to finish rather than stacked.
      */
     function refreshRecent() {
-        if (thumbProc.running)
+        if (recEngine.thumbProc.running)
             return;
-        thumbProc.running = true;
+        recEngine.thumbProc.running = true;
     }
 
     /**
@@ -402,13 +402,13 @@ Singleton {
     }
 
     function openFile(path) {
-        openProc.command = ["xdg-open", path];
-        openProc.running = true;
+        recEngine.openProc.command = ["xdg-open", path];
+        recEngine.openProc.running = true;
     }
 
     function openDir() {
-        openProc.command = ["xdg-open", outDir];
-        openProc.running = true;
+        recEngine.openProc.command = ["xdg-open", outDir];
+        recEngine.openProc.running = true;
     }
 
     /**
@@ -418,210 +418,15 @@ Singleton {
      * the directory unchanged.
      */
     function pickDir() {
-        pickProc.command = ["sh", "-c",
+        recEngine.pickProc.command = ["sh", "-c",
             "d=\"$1\"; if command -v kdialog >/dev/null 2>&1; then kdialog --getexistingdirectory \"$d\"; else zenity --file-selection --directory --filename=\"$d/\"; fi",
             "_", outDir];
-        pickProc.running = true;
+        recEngine.pickProc.running = true;
     }
 
-    Process {
-        id: openProc
-    }
-
-    Process {
-        id: pickProc
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var dir = this.text.trim();
-                if (dir.length > 0)
-                    Flags.recordDir = dir;
-            }
-        }
-    }
-
-    /**
-     * Combined Window / Region picker: feeds each Hyprland client's current
-     * rectangle to `slurp`, so clicking a window snaps to its `WxH+X+Y` geometry
-     * while dragging draws a freeform region. The rectangle is captured
-     * statically, so a window moved or resized after the pick is not followed.
-     * Empty pick or non-zero exit (Escape) aborts.
-     */
-    Process {
-        id: windowProc
-        command: ["sh", "-c", "hyprctl clients -j | jq -r '.[] | \"\\(.at[0]),\\(.at[1]) \\(.size[0])x\\(.size[1])\"' | slurp -f \"%wx%h+%x+%y\""]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var geom = this.text.trim();
-                if (geom.length > 0)
-                    root.targetReady(geom);
-                else
-                    root.targetAborted();
-            }
-        }
-        onExited: function(exitCode) {
-            if (exitCode !== 0)
-                root.targetAborted();
-        }
-    }
-
-    Process {
-        id: mkdirProc
-        property string pendingToken: ""
-        property string pendingFile: ""
-        onExited: {
-            root.currentFile = pendingFile;
-            if (root.backend === "ffmpeg") {
-                ffPrepProc.pendingToken = pendingToken;
-                ffPrepProc.pendingFile = pendingFile;
-                ffPrepProc.running = true;
-            } else {
-                recProc.command = root.buildArgs(pendingToken, pendingFile);
-                recProc.running = true;
-            }
-        }
-    }
-
-    /**
-     * ffmpeg fallback pre-flight: resolve the DRM card and the pulse sink /
-     * source at start (they can change between recordings), then launch.
-     */
-    Process {
-        id: ffPrepProc
-        property string pendingToken: ""
-        property string pendingFile: ""
-        command: ["sh", "-c",
-            "dev=$(ls /dev/dri/card* 2>/dev/null | head -n 1); echo \"dev=$dev\"; " +
-            "sink=$(pactl get-default-sink 2>/dev/null); echo \"sink=$sink\"; " +
-            "src=$(pactl get-default-source 2>/dev/null); echo \"src=$src\""]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var lines = this.text.split("\n");
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim();
-                    if (line.indexOf("dev=") === 0)
-                        root.ffDrmDev = line.slice(4);
-                    else if (line.indexOf("sink=") === 0)
-                        root.ffSinkMon = line.slice(5);
-                    else if (line.indexOf("src=") === 0)
-                        root.ffMicSrc = line.slice(4);
-                }
-                root.currentFile = pendingFile;
-                recProc.command = root.buildArgs(pendingToken, pendingFile);
-                recProc.running = true;
-            }
-        }
-    }
-
-    /**
-     * The live recorder. Its own lifecycle drives `recording` so start/stop UI is
-     * immediate instead of waiting up to a poll cycle: onStarted marks running,
-     * onExited marks stopped. The poll stays an external reconciler. A clean stop
-     * (SIGINT) finalises and exits zero and the saved file is announced; a
-     * non-zero exit before it ever reached the recording state means gsr failed to
-     * start, so its stderr is surfaced and no save is announced.
-     */
-    Process {
-        id: recProc
-        stderr: StdioCollector { id: recErr }
-        onStarted: {
-            root.recording = true;
-            root.fallbackRetried = false;
-        }
-        onExited: function(exitCode) {
-            var wasLive = root.recording;
-            root.recording = false;
-            if (exitCode !== 0) {
-                /**
-                 * gsr died before it ever reached the recording state: that's
-                 * a start failure, so retry once through the ffmpeg fallback
-                 * instead of dropping the recording.
-                 */
-                if (!wasLive && root.backend === "gsr" && !root.fallbackRetried && root.lastToken.length > 0) {
-                    root.fallbackRetried = true;
-                    root.useFallback("gpu-screen-recorder failed to start — recording with ffmpeg (full screen, root capture)");
-                    root.start(root.lastToken);
-                    return;
-                }
-                var msg = recErr.text.trim();
-                failProc.command = ["notify-send", "-a", "SilhouetteShell", "-u", "critical",
-                    "Recording failed", msg.length > 0 ? msg : (root.backend === "ffmpeg" ? "ffmpeg exited " + exitCode : "gpu-screen-recorder exited " + exitCode)];
-                failProc.running = true;
-            } else {
-                savedProc.running = true;
-                Qt.callLater(root.refreshRecent);
-            }
-        }
-    }
-
-    /** One-shot notify when the ffmpeg fallback engages on a recording. */
-    Process {
-        id: warnProc
-    }
-
-    /**
-     * Backend probe: if gpu-screen-recorder is not on PATH the session records
-     * with the ffmpeg fallback from the start.
-     */
-    Process {
-        id: probeProc
-        command: ["sh", "-c", "command -v gpu-screen-recorder || true"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (this.text.trim().length === 0)
-                    root.useFallback("gpu-screen-recorder not found — recording with ffmpeg");
-            }
-        }
-    }
-
-    Process {
-        id: failProc
-    }
-
-    Process {
-        id: stopProc
-    }
-
-    Process {
-        id: savedProc
-        command: ["notify-send", "-a", "SilhouetteShell", "Recording saved",
-            root.currentFile.substring(root.currentFile.lastIndexOf("/") + 1)]
-    }
-
-    Process {
-        id: thumbProc
-        command: ["sh", root.thumbScript, root.outDir]
-        onExited: listProc.running = true
-    }
-
-    Process {
-        id: listProc
-        command: ["sh", "-c",
-            "d=\"$1\"; [ -d \"$d\" ] || exit 0; find \"$d\" -maxdepth 1 -type f -name 'recording_*.mp4' -printf '%T@\\t%s\\t%p\\n' | sort -rn | head -n 40",
-            "_", root.outDir]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var lines = this.text.split("\n");
-                var out = [];
-                for (var i = 0; i < lines.length; i++) {
-                    var cols = lines[i].split("\t");
-                    if (cols.length < 3)
-                        continue;
-                    var mtime = parseFloat(cols[0]);
-                    if (mtime <= Flags.recordClearedBefore)
-                        continue;
-                    var path = cols[2];
-                    var name = path.substring(path.lastIndexOf("/") + 1);
-                    out.push({
-                        path: path,
-                        name: name,
-                        mtime: mtime,
-                        sizeLabel: root.humanSize(parseFloat(cols[1])),
-                        thumb: root.thumbDir + name.replace(/\.mp4$/, "") + ".jpg"
-                    });
-                }
-                root.recent = out;
-            }
-        }
+    RecEngine {
+        id: recEngine
+        host: root
     }
 
     function humanSize(bytes) {
@@ -634,35 +439,9 @@ Singleton {
         return bytes + " B";
     }
 
-    /**
-     * Poll the real recorder process so the flag tracks gsr started or stopped
-     * from anywhere, not just this surface. On a save the recent list re-reads so
-     * the new file appears.
-     */
-    Process {
-        id: pollProc
-        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder|kmsgrab"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var running = this.text.trim().length > 0;
-                if (running !== root.recording) {
-                    root.recording = running;
-                    if (!running)
-                        Qt.callLater(root.refreshRecent);
-                }
-            }
-        }
-    }
-
-    Timer {
-        interval: 1000
-        running: root.recording || root.recorderOpen
-        repeat: true
-        onTriggered: if (!pollProc.running) pollProc.running = true
-    }
 
     Component.onCompleted: {
         refreshRecent();
-        probeProc.running = true;
+        recEngine.probeProc.running = true;
     }
 }
