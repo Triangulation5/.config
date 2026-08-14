@@ -67,6 +67,7 @@ PillSurface {
         anchors.rightMargin: root.sidePad
         spacing: 0
 
+        /** Section: header — lock badge + title. */
         Row {
             width: parent.width
             spacing: 12 * root.s
@@ -77,18 +78,17 @@ PillSurface {
              */
             Rectangle {
                 id: lockBadge
-                width: 32 * root.s
-                height: 32 * root.s
-                radius: 9 * root.s
+                width: 10 * root.s
+                height: 10 * root.s
+                radius: 8 * root.s
                 color: Theme.frameBg
                 border.width: 1
                 border.color: Theme.frameBorder
 
                 GlyphIcon {
                     anchors.centerIn: parent
-                    anchors.verticalCenterOffset: -0.5 * root.s
-                    width: 20 * root.s
-                    height: 20 * root.s
+                    width: 18 * root.s
+                    height: 18 * root.s
                     name: "lock"
                     color: Theme.vermLit
                     stroke: 1.7
@@ -109,6 +109,7 @@ PillSurface {
 
         Item { width: 1; height: 7 * root.s }
 
+        /** Section: subtext — description + action id, flush left under the header. */
         Text {
             width: parent.width
             text: Polkit.message.length > 0 ? Polkit.message : "Enter your password to continue"
@@ -134,13 +135,13 @@ PillSurface {
 
         Item { width: 1; height: 10 * root.s }
 
+        /** Section: password field — filled grey capsule with a hairline border. */
         Rectangle {
             id: fieldRect
             width: parent.width
             height: 38 * root.s
             radius: height / 2
-            /** Lifted capsule grey + the standard tile border so the field
-             * reads as a filled input against the pill body. */
+            /** Lifted capsule grey + the standard tile border so the field reads as a filled input against the pill body. */
             color: Qt.lighter(Theme.capsule, 1.25)
             border.width: 1
             border.color: Theme.border
@@ -206,6 +207,7 @@ PillSurface {
             font.letterSpacing: 0.5 * root.s
         }
 
+        /** Section: bottom-right buttons. */
         Row {
             width: parent.width
             visible: !root.submitted
