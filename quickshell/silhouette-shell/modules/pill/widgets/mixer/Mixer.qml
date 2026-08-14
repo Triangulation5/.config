@@ -181,6 +181,17 @@ PillSurface {
         }
     }
 
+    /**
+     * Mirror the shared backlight poller into Devices.backlightPct so the mixer
+     * fader follows brightness keys / OSD changes, not just its own drags.
+     */
+    Connections {
+        target: Backlight
+        function onChanged() {
+            Devices.backlightPct = Math.round(Backlight.brightness * 100);
+        }
+    }
+
     PwObjectTracker {
         objects: [root.sink, root.source].concat(root.outputSinks).concat(root.inputSources).filter(Boolean)
     }
