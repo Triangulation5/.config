@@ -366,7 +366,7 @@ Item {
                     anchors.centerIn: parent
                     text: "<i>press any key to enter password</i>"
                     textFormat: Text.RichText
-                    color: Theme.placeholder
+                    color: Theme.subtle
                     font.family: Theme.font
                     font.pixelSize: 14 * content.s
                     font.letterSpacing: 1 * content.s
