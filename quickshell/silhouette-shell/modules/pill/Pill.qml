@@ -230,7 +230,7 @@ Item {
     readonly property real dragOverH: 126 * s
     readonly property real gameH: 34 * s
     readonly property real gameW: barWindow ? barWindow.width : 1920
-    readonly property real restCorner: 18 * s
+    readonly property real restCorner: (Flags.notchStyle ? 18 : 28) * s
     readonly property real openCorner: 22 * s
 
     /**
