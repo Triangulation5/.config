@@ -1,6 +1,5 @@
 module qs.modules.controlcenter
 
-BtDeviceList 1.0 BtDeviceList.qml
 CredRow 1.0 CredRow.qml
 Ember 1.0 Ember.qml
 HotspotControl 1.0 HotspotControl.qml
@@ -12,7 +11,5 @@ LinkToggle 1.0 LinkToggle.qml
 LinkWifi 1.0 LinkWifi.qml
 NotifRow 1.0 NotifRow.qml
 Power 1.0 Power.qml
-WifiController 1.0 WifiController.qml
-WifiHeader 1.0 WifiHeader.qml
 WifiHotspot 1.0 WifiHotspot.qml
 WifiNetRow 1.0 WifiNetRow.qml
