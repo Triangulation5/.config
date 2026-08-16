@@ -67,6 +67,24 @@ Rectangle {
         "#FF7F9A"
     ]
 
+    /** Generated cava config, fed to cava via a here-string on stdin. */
+    readonly property string config:
+        "[general]\n"
+        + "framerate=" + Flags.vizFps + "\n"
+        + "bars=" + segments + "\n"
+        + "[output]\n"
+        + "method=raw\n"
+        + "raw_target=/dev/stdout\n"
+        + "data_format=ascii\n"
+        + "ascii_max_range=1000\n"
+        + "[smoothing]\n"
+        + "integral=0\n"
+        + "waves=0\n"
+        + "gravity=10000000\n"
+        + "[input]\n"
+        + "method=pulse\n"
+        + "source=auto\n"
+
     Process {
         id: cava
 
@@ -75,21 +93,9 @@ Rectangle {
         command: [
             "/bin/bash",
             "-c",
-            'printf "[general]\n' +
-            'framerate=' + Flags.vizFps + '\n' +
-            'bars=' + segments + '\n' +
-            '[output]\n' +
-            'method=raw\n' +
-            'raw_target=/dev/stdout\n' +
-            'data_format=ascii\n' +
-            'ascii_max_range=1000\n' +
-            '[smoothing]\n' +
-            'integral=0\n' +
-            'waves=0\n' +
-            'gravity=10000000\n' +
-            '[input]\n' +
-            'method=pulse\n' +
-            'source=auto\n" | cava -p /dev/stdin'
+            "exec cava -p /dev/stdin <<< \"$1\"",
+            "_",
+            musicLineContainer.config
         ]
 
         stdout: SplitParser {
