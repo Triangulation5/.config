@@ -970,6 +970,14 @@ Item {
                  */
                 readonly property bool barsOn: Flags.musicViz && Cava.active
 
+                /**
+                 * The visualizer only renders while the pill is actually at
+                 * rest. Leaving rest (a surface, hover, game mode) drops it on
+                 * the fast curve so the string never bleeds into the incoming
+                 * surface as it morphs open.
+                 */
+                readonly property bool vizShown: barsOn && pill.mode === "rest"
+
                 anchors.verticalCenter: parent.verticalCenter
 
                 width: pill.specialView === "" ? musicBars.width : 0
@@ -985,13 +993,13 @@ Item {
                     live: Flags.musicViz
                     resting: pill.mode === "rest"
 
-                    opacity: restKanji.barsOn ? 1 : 0
-                    scale: restKanji.barsOn ? 1 : 0.7
+                    opacity: restKanji.vizShown ? 1 : 0
+                    scale: restKanji.vizShown ? 1 : 0.7
 
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: restKanji.barsOn ? Motion.standard : Motion.fast
-                            easing.type: restKanji.barsOn ? Motion.easeStandard : Easing.OutQuad
+                            duration: restKanji.vizShown ? Motion.standard : Motion.fast
+                            easing.type: restKanji.vizShown ? Motion.easeStandard : Easing.OutQuad
                         }
                     }
 
@@ -1002,8 +1010,8 @@ Item {
                              * bloom a subtle spring; the fast OutQuad collapse
                              * reads as a clean, quick retract.
                              */
-                            duration: restKanji.barsOn ? Motion.standard : Motion.fast
-                            easing.type: restKanji.barsOn ? Easing.OutBack : Easing.OutQuad
+                            duration: restKanji.vizShown ? Motion.standard : Motion.fast
+                            easing.type: restKanji.vizShown ? Easing.OutBack : Easing.OutQuad
                         }
                     }
                 }
