@@ -201,9 +201,9 @@ Singleton {
         id: cavaProc
 
         command: [
-            "sh",
+            "/bin/bash",
             "-c",
-            "printf '%s' \"$1\" | cava -p /dev/stdin",
+            "exec cava -p /dev/stdin <<< \"$1\"",
             "_",
             root.config
         ]
@@ -286,7 +286,7 @@ Singleton {
     Process {
         id: lockProc
 
-        command: ["sh", "-c", "printf '%s' \"$1\" | cava -p /dev/stdin", "_", root.lockConfig]
+        command: ["/bin/bash", "-c", "exec cava -p /dev/stdin <<< \"$1\"", "_", root.lockConfig]
 
         stdout: SplitParser {
             onRead: (line) => {
