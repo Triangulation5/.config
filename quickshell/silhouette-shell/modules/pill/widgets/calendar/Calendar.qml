@@ -343,7 +343,7 @@ PillSurface {
 
     Timer {
         id: editorDelay
-        interval: 80
+        interval: 100
         onTriggered: root._editorReady = true
     }
 
