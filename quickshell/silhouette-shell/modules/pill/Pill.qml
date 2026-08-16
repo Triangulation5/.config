@@ -982,7 +982,7 @@ Item {
 
                     centeredVisualizer: Flags.vizStyle === "centered"
                     stringVisualizer: Flags.vizStyle === "string"
-                    live: restKanji.barsOn
+                    live: Flags.musicViz
                     resting: pill.mode === "rest"
 
                     opacity: restKanji.barsOn ? 1 : 0

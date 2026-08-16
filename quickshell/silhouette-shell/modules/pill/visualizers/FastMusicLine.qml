@@ -29,9 +29,11 @@ Rectangle {
     property double curveSpill: 1.5
 
     /**
-     * True while this renderer is actually visible (pill at rest + audio). The
-     * cava capture below only runs then; when the pill is expanded or no audio
-     * flows, the process is killed instead of parsing silent frames 24/7.
+     * True while the visualizer feature is enabled (Flags.musicViz). The cava
+     * capture runs whenever this is set, so the string is already warm by the
+     * time audio flows - no spawn delay on the first note. Frames are still
+     * only consumed while `resting`, and a long stretch away from rest puts
+     * the capture down via forcedDown instead of parsing frames 24/7.
      */
     property bool live: false
 
@@ -73,10 +75,6 @@ Rectangle {
         command: [
             "/bin/bash",
             "-c",
-            /**
-             * No integral/gravity here: cava 0.8+ dropped those smoothing
-             * keys, so they'd be silently ignored anyway.
-             */
             'printf "[general]\n' +
             'framerate=' + Flags.vizFps + '\n' +
             'bars=' + segments + '\n' +
@@ -86,7 +84,9 @@ Rectangle {
             'data_format=ascii\n' +
             'ascii_max_range=1000\n' +
             '[smoothing]\n' +
+            'integral=0\n' +
             'waves=0\n' +
+            'gravity=10000000\n' +
             '[input]\n' +
             'method=pulse\n' +
             'source=auto\n" | cava -p /dev/stdin'
