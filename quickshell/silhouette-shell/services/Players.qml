@@ -231,7 +231,12 @@ Singleton {
         var sid = spotifyIdOf(u);
         if (sid.length > 0 && sid === spotifyId && spotifyArt.length > 0)
             return spotifyArt;
-        return derivedThumb(u);
+        var thumb = derivedThumb(u);
+        if (thumb.length > 0)
+            return thumb;
+        if (u.length > 0 && u === pageId && pageArt.length > 0)
+            return pageArt;
+        return searchArt;
     }
 
     function siteName(url) {
@@ -383,7 +388,11 @@ Singleton {
         resolveTwitch();
         resolveNetflix();
         resolveSpotify();
+        resolvePage();
     }
+
+    onTitleChanged: resolveSearch()
+    onArtistChanged: resolveSearch()
 
     function resolveTwitch() {
         var ch = twitchChannelOf(trackUrl);
@@ -402,6 +411,95 @@ Singleton {
             }
         };
         xhr.open("GET", "https://decapi.me/twitch/avatar/" + ch);
+        xhr.send();
+    }
+
+    /**
+     * Generic web-page art: when a browser tab's player never sets mpris:artUrl,
+     * fetch the page and pull its og:image (SoundCloud, Bandcamp, Apple Music
+     * web, ...). Hosts with a dedicated resolver above are skipped so their
+     * better art wins instead of a page logo.
+     */
+    property string pageArt: ""
+    property string pageId: ""
+
+    function resolvePage() {
+        var u = trackUrl;
+        if (u.indexOf("http") !== 0)
+            return;
+        var host = u.toLowerCase();
+        var s = host.indexOf("//");
+        host = s >= 0 ? host.slice(s + 2) : host;
+        s = host.indexOf("/");
+        host = s >= 0 ? host.slice(0, s) : host;
+        if (host.indexOf("youtube.com") >= 0 || host.indexOf("youtu.be") >= 0
+            || host.indexOf("twitch.tv") >= 0 || host.indexOf("netflix.com") >= 0
+            || host.indexOf("spotify.com") >= 0)
+            return;
+        if (u === pageId)
+            return;
+        pageId = u;
+        pageArt = "";
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 8000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE || xhr.status !== 200 || root.pageId !== u)
+                return;
+            var i = xhr.responseText.match(/og:image[^>]*content="([^"]*)"/i);
+            var img = i ? (i[1] || "") : "";
+            if (img.indexOf("http") === 0)
+                root.pageArt = img;
+        };
+        xhr.open("GET", u);
+        xhr.send();
+    }
+
+    /**
+     * Title + artist lookup against the iTunes catalog for players that expose
+     * metadata but no art (Spotify's web player on an SPA url, browsers that
+     * drop mpris:artUrl). Last-resort fallback; every source above wins.
+     */
+    property string searchArt: ""
+    property string searchKey: ""
+
+    function resolveSearch() {
+        if (!has || !active || active.trackArtUrl)
+            return;
+        var svc = serviceOf(active);
+        if (svc === "youtube" || svc === "netflix" || svc === "twitch")
+            return;
+        var t = active.trackTitle ? active.trackTitle.trim() : "";
+        if (t.length === 0) {
+            searchKey = "";
+            searchArt = "";
+            return;
+        }
+        var q = t;
+        if (artist.length > 0)
+            q += " " + artist;
+        q = q.replace(/ *[|\-–—] *(youtube|spotify|soundcloud|bandcamp|twitch|netflix|apple music|deezer|tidal) *$/i, "").trim();
+        if (q.length === 0 || q === searchKey)
+            return;
+        searchKey = q;
+        searchArt = "";
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 8000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE || xhr.status !== 200 || root.searchKey !== q)
+                return;
+            try {
+                var data = JSON.parse(xhr.responseText);
+                var r = data && data.results && data.results[0];
+                if (r && r.artworkUrl100) {
+                    var art = String(r.artworkUrl100).replace("100x100", "600x600");
+                    if (art.indexOf("https:") === 0)
+                        root.searchArt = art;
+                }
+            } catch (e) {
+                /** Malformed/unexpected response; leave searchArt empty. */
+            }
+        };
+        xhr.open("GET", "https://itunes.apple.com/search?term=" + encodeURIComponent(q) + "&media=music&limit=1");
         xhr.send();
     }
 
