@@ -19,7 +19,6 @@ Item {
     property real s: 1.1
     property var auth: null
     property var pw: null
-    property bool isMain: true
 
     property bool clockExpanded: false
     property bool revealPassword: false
@@ -76,7 +75,12 @@ Item {
     Timer {
         id: idleTimer
         interval: 10000
-        running: content.isMain && content.passwordArmed && !content.authenticating
+        /**
+         * Only the surface that actually holds the field's focus runs the idle
+         * countdown, so silence on one monitor can never wipe a password being
+         * typed on another.
+         */
+        running: content.passwordArmed && !content.authenticating && input.activeFocus
         onTriggered: {
             content.passwordArmed = false;
             content.showError = false;
@@ -124,7 +128,7 @@ Item {
 
     Timer {
         interval: 1000
-        running: content.playing && content.isMain
+        running: content.playing
         repeat: true
         onTriggered: if (content.player) content.player.positionChanged()
     }
@@ -133,7 +137,6 @@ Item {
         id: batteryIndicator
 
         z: 20
-        visible: content.isMain
         opacity: content.clockExpanded ? 0 : 1
 
         Behavior on opacity {
@@ -154,7 +157,6 @@ Item {
         id: linkSurface
 
         z: 20
-        visible: content.isMain
         opacity: content.clockExpanded ? 0 : 1
 
         Behavior on opacity {
@@ -177,7 +179,6 @@ Item {
         anchors.fill: parent
 
         s: content.s
-        visibleClock: content.isMain
 
         expanded: content.clockExpanded
 
@@ -219,7 +220,7 @@ Item {
          */
         color: "transparent"
         border.width: 0
-        opacity: content.isMain ? (content.authenticating ? 0.6 : 1) : 0
+        opacity: content.authenticating ? 0.6 : 1
 
         transform: Translate { id: capsuleShift }
 
@@ -293,7 +294,7 @@ Item {
             font.pixelSize: 15 * content.s
             font.letterSpacing: 2 * content.s
             clip: true
-            focus: content.isMain && !content.clockExpanded
+            focus: !content.clockExpanded
             enabled: !content.authenticating
 
             onTextChanged: {
@@ -483,7 +484,7 @@ Item {
         anchors.bottomMargin: 26 * content.s
 
         visible: !content.clockExpanded
-        opacity: content.isMain ? (content.authenticating ? 0.6 : 1) : 0
+        opacity: content.authenticating ? 0.6 : 1
 
         Behavior on opacity {
             NumberAnimation {
