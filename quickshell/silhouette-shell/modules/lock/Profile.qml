@@ -4,11 +4,12 @@ import QtQuick
 import QtQuick.Effects
 import Qt5Compat.GraphicalEffects
 import Quickshell
+import Quickshell.Io
 import qs.services
 import qs.components.icons
 
 /**
- * Lock-screen profile block: the current user's avatar over their username,
+ * Lock-screen profile block: the current user's avatar over their real name,
  * sitting directly above the password capsule.
  *
  * The avatar resolves from the standard freedesktop user-icon locations in
@@ -17,12 +18,49 @@ import qs.components.icons
  * exist it falls back to a person glyph. The picture is clipped to the tile's
  * circle with the same mask treatment the media cover uses, and a soft shadow
  * keeps it readable over the blurred backdrop.
+ *
+ * The label shows the user's real name instead of the login name: the GECOS
+ * field from /etc/passwd (first comma-separated part), falling back to the
+ * login name when no real name is set. The AccountsService RealName would be
+ * the canonical source, but its store is root-only, so /etc/passwd (world
+ * readable) is the reliable pick from the user session. PAM still
+ * authenticates against `user`, so `user` stays the login name and only the
+ * display text switches to the real name.
  */
 Item {
     id: profile
 
     property real s: 1.1
     property string user: ""
+
+    /**
+     * The user's display name: the GECOS field of their /etc/passwd entry, or
+     * the login name when none is set. Read once per lock via a blockLoading
+     * FileView, so it never blocks the reveal with a process spawn.
+     */
+    readonly property string realName: {
+        if (profile.user.length === 0)
+            return "";
+
+        var lines = passwdFile.text().split("\n");
+        var prefix = profile.user + ":";
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].indexOf(prefix) !== 0)
+                continue;
+            var fields = lines[i].split(":");
+            var gecos = fields.length > 4 ? fields[4] : "";
+            var name = gecos.split(",")[0].trim();
+            return name.length > 0 ? name : profile.user;
+        }
+        return profile.user;
+    }
+
+    FileView {
+        id: passwdFile
+        path: "/etc/passwd"
+        blockLoading: true
+        printErrors: false
+    }
 
     readonly property real avatarSize: 120 * s
 
@@ -143,7 +181,7 @@ Item {
         anchors.top: tile.bottom
         anchors.topMargin: 12 * profile.s
 
-        text: profile.user
+        text: profile.realName
 
         color: Theme.cream
         opacity: 0.85

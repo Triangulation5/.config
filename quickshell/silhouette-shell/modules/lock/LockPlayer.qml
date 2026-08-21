@@ -15,7 +15,7 @@ Column {
     property real s: 1.1
     property var host: null
 
-    visible: host.isMain && host.hasPlayer && !host.clockExpanded
+    visible: host.hasPlayer && !host.clockExpanded
     opacity: host.clockExpanded ? 0 : 1
     Behavior on opacity {
         NumberAnimation {
