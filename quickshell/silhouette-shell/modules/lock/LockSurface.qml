@@ -10,8 +10,9 @@ import qs.components.layout
 /**
  * One monitor's lock surface. Blurs a grab of the desktop behind a frozen sharp
  * overlay, then wipes the lock open by growing a pill-shaped mask from the pill's
- * resting spot to the full screen. Carries the glow field and, on the primary
- * monitor, the main Content.
+ * resting spot to the full screen. Carries the glow field and the full lock
+ * Content on every monitor, so the whole UI (clock, password capsule, profile)
+ * is present on each screen and the auth panel can be used from any of them.
  */
 
 Item {
@@ -36,18 +37,6 @@ Item {
         openAnim.restart()
     onActiveChanged: if (!active)
         closeAnim.restart()
-
-    /**
-     * The lock UI's primary screen is just the first one Quickshell reports, so
-     * the auth panel lands on one deterministic monitor without pinning a display
-     * name that may not exist on other machines.
-     */
-    readonly property bool isMain: {
-        var scr = Quickshell.screens;
-        if (scr.length === 0)
-            return true;
-        return surface.screenName === scr[0].name;
-    }
 
     readonly property real spread: 2.4
 
@@ -92,7 +81,6 @@ Item {
         s: surface.s
         auth: surface.auth
         pw: surface.pw
-        isMain: surface.isMain
 
         enabled: surface.maskP >= 1
     }
