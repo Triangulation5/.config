@@ -3,4 +3,6 @@ module qs.components.animation
 HeatHold 1.0 HeatHold.qml
 HFader 1.0 HFader.qml
 Marquee 1.0 Marquee.qml
+Orbit 1.0 Orbit.qml
+Pulse 1.0 Pulse.qml
 VFader 1.0 VFader.qml

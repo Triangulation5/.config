@@ -10,6 +10,7 @@ import Quickshell.Services.SystemTray
 import qs.services
 import qs.modules.pill.widgets
 import qs.modules.pill.widgets.osd
+import qs.modules.pill.widgets.camera
 import qs.modules.settings
 import qs.modules.pill.surfaces
 import qs.modules.pill.visualizers
@@ -102,6 +103,7 @@ Item {
         return ldLSend.item.sendFile.length > 0 ? "scanning" : "";
     }
     readonly property bool timerOpen: surface === "timer"
+    readonly property bool cameraOpen: surface === "camera"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
     /**
@@ -347,6 +349,7 @@ Item {
         fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker, "fontpicker").implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
         localsend:  { size: () => { surfaceItem(ldLSend, "localsend"); return Qt.size(localsendW, surfaceItem(ldLSend, "localsend").implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend, "localsend") },
         timer:    { size: () => { const it = surfaceItem(ldTimer, "timer"); return Qt.size(timerW, it.implicitHeight + 28 * s); }, ame: () => null },
+        camera:   { size: () => { const it = surfaceItem(ldCamera, "camera"); return Qt.size(it.implicitWidth, it.implicitHeight); }, ame: () => surfaceItem(ldCamera, "camera") },
         polkit:    { size: () => { const it = surfaceItem(ldPolkit, "polkit"); return Qt.size(polkitW, it.implicitHeight + 28 * s); }, ame: () => surfaceItem(ldPolkit, "polkit") }
     })
 
@@ -471,7 +474,7 @@ Item {
     QtObject {
         id: clock
         readonly property var loc: Qt.locale("en_US")
-        readonly property var now: sysClock.date
+        property var now: new Date()
 
         readonly property string timeFormat: (Flags.time12h ? "h:mm AP" : "HH:mm") + (Flags.clockSeconds ? ":ss" : "")
         readonly property string hhmm: Flags.time12h
@@ -480,9 +483,19 @@ Item {
         readonly property string date: loc.toString(now, "ddd d MMM")
     }
 
-    SystemClock {
-        id: sysClock
-        precision: Flags.clockSeconds ? SystemClock.Seconds : SystemClock.Minutes
+    /**
+     * Drives the pill's clock from a plain repeating Timer instead of a
+     * Quickshell SystemClock. A SystemClock schedules one delayed tick per
+     * interval, and that single one-shot can be dropped while the session is
+     * locked (the compositor stops frame-driven updates), leaving the pill's
+     * time frozen after unlock. A repeating Timer re-reads the wall clock on
+     * every fire, so the time self-heals the instant the event loop runs again.
+     */
+    Timer {
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: clock.now = new Date()
     }
 
     property real morphRadius: (mode === "rest" || mode === "hover" || mode === "game") ? restCorner : openCorner
@@ -1152,6 +1165,8 @@ Item {
     PillSurfaceLoader { id: ldLSend; name: "localsend"; host: pill; sourceComponent: Localsend {} }
 
     PillSurfaceLoader { id: ldTimer; name: "timer"; host: pill; sourceComponent: Pomodoro {} }
+
+    PillSurfaceLoader { id: ldCamera; name: "camera"; host: pill; sourceComponent: CameraMirror { onRequestClose: pill.requestClose() } }
     Osd {
         id: osd
         anchors.fill: parent
