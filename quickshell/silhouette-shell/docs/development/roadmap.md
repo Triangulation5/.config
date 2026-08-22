@@ -12,6 +12,14 @@ promised — it is a wishlist to pick from.
   the shell stays light on RAM, CPU and iGPU machines.
 - Make everything asynchronous.
 - Clean up the codebase and comments (make sure they are all docstyle).
+- Make the Marquee in the media thing fade a little bit when it is on the far
+  left edge part of the text and the right edge part of the text, by fade I
+  mean like it should have a vague shadow the color of the palette so that it
+  does not break when it is on dynamic palette mode.
+- Fix the screencorner and the ears/flares of the pill while in notch style so
+  that it matches the colors of the main pill.
+- Make Ame's cursor beam, or whatever thing, lag behind or something like that
+  on the calendar style.
 
 ## Medium
 
@@ -21,7 +29,33 @@ promised — it is a wishlist to pick from.
   like `josh@core`, plus a `fastfetch`-style info page with stats.
 - Add more dynamic features like dragging installers onto the pill to
   install applications.
-- Polkit password prompts on the pill's surface.
+- Downloading should show inside the island, downloads, via terminal (dnf
+  upgrade, flatpak, etc). It should show the update name, and a level bar and
+  the percentage. Follow the style of the pill as it is right now, I think the
+  toast notification style and the osd's styles should fit something like this
+  well.
+- Super + Tab, application switcher. MacOS Mission control style, live
+  thumbnail, match opacity of pill, keyboard navigation. Can't decide if this
+  should show as a wide list of app icons (squircle styled) or it's own
+  seperate surface now disconnected from the pill and in the middle of the
+  screen.
+- The music widget thing on the lockscreen should be clickable, when it is
+  pressed it should expand the entire thing, and it should have the album in
+  the center (as a square, and when it expands it's corners should become a
+  little bit more rounded), Underneath the album cover there should be the song
+  title (centered, like some hero text or whatever, bolded), under that should
+  be the author and stuff (lower font). Underneath all that, there should be a
+  card, the card should use the color of the theme, underneath that, there
+  should be the ame level bar or the audio, mover thingy. On top of that there
+  inside the card there should be where the audio is coming from, Firefox,
+  spotify, youtube, etc. Underneath that inside the card, it should show
+  previous, pause/play, and next.
+- Make the calendar style thing inside the hover pill, only show 3 dates while
+  90, and 100 percent ui scale, and 5 dates while on 110, and 125 percent ui
+  scale.
+- Camera does not work yet, fix that.
+- The album art, calendar, and all should disappear when the hover surface is
+  closed, it should disappear in a way that does not leave behind artifacts.
 
 ## Hard
 

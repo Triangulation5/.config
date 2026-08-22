@@ -31,7 +31,7 @@ Column {
         Rectangle {
             width: 53 * root.s
             height: 53 * root.s
-            radius: 11 * root.s
+            radius: 16 * root.s
             anchors.verticalCenter: parent.verticalCenter
             clip: true
             color: "#1a100c"
@@ -58,7 +58,7 @@ Column {
                 visible: false
                 Rectangle {
                     anchors.fill: parent
-                    radius: 10 * root.s
+                    radius: 16 * root.s
                 }
             }
         }

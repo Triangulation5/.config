@@ -111,6 +111,9 @@ Item {
         "share": { d: "M12 3l4 4h-3v8h-2V7H8z M6 19h12v-5 M12 22v-3", fill: false },
         "smartphone": { d: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M12 18h.01", fill: false },
         "activity": { d: "M22 12h-4l-3 9L9 3l-3 9H2", fill: false },
+        "camera": { d: "M3 8h3.5L8 5.5h8L17.5 8H21a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z M12 11.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z", fill: false },
+        "mirror": { d: "M12 4v16 M8 8l-4 4 4 4 M16 8l4 4-4 4", fill: false },
+        "faceid": { d: "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M9 10.5h.01 M15 10.5h.01 M8.5 14c2 2 5 2 7 0", fill: false },
     })
 
     /** Round to two decimals so computed path strings stay compact. */

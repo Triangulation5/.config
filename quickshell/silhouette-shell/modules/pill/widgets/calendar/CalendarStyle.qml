@@ -32,22 +32,30 @@ Item {
     property date selectedDate: new Date()
 
     /**
-     * Ame anchors for the expanded pill, in widget-local coordinates (the pill
-     * maps them into pill space). The wheel is centre-locked
-     * (StrictlyEnforceRange), so the focused day sits at width/2 and every other
-     * day is exactly (index - currentIndex) * slotWidth away from it. Ame rests
-     * just below the strip: under the hovered day, or under the red-highlighted
-     * next-day when nothing is hovered.
+     * Ame anchor for the expanded pill, in widget-local coordinates (the pill
+     * maps it into pill space). The wheel is centre-locked (StrictlyEnforceRange),
+     * so the focused day sits at width/2 and every other day is exactly
+     * (index - currentIndex) * slotWidth away from it. Ame rests just below the
+     * strip: under the hovered day, or under the red-highlighted next-day when
+     * nothing is hovered. The slot offset is lagged so the soul bead trails
+     * behind the pointer instead of snapping to it.
      */
-    readonly property point nextDayAnchor: Qt.point(width / 2 + wheel.slotWidth, height + 12)
+    readonly property real targetSlot:
+        hoveredIndex >= 0 ? hoveredIndex - wheel.currentIndex : 1
 
-    readonly property point hoverAnchor: Qt.point(
-        width / 2 + (hoveredIndex - wheel.currentIndex) * wheel.slotWidth,
+    property real lagSlot: targetSlot
+
+    Behavior on lagSlot {
+        NumberAnimation {
+            duration: Motion.glide
+            easing.type: Motion.easeStandard
+        }
+    }
+
+    readonly property point ameAnchor: Qt.point(
+        width / 2 + lagSlot * wheel.slotWidth,
         height + 12
     )
-
-    readonly property point ameAnchor:
-        hoveredIndex >= 0 ? hoverAnchor : nextDayAnchor
     function lerpColor(from, to, amount) {
         const t = Math.max(0, Math.min(1, amount))
 
@@ -61,43 +69,49 @@ Item {
 
     ListModel {
         id: calendarModel
+    }
 
-        Component.onCompleted: {
-            const days = [
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
-            ]
+    /**
+     * Build the strip's day window so index 7 is `anchor` (the real today),
+     * with a week of history behind and two weeks ahead. Called once on
+     * creation.
+     */
+    function rebuild(anchor) {
+        const days = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+        ]
 
-            let today = new Date()
-            today.setHours(0, 0, 0, 0)
+        let today = new Date(anchor)
+        today.setHours(0, 0, 0, 0)
 
-            for (let i = -7; i <= 14; ++i) {
-                let d = new Date(today)
-                d.setDate(today.getDate() + i)
-
-                append({
-                    timestamp: d.getTime(),
-                    weekday: days[d.getDay()],
-                    day: d.getDate(),
-                    month: Qt.locale().monthName(
-                        d.getMonth(),
-                        Locale.ShortFormat
-                    )
-                })
-            }
-
-            root.selectedIndex = 7
-            root.selectedDate = new Date(
-                get(7).timestamp
-            )
-
-            wheel.currentIndex = 7
+        calendarModel.clear()
+        for (let i = -7; i <= 14; ++i) {
+            let d = new Date(today)
+            d.setDate(today.getDate() + i)
+            calendarModel.append({
+                timestamp: d.getTime(),
+                weekday: days[d.getDay()],
+                day: d.getDate(),
+                month: Qt.locale().monthName(
+                    d.getMonth(),
+                    Locale.ShortFormat
+                )
+            })
         }
+
+        root.selectedIndex = 7
+        root.selectedDate = new Date(calendarModel.get(7).timestamp)
+    }
+
+    Component.onCompleted: {
+        rebuild(new Date())
+        wheel.currentIndex = 7
     }
 
     ListView {
@@ -127,9 +141,9 @@ Item {
 
         Behavior on currentIndex {
             NumberAnimation {
-                duration: 450
-                easing.type: Easing.OutBack
-                easing.overshoot: 0.8
+                duration: Motion.morph
+                easing.type: Motion.easeMorph
+                easing.bezierCurve: Motion.morphCurve
             }
         }
 
