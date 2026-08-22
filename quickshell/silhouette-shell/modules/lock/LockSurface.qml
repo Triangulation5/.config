@@ -6,6 +6,7 @@ import Quickshell
 import qs.services
 import qs.modules.lock
 import qs.components.layout
+import qs.components.effects
 
 /**
  * One monitor's lock surface. Blurs a grab of the desktop behind a frozen sharp
