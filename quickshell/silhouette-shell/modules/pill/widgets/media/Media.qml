@@ -63,12 +63,8 @@ PillSurface {
 
     readonly property real textX: 148 * s
     readonly property real edgePad: 18 * s
-    readonly property color washMid: mix(Theme.cardTop, Theme.cardBot, 0.5)
+    readonly property color washMid: Theme.mix(Theme.cardTop, Theme.cardBot, 0.5)
     property real sealPulse: 0
-
-    function mix(a, b, t) {
-        return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1);
-    }
 
     onTitleChanged: if (playing && active) pulseAnim.restart()
 
@@ -238,6 +234,7 @@ PillSurface {
             color: Theme.cream
             pixelSize: 21 * root.s
             weight: Font.DemiBold
+            fadeWidth: 20 * root.s
             active: root.shown
         }
 
@@ -247,6 +244,7 @@ PillSurface {
             text: root.artist
             color: Theme.dim
             pixelSize: 16 * root.s
+            fadeWidth: 16 * root.s
             active: root.shown
             visible: text.length > 0
         }
@@ -329,7 +327,7 @@ PillSurface {
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
-                    color: root.mix(
+                    color: Theme.mix(
                         Theme.verm,
                         Theme.tileBg,
                         0.55 - 0.27 * seal.sat
@@ -338,7 +336,7 @@ PillSurface {
 
                 GradientStop {
                     position: 1.0
-                    color: root.mix(
+                    color: Theme.mix(
                         Theme.vermDeep,
                         Theme.tileBg,
                         0.55 - 0.27 * seal.sat

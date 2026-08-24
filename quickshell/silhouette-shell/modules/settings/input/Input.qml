@@ -8,6 +8,7 @@ import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.controls
+import qs.components.layout
 
 /**
  * 操 INPUT sub-surface: edits the pointer, keyboard and cursor settings that live
@@ -264,10 +265,10 @@ SettingsSurface {
         height: root.height + root.mBottom * root.s
         clip: true
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "操"
-            title: "INPUT"
+            kanji: "操"
+            label: "INPUT"
             showBack: true
         }
 

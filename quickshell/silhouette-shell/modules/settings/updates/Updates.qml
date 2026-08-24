@@ -4,6 +4,7 @@ import QtQuick
 import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
+import qs.components.layout
 import qs.components.icons
 import qs.components.controls
 
@@ -91,10 +92,10 @@ SettingsSurface {
         anchors.right: parent.right
         spacing: 0
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "更"
-            title: "UPDATES"
+            kanji: "更"
+            label: "UPDATES"
             showBack: true
         }
 

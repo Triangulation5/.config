@@ -389,18 +389,13 @@ Item {
                 height: 16 * surface.s
                 visible: surface.selEndDate.length > 0 && !surface.pickingEnd
 
-                GlyphIcon {
+                HoverIcon {
                     anchors.fill: parent
                     name: "close"
-                    color: clearArea.containsMouse ? Theme.vermLit : Theme.iconDim
+                    color: Theme.iconDim
+                    hoverColor: Theme.vermLit
                     stroke: 1.6
-                }
-                MouseArea {
-                    id: clearArea
-                    anchors.fill: parent
-                    anchors.margins: -5 * surface.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    hitPad: 5 * surface.s
                     onClicked: surface.selEndDate = ""
                 }
             }

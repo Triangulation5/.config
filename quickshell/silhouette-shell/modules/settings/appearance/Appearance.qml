@@ -7,6 +7,7 @@ import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.icons
+import qs.components.layout
 
 /**
  * 相 APPEARANCE sub-surface: the clock format and seconds, the Japanese-glyph
@@ -106,10 +107,10 @@ SettingsSurface {
         anchors.right: parent.right
         spacing: 0
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "相"
-            title: "APPEARANCE"
+            kanji: "相"
+            label: "APPEARANCE"
             showBack: true
         }
 

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 import qs.modules.settings
+import qs.components.layout
 
 /**
  * 錠 IDLE / LOCK sub-surface: the three idle timeouts that drive hypridle, each
@@ -176,10 +177,10 @@ SettingsSurface {
         anchors.right: parent.right
         spacing: 0
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "錠"
-            title: "IDLE / LOCK"
+            kanji: "錠"
+            label: "IDLE / LOCK"
             showBack: true
         }
 

@@ -5,6 +5,7 @@ import qs.services
 import qs.modules.pill.widgets
 import qs.modules.settings
 import qs.components.icons
+import qs.components.layout
 
 /**
  * 設 SETTINGS index: a short list of categories grouped into Shell and Control.
@@ -37,10 +38,11 @@ SettingsSurface {
         anchors.right: parent.right
         spacing: 0
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "設"
-            title: "SETTINGS"
+            kanji: "設"
+            label: "SETTINGS"
+            icon: "cog"
         }
 
         Text {

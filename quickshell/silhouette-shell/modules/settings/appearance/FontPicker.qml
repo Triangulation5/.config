@@ -5,6 +5,7 @@ import QtQuick.Controls
 import qs.services
 import qs.modules.settings
 import qs.components.controls
+import qs.components.layout
 
 /**
  * 字 FONT sub-surface: a searchable list of every installed family, each row
@@ -113,10 +114,10 @@ SettingsSurface {
         anchors.right: parent.right
         spacing: 0
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "字"
-            title: "FONT"
+            kanji: "字"
+            label: "FONT"
             showBack: true
         }
 

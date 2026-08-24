@@ -20,16 +20,21 @@ ShellRoot {
     property bool shown: false
     property string targetMonitor: ""
 
+    /**
+     * Usage map loads asynchronously so startup never blocks on disk; the first
+     * ranking pass sees an empty map and re-ranks the moment it lands. Writes
+     * are fire-and-forget (atomicWrites), so launching an app never waits on IO.
+     */
     FileView {
         id: usageStore
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/launcher-usage.json"
-        blockLoading: true
         atomicWrites: true
         printErrors: false
+        onLoaded: parseUsage(usageStore.text())
+        onLoadFailed: parseUsage("")
     }
 
-    Component.onCompleted: {
-        var raw = usageStore.text();
+    function parseUsage(raw) {
         try {
             root.usage = raw && raw.length ? JSON.parse(raw) : ({});
         } catch (e) {
@@ -52,8 +57,8 @@ ShellRoot {
         if (entry) {
             if (entry.id) {
                 root.usage[entry.id] = (root.usage[entry.id] || 0) + 1;
+                /** Fire-and-forget: the FileView write is async, so launch never blocks on disk. */
                 usageStore.setText(JSON.stringify(root.usage));
-                usageStore.waitForJob();
             }
             entry.execute();
         }
@@ -117,16 +122,24 @@ ShellRoot {
     }
 
     /**
-     * IPC: the standalone launcher owns its show/hide/toggle surface.
+     * IPC: the standalone launcher owns its show/hide/toggle surface. Opening
+     * builds the whole launcher UI (search + ranked lists), so show/toggle defer
+     * the visible flip a tick — the IPC dispatch returns immediately and the
+     * surface is constructed off the IPC hot path. Hide stays immediate.
      */
     IpcHandler {
         target: "launcher"
-        function show(mon: string): void { root.targetMonitor = mon; root.shown = true; }
+        function show(mon: string): void {
+            root.targetMonitor = mon;
+            Qt.callLater(function() { root.shown = true; });
+        }
         function hide(): void { root.shown = false; }
         function toggle(mon: string): void {
-            if (root.shown) { root.shown = false; return; }
-            root.targetMonitor = mon;
-            root.shown = true;
+            Qt.callLater(function() {
+                if (root.shown) { root.shown = false; return; }
+                root.targetMonitor = mon;
+                root.shown = true;
+            });
         }
     }
 }

@@ -7,6 +7,7 @@ import "../../../utils/lua/monitors.js" as Mon
 import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
+import qs.components.layout
 
 /**
  * 画 DISPLAY sub-surface. A proportional mini-map of the monitor layout sits on
@@ -435,10 +436,10 @@ SettingsSurface {
         height: root.height + root.mBottom * root.s
         clip: true
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "画"
-            title: "DISPLAY"
+            kanji: "画"
+            label: "DISPLAY"
             showBack: true
         }
 

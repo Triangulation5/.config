@@ -182,19 +182,13 @@ Item {
                 width: 17 * root.s
                 height: 17 * root.s
 
-                GlyphIcon {
+                HoverIcon {
                     anchors.fill: parent
                     name: "chevron-left"
-                    color: backArea.containsMouse ? Theme.cream : Theme.iconDim
+                    color: Theme.iconDim
+                    hoverColor: Theme.cream
                     stroke: 1.8
-                }
-
-                MouseArea {
-                    id: backArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    hitPad: 6 * root.s
                     onClicked: root.back()
                 }
             }

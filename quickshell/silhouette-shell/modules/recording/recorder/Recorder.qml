@@ -5,15 +5,15 @@ import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.services
 import qs.modules.pill.surfaces
-import qs.modules.pill.widgets
-import "../../../../utils/format.js" as Fmt
+import qs.modules.recording
+import "../../../utils/format.js" as Fmt
 
 /**
  * 録 RECORD surface: drives gpu-screen-recorder through the ScreenRec singleton,
  * built as a flat washi "capture card". The header carries the kanji, label and
  * a status slot (Idle / pulsing dot + elapsed m:ss / Get ready). A tappable
  * config stage (recorder/ConfigStage.qml) shows the recording spec and folds
- * open an options drawer (Frame rate / Quality MiniSegs and a Capture-cursor
+ * open an options drawer (Frame rate / Quality segs and a Capture-cursor
  * toggle). A full-width flame action bar (recorder/RecordBar.qml) starts, counts
  * down and stops the capture; two compact audio rows expose
  * the captured mic and desktop levels on flat-tick faders; a horizontal filmstrip

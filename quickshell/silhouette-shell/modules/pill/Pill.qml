@@ -10,7 +10,7 @@ import Quickshell.Services.SystemTray
 import qs.services
 import qs.modules.pill.widgets
 import qs.modules.pill.widgets.osd
-import qs.modules.pill.widgets.camera
+import qs.modules.recording
 import qs.modules.settings
 import qs.modules.pill.surfaces
 import qs.modules.pill.visualizers
@@ -93,17 +93,7 @@ Item {
     readonly property bool idlelockOpen: surface === "idlelock"
     readonly property bool animationOpen: surface === "animation"
     readonly property bool fontpickerOpen: surface === "fontpicker"
-    readonly property bool localsendOpen: surface === "localsend"
-    readonly property bool hasPendingSend: ldLSend.item !== null && ldLSend.item.sendFile.length > 0
-    /** Exposes the localsend widget's active state for the Link surface header badge. */
-    readonly property string localsendActivity: {
-        if (!ldLSend.item) return "";
-        if (ldLSend.item.sending) return "sending";
-        if (ldLSend.item.scanning) return "scanning";
-        return ldLSend.item.sendFile.length > 0 ? "scanning" : "";
-    }
     readonly property bool timerOpen: surface === "timer"
-    readonly property bool cameraOpen: surface === "camera"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
     /**
@@ -219,7 +209,6 @@ Item {
     readonly property real idlelockW: 392 * s
     readonly property real animationW: 392 * s
     readonly property real fontpickerW: 360 * s
-    readonly property real localsendW: 360 * s
     readonly property real timerW: 340 * s
     readonly property real polkitW: 440 * s
     readonly property real timerH: 460 * s
@@ -228,8 +217,6 @@ Item {
     readonly property real quickChooseH: 76 * s
     readonly property real quickCountW: 150 * s
     readonly property real quickCountH: 64 * s
-    readonly property real dragOverW: 300 * s
-    readonly property real dragOverH: 126 * s
     readonly property real gameH: 34 * s
     readonly property real gameW: barWindow ? barWindow.width : 1920
     readonly property real restCorner: (Flags.notchStyle ? 18 : 28) * s
@@ -251,7 +238,7 @@ Item {
     }
 
     /** Seconds a surface stays loaded after last use before being reclaimed. */
-    property int surfaceIdleTimeout: 15
+    property int surfaceIdleTimeout: 12
 
     /** Timestamp of last open per surface name. */
     property var _surfaceLastOpened: ({})
@@ -269,8 +256,6 @@ Item {
      */
     property bool _wpHoldStarted: false
     onWallpaperOpenChanged: if (!wallpaperOpen) _wpHoldStarted = false
-    /** File path handed to the localsend surface between open and item load. */
-    property string _pendingSend: ""
 
     function _cleanupIdleSurfaces() {
         var now = Date.now();
@@ -347,14 +332,11 @@ Item {
         idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock, "idlelock").implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock, "idlelock") },
         animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation, "animation").implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation, "animation") },
         fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker, "fontpicker").implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
-        localsend:  { size: () => { surfaceItem(ldLSend, "localsend"); return Qt.size(localsendW, surfaceItem(ldLSend, "localsend").implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLSend, "localsend") },
         timer:    { size: () => { const it = surfaceItem(ldTimer, "timer"); return Qt.size(timerW, it.implicitHeight + 28 * s); }, ame: () => null },
-        camera:   { size: () => { const it = surfaceItem(ldCamera, "camera"); return Qt.size(it.implicitWidth, it.implicitHeight); }, ame: () => surfaceItem(ldCamera, "camera") },
         polkit:    { size: () => { const it = surfaceItem(ldPolkit, "polkit"); return Qt.size(polkitW, it.implicitHeight + 28 * s); }, ame: () => surfaceItem(ldPolkit, "polkit") }
     })
 
-    readonly property string mode: dragInstall.dragActive ? "dragOver"
-        : (surfaceOpen && surfaces[surface] !== undefined ? surface
+    readonly property string mode: (surfaceOpen && surfaces[surface] !== undefined ? surface
         : (Flags.gameMode ? "game"
         : (quickChoosing ? "quickChoose"
         : (quickCounting ? "quickCount"
@@ -427,8 +409,6 @@ Item {
     function clipboardActivate() { return navHost.clipboardActivate(); }
     function fontpickerMove(dir) { return navHost.fontpickerMove(dir); }
     function fontpickerActivate() { return navHost.fontpickerActivate(); }
-    function localsendMove(dir) { return navHost.localsendMove(dir); }
-    function localsendActivate() { return navHost.localsendActivate(); }
     function timerBack() { return navHost.timerBack(); }
     function timerActivate() { return navHost.timerActivate(); }
     function timerReset() { return navHost.timerReset(); }
@@ -512,7 +492,6 @@ Item {
         hover: () => Qt.size(hoverW, hoverH),
         quickChoose: () => Qt.size(quickChooseW, quickChooseH),
         quickCount:  () => Qt.size(quickCountW, quickCountH),
-        dragOver:    () => Qt.size(dragOverW, dragOverH),
         game:        () => Qt.size(gameW, gameH)
     })
 
@@ -921,20 +900,6 @@ Item {
         onTapped: pill.pinned = !pill.pinned
     }
 
-    DragInstall {
-        id: dragInstall
-        anchors.fill: parent
-        s: pill.s
-        surfaceOpen: pill.surfaceOpen
-        morph: pill.morphCloseness
-        onLaunchRequested: pill.requestSurface("launcher")
-        onShareRequested: (path) => {
-            pill._pendingSend = path;
-            pill.requestSurface("localsend");
-            Qt.callLater(function() { if (ldLSend.item) ldLSend.item.sendFile = pill._pendingSend; });
-        }
-    }
-
     /**
      * Game-mode face: the pill docks into a flush top bar carrying only the clock
      * and, when something plays, the current track. Everything else the desktop
@@ -953,7 +918,7 @@ Item {
     Item {
         id: rest
         anchors.fill: parent
-        opacity: (pill.expanded || dragInstall.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount") ? 0 : Math.pow(pill.morphCloseness, 1.5)
+        opacity: (pill.expanded || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount") ? 0 : Math.pow(pill.morphCloseness, 1.5)
         visible: opacity > 0.01
         Behavior on opacity { NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) } }
 
@@ -1121,9 +1086,7 @@ Item {
 
     PillSurfaceLoader { id: ldLink; name: "link"; host: pill; sourceComponent: Link {
         initialView: pill.linkInitialView
-        sendStatus: pill.localsendActivity
         onRequestClose: pill.requestClose()
-        onOpenSend: pill.requestSurface("localsend")
     } }
 
     onLinkOpenChanged: if (!linkOpen) linkInitialView = "main"
@@ -1162,11 +1125,7 @@ Item {
 
     PillSurfaceLoader { id: ldFontpicker; name: "fontpicker"; host: pill; sourceComponent: FontPicker { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldLSend; name: "localsend"; host: pill; sourceComponent: Localsend {} }
-
     PillSurfaceLoader { id: ldTimer; name: "timer"; host: pill; sourceComponent: Pomodoro {} }
-
-    PillSurfaceLoader { id: ldCamera; name: "camera"; host: pill; sourceComponent: CameraMirror { onRequestClose: pill.requestClose() } }
     Osd {
         id: osd
         anchors.fill: parent

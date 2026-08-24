@@ -4,10 +4,17 @@ import QtQuick
 import qs.services
 
 /**
- * Mini-segmented choice control. `options` is a list of `{ label, value }`; the
- * pill whose value equals `value` lights with a flame tint. Picking a pill emits
- * `picked(value)`; selection keys off the source value, never a child's effective
- * visibility. The host passes `s` for scale.
+ * Segmented choice control. `options` is a list of `{ label, value }`; the pill
+ * whose value equals `value` lights. Picking a pill emits `picked(value)`.
+ *
+ * Two accents: `flame` (default) — a flame-tinted selection with a hover fill,
+ * used across the settings surfaces; and `card` — a solid card-top fill with no
+ * hover, used by the recorder's options drawer. Selection keys off the source
+ * value, never a child's effective visibility.
+ *
+ * When `flushLeft`, the control shifts left by the first option's text inset
+ * so that text lines up with x=0 of where the control is placed, rather than
+ * the pill edge sitting there.
  */
 Rectangle {
     id: seg
@@ -15,17 +22,14 @@ Rectangle {
     property real s: 1.1
     property var options: []
     property var value
-    signal picked(var value)
-
-    /**
-     * When `flushLeft`, the control shifts left by the first option's text inset
-     * so that text lines up with x=0 of where the control is placed, rather than
-     * the pill edge sitting there.
-     */
+    property string accent: "flame" // "flame" | "card"
     property bool flushLeft: false
 
-    readonly property real pad: 1
+    signal picked(var value)
+
+    readonly property real pad: seg.accent === "card" ? 2 * seg.s : 1
     readonly property real edgePad: seg.pad + 9 * seg.s
+    readonly property real optRadius: seg.accent === "card" ? 7 * seg.s : 8 * seg.s
 
     x: seg.flushLeft ? -seg.edgePad : 0
     width: pills.implicitWidth + 2 * pad
@@ -49,8 +53,10 @@ Rectangle {
 
                 width: optLabel.implicitWidth + 18 * seg.s
                 height: optLabel.implicitHeight + 12 * seg.s
-                radius: 8 * seg.s
-                color: opt.current ? Qt.alpha(Theme.onGlow, 0.16) : (opt.hovered ? Theme.frameBg : "transparent")
+                radius: seg.optRadius
+                color: seg.accent === "card"
+                    ? (opt.current ? Theme.cardTop : "transparent")
+                    : (opt.current ? Qt.alpha(Theme.onGlow, 0.16) : (opt.hovered ? Theme.frameBg : "transparent"))
                 Behavior on color { ColorAnimation { duration: Motion.fast } }
 
                 Text {
@@ -66,7 +72,7 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    hoverEnabled: true
+                    hoverEnabled: seg.accent !== "card"
                     cursorShape: Qt.PointingHandCursor
                     onEntered: opt.hovered = true
                     onExited: opt.hovered = false

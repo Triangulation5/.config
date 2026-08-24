@@ -241,19 +241,13 @@ Column {
                 width: 16 * picker.s
                 height: 16 * picker.s
 
-                GlyphIcon {
+                HoverIcon {
                     anchors.fill: parent
                     name: "chevron-left"
-                    color: addBackArea.containsMouse ? Theme.cream : Theme.iconDim
+                    color: Theme.iconDim
+                    hoverColor: Theme.cream
                     stroke: 1.8
-                }
-
-                MouseArea {
-                    id: addBackArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * picker.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    hitPad: 6 * picker.s
                     onClicked: picker.closeAdd()
                 }
             }
