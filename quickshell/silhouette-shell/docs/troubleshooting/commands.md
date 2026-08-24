@@ -78,45 +78,32 @@ unavailable later.
 
 The recorder runs gpu-screen-recorder when it is installed. When it is
 missing, or exits non-zero before it ever starts recording, the shell
-retries with a plain ffmpeg capture and shows a warning (a strip under the
-recorder action bar, a "· ffmpeg" tag in the spec line, and one notification
-per session). The fallback grabs the whole display through kmsgrab and the
-default sink/source through pulse, encoded on the CPU with libx264.
+retries with a ffmpeg capture over the Wayland screen-share portal and shows
+a warning (a strip under the recorder action bar, a "· ffmpeg" tag in the
+spec line, and one notification per session). The fallback
+(`utils/recording/portal_capture.py`) opens an
+`org.freedesktop.portal.ScreenCast` session, pipes the raw frames through
+PipeWire/gst into ffmpeg (libx264, CPU), and captures the default
+sink/source through pulse. No root is needed.
 
 ## Setup
 
-kmsgrab needs DRM master, so the capture runs as root via `pkexec`:
-
-- A polkit authentication agent must be running or `pkexec` fails with "No
-authentication agent found". On Fedora, install and autostart one:
-
-  ```bash
-  sudo dnf install polkit-kde-agent
-  # autostart it, e.g. an exec-once in Hyprland:
-  #   /usr/libexec/polkit-kde-authentication-agent-1 &
-  ```
-
-- Each recording start (and stop — the root process is signalled as root
-  too) prompts for the password. To skip the prompts, drop a polkit rule
-  that lets your user run this one command without auth:
-
-  ```bash
-  sudo tee /etc/polkit-1/rules.d/49-recording.rules > /dev/null <<'EOF'
-  polkit.addRule(function(action, subject) {
-      if (action.id == "org.freedesktop.policykit.exec"
-          && subject.user == "YOURUSER"
-          && action.lookup("program") == "/usr/bin/ffmpeg") {
-          return polkit.Result.YES;
-      }
-  });
-  EOF
-  ```
+- The portal stack must be running: `xdg-desktop-portal` and
+  `xdg-desktop-portal-hyprland` (Fedora: `sudo dnf install
+  xdg-desktop-portal-hyprland`). Both already run in a stock Hyprland
+  session.
+- On the first recording the portal shows its share picker (choose the
+  monitor, then confirm). The choice is remembered via the portal's
+  `persist_mode` restore token, cached under
+  `$XDG_CACHE_HOME/ricelin/rec-restore-token`, so later recordings start
+  without the picker.
 
 ## Limits
 
-- **Full screen only** — kmsgrab captures the whole display; a Window /
-  Region pick records everything anyway.
-- **No cursor capture** — kmsgrab does not reliably include the cursor.
+- **Picker on first use** — the first recording needs one picker
+  confirmation; later ones reuse the remembered choice.
 - **CPU encode** — libx264 with the UI quality mapped to a crf value.
-- If the capture comes out wrong on a given GPU (e.g. green frames), the
-  `hwdownload,format=nv12` filter in the fallback argv may need a tweak.
+- The pipeline is `gst-launch-1.0 pipewiresrc ... ! fdsink | ffmpeg -f
+  rawvideo ...`; a raw pipe ends with a partial frame, so ffmpeg exits
+  non-zero even on success — the script judges success by probing the
+  finished file, not the exit code.

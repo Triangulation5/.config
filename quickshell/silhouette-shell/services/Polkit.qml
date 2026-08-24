@@ -45,12 +45,22 @@ Singleton {
         respond("CANCEL");
     }
 
-    /** The agent daemon, autostarted with the shell and revived if it dies. */
+    /**
+     * The agent daemon, autostarted with the shell and revived if it dies. A
+     * stale agent from a previous shell can linger and keep polkitd's session
+     * registration; in that case the agent itself exits 0 (see agent.py), and
+     * this handler only revives on a real crash (non-zero exit) — so the old
+     * duplicate-registration crash loop can never happen again.
+     */
     Process {
         id: agentProc
         command: ["python3", root.agentScript]
         running: true
-        onExited: restartTimer.restart()
+        onExited: function(exitCode) {
+            /** Exit 0 = "another agent already owns the session" — don't fight it. */
+            if (exitCode !== 0)
+                restartTimer.restart();
+        }
     }
 
     Timer {

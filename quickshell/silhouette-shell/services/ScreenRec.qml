@@ -16,12 +16,13 @@ import Quickshell.Io
  * ffmpeg installed (see docs/troubleshooting/commands.md).
  *
  * If gpu-screen-recorder is missing (or fails to start), the shell falls back
- * to a plain ffmpeg capture: kmsgrab grabs the whole display and the default
- * sink/source are captured through pulse. kmsgrab needs DRM master, so the
- * capture runs as root through pkexec — window/region picks narrow to the
- * full screen, and the recorder UI shows a fallback chip so the user knows
- * why. A gsr that dies before it ever starts recording is retried once
- * through this path instead of just failing.
+ * to a PipeWire capture encoded by ffmpeg: utils/recording/portal_capture.py
+ * opens an xdg-desktop-portal ScreenCast session (Hyprland shows its picker
+ * once, then remembers the choice), pipes the raw frames through gst into
+ * ffmpeg, and the default sink/source are captured through pulse. No root is
+ * needed, and the recorder UI shows a fallback chip so the user knows why. A
+ * gsr that dies before it ever starts recording is retried once through this
+ * path instead of just failing.
  *
  * The capture target is chosen at leisure BEFORE any countdown, so the user
  * picks WHAT to record with no recording running yet. The surface calls one of
@@ -85,11 +86,11 @@ Singleton {
     readonly property int recentCount: recent.length
 
     /**
-     * Recording backend: `gsr` (gpu-screen-recorder) or `ffmpeg` (kmsgrab +
-     * pulse fallback). Probed once at startup; a gsr that fails to start is
-     * switched over mid-session with `fallbackRetried` guarding a single
-     * retry. `usingFallback` and `backendNote` drive the recorder UI's
-     * warning chip.
+     * Recording backend: `gsr` (gpu-screen-recorder) or `ffmpeg` (PipeWire
+     * portal capture + libx264). Probed once at startup; a gsr that fails to
+     * start is switched over mid-session with `fallbackRetried` guarding a
+     * single retry. `usingFallback` and `backendNote` drive the recorder
+     * UI's warning chip.
      */
     property string backend: "gsr"
     readonly property bool usingFallback: backend === "ffmpeg"
@@ -100,8 +101,7 @@ Singleton {
     /** The capture token of the recording about to start, for the gsr retry. */
     property string lastToken: ""
 
-    /** ffmpeg fallback inputs, resolved at start: DRM card + pulse targets. */
-    property string ffDrmDev: "/dev/dri/card0"
+    /** ffmpeg fallback inputs, resolved at start: pulse sink/source targets. */
     property string ffSinkMon: ""
     property string ffMicSrc: ""
 
@@ -270,7 +270,10 @@ Singleton {
         if (busy)
             return;
         if (backend === "ffmpeg") {
-            /** kmsgrab can only grab the whole display; skip the picker. */
+            /**
+             * The portal picker lets the user choose a monitor or window at
+             * record time, so a separate slurp pick is skipped here.
+             */
             targetReady("screen");
             return;
         }
@@ -292,36 +295,23 @@ Singleton {
     }
 
     /**
-     * ffmpeg fallback argv: kmsgrab grabs the whole display (window/region
-     * picks narrow to full screen), the default sink monitor and mic source
-     * come in through pulse against the session's pipewire socket, and libx264
-     * encodes on the CPU. kmsgrab needs DRM master, so the whole capture runs
-     * under pkexec; stop() signals the same process as root.
+     * ffmpeg fallback argv: the PipeWire portal capture script opens the
+     * ScreenCast session, pipes the raw frames through gst into ffmpeg, which
+     * encodes libx264 on the CPU; the default sink monitor and mic source come
+     * in through pulse against the session's pipewire socket. Runs entirely as
+     * the user — no root, no pkexec — and stop() signals the script directly.
      */
     function buildFfmpegArgs(file) {
-        var server = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/pulse/native";
-        var args = ["pkexec", "ffmpeg",
-                    "-f", "kmsgrab", "-device", ffDrmDev,
-                    "-framerate", String(fps), "-i", "-",
-                    "-vf", "hwdownload,format=nv12",
-                    "-c:v", "libx264", "-preset", "veryfast",
-                    "-crf", String(qualityCrf())];
-        var inputs = [];
+        var script = Qt.resolvedUrl("../utils/recording/portal_capture.py").toString().replace(/^file:\/\//, "");
+        var args = ["python3", script,
+                    "--output", file,
+                    "--fps", String(fps),
+                    "--crf", String(qualityCrf()),
+                    "--cursor", captureCursor ? "yes" : "no"];
         if (desktopOn && ffSinkMon.length > 0)
-            inputs.push(["-f", "pulse", "-server", server, "-i", ffSinkMon + ".monitor"]);
+            args = args.concat(["--sink", ffSinkMon]);
         if (micOn && ffMicSrc.length > 0)
-            inputs.push(["-f", "pulse", "-server", server, "-i", ffMicSrc]);
-        if (inputs.length === 1) {
-            args = args.concat(inputs[0],
-                ["-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "192k"]);
-        } else if (inputs.length === 2) {
-            args = args.concat(inputs[0], inputs[1],
-                ["-filter_complex", "[1:a][2:a]amix=inputs=2:normalize=0[a]",
-                 "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "192k"]);
-        } else {
-            args = args.concat(["-an"]);
-        }
-        args = args.concat(["-y", file]);
+            args = args.concat(["--mic", ffMicSrc]);
         return args;
     }
 
@@ -361,13 +351,10 @@ Singleton {
             return;
         if (backend === "ffmpeg") {
             /**
-             * The capture runs as root, so stopping needs root too. The unique
-             * output filename only ever matches the live recorder's command
-             * line (never the thumbnail ffmpeg), and SIGINT makes ffmpeg
-             * finalise and save.
+             * SIGINT makes the portal capture script stop gst (closing the
+             * pipe), let ffmpeg finalise and save, then validate the file.
              */
-            var name = currentFile.substring(currentFile.lastIndexOf("/") + 1);
-            recEngine.stopProc.command = ["pkexec", "sh", "-c", "pkill -SIGINT -f \"$1\"", "sh", name];
+            recEngine.stopProc.command = ["pkill", "-SIGINT", "-f", "portal_capture.py"];
         } else {
             recEngine.stopProc.command = ["pkill", "-SIGINT", "-f", "(^|/)gpu-screen-recorder"];
         }
