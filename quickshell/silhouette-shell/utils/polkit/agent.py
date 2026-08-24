@@ -271,10 +271,19 @@ def main():
     subject = dbus.Struct(
         ("unix-session", dbus.Dictionary({"session-id": session_id}, signature="sv")),
         signature="sa{sv}")
-    authority.RegisterAuthenticationAgentWithOptions(
-        subject, "C", AGENT_PATH,
-        dbus.Dictionary({}, signature="sv"),
-        dbus_interface="org.freedesktop.PolicyKit1.Authority")
+    try:
+        authority.RegisterAuthenticationAgentWithOptions(
+            subject, "C", AGENT_PATH,
+            dbus.Dictionary({}, signature="sv"),
+            dbus_interface="org.freedesktop.PolicyKit1.Authority")
+    except dbus.exceptions.DBusException as exc:
+        # A healthy agent (e.g. from a previous shell) already owns this
+        # session's registration. Fighting over it would crash-loop the shell's
+        # revive timer, so exit cleanly instead of raising.
+        if "already exists" in str(exc):
+            sys.stderr.write("polkit agent: another agent already owns this session; exiting\n")
+            sys.exit(0)
+        raise
     GLib.MainLoop().run()
 
 
