@@ -44,6 +44,7 @@ Item {
         width: changeTxt.width + 9 * s + openTxt.width
 
         TextHoverLabel {
+            id: changeTxt
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             s: row.s
@@ -59,6 +60,7 @@ Item {
             onClicked: ScreenRec.pickDir()
         }
         TextHoverLabel {
+            id: openTxt
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             s: row.s

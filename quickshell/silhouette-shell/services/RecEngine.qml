@@ -85,15 +85,14 @@ Item {
     }
 
     /**
-     * ffmpeg fallback pre-flight: resolve the DRM card and the pulse sink /
-     * source at start (they can change between recordings), then launch.
+     * ffmpeg fallback pre-flight: resolve the pulse sink / source at start
+     * (they can change between recordings), then launch the portal capture.
      */
     Process {
         id: ffPrepProc
         property string pendingToken: ""
         property string pendingFile: ""
         command: ["sh", "-c",
-            "dev=$(ls /dev/dri/card* 2>/dev/null | head -n 1); echo \"dev=$dev\"; " +
             "sink=$(pactl get-default-sink 2>/dev/null); echo \"sink=$sink\"; " +
             "src=$(pactl get-default-source 2>/dev/null); echo \"src=$src\""]
         stdout: StdioCollector {
@@ -101,9 +100,7 @@ Item {
                 var lines = this.text.split("\n");
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].trim();
-                    if (line.indexOf("dev=") === 0)
-                        root.host.ffDrmDev = line.slice(4);
-                    else if (line.indexOf("sink=") === 0)
+                    if (line.indexOf("sink=") === 0)
                         root.host.ffSinkMon = line.slice(5);
                     else if (line.indexOf("src=") === 0)
                         root.host.ffMicSrc = line.slice(4);
@@ -141,7 +138,7 @@ Item {
                  */
                 if (!wasLive && root.host.backend === "gsr" && !root.host.fallbackRetried && root.host.lastToken.length > 0) {
                     root.host.fallbackRetried = true;
-                    root.host.useFallback("gpu-screen-recorder failed to start — recording with ffmpeg (full screen, root capture)");
+                    root.host.useFallback("gpu-screen-recorder failed to start — recording with ffmpeg via the PipeWire portal");
                     root.host.start(root.host.lastToken);
                     return;
                 }
@@ -171,7 +168,7 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 if (this.text.trim().length === 0)
-                    root.host.useFallback("gpu-screen-recorder not found — recording with ffmpeg");
+                    root.host.useFallback("gpu-screen-recorder not found — recording with ffmpeg via the PipeWire portal");
             }
         }
     }
@@ -234,7 +231,7 @@ Item {
      */
     Process {
         id: pollProc
-        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder|kmsgrab"]
+        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder|portal_capture.py"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var running = this.text.trim().length > 0;

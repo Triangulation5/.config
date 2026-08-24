@@ -154,6 +154,8 @@ PillSurface {
                 echoMode: TextInput.Password
                 color: "transparent"
                 cursorVisible: false
+                /** Qt re-shows the caret on focus regardless of cursorVisible, so swap in an empty delegate to guarantee no caret ever renders. */
+                cursorDelegate: Item {}
                 font.family: Theme.font
                 font.pixelSize: 14 * root.s
                 font.letterSpacing: 2 * root.s
