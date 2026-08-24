@@ -1,9 +1,0 @@
-module qs.modules.pill.widgets.camera
-
-CameraMirror 1.0 CameraMirror.qml
-CameraControls 1.0 CameraControls.qml
-CameraEffects 1.0 CameraEffects.qml
-CameraFeed 1.0 CameraFeed.qml
-FaceIdGlyph 1.0 FaceIdGlyph.qml
-FaceIdOrbit 1.0 FaceIdOrbit.qml
-FaceIdUnlock 1.0 FaceIdUnlock.qml

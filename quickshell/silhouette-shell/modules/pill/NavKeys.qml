@@ -29,7 +29,7 @@ QtObject {
             return false;
         return host.calendarMove("v", -1) || host.linkMove(-1) || host.mixerStep(1)
             || host.recorderStep(5) || host.clipboardMove(-1)
-            || host.fontpickerMove(-1) || host.launcherMove(-1) || host.localsendMove(-1)
+            || host.fontpickerMove(-1) || host.launcherMove(-1)
             || host.workspacesMove(-1) || host.stashMove(-1) || host.spaceappsMove(-1)
             || host.settingsMove(-1)
             || (host.timerOpen && host.timerActivate());
@@ -40,7 +40,7 @@ QtObject {
             return false;
         return host.calendarMove("v", 1) || host.linkMove(1) || host.mixerStep(-1)
             || host.recorderStep(-5) || host.clipboardMove(1)
-            || host.fontpickerMove(1) || host.launcherMove(1) || host.localsendMove(1)
+            || host.fontpickerMove(1) || host.launcherMove(1)
             || host.workspacesMove(1) || host.stashMove(1) || host.spaceappsMove(1)
             || host.settingsMove(1)
             || (host.timerOpen && host.timerActivate());
@@ -149,8 +149,6 @@ QtObject {
             host.clipboardActivate();
         } else if (host.fontpickerOpen) {
             host.fontpickerActivate();
-        } else if (host.localsendOpen) {
-            host.localsendActivate();
         } else if (host.timerOpen) {
             host.timerActivate();
         } else if (host.workspacesOpen) {

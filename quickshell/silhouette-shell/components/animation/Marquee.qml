@@ -1,4 +1,7 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
+import QtQuick.Shapes
 import qs.services
 
 /**
@@ -6,6 +9,11 @@ import qs.services
  * so long track and artist names stay readable. Caller sets the width (e.g.
  * via anchors) and `active` to gate the motion. The label snaps to whole pixels
  * so NativeRendering stays crisp while it scrolls.
+ *
+ * While the text overflows, a palette-colored fade dissolves both edges so the
+ * scrolling label sinks into the card instead of clipping hard. The fade color
+ * derives from the theme palette (cardTop/cardBot), so it tracks dynamic
+ * palette mode instead of breaking against it.
  */
 Item {
     id: root
@@ -16,12 +24,24 @@ Item {
     property int weight: Font.Normal
     property bool active: true
 
+    /** Width of the palette fade at each edge; 0 disables the fade. */
+    property real fadeWidth: 18
+    /** Palette color the edge fades dissolve into. */
+    property color fadeColor: root.washColor
+
     property real scrollX: 0
 
     implicitHeight: label.implicitHeight
     clip: true
 
     readonly property bool overflowing: label.implicitWidth > width
+
+    /**
+     * Blend of the surface palette colors, weighted slightly toward cardTop to
+     * match the card's vertical wash where the text rows sit. Derived from the
+     * theme rather than hardcoded so it follows dynamic palette mode.
+     */
+    readonly property color washColor: Theme.mix(Theme.cardTop, Theme.cardBot, 0.35)
 
     Text {
         id: label
@@ -37,6 +57,44 @@ Item {
         width: root.overflowing ? implicitWidth : root.width
 
         onTextChanged: root.sync()
+    }
+
+    /**
+     * One edge's palette fade: a horizontal LinearGradient shape from
+     * transparent to the palette color. The right edge reuses this shape
+     * mirrored with scale: -1, so the fade direction flips with it.
+     */
+    component EdgeFade: Shape {
+        width: root.fadeWidth
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        visible: root.overflowing && root.fadeWidth > 0
+
+        ShapePath {
+            startX: 0
+            startY: 0
+            fillGradient: LinearGradient {
+                x1: 0
+                y1: 0
+                x2: root.fadeWidth
+                y2: 0
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 1.0; color: root.fadeColor }
+            }
+            PathLine { x: root.fadeWidth; y: 0 }
+            PathLine { x: root.fadeWidth; y: height }
+            PathLine { x: 0; y: height }
+            PathLine { x: 0; y: 0 }
+        }
+    }
+
+    EdgeFade {
+        anchors.left: parent.left
+    }
+
+    EdgeFade {
+        anchors.right: parent.right
+        scale: -1
     }
 
     SequentialAnimation {

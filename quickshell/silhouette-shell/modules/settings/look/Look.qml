@@ -7,6 +7,7 @@ import "../../../utils/lua/setDeco.js" as SetDeco
 import qs.services
 import qs.modules.settings
 import qs.components.controls
+import qs.components.layout
 
 /**
  * 飾 LOOK sub-surface: edits window-decoration knobs that live in
@@ -245,7 +246,7 @@ SettingsSurface {
         height: root.height + root.mBottom * root.s
         clip: true
 
-        SettingsHeader { s: root.s; glyph: "飾"; title: "LOOK"; showBack: true }
+        SurfaceHeader { s: root.s; kanji: "飾"; label: "LOOK"; showBack: true }
 
         Column {
             anchors.left: parent.left

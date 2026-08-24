@@ -2,21 +2,16 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.services
+import qs.modules.pill.widgets.osd
 
 /**
  * Record OSD face: a pulsing record dot and a started/stopped line. Driven by
  * the Osd root through `active` and `recordStarted`.
  */
-Item {
+OsdFace {
     id: face
 
-    property real s: 1.1
-    property bool active: false
     property bool recordStarted: false
-
-    opacity: face.active ? 1 : 0
-    visible: opacity > 0.01
-    Behavior on opacity { NumberAnimation { duration: 150 } }
 
     Rectangle {
         id: recGlyph

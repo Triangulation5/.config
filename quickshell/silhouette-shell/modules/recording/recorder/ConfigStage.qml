@@ -4,8 +4,9 @@ import QtQuick
 import QtQuick.Shapes
 import qs.services
 import qs.modules.controlcenter
+import qs.modules.settings
 import qs.components.icons
-import qs.modules.pill.widgets
+import qs.modules.recording
 
 /**
  * The Recorder's config stage: a tappable card showing the recording spec
@@ -216,7 +217,8 @@ Item {
                 s: stage.s
                 name: "Frame rate"
                 first: true
-                MiniSeg {
+                SettingsSeg {
+                    accent: "card"
                     s: stage.s
                     options: [
                         { label: "30", value: 30 },
@@ -231,7 +233,8 @@ Item {
             ORow {
                 s: stage.s
                 name: "Quality"
-                MiniSeg {
+                SettingsSeg {
+                    accent: "card"
                     s: stage.s
                     options: [
                         { label: "Med", value: "medium" },
@@ -255,7 +258,8 @@ Item {
             ORow {
                 s: stage.s
                 name: "Countdown"
-                MiniSeg {
+                SettingsSeg {
+                    accent: "card"
                     s: stage.s
                     options: [
                         { label: "Off", value: 0 },

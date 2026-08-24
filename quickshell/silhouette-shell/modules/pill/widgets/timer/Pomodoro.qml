@@ -6,6 +6,7 @@ import Quickshell.Io
 import qs.services
 import qs.modules.pill.surfaces
 import qs.components.icons
+import qs.components.controls
 import qs.components.layout
 
 /**
@@ -367,17 +368,15 @@ PillSurface {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6 * root.s
 
-                    Text {
+                    TextHoverLabel {
                         anchors.verticalCenter: parent.verticalCenter
+                        s: root.s
                         text: "−"
-                        color: minusArea.containsMouse ? Theme.bright : Theme.faint
+                        hoverColor: Theme.bright
+                        idleColor: Theme.faint
+                        hitMargins: -4 * root.s
                         font.family: Theme.font; font.pixelSize: ringArea.width * 0.075; font.weight: Font.Medium
-                        MouseArea {
-                            id: minusArea
-                            anchors.fill: parent; anchors.margins: -4 * root.s
-                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: root.setDuration(root.totalSecs - row.step)
-                        }
+                        onClicked: root.setDuration(root.totalSecs - row.step)
                     }
                     Text {
                         id: vText
@@ -387,17 +386,15 @@ PillSurface {
                         font.family: Theme.font; font.pixelSize: ringArea.width * 0.066; font.weight: Font.DemiBold; font.features: { "tnum": 1 }
                         horizontalAlignment: Text.AlignRight; width: parent.parent.width * 0.12
                     }
-                    Text {
+                    TextHoverLabel {
                         anchors.verticalCenter: parent.verticalCenter
+                        s: root.s
                         text: "+"
-                        color: plusArea.containsMouse ? Theme.bright : Theme.faint
+                        hoverColor: Theme.bright
+                        idleColor: Theme.faint
+                        hitMargins: -4 * root.s
                         font.family: Theme.font; font.pixelSize: ringArea.width * 0.075; font.weight: Font.Medium
-                        MouseArea {
-                            id: plusArea
-                            anchors.fill: parent; anchors.margins: -4 * root.s
-                            hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: root.setDuration(root.totalSecs + row.step)
-                        }
+                        onClicked: root.setDuration(root.totalSecs + row.step)
                     }
                 }
             }

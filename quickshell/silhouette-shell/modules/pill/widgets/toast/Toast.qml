@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 import qs.services
+import qs.components.controls
 
 /**
  * Toast content for the morphing pill body: icon tile, app eyebrow, summary
@@ -82,27 +83,15 @@ Item {
         }
     }
 
-    Text {
+    TextHoverLabel {
         id: dismiss
         anchors.right: parent.right
         anchors.top: parent.top
+        s: root.s
         text: "✕"
-        color: dismissArea.containsMouse ? Theme.cream : Theme.dim
         font.family: Theme.font
         font.pixelSize: 11 * root.s
-
-        Behavior on color {
-            ColorAnimation { duration: Motion.fast }
-        }
-
-        MouseArea {
-            id: dismissArea
-            anchors.fill: parent
-            anchors.margins: -6 * root.s
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: Notifs.removePopup(root.notif)
-        }
+        onClicked: Notifs.removePopup(root.notif)
     }
 
     Column {

@@ -331,16 +331,17 @@ PillSurface {
             selectedIndex = 0;
     }
 
+    /** Usage map loads async so opening the surface never blocks on disk; the first pass ranks with an empty map and re-ranks when it lands. */
     FileView {
         id: usageStore
         path: root.usageFile
-        blockLoading: true
         atomicWrites: true
         printErrors: false
+        onLoaded: parseUsage(usageStore.text())
+        onLoadFailed: parseUsage("")
     }
 
-    Component.onCompleted: {
-        var raw = usageStore.text();
+    function parseUsage(raw) {
         try {
             root.usage = raw && raw.length ? JSON.parse(raw) : ({});
         } catch (e) {

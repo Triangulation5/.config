@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * Single network row for the wifi drill-in's list, carrying every state a row
@@ -371,22 +372,16 @@ Column {
                 }
             }
 
-            GlyphIcon {
+            HoverIcon {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 14 * row.s
                 height: 14 * row.s
                 name: "return"
-                color: enterArea.containsMouse ? Theme.cream : Theme.vermLit
+                color: Theme.vermLit
+                hoverColor: Theme.cream
                 stroke: 1.8
-
-                MouseArea {
-                    id: enterArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * row.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: row.requestConnectWithPassword(pwField.text)
-                }
+                hitPad: 6 * row.s
+                onClicked: row.requestConnectWithPassword(pwField.text)
             }
         }
     }

@@ -3,21 +3,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 import qs.components.icons
+import qs.modules.pill.widgets.osd
 
 /**
  * Microphone OSD face: mic glyph and a one-line on/off state, tinted vermilion
  * while muted. Driven by the Osd root through `active` and `micMuted`.
  */
-Item {
+OsdFace {
     id: face
 
-    property real s: 1.1
-    property bool active: false
     property bool micMuted: false
-
-    opacity: face.active ? 1 : 0
-    visible: opacity > 0.01
-    Behavior on opacity { NumberAnimation { duration: 150 } }
 
     GlyphIcon {
         id: micGlyph

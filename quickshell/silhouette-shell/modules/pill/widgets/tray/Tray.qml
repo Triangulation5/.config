@@ -9,6 +9,7 @@ import Quickshell.Services.SystemTray
 import qs.services
 import qs.components.controls
 import qs.components.icons
+import qs.components.layout
 
 /**
  * System tray. Draws StatusNotifier items as warm-tinted icons. Left-click
@@ -324,7 +325,7 @@ Item {
 
             Keys.onEscapePressed: menu.open = false
 
-            Rectangle {
+            CardFill {
                 id: card
 
                 x: Math.max(8 * tray.s, Math.min(menu.anchorX - width / 2, menu.width - width - 8 * tray.s))
@@ -333,10 +334,6 @@ Item {
                 radius: 12 * tray.s
                 clip: true
 
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Theme.cardTop }
-                    GradientStop { position: 1.0; color: Theme.cardBot }
-                }
                 border.width: 1
                 border.color: Theme.border
 

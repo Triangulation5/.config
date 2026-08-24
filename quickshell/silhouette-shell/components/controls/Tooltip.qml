@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import qs.services
+import qs.components.layout
 
 /**
  * Washi hint bubble for pill controls. Anchored to its parent control and
@@ -58,7 +59,7 @@ Item {
         }
     }
 
-    Rectangle {
+    CardFill {
         id: bubble
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: root.below ? undefined : parent.top
@@ -68,10 +69,6 @@ Item {
         radius: 1.15 * root.em
         border.width: 1
         border.color: Theme.frameBorder
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.cardTop }
-            GradientStop { position: 1.0; color: Theme.cardBot }
-        }
 
         layer.enabled: true
         layer.effect: MultiEffect {

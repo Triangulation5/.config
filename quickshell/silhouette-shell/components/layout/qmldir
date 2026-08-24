@@ -1,5 +1,6 @@
 module qs.components.layout
 
+CardFill 1.0 CardFill.qml
 Filament 1.0 Filament.qml
 Hairline 1.0 Hairline.qml
 RoundCorner 1.0 RoundCorner.qml

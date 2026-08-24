@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.services
+import qs.components.layout
 
 /**
  * Device dropdown overlay for the mixer. Both output and input pickers reuse
@@ -45,7 +46,7 @@ Item {
         }
     }
 
-    Rectangle {
+    CardFill {
         id: panel
         anchors.top: parent.top
         anchors.left: parent.left
@@ -53,10 +54,6 @@ Item {
         height: Math.min(menu.model.length * 24 * s + 4 * s, 150 * s)
         clip: true
         radius: 9 * s
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.cardTop }
-            GradientStop { position: 1.0; color: Theme.cardBot }
-        }
         border.width: 1
         border.color: Theme.frameBorder
 

@@ -118,19 +118,13 @@ Item {
                         opacity: evArea.hovered ? 1 : 0.32
                         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
-                        GlyphIcon {
+                        HoverIcon {
                             anchors.fill: parent
                             name: "close"
-                            color: delArea.containsMouse ? Theme.vermLit : Theme.iconDim
+                            color: Theme.iconDim
+                            hoverColor: Theme.vermLit
                             stroke: 1.6
-                        }
-
-                        MouseArea {
-                            id: delArea
-                            anchors.fill: parent
-                            anchors.margins: -5 * list.s
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
+                            hitPad: 5 * list.s
                             onClicked: Events.remove(evRow.modelData.id)
                         }
                     }

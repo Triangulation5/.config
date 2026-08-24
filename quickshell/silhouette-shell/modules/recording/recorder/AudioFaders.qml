@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Services.Pipewire
 import qs.services
-import qs.modules.pill.widgets
+import qs.modules.recording
 
 /**
  * The Recorder's two audio faders (Microphone + Desktop): each row drives the

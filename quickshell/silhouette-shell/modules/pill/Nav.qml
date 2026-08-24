@@ -212,20 +212,6 @@ Item {
         return true;
     }
 
-    function localsendMove(dir) {
-        if (!host.localsendOpen || !itemFor("localsend"))
-            return false;
-        itemFor("localsend").move(dir);
-        return true;
-    }
-
-    function localsendActivate() {
-        if (!host.localsendOpen || !itemFor("localsend"))
-            return false;
-        itemFor("localsend").activate();
-        return true;
-    }
-
     function timerActivate() {
         if (!host.timerOpen || !itemFor("timer"))
             return false;

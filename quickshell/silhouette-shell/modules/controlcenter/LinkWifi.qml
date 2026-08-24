@@ -509,19 +509,13 @@ Item {
                 width: 17 * root.s
                 height: 17 * root.s
 
-                GlyphIcon {
+                HoverIcon {
                     anchors.fill: parent
                     name: "chevron-left"
-                    color: backArea.containsMouse ? Theme.cream : Theme.iconDim
+                    color: Theme.iconDim
+                    hoverColor: Theme.cream
                     stroke: 1.8
-                }
-
-                MouseArea {
-                    id: backArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    hitPad: 6 * root.s
                     onClicked: root.back()
                 }
             }
@@ -559,12 +553,15 @@ Item {
                 width: 16 * root.s
                 height: 16 * root.s
 
-                GlyphIcon {
+                HoverIcon {
                     id: reloadGlyph
                     anchors.fill: parent
                     name: "reboot"
-                    color: root.scanning ? Theme.flameGlow : (reloadArea.containsMouse ? Theme.cream : Theme.iconDim)
+                    color: root.scanning ? Theme.flameGlow : Theme.iconDim
+                    hoverColor: root.scanning ? Theme.flameGlow : Theme.cream
                     stroke: 1.8
+                    hitPad: 6 * root.s
+                    onClicked: root.scanning ? root.stopScan() : root.startScan()
 
                     RotationAnimator {
                         target: reloadGlyph
@@ -575,15 +572,6 @@ Item {
                         loops: Animation.Infinite
                         onRunningChanged: if (!running) reloadGlyph.rotation = 0
                     }
-                }
-
-                MouseArea {
-                    id: reloadArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.scanning ? root.stopScan() : root.startScan()
                 }
             }
 

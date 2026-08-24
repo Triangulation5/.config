@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * Add/edit form for the keybinds surface: the captured-combo readout, name
@@ -35,19 +36,13 @@ Column {
                 width: 16 * surface.s
                 height: 16 * surface.s
 
-                GlyphIcon {
+                HoverIcon {
                     anchors.fill: parent
                     name: "chevron-left"
-                    color: formBackArea.containsMouse ? Theme.cream : Theme.iconDim
+                    color: Theme.iconDim
+                    hoverColor: Theme.cream
                     stroke: 1.8
-                }
-
-                MouseArea {
-                    id: formBackArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * surface.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    hitPad: 6 * surface.s
                     onClicked: surface.closeForm()
                 }
             }

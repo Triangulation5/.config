@@ -233,18 +233,22 @@ PillSurface {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6 * root.s
-            DevicePickerChip {
+            IconChip {
                 s: root.s
                 glyph: "speaker"
-                open: root.openPicker === "out"
-                tip: "Output device"
+                on: root.openPicker === "out"
+                accent: true
+                tipTitle: "Output device"
+                tipWhileOn: true
                 onToggled: root.openPicker = root.openPicker === "out" ? "" : "out"
             }
-            DevicePickerChip {
+            IconChip {
                 s: root.s
                 glyph: "mic"
-                open: root.openPicker === "in"
-                tip: "Input device"
+                on: root.openPicker === "in"
+                accent: true
+                tipTitle: "Input device"
+                tipWhileOn: true
                 onToggled: root.openPicker = root.openPicker === "in" ? "" : "in"
             }
             IconChip {

@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * The "New Workspace" create form: back chevron + title, name/description
@@ -34,19 +35,13 @@ Column {
                 width: 16 * root.s
                 height: 16 * root.s
 
-                GlyphIcon {
+                HoverIcon {
                     anchors.fill: parent
                     name: "chevron-left"
-                    color: formBackArea.containsMouse ? Theme.cream : Theme.iconDim
+                    color: Theme.iconDim
+                    hoverColor: Theme.cream
                     stroke: 1.8
-                }
-
-                MouseArea {
-                    id: formBackArea
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    hitPad: 6 * root.s
                     onClicked: root.host.closeForm()
                 }
             }

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.services
 import qs.components.icons
+import qs.modules.pill.widgets.osd
 
 /**
  * Now-playing OSD face: cover art with the source app badge, title/artist and
@@ -11,11 +12,9 @@ import qs.components.icons
  * flash open until a late cover decodes, and emits `artReady` when art that
  * lands mid-flash is finally readable.
  */
-Item {
+OsdFace {
     id: face
 
-    property real s: 1.1
-    property bool active: false
     property string art: ""
     property string icon: ""
     property string title: ""
@@ -27,10 +26,6 @@ Item {
 
     /** Emitted when cover art finishes decoding, so the root can extend its hold. */
     signal artReady()
-
-    opacity: face.active ? 1 : 0
-    visible: opacity > 0.01
-    Behavior on opacity { NumberAnimation { duration: 150 } }
 
     ClippingRectangle {
         id: coverBox

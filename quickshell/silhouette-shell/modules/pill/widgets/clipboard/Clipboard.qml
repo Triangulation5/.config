@@ -395,26 +395,17 @@ PillSurface {
                             Behavior on opacity { NumberAnimation { duration: Motion.fast } }
                         }
 
-                        Text {
+                        TextHoverLabel {
                             id: dismiss
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
+                            s: root.s
                             opacity: rowHover.hovered ? 1 : 0
                             text: "✕"
-                            color: dismissArea.containsMouse ? Theme.cream : Theme.dim
                             font.pixelSize: 10 * root.s
+                            hitEnabled: rowHover.hovered
                             Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-                            Behavior on color { ColorAnimation { duration: 150 } }
-
-                            MouseArea {
-                                id: dismissArea
-                                anchors.fill: parent
-                                anchors.margins: -6 * root.s
-                                enabled: rowHover.hovered
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.removeAt(row.index)
-                            }
+                            onClicked: root.removeAt(row.index)
                         }
                     }
                 }
