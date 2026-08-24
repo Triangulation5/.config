@@ -267,7 +267,7 @@ Item {
                                     stroke: 2
                                 }
 
-                                GlyphIcon {
+                                HoverIcon {
                                     id: headX
                                     anchors.right: headChev.left
                                     anchors.rightMargin: 7 * s
@@ -276,19 +276,13 @@ Item {
                                     height: 11 * s
                                     opacity: headHover.hovered ? 1 : 0
                                     name: "close"
-                                    color: headXArea.containsMouse ? Theme.cream : Theme.dim
+                                    color: Theme.dim
+                                    hoverColor: Theme.cream
                                     stroke: 1.9
+                                    hitPad: 6 * s
+                                    enabled: headHover.hovered
                                     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-
-                                    MouseArea {
-                                        id: headXArea
-                                        anchors.fill: parent
-                                        anchors.margins: -6 * s
-                                        enabled: headHover.hovered
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: Notifs.dismissApp(group.modelData.app)
-                                    }
+                                    onClicked: Notifs.dismissApp(group.modelData.app)
                                 }
                             }
 

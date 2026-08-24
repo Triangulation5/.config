@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * One application row in the launcher's app list. All data (entry, selected,
@@ -130,7 +131,7 @@ Item {
             horizontalAlignment: Text.AlignRight
         }
 
-        GlyphIcon {
+        HoverIcon {
             id: trashGlyph
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: parent.right
@@ -140,25 +141,21 @@ Item {
             stroke: 2
             name: "trash"
             color: appRow.armed ? "#e0533f" : Theme.dim
-
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -6 * s
-                enabled: appRow.editing
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (!appRow.armed) {
-                        appRow.armed = true;
-                        return;
+            hoverColor: appRow.armed ? "#e0533f" : Theme.dim
+            hitPad: 6 * s
+            enabled: appRow.editing
+            onClicked: {
+                if (!appRow.armed) {
+                    appRow.armed = true;
+                    return;
+                }
+                if (surface) {
+                    var slug = surface.appimageSlug(appRow.entry);
+                    if (slug) {
+                        surface.appimageProc.command = ["bash", surface.appimageScript, "remove", slug];
+                        surface.appimageProc.running = true;
                     }
-                    if (surface) {
-                        var slug = surface.appimageSlug(appRow.entry);
-                        if (slug) {
-                            surface.appimageProc.command = ["bash", surface.appimageScript, "remove", slug];
-                            surface.appimageProc.running = true;
-                        }
-                        surface.editIndex = -1;
-                    }
+                    surface.editIndex = -1;
                 }
             }
         }

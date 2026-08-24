@@ -86,4 +86,14 @@ Singleton {
             return String(artists);
         return single ? String(single) : "";
     }
+
+    /**
+     * Linear blend between two colors, used everywhere a surface mixes its
+     * card palette (wash tints, marquee fades). Shared so callers never
+     * reimplement the lerp.
+     */
+    function mix(a, b, t) {
+        return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t,
+                       a.b + (b.b - a.b) * t, 1);
+    }
 }

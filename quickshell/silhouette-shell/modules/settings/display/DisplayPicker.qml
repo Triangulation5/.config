@@ -5,6 +5,7 @@ import QtQuick.Effects
 import qs.services
 import qs.modules.settings
 import qs.components.icons
+import qs.components.layout
 
 /**
  * Labelled dropdown for the display surface: a left caption, a value chip styled
@@ -124,7 +125,7 @@ Item {
         }
     }
 
-    Rectangle {
+    CardFill {
         id: panel
         anchors.top: head.bottom
         anchors.topMargin: pick.open ? pick.gap : 0
@@ -135,10 +136,6 @@ Item {
         visible: pick.open
         clip: true
         radius: 9 * pick.s
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.cardTop }
-            GradientStop { position: 1.0; color: Theme.cardBot }
-        }
         border.width: 1
         border.color: Theme.frameBorder
 

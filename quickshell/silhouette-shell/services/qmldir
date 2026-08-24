@@ -2,13 +2,11 @@ module qs.services
 
 singleton Backlight       1.0 Backlight.qml
 singleton Battery         1.0 Battery.qml
-singleton Camera          1.0 Camera.qml
 singleton Cava            1.0 Cava.qml
 singleton Cliphist        1.0 Cliphist.qml
 singleton Devices         1.0 Devices.qml
 singleton Dyn             1.0 Dyn.qml
 singleton Events          1.0 Events.qml
-singleton FaceTracker     1.0 FaceTracker.qml
 singleton Flags           1.0 Flags.qml
 singleton GameMode        1.0 GameMode.qml
 singleton Motion          1.0 Motion.qml

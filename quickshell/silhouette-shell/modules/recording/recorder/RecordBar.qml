@@ -5,7 +5,7 @@ import Quickshell.Widgets
 import qs.services
 import qs.components.icons
 import qs.components.controls
-import qs.modules.pill.widgets
+import qs.modules.recording
 
 /**
  * The Recorder's full-width flame action bar plus the in-surface source
@@ -391,26 +391,20 @@ Item {
             anchors.fill: monList
         }
 
-        GlyphIcon {
+        HoverIcon {
             anchors.top: parent.top
             anchors.right: parent.right
             anchors.margins: 7 * bar.s
             width: 12 * bar.s
             height: 12 * bar.s
             name: "chevron-left"
-            color: backArea.containsMouse ? Theme.cream : Theme.faint
+            color: Theme.faint
+            hoverColor: Theme.cream
             stroke: 2
-
-            MouseArea {
-                id: backArea
-                anchors.fill: parent
-                anchors.margins: -7 * bar.s
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    bar.screenChooserOpen = false;
-                    bar.chooserOpen = true;
-                }
+            hitPad: 7 * bar.s
+            onClicked: {
+                bar.screenChooserOpen = false;
+                bar.chooserOpen = true;
             }
         }
     }

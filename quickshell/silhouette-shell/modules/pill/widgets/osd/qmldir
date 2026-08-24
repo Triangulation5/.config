@@ -1,6 +1,7 @@
 module qs.modules.pill.widgets.osd
 
 Osd 1.0 Osd.qml
+OsdFace 1.0 OsdFace.qml
 OsdLevelFace 1.0 OsdLevelFace.qml
 OsdMic 1.0 OsdMic.qml
 OsdRecord 1.0 OsdRecord.qml

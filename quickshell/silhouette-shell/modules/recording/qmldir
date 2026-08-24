@@ -1,0 +1,14 @@
+module qs.modules.recording
+
+AudioFaders 1.0 recorder/AudioFaders.qml
+AudioRow 1.0 recorder/AudioRow.qml
+ClipList 1.0 recorder/ClipList.qml
+ClipRow 1.0 recorder/ClipRow.qml
+ConfigStage 1.0 recorder/ConfigStage.qml
+MonTile 1.0 recorder/MonTile.qml
+ORow 1.0 recorder/ORow.qml
+QuickChooser 1.0 quickrecord/QuickChooser.qml
+QuickCount 1.0 quickrecord/QuickCount.qml
+RecordBar 1.0 recorder/RecordBar.qml
+Recorder 1.0 recorder/Recorder.qml
+SaveRow 1.0 recorder/SaveRow.qml

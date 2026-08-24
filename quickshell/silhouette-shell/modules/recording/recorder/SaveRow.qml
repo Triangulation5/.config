@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.services
+import qs.components.controls
 
 /**
  * The Recorder's save-location row: a tracked "SAVE TO" label, the output
@@ -42,47 +43,35 @@ Item {
         height: parent.height
         width: changeTxt.width + 9 * s + openTxt.width
 
-        Text {
-            id: changeTxt
+        TextHoverLabel {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
+            s: row.s
             text: "CHANGE"
-            color: changeArea.containsMouse ? Theme.flameGlow : Theme.subtle
+            hoverColor: Theme.flameGlow
+            idleColor: Theme.subtle
+            hitMargins: -5 * row.s
             font.family: Theme.font
-            font.pixelSize: 9 * s
+            font.pixelSize: 9 * row.s
             font.weight: Font.Bold
             font.capitalization: Font.AllUppercase
-            font.letterSpacing: 1 * s
-
-            MouseArea {
-                id: changeArea
-                anchors.fill: parent
-                anchors.margins: -5 * s
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: ScreenRec.pickDir()
-            }
+            font.letterSpacing: 1 * row.s
+            onClicked: ScreenRec.pickDir()
         }
-        Text {
-            id: openTxt
+        TextHoverLabel {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
+            s: row.s
             text: "OPEN"
-            color: openArea.containsMouse ? Theme.flameGlow : Theme.subtle
+            hoverColor: Theme.flameGlow
+            idleColor: Theme.subtle
+            hitMargins: -5 * row.s
             font.family: Theme.font
-            font.pixelSize: 9 * s
+            font.pixelSize: 9 * row.s
             font.weight: Font.Bold
             font.capitalization: Font.AllUppercase
-            font.letterSpacing: 1 * s
-
-            MouseArea {
-                id: openArea
-                anchors.fill: parent
-                anchors.margins: -5 * s
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: ScreenRec.openDir()
-            }
+            font.letterSpacing: 1 * row.s
+            onClicked: ScreenRec.openDir()
         }
     }
 

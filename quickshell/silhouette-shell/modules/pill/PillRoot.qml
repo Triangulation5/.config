@@ -153,18 +153,26 @@ ShellRoot {
      * An empty monitor argument resolves to the focused monitor here, so the
      * keybind scripts skip their hyprctl+jq round trip and a surface open costs
      * one IPC call instead of three process spawns.
+     *
+     * Deferred a tick so the IPC dispatch returns before any surface loader
+     * activates: opening a heavy surface never blocks the call that triggered
+     * it. The open/close check runs inside the deferred body, so rapid
+     * toggles still alternate correctly. Closing (Escape/backdrop/hide) stays
+     * immediate.
      */
     function toggleSurface(mon, surface) {
-        if (!mon || mon.length === 0)
-            mon = Hyprland.focusedMonitor
-                ? Hyprland.focusedMonitor.name
-                : (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
-        if (root.openMon === mon && root.openSurface === surface) {
-            root.close();
-            return;
-        }
-        root.openMon = mon;
-        root.openSurface = surface;
+        Qt.callLater(function() {
+            if (!mon || mon.length === 0)
+                mon = Hyprland.focusedMonitor
+                    ? Hyprland.focusedMonitor.name
+                    : (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
+            if (root.openMon === mon && root.openSurface === surface) {
+                root.close();
+                return;
+            }
+            root.openMon = mon;
+            root.openSurface = surface;
+        });
     }
 
     /**
@@ -260,10 +268,8 @@ ShellRoot {
         function gameMode(_mon: string): void { Flags.gameMode = !Flags.gameMode; }
         function sysmon(mon: string): void { root.toggleSurface(mon, "sysmon"); }
         function system(mon: string): void { root.toggleSurface(mon, "sysmon"); }
-        function camera(mon: string): void { root.toggleSurface(mon, "camera"); }
         function clipboard(mon: string): void { root.toggleSurface(mon, "clipboard"); }
         function wallpaper(mon: string): void { root.toggleSurface(mon, "wallpaper"); }
-        function localsend(mon: string): void { root.toggleSurface(mon, "localsend"); }
         function timer(mon: string): void { root.toggleSurface(mon, "timer"); }
         function media(mon: string): void {
             if (Players.playing)

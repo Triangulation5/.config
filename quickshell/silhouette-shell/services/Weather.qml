@@ -89,29 +89,28 @@ Singleton {
     }
 
     /**
-     * Loads cached coordinates synchronously (blockLoading) and fetches at once;
-     * an absent or malformed cache falls through to a fresh location lookup.
+     * Loads cached coordinates from the async FileView and fetches at once; a
+     * missing or malformed cache falls through to a fresh location lookup.
      */
-    Component.onCompleted: {
-        try {
-            var c = JSON.parse(locCache.text());
-            if (c && typeof c.lat === "number" && typeof c.lon === "number") {
-                root.city = c.city || "";
-                root.lat = c.lat;
-                root.lon = c.lon;
-                root.located = true;
-                root.fetchWeather();
-                return;
-            }
-        } catch (e) {}
-        root.locate();
-    }
-
     FileView {
         id: locCache
         path: root.cacheDir + "/weather-loc.json"
-        blockLoading: true
         printErrors: false
+        onLoaded: {
+            try {
+                var c = JSON.parse(locCache.text());
+                if (c && typeof c.lat === "number" && typeof c.lon === "number") {
+                    root.city = c.city || "";
+                    root.lat = c.lat;
+                    root.lon = c.lon;
+                    root.located = true;
+                    root.fetchWeather();
+                    return;
+                }
+            } catch (e) {}
+            root.locate();
+        }
+        onLoadFailed: root.locate()
     }
 
     /** Resolve coordinates: geocode the manual city override, else fall back to IP. */

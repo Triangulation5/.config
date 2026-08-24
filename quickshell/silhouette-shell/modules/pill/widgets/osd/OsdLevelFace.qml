@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 import qs.components.icons
+import qs.modules.pill.widgets.osd
 
 /**
  * Level OSD face: a glyph at the left, a percentage at the right and a fill
@@ -11,11 +12,8 @@ import qs.components.icons
  * `fillGradient` wins over `fillColor`, and `shimmerOn` runs the charging
  * sweep the battery face uses. Driven by the Osd root through `active`.
  */
-Item {
+OsdFace {
     id: face
-
-    property real s: 1.1
-    property bool active: false
 
     property string glyph: ""
     property color glyphColor: Theme.iconDim
@@ -30,10 +28,6 @@ Item {
     property Gradient fillGradient: null
 
     property bool shimmerOn: false
-
-    opacity: face.active ? 1 : 0
-    visible: opacity > 0.01
-    Behavior on opacity { NumberAnimation { duration: 150 } }
 
     GlyphIcon {
         id: levelGlyph

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Services.Notifications
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * Single inbox entry for the Link surface: icon tile or diamond, body text,
@@ -163,45 +164,33 @@ Rectangle {
                 opacity: nrowHover.hovered ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
-                GlyphIcon {
+                HoverIcon {
                     id: nrowReply
                     visible: nrow.hasReply
                     anchors.verticalCenter: parent.verticalCenter
                     width: 11 * s
                     height: 11 * s
                     name: "return"
-                    color: nrowReplyArea.containsMouse ? Theme.vermLit : Theme.dim
+                    color: Theme.dim
+                    hoverColor: Theme.vermLit
                     stroke: 1.9
-
-                    MouseArea {
-                        id: nrowReplyArea
-                        anchors.fill: parent
-                        anchors.margins: -6 * s
-                        enabled: nrowHover.hovered && nrow.hasReply
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: nrow.replying = true
-                    }
+                    hitPad: 6 * s
+                    enabled: nrowHover.hovered && nrow.hasReply
+                    onClicked: nrow.replying = true
                 }
 
-                GlyphIcon {
+                HoverIcon {
                     id: nrowX
                     anchors.verticalCenter: parent.verticalCenter
                     width: 11 * s
                     height: 11 * s
                     name: "close"
-                    color: nrowXArea.containsMouse ? Theme.cream : Theme.dim
+                    color: Theme.dim
+                    hoverColor: Theme.cream
                     stroke: 1.9
-
-                    MouseArea {
-                        id: nrowXArea
-                        anchors.fill: parent
-                        anchors.margins: -6 * s
-                        enabled: nrowHover.hovered
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: Notifs.dismissEntry(nrow.entry)
-                    }
+                    hitPad: 6 * s
+                    enabled: nrowHover.hovered
+                    onClicked: Notifs.dismissEntry(nrow.entry)
                 }
             }
         }

@@ -10,6 +10,7 @@ import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.controls
 import qs.components.icons
+import qs.components.layout
 
 /**
  * 動 ANIMATION sub-surface: toggles Hyprland animations, sets one master speed
@@ -148,10 +149,10 @@ SettingsSurface {
         height: root.height + root.mBottom * root.s
         clip: true
 
-        SettingsHeader {
+        SurfaceHeader {
             s: root.s
-            glyph: "動"
-            title: "ANIMATION"
+            kanji: "動"
+            label: "ANIMATION"
             showBack: true
         }
 
@@ -357,7 +358,7 @@ SettingsSurface {
                 }
             }
 
-            GlyphIcon {
+            HoverIcon {
                 anchors.right: parent.right
                 anchors.rightMargin: 12 * root.s
                 anchors.top: parent.top
@@ -366,21 +367,15 @@ SettingsSurface {
                 width: 15 * root.s
                 height: 15 * root.s
                 name: "undo"
-                color: revertArea.containsMouse ? Theme.bright : Qt.alpha(Theme.onGlow, 0.6)
+                color: Qt.alpha(Theme.onGlow, 0.6)
+                hoverColor: Theme.bright
                 stroke: 1.9
-
-                MouseArea {
-                    id: revertArea
-                    anchors.fill: parent
-                    anchors.margins: -5 * root.s
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root.cx1 = root.base.cx1; root.cy1 = root.base.cy1;
-                        root.cx2 = root.base.cx2; root.cy2 = root.base.cy2;
-                        editor.syncHandles();
-                        root.writeCurve();
-                    }
+                hitPad: 5 * root.s
+                onClicked: {
+                    root.cx1 = root.base.cx1; root.cy1 = root.base.cy1;
+                    root.cx2 = root.base.cx2; root.cy2 = root.base.cy2;
+                    editor.syncHandles();
+                    root.writeCurve();
                 }
             }
         }

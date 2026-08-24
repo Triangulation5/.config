@@ -25,7 +25,6 @@ NightLightGroup 1.0 look/NightLightGroup.qml
 OpacityGroup 1.0 look/OpacityGroup.qml
 PillGroup 1.0 look/PillGroup.qml
 Settings 1.0 base/Settings.qml
-SettingsHeader 1.0 base/SettingsHeader.qml
 SettingsRow 1.0 base/SettingsRow.qml
 SettingsSeg 1.0 base/SettingsSeg.qml
 SettingsSurface 1.0 base/SettingsSurface.qml

@@ -27,9 +27,6 @@ PillSurface {
     mBottom: 13
 
     property string subview: "main"
-    /** Send state exposed by the pill: "" (idle), "scanning", "sending". */
-    property string sendStatus: ""
-    signal openSend()
 
     /**
      * Subview to land on the next time the surface opens. The pill sets this from
@@ -284,44 +281,7 @@ PillSurface {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6 * root.s
-                    visible: Notifs.unread > 0 || root.sendStatus.length > 0
-
-                    /** Send status chip — scanning or sending. */
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 5 * root.s
-                        visible: root.sendStatus.length > 0
-
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 5 * root.s; height: 5 * root.s; radius: 2.5 * root.s
-                            color: Theme.flameGlow
-
-                            SequentialAnimation on opacity {
-                                running: root.sendStatus.length > 0
-                                loops: Animation.Infinite
-                                NumberAnimation { from: 0.45; to: 1; duration: 900; easing.type: Easing.InOutSine }
-                                NumberAnimation { from: 1; to: 0.45; duration: 900; easing.type: Easing.InOutSine }
-                            }
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: root.sendStatus === "scanning" ? "SCAN" : (root.sendStatus === "sending" ? "SEND" : "")
-                            color: Theme.flameGlow
-                            font.family: Theme.font
-                            font.pixelSize: 9 * root.s
-                            font.weight: Font.DemiBold
-                            font.letterSpacing: 1.2 * root.s
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.margins: -4 * root.s
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.openSend()
-                        }
-                    }
+                    visible: Notifs.unread > 0
 
                     Ember {
                         id: headerEmber

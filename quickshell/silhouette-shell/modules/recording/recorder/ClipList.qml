@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.services
-import qs.modules.pill.widgets
+import qs.modules.recording
 
 /**
  * The Recorder's RECENT section: a header row (kanji, clip count and a

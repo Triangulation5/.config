@@ -12,14 +12,9 @@ promised — it is a wishlist to pick from.
   the shell stays light on RAM, CPU and iGPU machines.
 - Make everything asynchronous.
 - Clean up the codebase and comments (make sure they are all docstyle).
-- Make the Marquee in the media thing fade a little bit when it is on the far
-  left edge part of the text and the right edge part of the text, by fade I
-  mean like it should have a vague shadow the color of the palette so that it
-  does not break when it is on dynamic palette mode.
 - Fix the screencorner and the ears/flares of the pill while in notch style so
   that it matches the colors of the main pill.
-- Make Ame's cursor beam, or whatever thing, lag behind or something like that
-  on the calendar style.
+- Find opportunities to optimize and refactor
 
 ## Medium
 
@@ -53,7 +48,6 @@ promised — it is a wishlist to pick from.
 - Make the calendar style thing inside the hover pill, only show 3 dates while
   90, and 100 percent ui scale, and 5 dates while on 110, and 125 percent ui
   scale.
-- Camera does not work yet, fix that.
 - The album art, calendar, and all should disappear when the hover surface is
   closed, it should disappear in a way that does not leave behind artifacts.
 
