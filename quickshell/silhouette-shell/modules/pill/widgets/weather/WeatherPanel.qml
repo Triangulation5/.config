@@ -19,6 +19,30 @@ Item {
 
     /** True once live weather data has arrived. */
     readonly property bool shown: Weather.ready
+
+    /**
+     * Content reveal latch: the weather text stays invisible until the same
+     * delay the calendar's event editor uses after its panel shows, so it
+     * doesn't pop in while the surface is still settling.
+     */
+    property bool _ready: false
+    Timer {
+        id: readyDelay
+        interval: 100
+        onTriggered: panel._ready = true
+    }
+    onShownChanged: {
+        if (shown) {
+            panel._ready = false;
+            readyDelay.restart();
+        } else {
+            readyDelay.stop();
+            panel._ready = true;
+        }
+    }
+    /** Weather may already be ready when the panel is first created. */
+    Component.onCompleted: if (panel.shown) readyDelay.restart()
+
     /** Width the panel occupies when shown. */
     readonly property real fullW: 152 * s
 
@@ -30,6 +54,15 @@ Item {
         visible: width > 1
         opacity: shown ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+        /**
+         * The panel glides open on the same liquid morph curve the pill uses
+         * for its own width, so the calendar grid it carries is pushed along
+         * smoothly instead of snapping when the weather arrives after the
+         * surface is already open.
+         */
+        Behavior on width {
+            NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve }
+        }
 
     Column {
         id: wxCol
@@ -38,6 +71,10 @@ Item {
         anchors.top: parent.top
         anchors.rightMargin: 6 * s
         spacing: 9 * s
+        opacity: (panel.shown && panel._ready) ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
+        }
 
         Row {
             spacing: 9 * s

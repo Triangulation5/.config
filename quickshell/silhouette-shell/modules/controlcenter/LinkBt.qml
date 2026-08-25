@@ -386,6 +386,29 @@ Item {
                         readonly property bool focusPrimary: root.confirmFocus === 0
                         readonly property bool focusForget: root.confirmFocus === 1
                         readonly property int battery: root.batteryLevel(modelData)
+
+                        /**
+                         * The confirm row's text stays invisible until 100ms
+                         * after the row expands (the calendar editor's delayed
+                         * reveal pattern), so the expand reads as one motion
+                         * instead of text popping in mid-animation.
+                         */
+                        property bool confirmReady: false
+                        Timer {
+                            id: confirmDelay
+                            interval: 100
+                            onTriggered: devItem.confirmReady = true
+                        }
+                        onConfirmingChanged: {
+                            if (confirming) {
+                                confirmReady = false;
+                                confirmDelay.restart();
+                                Qt.callLater(devItem.ensureVisible);
+                            } else {
+                                confirmDelay.stop();
+                                confirmReady = false;
+                            }
+                        }
                         width: devCol.width
                         spacing: 2 * root.s
 
@@ -404,7 +427,6 @@ Item {
                                 devFlick.contentY += y + h - devFlick.height;
                         }
                         onFocusedChanged: if (focused) Qt.callLater(devItem.ensureVisible)
-                        onConfirmingChanged: if (confirming) Qt.callLater(devItem.ensureVisible)
 
                         Rectangle {
                             width: parent.width
@@ -543,6 +565,10 @@ Item {
                             visible: devItem.confirming
                             width: parent.width
                             height: 30 * root.s
+                            opacity: devItem.confirmReady ? 1 : 0
+                            Behavior on opacity {
+                                NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
+                            }
 
                             Text {
                                 anchors.left: parent.left

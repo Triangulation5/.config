@@ -49,6 +49,15 @@ Item {
     property bool pinned: false
     property bool forcePinned: false
 
+    /**
+     * True while the overlay is hiding the pill over fullscreen content
+     * (`pillHidden`). While hidden the rest face must not fade in: the pill
+     * collapses toward rest geometry as it fades out, and without this gate
+     * the clock text fades in at the tail of the close and ghosts over the
+     * fullscreen content.
+     */
+    property bool hidden: false
+
     /** True renders the pill as a notch-style bar (ears out, square top corners); false keeps the rounded pill. */
     property bool notchStyle: Flags.notchStyle
 
@@ -165,6 +174,13 @@ Item {
     }
     readonly property bool toastActive: Notifs.popups.length > 0
     readonly property bool osdActive: osd.flashing
+    /** The flashing OSD kind, exposed so the overlay can tell workspace flashes (which must not summon over fullscreen) apart from the rest. */
+    readonly property string osdKind: osd.kind
+
+    /** The overlay cuts a workspace flash short when the monitor goes fullscreen. */
+    function dismissOsd() {
+        osd.dismiss();
+    }
 
     /**
      * Quick-record overlays belong only to the focused monitor the keybind
@@ -336,11 +352,18 @@ Item {
         polkit:    { size: () => { const it = surfaceItem(ldPolkit, "polkit"); return Qt.size(polkitW, it.implicitHeight + 28 * s); }, ame: () => surfaceItem(ldPolkit, "polkit") }
     })
 
-    readonly property string mode: (surfaceOpen && surfaces[surface] !== undefined ? surface
+    /**
+     * The OSD preempts the rest, hover and any open surface: it morphs the
+     * pill open for its flash wherever the pill was, then morphs back into
+     * whatever it was showing. A held pill (pin/peek) suppresses it, and
+     * game mode keeps its flat strip so volume/brightness ride the bar's
+     * own inline chips instead.
+     */
+    readonly property string mode: (osdActive && !held && !Flags.gameMode ? "osd"
+        : (surfaceOpen && surfaces[surface] !== undefined ? surface
         : (Flags.gameMode ? "game"
         : (quickChoosing ? "quickChoose"
         : (quickCounting ? "quickCount"
-        : (osdActive && !held ? "osd"
         : (toastActive && !held ? "toast"
         : (expanded ? "hover" : "rest")))))))
 
@@ -837,7 +860,12 @@ Item {
      * descriptor and maps it. Null = nothing open (or a surface with no anchor,
      * e.g. wallpaper), so Ame falls back to the pill's own hover/wake anchor.
      */
-    readonly property var ameSurface: (surfaceOpen && surfaces[surface] !== undefined)
+    /**
+     * While the OSD preempts the surface, the bead goes quiet (form "off")
+     * instead of parking at the squished surface anchor inside the OSD-sized
+     * body.
+     */
+    readonly property var ameSurface: (surfaceOpen && pill.mode !== "osd" && surfaces[surface] !== undefined)
         ? surfaces[surface].ame() : null
 
     Ame {
@@ -918,7 +946,7 @@ Item {
     Item {
         id: rest
         anchors.fill: parent
-        opacity: (pill.expanded || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount") ? 0 : Math.pow(pill.morphCloseness, 1.5)
+        opacity: (pill.expanded || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0 : Math.pow(pill.morphCloseness, 1.5)
         visible: opacity > 0.01
         Behavior on opacity { NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) } }
 
@@ -1135,8 +1163,14 @@ Item {
         anchors.bottomMargin: 12 * pill.s
         s: pill.s
         screenName: pill.screenName
-        suppressed: pill.surfaceOpen || pill.held
+        /**
+         * The OSD preempts any open surface, so only a held pill (pin/peek)
+         * or a live polkit prompt suppresses it — morphing away from the
+         * password field mid-prompt would hide the only way out.
+         */
+        suppressed: pill.held || pill.surface === "polkit"
         expanded: pill.expanded
+        mixerOpen: pill.surface === "mixer"
         enabled: pill.mode === "osd"
         opacity: pill.mode === "osd" ? 1 : 0
         visible: opacity > 0.01

@@ -42,6 +42,17 @@ Variants {
         readonly property bool modal: pill.authPending ? false : ((surfaceOpen && !timerSurface) || pill.held || pill.quickChoosing)
 
         /**
+         * True while something keeps the pill over fullscreen content: an
+         * open surface (or the quick-record chooser, which is modal too), a
+         * flashing OSD — except the workspace kind, which must never hold the
+         * pill over a fullscreen workspace — or a peek pinning the pill.
+         * Anything else — a bare hover, an idle OSD/toast — lets fullscreen
+         * retract it.
+         */
+        readonly property bool summoned: modal || (pill.osdActive && pill.osdKind !== "workspace") || host.peekMon === modelData.name
+        readonly property bool pillHidden: monFullscreen && !summoned
+
+        /**
          * Auto-hide: with the flag on, the rest pill retracts off the top
          * edge and the band mask collapses to a thin strip, so a pointer
          * touch anywhere along the top edge wakes it. Anything that needs
@@ -72,8 +83,9 @@ Variants {
         /**
          * True while this monitor's active workspace holds a real
          * fullscreen window. The pill then retracts off the top edge and
-         * the whole layer becomes click-through so fullscreen content owns
-         * the screen. Maximize is suppressed globally, so only true
+         * the layer is click-through so fullscreen content owns the
+         * screen, until a surface or a peek summons it back over the
+         * content. Maximize is suppressed globally, so only true
          * fullscreen ever flips this.
          */
         readonly property bool monFullscreen: {
@@ -92,6 +104,7 @@ Variants {
             if (host.openMon === modelData.name) host.close();
             if (host.peekMon === modelData.name) host.peekMon = "";
             pill.pinned = false;
+            pill.dismissOsd();
         }
 
         screen: modelData
@@ -103,7 +116,7 @@ Variants {
 
         anchors { top: true; left: true; right: true; bottom: true }
 
-        mask: monFullscreen ? hiddenRegion : (modal ? fullRegion : (Flags.autoHide ? autoRegion : pillRegion))
+        mask: modal ? fullRegion : (pillHidden ? hiddenRegion : (Flags.autoHide ? autoRegion : pillRegion))
         Region { id: hiddenRegion }
         Region {
             id: autoRegion
@@ -397,8 +410,9 @@ Variants {
                 barWindow: overlay
                 surface: overlay.surface
                 forcePinned: host.peekMon === overlay.modelData.name
+                hidden: overlay.pillHidden
 
-                opacity: (overlay.monFullscreen || overlay.autoRetracted) ? 0 : 1
+                opacity: (overlay.pillHidden || overlay.autoRetracted) ? 0 : 1
                 Behavior on opacity {
                     NumberAnimation {
                         duration: Math.round(Motion.morph * 0.7)
@@ -406,7 +420,14 @@ Variants {
                     }
                 }
                 transform: Translate {
-                    y: (overlay.monFullscreen || overlay.autoRetracted) ? -(pill.height + overlay.topGap) : 0
+                    /**
+                     * The retract/summon slide: the pill glides up off the top
+                     * edge when fullscreen hides it (or auto-hide tucks the
+                     * rest pill into the wake strip) and drops back down from
+                     * the top when a surface, peek or hover summons it over
+                     * fullscreen content.
+                     */
+                    y: (overlay.pillHidden || overlay.autoRetracted) ? -(pill.height + overlay.topGap) : 0
                     Behavior on y {
                         NumberAnimation {
                             duration: Motion.morph
