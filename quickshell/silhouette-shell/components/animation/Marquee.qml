@@ -60,11 +60,22 @@ Item {
     }
 
     /**
-     * One edge's palette fade: a horizontal LinearGradient shape from
-     * transparent to the palette color. The right edge reuses this shape
-     * mirrored with scale: -1, so the fade direction flips with it.
+     * One edge's palette fade: a horizontal LinearGradient shape with the
+     * palette color at the outer card edge dissolving to transparent at the
+     * inner edge (toward the text center), so the scrolling label sinks into
+     * the card instead of clipping hard. Without this, the fade would sit
+     * opaque over the readable text and clear right at the boundary, which is
+     * exactly backwards. The right edge flips the stop order (`mirrored`)
+     * since its local coordinate space runs the opposite direction (local 0
+     * is the inner side, local fadeWidth is the outer/card side) — flipping
+     * the shape itself would also work, but flipping the stop order keeps the
+     * geometry identical and the color mapping explicit.
      */
     component EdgeFade: Shape {
+        id: fade
+
+        property bool mirrored: false
+
         width: root.fadeWidth
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -73,13 +84,23 @@ Item {
         ShapePath {
             startX: 0
             startY: 0
+            /** No stroke: the ShapePath's default black pen would box the fade in. */
+            strokeColor: "transparent"
             fillGradient: LinearGradient {
                 x1: 0
                 y1: 0
                 x2: root.fadeWidth
                 y2: 0
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 1.0; color: root.fadeColor }
+                GradientStop {
+                    position: fade.mirrored ? 1.0 : 0.0
+                    color: Qt.rgba(
+                        root.fadeColor.r,
+                        root.fadeColor.g,
+                        root.fadeColor.b,
+                        0.75
+                    )
+                }
+                GradientStop { position: fade.mirrored ? 0.0 : 1.0; color: "transparent" }
             }
             PathLine { x: root.fadeWidth; y: 0 }
             PathLine { x: root.fadeWidth; y: height }
@@ -94,7 +115,7 @@ Item {
 
     EdgeFade {
         anchors.right: parent.right
-        scale: -1
+        mirrored: true
     }
 
     SequentialAnimation {
