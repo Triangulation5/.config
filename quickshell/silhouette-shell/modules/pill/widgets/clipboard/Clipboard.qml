@@ -209,7 +209,13 @@ PillSurface {
 
         Item {
             width: parent.width
-            height: (root.results.length === 0 && !Cliphist.count) ? 120 * root.s : 0
+            /**
+             * The empty state only claims "History empty" once a list has
+             * actually succeeded: while the first load is in flight (or a
+             * boot-time read failed and is being retried) entries are still
+             * empty, and showing the empty state would lie about the history.
+             */
+            height: (root.results.length === 0 && !Cliphist.count && Cliphist.loaded) ? 120 * root.s : 0
             visible: height > 0
 
             Column {

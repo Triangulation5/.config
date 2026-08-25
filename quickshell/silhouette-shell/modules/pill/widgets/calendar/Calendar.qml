@@ -313,8 +313,17 @@ PillSurface {
 
     Item {
         id: gridPane
-        anchors.left: weatherPanel.shown ? weatherPanel.right : parent.left
+        /**
+         * Anchored to the weather panel's right edge even while it is
+         * collapsed (width 0 puts it on the surface's left edge), so when
+         * Weather.ready flips the grid is carried right by the panel's opening
+         * glide instead of snapping. The gap follows the same liquid curve.
+         */
+        anchors.left: weatherPanel.right
         anchors.leftMargin: weatherPanel.shown ? root.gutter : 0
+        Behavior on anchors.leftMargin {
+            NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve }
+        }
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: root.gridW

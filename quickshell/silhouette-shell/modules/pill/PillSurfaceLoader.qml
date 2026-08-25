@@ -40,7 +40,14 @@ Loader {
         const it = loader.item;
         if (it && loader.host) {
             it.s = Qt.binding(() => loader.host.s);
-            it.open = Qt.binding(() => loader.host.surface === loader.name);
+            /**
+             * The surface counts as open only while the pill is actually
+             * showing it: when the OSD preempts the pill for a flash, `open`
+             * drops so the surface dissolves instead of being crushed under
+             * the OSD-sized body, and it fades back in as the pill morphs
+             * back to the surface.
+             */
+            it.open = Qt.binding(() => loader.host.surface === loader.name && loader.host.mode !== "osd");
             it.morphCloseness = Qt.binding(() => loader.host.morphCloseness);
         }
     }

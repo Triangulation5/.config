@@ -23,6 +23,12 @@ Item {
     property string screenName: ""
     property bool suppressed: false
     property bool expanded: false
+    /**
+     * True while the mixer surface is open: it renders live volume and mic
+     * levels, so those flashes are dropped rather than morphing the pill away
+     * from the faders. Battery and the other kinds still preempt.
+     */
+    property bool mixerOpen: false
     property bool flashing: false
     property string kind: "volume"
     property bool armed: false
@@ -89,7 +95,23 @@ Item {
                 return mons[i].activeWorkspace ? mons[i].activeWorkspace.name : "";
         return "";
     }
-    onActiveWsNameChanged: if (activeWsName.length > 0 && !expanded) flash("workspace");
+    /**
+     * True while this monitor's active workspace holds a fullscreen client.
+     * Workspace flashes are skipped then (and cut short if fullscreen lands
+     * mid-flash), so the switcher never lingers over fullscreen content.
+     */
+    readonly property bool wsFullscreen: {
+        var mons = Hyprland.monitors.values;
+        for (var i = 0; i < mons.length; i++) {
+            if (mons[i].name === screenName) {
+                var ws = mons[i].activeWorkspace;
+                var o = ws ? ws.lastIpcObject : null;
+                return o ? !!o.hasfullscreen : false;
+            }
+        }
+        return false;
+    }
+    onActiveWsNameChanged: if (activeWsName.length > 0 && !expanded && !wsFullscreen) flash("workspace");
 
     /**
      * Leading-edge throttle. The first change flashes at once so a real track
@@ -119,6 +141,9 @@ Item {
     function flash(which) {
         if (!armed || suppressed)
             return false;
+        /** The mixer already renders volume, mic, brightness and vibrance live, so those flashes would only fight it; battery and the rest still flash over it. */
+        if (mixerOpen && (which === "volume" || which === "mic" || which === "brightness"))
+            return false;
         if (which !== "workspace" && !onFocusedMonitor)
             return false;
         if (which === "track" && flashing && (kind === "volume" || kind === "brightness"))
@@ -130,6 +155,16 @@ Item {
         hideTimer.interval = (which === "battery" || which === "record") ? 2000 : 1800;
         hideTimer.restart();
         return true;
+    }
+
+    /**
+     * Ends a running workspace flash immediately; the overlay calls it when
+     * the monitor goes fullscreen so the switcher vanishes with the pill
+     * instead of holding over the fullscreen content.
+     */
+    function dismiss() {
+        if (root.kind === "workspace")
+            root.flashing = false;
     }
 
     onSuppressedChanged: {
