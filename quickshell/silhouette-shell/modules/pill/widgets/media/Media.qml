@@ -244,8 +244,7 @@ PillSurface {
             text: root.artist
             color: Theme.dim
             pixelSize: 16 * root.s
-            /** The artist line scrolls without the edge fade — only the title melts into the card. */
-            fadeWidth: 0
+            fadeWidth: 16 * root.s
             active: root.shown
             visible: text.length > 0
         }
