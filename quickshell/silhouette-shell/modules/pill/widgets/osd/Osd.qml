@@ -24,6 +24,22 @@ Item {
     property bool suppressed: false
     property bool expanded: false
     /**
+     * True while a surface owns the pill (mirrored from Pill.surfaceOpen).
+     * A flash that begins over an open surface keeps its preempt and morphs
+     * back into that surface when it finishes; one that begins at rest must
+     * yield when a surface opens mid-flash.
+     */
+    property bool surfaceOpen: false
+    /** Whether the current flash began on top of an open surface. */
+    property bool startedOnSurface: false
+    /**
+     * Whether the current flash may hold the pill summoned over fullscreen
+     * content. Workspace flashes never may — a switch can land on a
+     * fullscreen workspace, and the switcher must not linger over it — so
+     * the overlay reads this instead of re-deriving the kind exception.
+     */
+    readonly property bool holdsOverFullscreen: root.kind !== "workspace"
+    /**
      * True while the mixer surface is open: it renders live volume and mic
      * levels, so those flashes are dropped rather than morphing the pill away
      * from the faders. Battery and the other kinds still preempt.
@@ -152,6 +168,7 @@ Item {
             holdExtends = 0;
         kind = which;
         flashing = true;
+        startedOnSurface = root.surfaceOpen;
         hideTimer.interval = (which === "battery" || which === "record") ? 2000 : 1800;
         hideTimer.restart();
         return true;
@@ -160,11 +177,23 @@ Item {
     /**
      * Ends a running workspace flash immediately; the overlay calls it when
      * the monitor goes fullscreen so the switcher vanishes with the pill
-     * instead of holding over the fullscreen content.
+     * instead of holding over the fullscreen content. Only workspace
+     * flashes lose to fullscreen, so the guard is just the inverse of
+     * `holdsOverFullscreen`.
      */
-    function dismiss() {
-        if (root.kind === "workspace")
+    function dismissWorkspace() {
+        if (!root.holdsOverFullscreen)
             root.flashing = false;
+    }
+
+    /**
+     * Ends any running flash immediately, whatever its kind. The pill calls
+     * this when a surface opens over a flash that began at rest, so the
+     * flash can't linger and pop back in when the surface closes. The
+     * workspace-only `dismissWorkspace` stays for the fullscreen path.
+     */
+    function dismissAll() {
+        root.flashing = false;
     }
 
     onSuppressedChanged: {
