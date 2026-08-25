@@ -1,0 +1,3 @@
+module qs.modules.reload
+
+ReloadPopup 1.0 ReloadPopup.qml

@@ -49,7 +49,7 @@ Variants {
          * Anything else — a bare hover, an idle OSD/toast — lets fullscreen
          * retract it.
          */
-        readonly property bool summoned: modal || (pill.osdActive && pill.osdKind !== "workspace") || host.peekMon === modelData.name
+        readonly property bool summoned: modal || (pill.osdActive && pill.osdHoldsOverFullscreen) || host.peekMon === modelData.name
         readonly property bool pillHidden: monFullscreen && !summoned
 
         /**
@@ -104,7 +104,7 @@ Variants {
             if (host.openMon === modelData.name) host.close();
             if (host.peekMon === modelData.name) host.peekMon = "";
             pill.pinned = false;
-            pill.dismissOsd();
+            pill.dismissWorkspaceOsd();
         }
 
         screen: modelData

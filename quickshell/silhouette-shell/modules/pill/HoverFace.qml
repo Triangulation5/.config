@@ -176,6 +176,13 @@ Item {
                 visible: active
 
                 /**
+                 * Build the Media widget (player lookups, cover art) in frame
+                 * gaps instead of blocking the tick music starts; the bud's
+                 * staggered mediaMorph entrance covers the brief build.
+                 */
+                asynchronous: true
+
+                /**
                  * Collapse to 0×0 when nothing plays: an invisible-but-sized
                  * loader still counts toward hoverRow's implicitWidth, which
                  * would leave a gap inside the expanded host.
