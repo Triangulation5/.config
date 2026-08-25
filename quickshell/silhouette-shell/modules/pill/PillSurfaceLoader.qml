@@ -14,6 +14,14 @@ import QtQuick
  * are bound onto it from the host as reactive Qt.binding bindings (surfaces
  * are PillSurface subclasses and declare those props), so the loaders carry
  * no repeated s/open/morphCloseness triple.
+ *
+ * Creation is opt-in asynchronous per surface: heavy surfaces set the
+ * inherited `asynchronous: true` on their declaration, so their first open
+ * builds in frame gaps instead of blocking the frame that starts the morph.
+ * Default (off) keeps light surfaces instant. Async only delays *when* the
+ * item exists — the host's size thunks must treat a null item as "still
+ * loading" (see the measure helpers in Pill.qml) and re-morph when the item
+ * lands, which the read of `item` re-registers as a dependency.
  */
 Loader {
     id: loader
