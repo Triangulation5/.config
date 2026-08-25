@@ -5,6 +5,7 @@ import qs.modules.pill
 import qs.modules.lock
 import qs.modules.screencorner
 import qs.modules.launcher
+import qs.modules.reload
 
 /**
  * Shell entry point — a pure composition root. Each daemon is a self-contained
@@ -19,4 +20,5 @@ ShellRoot {
     LockRoot { id: lockRoot }
     ScreenCornerRoot { id: cornerRoot }
     LauncherRoot { id: launcherRoot }
+    ReloadPopup { id: reloadRoot }
 }

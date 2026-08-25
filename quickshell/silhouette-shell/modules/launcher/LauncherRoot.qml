@@ -72,7 +72,12 @@ ShellRoot {
             id: win
             required property var modelData
             screen: modelData
-            visible: root.shown && root.targetMonitor === modelData.name
+            /**
+             * The launcher appears only once its item is actually built, so
+             * the async build never shows a blank window. `status` flips to
+             * Ready when the asynchronous load completes, then visible lands.
+             */
+            visible: root.shown && root.targetMonitor === modelData.name && launcherLoader.status === Loader.Ready
 
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
@@ -87,18 +92,25 @@ ShellRoot {
                 onClicked: root.shown = false
             }
 
+            /**
+             * Built asynchronously in frame gaps so opening the launcher never
+             * blocks the UI thread (the whole ranked entry list instantiates
+             * here). Quickshell's LazyLoader can't host this: it is a non-Item
+             * window loader, and the launcher content must fill the window as
+             * a visual child — so this stays a Qt Loader, just async.
+             */
             Loader {
                 id: launcherLoader
                 anchors.fill: parent
 
                 active: root.shown && root.targetMonitor === modelData.name
+                asynchronous: true
 
                 /**
-                 * Focus once the item exists. The window's visible and the
-                 * loader's active flip from the same binding, so onVisibleChanged
-                 * can fire before the item is built; focusing here instead is
-                 * race-free. The item is recreated fresh per open, so query and
-                 * selection reset by construction.
+                 * Focus once the item exists. The window's visible gates on
+                 * the loader's Ready status rather than onVisibleChanged, so
+                 * focus lands after the build completes. The item is recreated
+                 * fresh per open, so query and selection reset by construction.
                  */
                 onItemChanged: if (item) Qt.callLater(item.focusField)
 
@@ -108,38 +120,38 @@ ShellRoot {
 
                     onLaunch: (entry) => root.run(entry)
                     onQuit: root.shown = false
-                }
-            }
 
-            Connections {
-                target: launcherLoader.item
-                function onQueryChanged() {
-                    root.query = launcherLoader.item.query;
-                    launcherLoader.item.selectedIndex = 0;
+                    /**
+                     * Push the live query up so `root.results` re-ranks as the
+                     * user types, and reset the row selection on every change.
+                     * Wired here instead of a Connections on the loader's item,
+                     * which would touch `.item` from a binding and defeat the
+                     * async load.
+                     */
+                    onQueryChanged: { root.query = query; selectedIndex = 0; }
                 }
             }
         }
     }
 
     /**
-     * IPC: the standalone launcher owns its show/hide/toggle surface. Opening
-     * builds the whole launcher UI (search + ranked lists), so show/toggle defer
-     * the visible flip a tick — the IPC dispatch returns immediately and the
-     * surface is constructed off the IPC hot path. Hide stays immediate.
+     * IPC: the standalone launcher owns its show/hide/toggle surface. The
+     * launcher UI builds asynchronously in frame gaps (see launcherLoader), so
+     * show/toggle flip `shown` immediately — the IPC dispatch returns without
+     * blocking and the window appears the moment the build lands. Hide stays
+     * immediate.
      */
     IpcHandler {
         target: "launcher"
         function show(mon: string): void {
             root.targetMonitor = mon;
-            Qt.callLater(function() { root.shown = true; });
+            root.shown = true;
         }
         function hide(): void { root.shown = false; }
         function toggle(mon: string): void {
-            Qt.callLater(function() {
-                if (root.shown) { root.shown = false; return; }
-                root.targetMonitor = mon;
-                root.shown = true;
-            });
+            if (root.shown) { root.shown = false; return; }
+            root.targetMonitor = mon;
+            root.shown = true;
         }
     }
 }

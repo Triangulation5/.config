@@ -4,10 +4,12 @@ import QtQuick
 import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
+import Quickshell.Io
 import Quickshell.Networking
 import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
 import qs.services
+import qs.components.icons
 import qs.modules.pill.widgets
 import qs.modules.pill.widgets.osd
 import qs.modules.recording
@@ -174,12 +176,16 @@ Item {
     }
     readonly property bool toastActive: Notifs.popups.length > 0
     readonly property bool osdActive: osd.flashing
-    /** The flashing OSD kind, exposed so the overlay can tell workspace flashes (which must not summon over fullscreen) apart from the rest. */
-    readonly property string osdKind: osd.kind
+    /**
+     * Whether the flashing OSD may hold the pill over fullscreen content
+     * (everything but the workspace switcher); the overlay reads this when
+     * deciding whether to summon over fullscreen.
+     */
+    readonly property bool osdHoldsOverFullscreen: osd.holdsOverFullscreen
 
     /** The overlay cuts a workspace flash short when the monitor goes fullscreen. */
-    function dismissOsd() {
-        osd.dismiss();
+    function dismissWorkspaceOsd() {
+        osd.dismissWorkspace();
     }
 
     /**
@@ -233,6 +239,8 @@ Item {
     readonly property real quickChooseH: 76 * s
     readonly property real quickCountW: 150 * s
     readonly property real quickCountH: 64 * s
+    readonly property real dragOverW: 300 * s
+    readonly property real dragOverH: 126 * s
     readonly property real gameH: 34 * s
     readonly property real gameW: barWindow ? barWindow.width : 1920
     readonly property real restCorner: (Flags.notchStyle ? 18 : 28) * s
@@ -353,19 +361,34 @@ Item {
     })
 
     /**
-     * The OSD preempts the rest, hover and any open surface: it morphs the
-     * pill open for its flash wherever the pill was, then morphs back into
-     * whatever it was showing. A held pill (pin/peek) suppresses it, and
-     * game mode keeps its flat strip so volume/brightness ride the bar's
-     * own inline chips instead.
+     * True while the flashing OSD owns the pill: it is not held (pin/peek),
+     * game mode is off (volume/brightness ride the bar's own inline chips
+     * there), and — for a flash that began at rest — no surface has opened
+     * over it. A flash that began while a surface was open still preempts
+     * that surface and returns when it finishes; a surface that opens over a
+     * flash which began at rest takes the pill straight over instead of
+     * parking on the OSD and swallowing the open.
      */
-    readonly property string mode: (osdActive && !held && !Flags.gameMode ? "osd"
+    readonly property bool osdPreempts: osdActive && !held && !Flags.gameMode && !(surfaceOpen && !osd.startedOnSurface)
+
+    /**
+     * Drag-to-install state, live only while a file hovers the resting pill.
+     * `dragStage` walks hover -> installing -> done, or bad for a
+     * non-installable drop.
+     */
+    property bool dragActive: false
+    property string dragName: ""
+    property string dragStage: ""
+
+    /** Mode ladder: drag-over, OSD, open surface, game, quick-record, toast, hover, rest. */
+    readonly property string mode: (dragActive ? "dragOver"
+        : (osdPreempts ? "osd"
         : (surfaceOpen && surfaces[surface] !== undefined ? surface
         : (Flags.gameMode ? "game"
         : (quickChoosing ? "quickChoose"
         : (quickCounting ? "quickCount"
         : (toastActive && !held ? "toast"
-        : (expanded ? "hover" : "rest")))))))
+        : (expanded ? "hover" : "rest"))))))))
 
     signal requestSurface(string name)
     signal requestClose()
@@ -472,6 +495,15 @@ Item {
             ScreenRec.quickChoosing = false;
             ScreenRec.quickScreenChoosing = false;
         }
+        /**
+         * A flash that was already running when the surface opened is over:
+         * the surface owns the pill now, and the flash must not linger to
+         * pop back in over the surface when it closes. A flash that began
+         * over the open surface keeps its deliberate preempt and is
+         * untouched.
+         */
+        if (!osd.startedOnSurface)
+            osd.dismissAll();
     }
 
     QtObject {
@@ -515,6 +547,7 @@ Item {
         hover: () => Qt.size(hoverW, hoverH),
         quickChoose: () => Qt.size(quickChooseW, quickChooseH),
         quickCount:  () => Qt.size(quickCountW, quickCountH),
+        dragOver:    () => Qt.size(dragOverW, dragOverH),
         game:        () => Qt.size(gameW, gameH)
     })
 
@@ -946,7 +979,7 @@ Item {
     Item {
         id: rest
         anchors.fill: parent
-        opacity: (pill.expanded || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0 : Math.pow(pill.morphCloseness, 1.5)
+        opacity: (pill.expanded || pill.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0 : Math.pow(pill.morphCloseness, 1.5)
         visible: opacity > 0.01
         Behavior on opacity { NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) } }
 
@@ -1171,6 +1204,7 @@ Item {
         suppressed: pill.held || pill.surface === "polkit"
         expanded: pill.expanded
         mixerOpen: pill.surface === "mixer"
+        surfaceOpen: pill.surfaceOpen
         enabled: pill.mode === "osd"
         opacity: pill.mode === "osd" ? 1 : 0
         visible: opacity > 0.01
@@ -1245,5 +1279,297 @@ Item {
         s: pill.s
         active: pill.mode === "quickCount"
         morph: pill.morphCloseness
+    }
+
+    /**
+     * Drag-to-install pipeline, restored from Ricelin: dropping a file on the
+     * resting pill hands it to app-install.sh (AppImages, native packages,
+     * fonts, wallpapers), which prints one machine-readable line per drop.
+     * The pill morphs into a drop-zone face, streams the installer's output
+     * live, then opens the launcher when an app landed.
+     */
+    property var installQueue: []
+
+    function localPath(url) {
+        var s = String(url);
+        if (s.indexOf("file://") === 0)
+            s = s.substring(7);
+        return decodeURIComponent(s);
+    }
+
+    readonly property var dropExt: /\.(appimage|deb|rpm|flatpakref|zip|tgz|txz|tbz2|ttf|otf|png|jpe?g|webp)$|\.(pkg\.)?tar\.(gz|xz|bz2|zst)$/i
+
+    function droppablePaths(urls) {
+        var out = [];
+        for (var i = 0; i < urls.length; i++)
+            if (pill.dropExt.test(String(urls[i])))
+                out.push(pill.localPath(urls[i]));
+        return out;
+    }
+
+    function dropLabel(urls) {
+        var p = pill.localPath(urls.length ? urls[0] : "");
+        return p.substring(p.lastIndexOf("/") + 1).replace(pill.dropExt, "");
+    }
+
+    property bool installedAny: false
+    property bool installedApp: false
+    property bool installFailed: false
+    property string installKind: "app"
+    property string installAction: "new"
+    property string installLine: ""
+    property string installProto: ""
+    property string installPct: ""
+    property int installSeconds: 0
+
+    function runNextInstall() {
+        if (pill.installQueue.length === 0) {
+            pill.dragStage = pill.installedAny ? "done" : "fail";
+            (pill.installedAny ? dropDoneTimer : dropBadTimer).restart();
+            return;
+        }
+        var next = pill.installQueue.shift();
+        pill.dragName = next.substring(next.lastIndexOf("/") + 1).replace(pill.dropExt, "");
+        pill.installLine = "";
+        pill.installProto = "";
+        pill.installPct = "";
+        installProc.command = ["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/app-install.sh", "install", next];
+        installProc.running = true;
+    }
+
+    /**
+     * Streams installer stdout instead of collecting it: slow backends
+     * (flatpak runtime pulls, pacman) narrate their steps, and the drop face
+     * mirrors the newest line live. The machine-readable result is the one
+     * tab-separated kind-prefixed line, fished out of the stream as it passes.
+     */
+    Process {
+        id: installProc
+        stdout: SplitParser {
+            onRead: (data) => {
+                var seg = data.split("\r").pop().replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").trim();
+                if (seg.length === 0)
+                    return;
+                if (/^(app|native|font|wallpaper)\t/.test(seg)) {
+                    pill.installProto = seg;
+                } else {
+                    pill.installLine = seg;
+                    var pct = seg.match(/(\d{1,3})\s*%/);
+                    if (pct && Number(pct[1]) <= 100)
+                        pill.installPct = pct[1] + "%";
+                }
+            }
+        }
+        onExited: (exitCode) => {
+            if (exitCode === 0 && pill.installProto.length > 0) {
+                pill.installedAny = true;
+                var parts = pill.installProto.split("\t");
+                pill.installKind = parts[0];
+                pill.installAction = parts[2];
+                if (parts[0] === "app" || parts[0] === "native")
+                    pill.installedApp = true;
+                if (parts[0] === "font" && parts.length >= 4)
+                    droppedFont.source = "file://" + parts[3];
+            } else {
+                pill.installFailed = true;
+            }
+            pill.runNextInstall();
+        }
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: pill.dragStage === "installing"
+        onTriggered: pill.installSeconds++
+    }
+
+    /**
+     * Registers a just-dropped font in this running process; the fontconfig
+     * cache alone only reaches apps started later. Ready -> the font picker's
+     * family list refreshes and the new face shows up without a restart.
+     */
+    FontLoader {
+        id: droppedFont
+        onStatusChanged: if (status === FontLoader.Ready) Theme.refreshFonts()
+    }
+
+    Timer {
+        id: dropDoneTimer
+        interval: 1100
+        onTriggered: {
+            pill.dragActive = false;
+            pill.dragStage = "";
+            if (pill.installedApp)
+                pill.requestSurface("launcher");
+        }
+    }
+
+    Timer {
+        id: dropBadTimer
+        interval: 1300
+        onTriggered: {
+            pill.dragActive = false;
+            pill.dragStage = "";
+        }
+    }
+
+    /**
+     * File drops land only on the resting pill; an open surface turns the pill
+     * into a fullscreen modal that swallows the drag before it can start.
+     * app-install.sh routes each drop by type (apps install, fonts land in the
+     * font dir, images become the wallpaper), anything else flashes a rejection.
+     */
+    DropArea {
+        anchors.fill: parent
+        enabled: !pill.surfaceOpen && pill.dragStage !== "installing" && pill.dragStage !== "done"
+        keys: ["text/uri-list"]
+        onEntered: (drag) => {
+            drag.acceptProposedAction();
+            pill.dragActive = true;
+            pill.dragStage = pill.droppablePaths(drag.urls).length > 0 ? "hover" : "bad";
+            pill.dragName = pill.dropLabel(drag.urls);
+        }
+        onExited: {
+            if (pill.dragStage === "hover" || pill.dragStage === "bad") {
+                pill.dragActive = false;
+                pill.dragStage = "";
+            }
+        }
+        onDropped: (drop) => {
+            drop.acceptProposedAction();
+            var files = pill.droppablePaths(drop.urls);
+            if (files.length === 0) {
+                pill.dragActive = true;
+                pill.dragStage = "bad";
+                pill.dragName = pill.dropLabel(drop.urls);
+                dropBadTimer.restart();
+                return;
+            }
+            pill.dragActive = true;
+            pill.dragStage = "installing";
+            pill.installedAny = false;
+            pill.installedApp = false;
+            pill.installFailed = false;
+            pill.installKind = "app";
+            pill.installAction = "new";
+            pill.installSeconds = 0;
+            pill.installQueue = files;
+            pill.runNextInstall();
+        }
+    }
+
+    /**
+     * Drop-zone face: corner brackets frame a stage glyph and label that walk
+     * from "drop to install" through the spinner to a checkmark. Shares the
+     * morph fade of the other pill faces, so it grows in as the pill reaches
+     * its size.
+     */
+    Item {
+        id: dragOverView
+        anchors.fill: parent
+        anchors.margins: 11 * pill.s
+        enabled: pill.mode === "dragOver"
+        opacity: pill.mode === "dragOver" ? Math.pow(pill.morphCloseness, 1.2) : 0
+        visible: opacity > 0.01
+        Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+
+        readonly property color accent: (pill.dragStage === "bad" || pill.dragStage === "fail") ? "#e0533f" : Theme.vermLit
+        readonly property real brLen: 15 * pill.s
+        readonly property real brThick: 2 * pill.s
+
+        Repeater {
+            model: [[0, 0], [1, 0], [0, 1], [1, 1]]
+            delegate: Item {
+                id: corner
+                required property var modelData
+                readonly property bool rightSide: modelData[0] === 1
+                readonly property bool bottomSide: modelData[1] === 1
+
+                x: rightSide ? dragOverView.width - dragOverView.brLen : 0
+                y: bottomSide ? dragOverView.height - dragOverView.brLen : 0
+                width: dragOverView.brLen
+                height: dragOverView.brLen
+
+                Rectangle {
+                    width: dragOverView.brLen
+                    height: dragOverView.brThick
+                    radius: dragOverView.brThick / 2
+                    color: dragOverView.accent
+                    anchors.top: corner.bottomSide ? undefined : parent.top
+                    anchors.bottom: corner.bottomSide ? parent.bottom : undefined
+                    anchors.left: corner.rightSide ? undefined : parent.left
+                    anchors.right: corner.rightSide ? parent.right : undefined
+                }
+                Rectangle {
+                    width: dragOverView.brThick
+                    height: dragOverView.brLen
+                    radius: dragOverView.brThick / 2
+                    color: dragOverView.accent
+                    anchors.top: corner.bottomSide ? undefined : parent.top
+                    anchors.bottom: corner.bottomSide ? parent.bottom : undefined
+                    anchors.left: corner.rightSide ? undefined : parent.left
+                    anchors.right: corner.rightSide ? parent.right : undefined
+                }
+            }
+        }
+
+        Column {
+            anchors.centerIn: parent
+            width: parent.width - 44 * pill.s
+            spacing: 7 * pill.s
+
+            Item {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 26 * pill.s
+                height: 26 * pill.s
+                GlyphIcon {
+                    id: dragGlyph
+                    anchors.fill: parent
+                    stroke: 2
+                    color: dragOverView.accent
+                    name: (pill.dragStage === "bad" || pill.dragStage === "fail") ? "close"
+                        : (pill.dragStage === "installing" ? "reboot"
+                        : (pill.dragStage === "done" ? "check" : "download"))
+                    RotationAnimation on rotation {
+                        running: pill.dragStage === "installing"
+                        loops: Animation.Infinite
+                        from: 0
+                        to: 360
+                        duration: 900
+                    }
+                    onNameChanged: if (pill.dragStage !== "installing") rotation = 0
+                }
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: pill.dragStage === "bad" ? "Can't install this"
+                    : (pill.dragStage === "fail" ? "Install failed"
+                    : (pill.dragStage === "installing" ? ("Installing"
+                    + (pill.installPct.length > 0 ? " " + pill.installPct : "")
+                    + (pill.installSeconds >= 3 ? " " + Math.floor(pill.installSeconds / 60) + ":" + String(pill.installSeconds % 60).padStart(2, "0") : ""))
+                    : (pill.dragStage === "done" ? (pill.installFailed ? "Installed, some failed"
+                    : (!pill.installedApp && pill.installKind === "wallpaper" ? "Wallpaper set"
+                    : (!pill.installedApp && pill.installKind === "font" ? "Font installed"
+                    : (pill.installAction === "updated" ? "Updated"
+                    : (pill.installAction === "reinstalled" ? "Reinstalled" : "Installed")))))
+                    : "Drop to install")))
+                color: Theme.cream
+                font.family: Theme.font
+                font.pixelSize: 13 * pill.s
+                font.weight: Font.Medium
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: pill.dragStage === "installing" && pill.installLine.length > 0 ? pill.installLine : pill.dragName
+                color: Theme.subtle
+                font.family: Theme.font
+                font.pixelSize: 11 * pill.s
+                elide: Text.ElideMiddle
+                maximumLineCount: 1
+            }
+        }
     }
 }

@@ -27,6 +27,14 @@ Item {
     /** The pill's OSD, so volume/brightness feedback can ride the bar. */
     property var osd: null
 
+    /** True while the OSD is flashing the inline volume/brightness level chip. */
+    readonly property bool levelFlash: root.osd.flashing
+        && (root.osd.kind === "volume" || root.osd.kind === "brightness")
+    /** The level the chip renders: brightness when that kind is flashing, else volume. */
+    readonly property real levelValue: root.osd.kind === "brightness" ? root.osd.brightness : root.osd.volume
+    /** True while the chip shows the muted state (volume flash on a muted sink). */
+    readonly property bool levelMuted: root.osd.kind === "volume" && root.osd.muted
+
     enabled: root.active
     opacity: root.active ? Math.pow(root.morph, 1.2) : 0
     visible: opacity > 0.01
@@ -104,7 +112,7 @@ Item {
         anchors.rightMargin: 18 * root.s
         anchors.verticalCenter: parent.verticalCenter
         spacing: 9 * root.s
-        opacity: root.osd.flashing && (root.osd.kind === "volume" || root.osd.kind === "brightness") ? 1 : 0
+        opacity: root.levelFlash ? 1 : 0
         visible: opacity > 0.01
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast }
@@ -114,8 +122,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 14 * root.s
             height: 14 * root.s
-            name: root.osd.kind === "brightness" ? "sun" : (root.osd.muted ? "speaker-off" : "speaker")
-            color: root.osd.kind === "volume" && root.osd.muted ? Theme.dim : Theme.iconDim
+            name: root.osd.kind === "brightness" ? "sun" : (root.levelMuted ? "speaker-off" : "speaker")
+            color: root.levelMuted ? Theme.dim : Theme.iconDim
             stroke: 1.7
         }
 
@@ -130,17 +138,17 @@ Item {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: parent.width * (root.osd.kind === "brightness" ? root.osd.brightness : root.osd.volume)
+                width: parent.width * root.levelValue
                 radius: parent.radius
-                color: root.osd.kind === "volume" && root.osd.muted ? Theme.vermDim : Theme.vermLit
+                color: root.levelMuted ? Theme.vermDim : Theme.vermLit
                 Behavior on width { NumberAnimation { duration: Motion.fast } }
             }
         }
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
-            text: Math.round((root.osd.kind === "brightness" ? root.osd.brightness : root.osd.volume) * 100) + "%"
-            color: root.osd.kind === "volume" && root.osd.muted ? Theme.dim : Theme.cream
+            text: Math.round(root.levelValue * 100) + "%"
+            color: root.levelMuted ? Theme.dim : Theme.cream
             font.family: Theme.font
             font.pixelSize: 10.5 * root.s
             font.weight: Font.DemiBold
