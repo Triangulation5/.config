@@ -45,6 +45,12 @@ Item {
      * from the faders. Battery and the other kinds still preempt.
      */
     property bool mixerOpen: false
+    /**
+     * True while the media surface is open: it renders the live track (title,
+     * artist, art), so track flashes are dropped rather than morphing the pill
+     * away from the now-playing card. Volume and the other kinds still preempt.
+     */
+    property bool mediaOpen: false
     property bool flashing: false
     property string kind: "volume"
     property bool armed: false
@@ -160,6 +166,11 @@ Item {
         /** The mixer already renders volume, mic, brightness and vibrance live, so those flashes would only fight it; battery and the rest still flash over it. */
         if (mixerOpen && (which === "volume" || which === "mic" || which === "brightness"))
             return false;
+        /** The media surface already renders the live track, so next/prev/pause must not yank the pill away from the open card to a track flash. Nothing is owed, so clear the pending announce. */
+        if (mediaOpen && which === "track") {
+            dirty = false;
+            return false;
+        }
         if (which !== "workspace" && !onFocusedMonitor)
             return false;
         if (which === "track" && flashing && (kind === "volume" || kind === "brightness"))

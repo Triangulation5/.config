@@ -115,12 +115,15 @@ Item {
     readonly property bool hasMedia: Players.playing
 
     /**
-     * Playback stopped (pause, stop, exit, kill) while the media surface owned
-     * the pill: drop the surface so the pill morphs back to its normal state
-     * instead of parking on a stale card. Driven purely by state changes - no
-     * timers or timeouts.
+     * Playback stopped while the media surface owned the pill: a pause keeps
+     * the surface up — the paused card is still the live now-playing view, and
+     * the OSD drops track flashes over it (see Osd.mediaOpen), so the pill
+     * never yanks away to a toast. Only when the player itself is gone (stop,
+     * exit, kill) does the surface drop, so the pill morphs back to its normal
+     * state instead of parking on a stale card. Driven purely by state changes
+     * - no timers or timeouts.
      */
-    onHasMediaChanged: if (!hasMedia && mediaOpen) pill.requestClose()
+    onHasMediaChanged: if (!hasMedia && !Players.has && mediaOpen) pill.requestClose()
 
     /**
      * Subview the link surface should land on when next opened. The wifi glance
@@ -1242,6 +1245,7 @@ Item {
         suppressed: pill.held || pill.surface === "polkit"
         expanded: pill.expanded
         mixerOpen: pill.surface === "mixer"
+        mediaOpen: pill.surface === "media"
         surfaceOpen: pill.surfaceOpen
         enabled: pill.mode === "osd"
         opacity: pill.mode === "osd" ? 1 : 0
