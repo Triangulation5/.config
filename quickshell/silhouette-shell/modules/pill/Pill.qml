@@ -253,12 +253,38 @@ Item {
      * for `surfaceIdleTimeout` seconds its Loader is deactivated so the
      * component tree is destroyed, freeing RAM and GPU resources until the
      * next open reactivates it.
+     *
+     * Heavy surfaces opt into asynchronous creation (`asynchronous: true` on
+     * their loader), so their first open builds in frame gaps and this returns
+     * null until the build lands. Every read of `ld.item` inside a size/ame
+     * thunk re-registers the dependency, so the pill re-morphs to the real
+     * measurement the moment the item arrives. The measure helpers below keep
+     * thunks null-safe; never deref `ld.item` directly in a thunk.
      */
     function surfaceItem(ld, name) {
         ld.active = true;
         if (name && name.length)
             _surfaceLastOpened[name] = Date.now();
         return ld.item;
+    }
+
+    /** Measured surface width + pad, or the fallback while an async load is in flight. */
+    function surfaceWidth(ld, name, pad, fallback) {
+        const it = surfaceItem(ld, name);
+        return it && it.implicitWidth > 0 ? it.implicitWidth + pad : fallback;
+    }
+
+    /** Measured surface height + pad, or the fallback while an async load is in flight. */
+    function surfaceHeight(ld, name, pad, fallback) {
+        const it = surfaceItem(ld, name);
+        return it && it.implicitHeight > 0 ? it.implicitHeight + pad : fallback;
+    }
+
+    /** Any surface prop with a fallback while an async load is in flight. */
+    function surfaceProp(ld, name, prop, fallback) {
+        const it = surfaceItem(ld, name);
+        const v = it ? it[prop] : undefined;
+        return v !== undefined && v > 0 ? v : fallback;
     }
 
     /** Seconds a surface stays loaded after last use before being reclaimed. */
@@ -330,34 +356,39 @@ Item {
      * pill's own hover or wake anchor). `mode`, `targetSize` and `ameSurface` all
      * derive from this, so adding a surface is one entry here plus its Loader —
      * no parallel ternary chains to keep in lockstep.
+     *
+     * Size thunks go through the surfaceWidth/surfaceHeight/surfaceProp measure
+     * helpers, which fall back to a default size while an async loader's item
+     * is still building (null) and re-evaluate the moment it lands, so the
+     * morph starts immediately and settles on the real measurement.
      */
     readonly property var surfaces: ({
-        calendar:  { size: () => { const it = surfaceItem(ldCalendar, "calendar"); return Qt.size((it.implicitWidth > 0 ? it.implicitWidth : 282 * s) + 36 * s, it.implicitHeight + 32 * s); }, ame: () => surfaceItem(ldCalendar, "calendar") },
+        calendar:  { size: () => Qt.size(surfaceWidth(ldCalendar, "calendar", 36 * s, 318 * s), surfaceHeight(ldCalendar, "calendar", 32 * s, 272 * s)), ame: () => surfaceItem(ldCalendar, "calendar") },
         launcher:  { size: () => { surfaceItem(ldLauncher, "launcher"); return Qt.size(launcherW, launcherH); }, ame: () => surfaceItem(ldLauncher, "launcher") },
         clipboard: { size: () => { surfaceItem(ldClip, "clipboard"); return Qt.size(clipboardW, clipboardH); }, ame: () => surfaceItem(ldClip, "clipboard") },
         wallpaper: { size: () => { surfaceItem(ldWall, "wallpaper"); return Qt.size(wallpaperW, wallpaperH); }, ame: () => null },
         power:     { size: () => { surfaceItem(ldPower, "power"); return Qt.size(powerW, powerH); }, ame: () => surfaceItem(ldPower, "power") },
         media:     { size: () => { surfaceItem(ldMedia, "media"); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia, "media") },
-        mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceItem(ldMixer, "mixer").faderCount) * s, mixerH), ame: () => surfaceItem(ldMixer, "mixer") },
-        link:      { size: () => { const it = surfaceItem(ldLink, "link"); return Qt.size(it.desiredW, it.implicitHeight + 26 * s); }, ame: () => surfaceItem(ldLink, "link") },
-        battery:   { size: () => Qt.size(batteryW, surfaceItem(ldBattery, "battery").implicitHeight + 26 * s), ame: () => surfaceItem(ldBattery, "battery") },
-        settings:  { size: () => Qt.size(settingsW, surfaceItem(ldSettings, "settings").implicitHeight + 29 * s), ame: () => surfaceItem(ldSettings, "settings") },
-        keybinds:  { size: () => Qt.size(keybindsW, surfaceItem(ldKeybinds, "keybinds").implicitHeight + 29 * s), ame: () => surfaceItem(ldKeybinds, "keybinds") },
-        workspaces: { size: () => Qt.size(workspacesW, surfaceItem(ldWorkspaces, "workspaces").implicitHeight + 29 * s), ame: () => surfaceItem(ldWorkspaces, "workspaces") },
-        stash:     { size: () => Qt.size(stashW, surfaceItem(ldStash, "stash").implicitHeight + 29 * s), ame: () => surfaceItem(ldStash, "stash") },
-        spaceapps: { size: () => Qt.size(spaceappsW, surfaceItem(ldSpaceapps, "spaceapps").implicitHeight + 29 * s), ame: () => surfaceItem(ldSpaceapps, "spaceapps") },
-        recorder:  { size: () => Qt.size(recorderW, surfaceItem(ldRecorder, "recorder").implicitHeight + 33 * s), ame: () => surfaceItem(ldRecorder, "recorder") },
-        sysmon:    { size: () => Qt.size(sysmonW, surfaceItem(ldSysmon, "sysmon").implicitHeight + 33 * s), ame: () => surfaceItem(ldSysmon, "sysmon") },
-        appearance: { size: () => Qt.size(appearanceW, surfaceItem(ldAppearance, "appearance").implicitHeight + 29 * s), ame: () => surfaceItem(ldAppearance, "appearance") },
-        updates:    { size: () => Qt.size(updatesW, surfaceItem(ldUpdates, "updates").implicitHeight + 29 * s), ame: () => surfaceItem(ldUpdates, "updates") },
-        display:    { size: () => Qt.size(displayW, surfaceItem(ldDisplay, "display").implicitHeight + 29 * s), ame: () => surfaceItem(ldDisplay, "display") },
-        input:      { size: () => Qt.size(inputW, surfaceItem(ldInput, "input").implicitHeight + 29 * s), ame: () => surfaceItem(ldInput, "input") },
-        look:       { size: () => Qt.size(lookW, surfaceItem(ldLook, "look").implicitHeight + 29 * s), ame: () => surfaceItem(ldLook, "look") },
-        idlelock:   { size: () => Qt.size(idlelockW, surfaceItem(ldIdlelock, "idlelock").implicitHeight + 29 * s), ame: () => surfaceItem(ldIdlelock, "idlelock") },
-        animation:  { size: () => Qt.size(animationW, surfaceItem(ldAnimation, "animation").implicitHeight + 29 * s), ame: () => surfaceItem(ldAnimation, "animation") },
-        fontpicker: { size: () => Qt.size(fontpickerW, surfaceItem(ldFontpicker, "fontpicker").implicitHeight + 29 * s), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
-        timer:    { size: () => { const it = surfaceItem(ldTimer, "timer"); return Qt.size(timerW, it.implicitHeight + 28 * s); }, ame: () => null },
-        polkit:    { size: () => { const it = surfaceItem(ldPolkit, "polkit"); return Qt.size(polkitW, it.implicitHeight + 28 * s); }, ame: () => surfaceItem(ldPolkit, "polkit") }
+        mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceProp(ldMixer, "mixer", "faderCount", 4)) * s, mixerH), ame: () => surfaceItem(ldMixer, "mixer") },
+        link:      { size: () => Qt.size(surfaceProp(ldLink, "link", "desiredW", 330 * s), surfaceHeight(ldLink, "link", 26 * s, 300 * s)), ame: () => surfaceItem(ldLink, "link") },
+        battery:   { size: () => Qt.size(batteryW, surfaceHeight(ldBattery, "battery", 26 * s, 160 * s)), ame: () => surfaceItem(ldBattery, "battery") },
+        settings:  { size: () => Qt.size(settingsW, surfaceHeight(ldSettings, "settings", 29 * s, 400 * s)), ame: () => surfaceItem(ldSettings, "settings") },
+        keybinds:  { size: () => Qt.size(keybindsW, surfaceHeight(ldKeybinds, "keybinds", 29 * s, 420 * s)), ame: () => surfaceItem(ldKeybinds, "keybinds") },
+        workspaces: { size: () => Qt.size(workspacesW, surfaceHeight(ldWorkspaces, "workspaces", 29 * s, 300 * s)), ame: () => surfaceItem(ldWorkspaces, "workspaces") },
+        stash:     { size: () => Qt.size(stashW, surfaceHeight(ldStash, "stash", 29 * s, 300 * s)), ame: () => surfaceItem(ldStash, "stash") },
+        spaceapps: { size: () => Qt.size(spaceappsW, surfaceHeight(ldSpaceapps, "spaceapps", 29 * s, 300 * s)), ame: () => surfaceItem(ldSpaceapps, "spaceapps") },
+        recorder:  { size: () => Qt.size(recorderW, surfaceHeight(ldRecorder, "recorder", 33 * s, 300 * s)), ame: () => surfaceItem(ldRecorder, "recorder") },
+        sysmon:    { size: () => Qt.size(sysmonW, surfaceHeight(ldSysmon, "sysmon", 33 * s, 420 * s)), ame: () => surfaceItem(ldSysmon, "sysmon") },
+        appearance: { size: () => Qt.size(appearanceW, surfaceHeight(ldAppearance, "appearance", 29 * s, 400 * s)), ame: () => surfaceItem(ldAppearance, "appearance") },
+        updates:    { size: () => Qt.size(updatesW, surfaceHeight(ldUpdates, "updates", 29 * s, 360 * s)), ame: () => surfaceItem(ldUpdates, "updates") },
+        display:    { size: () => Qt.size(displayW, surfaceHeight(ldDisplay, "display", 29 * s, 400 * s)), ame: () => surfaceItem(ldDisplay, "display") },
+        input:      { size: () => Qt.size(inputW, surfaceHeight(ldInput, "input", 29 * s, 400 * s)), ame: () => surfaceItem(ldInput, "input") },
+        look:       { size: () => Qt.size(lookW, surfaceHeight(ldLook, "look", 29 * s, 400 * s)), ame: () => surfaceItem(ldLook, "look") },
+        idlelock:   { size: () => Qt.size(idlelockW, surfaceHeight(ldIdlelock, "idlelock", 29 * s, 400 * s)), ame: () => surfaceItem(ldIdlelock, "idlelock") },
+        animation:  { size: () => Qt.size(animationW, surfaceHeight(ldAnimation, "animation", 29 * s, 400 * s)), ame: () => surfaceItem(ldAnimation, "animation") },
+        fontpicker: { size: () => Qt.size(fontpickerW, surfaceHeight(ldFontpicker, "fontpicker", 29 * s, 400 * s)), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
+        timer:    { size: () => Qt.size(timerW, surfaceHeight(ldTimer, "timer", 28 * s, 460 * s)), ame: () => null },
+        polkit:    { size: () => Qt.size(polkitW, surfaceHeight(ldPolkit, "polkit", 28 * s, 200 * s)), ame: () => surfaceItem(ldPolkit, "polkit") }
     })
 
     /**
@@ -1129,23 +1160,30 @@ Item {
      * names its surface and is registered into _surfaceLoaders on creation;
      * the loader supplies s/open/morphCloseness, so the sourceComponents only
      * carry their surface-specific props and signals.
+     *
+     * Surfaces build asynchronously (`asynchronous: true`) so their first open
+     * never blocks the frame that starts the morph — the size thunks above
+     * fall back to a default size until the item lands, then the pill re-morphs
+     * to the real measurement. Only the instant-expected surfaces (polkit
+     * prompt, power, mixer, timer, battery, calendar) stay synchronous so they
+     * appear on the opening frame.
      */
 
     PillSurfaceLoader { id: ldMixer; name: "mixer"; host: pill; sourceComponent: Mixer {} }
 
     PillSurfaceLoader { id: ldCalendar; name: "calendar"; host: pill; sourceComponent: Calendar { targetDate: pill.calendarFocusDate } }
 
-    PillSurfaceLoader { id: ldLauncher; name: "launcher"; host: pill; sourceComponent: Launcher { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldLauncher; name: "launcher"; asynchronous: true; host: pill; sourceComponent: Launcher { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader { id: ldClip; name: "clipboard"; host: pill; sourceComponent: Clipboard { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldClip; name: "clipboard"; asynchronous: true; host: pill; sourceComponent: Clipboard { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader { id: ldWall; name: "wallpaper"; host: pill; sourceComponent: Wallpaper { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldWall; name: "wallpaper"; asynchronous: true; host: pill; sourceComponent: Wallpaper { onRequestClose: pill.requestClose() } }
 
     PillSurfaceLoader { id: ldPower; name: "power"; host: pill; sourceComponent: Power { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader { id: ldMedia; name: "media"; host: pill; sourceComponent: Media { shown: pill.mediaOpen; onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldMedia; name: "media"; asynchronous: true; host: pill; sourceComponent: Media { shown: pill.mediaOpen; onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader { id: ldLink; name: "link"; host: pill; sourceComponent: Link {
+    PillSurfaceLoader { id: ldLink; name: "link"; asynchronous: true; host: pill; sourceComponent: Link {
         initialView: pill.linkInitialView
         onRequestClose: pill.requestClose()
     } }
@@ -1154,37 +1192,37 @@ Item {
 
     PillSurfaceLoader { id: ldBattery; name: "battery"; host: pill; sourceComponent: BatterySurface { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader { id: ldSettings; name: "settings"; host: pill; sourceComponent: Settings { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldSettings; name: "settings"; asynchronous: true; host: pill; sourceComponent: Settings { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldKeybinds; name: "keybinds"; host: pill; sourceComponent: Keybinds { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldKeybinds; name: "keybinds"; asynchronous: true; host: pill; sourceComponent: Keybinds { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldWorkspaces; name: "workspaces"; host: pill; sourceComponent: WorkspacesSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldWorkspaces; name: "workspaces"; asynchronous: true; host: pill; sourceComponent: WorkspacesSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldStash; name: "stash"; host: pill; sourceComponent: Stash { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldStash; name: "stash"; asynchronous: true; host: pill; sourceComponent: Stash { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldSpaceapps; name: "spaceapps"; host: pill; sourceComponent: SpaceApps { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldSpaceapps; name: "spaceapps"; asynchronous: true; host: pill; sourceComponent: SpaceApps { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldRecorder; name: "recorder"; host: pill; sourceComponent: Recorder { screenName: pill.screenName; onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldRecorder; name: "recorder"; asynchronous: true; host: pill; sourceComponent: Recorder { screenName: pill.screenName; onRequestClose: pill.requestClose() } }
 
     PillSurfaceLoader { id: ldPolkit; name: "polkit"; host: pill; sourceComponent: PolkitPrompt { onRequestClose: Polkit.cancel() } }
 
-    PillSurfaceLoader { id: ldSysmon; name: "sysmon"; host: pill; sourceComponent: SysmonSurface { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldSysmon; name: "sysmon"; asynchronous: true; host: pill; sourceComponent: SysmonSurface { onRequestClose: pill.requestClose() } }
 
-    PillSurfaceLoader { id: ldAppearance; name: "appearance"; host: pill; sourceComponent: Appearance { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldAppearance; name: "appearance"; asynchronous: true; host: pill; sourceComponent: Appearance { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldUpdates; name: "updates"; host: pill; sourceComponent: Updates { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldUpdates; name: "updates"; asynchronous: true; host: pill; sourceComponent: Updates { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldDisplay; name: "display"; host: pill; sourceComponent: Display { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldDisplay; name: "display"; asynchronous: true; host: pill; sourceComponent: Display { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldInput; name: "input"; host: pill; sourceComponent: Input { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldInput; name: "input"; asynchronous: true; host: pill; sourceComponent: Input { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldLook; name: "look"; host: pill; sourceComponent: Look { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldLook; name: "look"; asynchronous: true; host: pill; sourceComponent: Look { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldIdlelock; name: "idlelock"; host: pill; sourceComponent: IdleLock { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldIdlelock; name: "idlelock"; asynchronous: true; host: pill; sourceComponent: IdleLock { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldAnimation; name: "animation"; host: pill; sourceComponent: AnimationSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldAnimation; name: "animation"; asynchronous: true; host: pill; sourceComponent: AnimationSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
 
-    PillSurfaceLoader { id: ldFontpicker; name: "fontpicker"; host: pill; sourceComponent: FontPicker { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldFontpicker; name: "fontpicker"; asynchronous: true; host: pill; sourceComponent: FontPicker { onRequestSurface: (name) => pill.requestSurface(name) } }
 
     PillSurfaceLoader { id: ldTimer; name: "timer"; host: pill; sourceComponent: Pomodoro {} }
     Osd {
