@@ -54,29 +54,26 @@ Item {
 
     /**
      * The clock grows out of the rest clock's spot and shrinks back into
-     * it: one continuous scale+slide driven by clockMorph. The morph leads
-     * the pill's hop slightly (1.08x) so the clock lands just before the
-     * pill finishes growing, and a soft out-back settle gives a subtle,
-     * barely-there overshoot as it arrives. The rest-to-hover handoff is a
+     * it: one continuous scale+slide driven by clockMorph. clockMorph is
+     * clockHop itself, so the flight rides the pill body's own morph easing
+     * (Motion.morph's bezier): the clock travels to its settled spot above
+     * the dates in exact sync with the pill's growth — same acceleration,
+     * same settle, no lead and no overshoot. The rest-to-hover handoff is a
      * separate quick crossfade (clockHandoff) in the first moments, while
      * the hover clock still sits exactly on the rest clock at the same
-     * size — so the swap is invisible and the growth reads as one clock.
+     * size — so the swap is invisible and the growth reads as one clock
+     * smoothly travelling to its place.
      */
-    readonly property real clockProgress: Math.max(0, Math.min(1, clockHop * 1.08))
-    readonly property real clockMorph: {
-        /** Subtle overshoot: peaks ~2.5% past 1, settles. */
-        const c1 = 0.8;
-        const c3 = c1 + 1;
-        const x = clockProgress - 1;
-        return 1 + c3 * x * x * x + c1 * x * x;
-    }
+    readonly property real clockProgress: Math.max(0, Math.min(1, clockHop))
+    readonly property real clockMorph: clockProgress
     /**
-     * Near-instant handoff tied to clockMorph: the hover clock is pixel-
-     * identical to the rest clock at morph=0, so the swap completes while
-     * the two are still coincident (the out-back front-loads, so a wider
-     * window would crossfade a clock already in motion).
+     * Handoff tied to clockMorph: the hover clock is pixel-identical to the
+     * rest clock at morph=0, so the swap completes in the final moments of the
+     * flight while the two are still (within a couple of px of) coincident —
+     * a wider window would crossfade a clock still sliding into place and
+     * read as a shimmer at the settle.
      */
-    readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.08)); return t * t * (3 - 2 * t); }
+    readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.03)); return t * t * (3 - 2 * t); }
 
     /**
      * The media bud, tray and calendar strip ride the pill's own rest→hover
@@ -86,7 +83,9 @@ Item {
      * coordinated entrance — media first, then tray, then calendar — that
      * lands as the pill settles. Because clockHop clamps to 1 whenever the
      * pill is at or above hover height, a surface closing back into the pill
-     * still shows them at full strength immediately.
+     * leaves the stagger at full strength too — the root faceArrive gate
+     * then fades the whole face in with the pill's settle instead of popping
+     * it over the dissolving surface.
      */
     readonly property real mediaMorph: { var t = Math.max(0, Math.min(1, (clockHop - 0.30) / 0.70)); var ease = t * t * (3 - 2 * t); return ease; }
     readonly property real calendarMorph: { var t = Math.max(0, Math.min(1, (clockHop - 0.72) / 0.28)); return t * t * (3 - 2 * t); }
@@ -130,10 +129,35 @@ Item {
     readonly property real clockEndX: hoverClock.width / 2 + 20 * host.s
     readonly property real clockEndY: hoverTime.height / 2
 
-    opacity: live ? 1 : 0
+    /**
+     * True when the pill entered hover mode by shrinking from an open surface
+     * (or OSD/toast) rather than growing from rest; set by the pill's mode
+     * handler. On that path clockHop already clamps to 1 (the pill is at or
+     * above hover height), so every staggered widget would sit at full
+     * strength the instant hover mode begins — the face would pop in at full
+     * opacity while the closing surface is still dissolving and ghost over
+     * it. faceArrive instead rides the pill's settle (morphCloseness): the
+     * face fades in as the pill descends to hover size, so the close reads as
+     * one continuous retreat into the hover face. From a rest→hover hop
+     * faceArrive stays 1 and the existing stagger plays unchanged.
+     */
+    readonly property bool closeArrive: host.closeArrive
+    readonly property real faceArrive: closeArrive ? Math.pow(Math.max(0, (host.morphCloseness - 0.3) / 0.7), 1.3) : 1
+
+    /**
+     * The face stays up while the pill collapses from hover back to rest
+     * (host.hoverHop is freshly true exactly for the rest↔hover pair), so the
+     * clock visibly flies back to the rest spot and the stagger fades the
+     * media, tray and dates out over the shrink — ending in the clock handoff
+     * swap instead of a 40ms blink-and-reappear. Every other exit (surface,
+     * OSD, toast) still drops the face on the fast fade.
+     */
+    opacity: live ? faceArrive : (host.hoverHop && host.mode === "rest" ? 1 : 0)
     visible: opacity > 0.01
 
     Behavior on opacity {
+        /** The close arrival is already driven smoothly by the pill's morph; a Behavior would fight the per-frame settle. */
+        enabled: !face.closeArrive
         NumberAnimation {
             duration: host.mode === "hover" ? Motion.fast : 40
             easing.type: Motion.easeStandard

@@ -108,22 +108,25 @@ Item {
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
         || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
     /**
-     * True only while something is actually playing. Gates the hover media
-     * bud, so a paused, stopped, closed, or vanished player hides the widget
-     * instead of leaving a stale card on screen.
+     * True while any valid media source exists: a playing or paused player
+     * with a track loaded (Players.has). Gates the hover media bud, so a
+     * paused track still shows its card — you can glance at what's loaded —
+     * while a stopped, closed, or vanished player (Players.has false) drops
+     * the widget instead of leaving a stale card on screen.
      */
-    readonly property bool hasMedia: Players.playing
+    readonly property bool hasMedia: Players.has
 
     /**
-     * Playback stopped while the media surface owned the pill: a pause keeps
-     * the surface up — the paused card is still the live now-playing view, and
-     * the OSD drops track flashes over it (see Osd.mediaOpen), so the pill
-     * never yanks away to a toast. Only when the player itself is gone (stop,
-     * exit, kill) does the surface drop, so the pill morphs back to its normal
+     * The media source dropped out while the media surface owned the pill: a
+     * pause keeps the surface up (Players.has stays true — the paused card is
+     * still the live now-playing view, and the OSD drops track flashes over
+     * it, see Osd.mediaOpen), so the pill never yanks away to a toast. Only
+     * when the source itself is gone — stopped, closed, killed (Players.has
+     * false) — does the surface drop, so the pill morphs back to its normal
      * state instead of parking on a stale card. Driven purely by state changes
      * - no timers or timeouts.
      */
-    onHasMediaChanged: if (!hasMedia && !Players.has && mediaOpen) pill.requestClose()
+    onHasMediaChanged: if (!hasMedia && mediaOpen) pill.requestClose()
 
     /**
      * Subview the link surface should land on when next opened. The wifi glance
@@ -329,10 +332,11 @@ Item {
                 ld.active = false;
         }
         /**
-         * The hover media bud stays loaded while anything plays, even with the
-         * pill at rest and the bud off-screen. Reclaim it once it has been out
-         * of hover mode for the idle timeout so an idle iGPU isn't paying for a
-         * full Media widget (player lookups, cover art) that nobody can see.
+         * The hover media bud stays loaded while a media source exists (playing
+         * or paused), even with the pill at rest and the bud off-screen. Reclaim
+         * it once it has been out of hover mode for the idle timeout so an idle
+         * iGPU isn't paying for a full Media widget (player lookups, cover art)
+         * that nobody can see.
          * The media timestamp is only stamped by the full media surface, never
          * by the bud itself, so a bud that is only ever seen on hover is simply
          * reclaimed sooner — harmless, since it rebuilds on the next media
@@ -642,6 +646,15 @@ Item {
     property string lastMode: "rest"
     property bool hoverHop: false
 
+    /**
+     * True when the pill entered hover mode by shrinking from an open surface
+     * (or OSD/toast) rather than growing from rest. HoverFace reads this to
+     * fade its content in with the pill's settle, so closing a surface never
+     * flashes the hover face over the dissolving surface. Recomputed on every
+     * mode change.
+     */
+    property bool closeArrive: false
+
     onModeChanged: {
         /**
          * Keep the cava capture only while the bars can actually render:
@@ -653,6 +666,8 @@ Item {
         if (pill.surfaces[mode] !== undefined)
             pill._surfaceLastOpened[mode] = Date.now();
         hoverHop = (mode === "hover" || mode === "rest") && (lastMode === "hover" || lastMode === "rest");
+        /** Computed before lastMode is overwritten: hover reached by shrinking from a non-rest mode, not by growing from rest. */
+        closeArrive = mode === "hover" && lastMode !== "hover" && lastMode !== "rest";
         lastMode = mode;
         if (mode !== "hover") {
             hoverSoulGate = false;
@@ -1013,9 +1028,27 @@ Item {
     Item {
         id: rest
         anchors.fill: parent
-        opacity: (pill.expanded || pill.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0 : Math.pow(pill.morphCloseness, 1.5)
+        /**
+         * Fades in as the pill settles — but only after the hover clock has
+         * landed. Without the handoff gate the rest content (the visualizer
+         * bars, which flip visible the moment mode becomes "rest") would
+         * appear mid-collapse and flash ahead of the returning clock; the
+         * (1 - clockHandoff) factor keeps the whole rest face hidden until
+         * the clock reaches the rest spot, then it arrives with the swap.
+         */
+        opacity: (pill.expanded || pill.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0 : Math.pow(pill.morphCloseness, 1.5) * (1 - hoverFace.clockHandoff)
         visible: opacity > 0.01
-        Behavior on opacity { NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) } }
+        /**
+         * While at rest the fade-in is a pure per-frame binding (morphCloseness
+         * × handoff) riding the pill's own animated geometry — a Behavior would
+         * re-target every frame against that moving value and add lag plus
+         * judder. The Behavior stays for the other modes, where the face is
+         * driven to a constant 0 and needs a real fade-out.
+         */
+        Behavior on opacity {
+            enabled: pill.mode !== "rest"
+            NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) }
+        }
 
         Row {
             id: restRow
@@ -1561,18 +1594,70 @@ Item {
             width: parent.width - 44 * pill.s
             spacing: 7 * pill.s
 
+            /**
+             * Stage glyph with a cross-morph between icons: the outgoing glyph
+             * shrinks and fades away while the incoming one grows in, so the
+             * stage changes (drop → spin → check, or a failed install snapping
+             * to the close-circle) read as one continuous motion instead of an
+             * instant swap. `prevName` holds the outgoing icon and is re-stamped
+             * once the morph settles, so every change cross-fades from the icon
+             * that was actually on screen. The spinning reboot rides the
+             * incoming layer, so the spin keeps running through the fade-in.
+             */
             Item {
+                id: stageIcon
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 26 * pill.s
                 height: 26 * pill.s
+
+                /** 0 = outgoing icon shown, 1 = incoming icon settled. */
+                property real morph: 1
+                /** The icon that was showing before the current one. */
+                property string prevName: "download"
+
+                readonly property string glyphName: (pill.dragStage === "bad" || pill.dragStage === "fail") ? "close-circle"
+                    : (pill.dragStage === "installing" ? "reboot"
+                    : (pill.dragStage === "done" ? "check" : "download"))
+
+                onGlyphNameChanged: {
+                    if (glyphName !== prevName)
+                        swapAnim.restart();
+                }
+
+                SequentialAnimation {
+                    id: swapAnim
+                    ScriptAction { script: stageIcon.morph = 0 }
+                    NumberAnimation {
+                        target: stageIcon
+                        property: "morph"
+                        to: 1
+                        duration: Motion.standard
+                        easing.type: Motion.easeStandard
+                    }
+                    ScriptAction { script: stageIcon.prevName = stageIcon.glyphName }
+                }
+
+                /** Outgoing icon: shrinks and fades away. */
+                GlyphIcon {
+                    anchors.fill: parent
+                    stroke: 2
+                    color: dragOverView.accent
+                    Behavior on color { ColorAnimation { duration: Motion.fast } }
+                    name: stageIcon.prevName
+                    opacity: 1 - stageIcon.morph
+                    scale: 1 - 0.15 * stageIcon.morph
+                }
+
+                /** Incoming icon: grows in over the outgoing one. */
                 GlyphIcon {
                     id: dragGlyph
                     anchors.fill: parent
                     stroke: 2
                     color: dragOverView.accent
-                    name: (pill.dragStage === "bad" || pill.dragStage === "fail") ? "close"
-                        : (pill.dragStage === "installing" ? "reboot"
-                        : (pill.dragStage === "done" ? "check" : "download"))
+                    Behavior on color { ColorAnimation { duration: Motion.fast } }
+                    name: stageIcon.glyphName
+                    opacity: stageIcon.morph
+                    scale: 0.7 + 0.3 * stageIcon.morph
                     RotationAnimation on rotation {
                         running: pill.dragStage === "installing"
                         loops: Animation.Infinite

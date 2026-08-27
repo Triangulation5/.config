@@ -78,6 +78,7 @@ Item {
         "chevron-down": { d: "M6 10l6 6 6-6", fill: false },
         "chevron-up": { d: "M6 14l6-6 6 6", fill: false },
         "close": { d: "M6 6l12 12 M18 6l-12 12", fill: false },
+        "close-circle": { d: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M8.5 8.5l7 7 M15.5 8.5l-7 7", fill: false },
         "trash": { d: "M3 6h18 M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2 M10 11v6 M14 11v6", fill: false },
         "return": { d: "M20 6v6a3 3 0 0 1-3 3H5 M9 11l-4 4 4 4", fill: false },
         "wifi": { d: "M4 9.5C9 4.8 15 4.8 20 9.5 M7 13c3-2.8 7-2.8 10 0 M11 16.8a1.4 1.4 0 1 0 2 0a1.4 1.4 0 1 0-2 0", fill: false },
