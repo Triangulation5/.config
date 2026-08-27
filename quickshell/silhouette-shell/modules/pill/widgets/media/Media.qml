@@ -63,7 +63,14 @@ PillSurface {
 
     readonly property real textX: 148 * s
     readonly property real edgePad: 18 * s
-    readonly property color washMid: Theme.mix(Theme.cardTop, Theme.cardBot, 0.5)
+    /**
+     * Warm wash base for the card. The flat card tone reads as pure black next
+     * to the album art, so the background lifts off it with a verm glow — the
+     * "warm wash" the card was designed around (see the header comment).
+     */
+    readonly property color washMid: Theme.mix(Theme.cardTop, Theme.verm, 0.14)
+    /** The cover tile's fallback tone, kept just under the card wash so an art-less track doesn't sit on a black square. */
+    readonly property color tileWash: Theme.mix(Theme.tileBg, root.washMid, 0.5)
     property real sealPulse: 0
 
     onTitleChanged: if (playing && active) pulseAnim.restart()
@@ -102,8 +109,8 @@ PillSurface {
             text: skip.kanjiText
             font.family: Theme.fontJp
             font.pixelSize: 16 * root.s
-            color: skipArea.containsMouse ? Theme.cream : Theme.dim
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
+            /** White like the seal so the transport reads at a glance; unavailability dims via the skip opacity. */
+            color: "#ffffff"
         }
 
         GlyphIcon {
@@ -112,8 +119,8 @@ PillSurface {
             width: 17 * root.s
             height: 17 * root.s
             name: skip.icon
-            color: skipArea.containsMouse ? Theme.cream : Theme.dim
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
+            /** White like the seal so the transport reads at a glance; unavailability dims via the skip opacity. */
+            color: "#ffffff"
         }
 
         MouseArea {
@@ -167,8 +174,8 @@ PillSurface {
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.alpha(Theme.cardTop, 0.88) }
-                GradientStop { position: 1.0; color: Qt.alpha(Theme.cardBot, 0.93) }
+                GradientStop { position: 0.0; color: Qt.alpha(Theme.mix(root.washMid, Theme.cardTop, 0.45), 0.92) }
+                GradientStop { position: 1.0; color: Qt.alpha(root.washMid, 0.95) }
             }
         }
 
@@ -183,11 +190,11 @@ PillSurface {
             height: width
 
             radius: 16 * root.s
-            color: Theme.tileBg
+            color: root.tileWash
 
             Rectangle {
                 anchors.fill: parent
-                color: Theme.tileBg
+                color: root.tileWash
                 visible: !root.everReady
             }
 
@@ -224,7 +231,7 @@ PillSurface {
         anchors.right: parent.right
         anchors.rightMargin: root.edgePad
         anchors.top: parent.top
-        anchors.topMargin: 24 * root.s
+        anchors.topMargin: 19 * root.s
         spacing: 3 * root.s
 
         Marquee {
