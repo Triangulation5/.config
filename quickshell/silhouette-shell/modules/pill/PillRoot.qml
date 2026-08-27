@@ -272,7 +272,7 @@ ShellRoot {
         function wallpaper(mon: string): void { root.toggleSurface(mon, "wallpaper"); }
         function timer(mon: string): void { root.toggleSurface(mon, "timer"); }
         function media(mon: string): void {
-            if (Players.playing)
+            if (Players.has)
                 root.toggleSurface(mon, "media");
         }
         function peek(mon: string): void { root.peek(mon); }
