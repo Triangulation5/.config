@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Quickshell.Io
 import qs.services
 
 /**
@@ -109,9 +110,69 @@ Item {
         root.selectedDate = new Date(calendarModel.get(7).timestamp)
     }
 
+    /** Calendar-day key ("YYYY-M-D") of a date, for the rollover check below. */
+    function dayKeyOf(d) {
+        return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate()
+    }
+
+    /** Day key the strip's window is currently anchored to. */
+    property string _lastDay: ""
+
     Component.onCompleted: {
+        root._lastDay = root.dayKeyOf(new Date())
         rebuild(new Date())
         wheel.currentIndex = 7
+    }
+
+    /**
+     * If the wall clock has moved to a new calendar day since the strip was
+     * last built, re-anchor the window on the new today and snap the wheel
+     * back to it. Shared by the midnight timer and the suspend-wake hook.
+     */
+    function rolloverCheck() {
+        var d = new Date()
+        var key = root.dayKeyOf(d)
+        if (key !== root._lastDay) {
+            root._lastDay = key
+            root.rebuild(d)
+            wheel.currentIndex = 7
+        }
+    }
+
+    /**
+     * The day window is anchored to "today" at index 7 and built once on
+     * creation. Rebuild it when the calendar day rolls over at midnight, so
+     * the strip centres the new today and the red next-day highlight lands on
+     * the real tomorrow without a shell reload.
+     */
+    Timer {
+        id: dayTimer
+        interval: 1000
+        repeat: true
+        onTriggered: root.rolloverCheck()
+    }
+
+    /**
+     * A wall clock that jumps while the machine is suspended (through
+     * midnight, NTP correction, manual set) is caught on logind's
+     * PrepareForSleep wake signal, so the strip refreshes the moment the
+     * session resumes instead of waiting for the next timer tick. The wake
+     * half of the signal carries "boolean false". dbus-monitor failing (no
+     * dbus) degrades to the 1s timer alone, which already re-reads the clock
+     * on its first tick after resume.
+     */
+    Process {
+        id: sleepMon
+        command: ["dbus-monitor", "--system",
+            "type='signal',path='/org/freedesktop/login1',"
+            + "interface='org.freedesktop.login1.Manager',member='PrepareForSleep'"]
+        running: true
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (line.indexOf("boolean false") >= 0)
+                    root.rolloverCheck()
+            }
+        }
     }
 
     ListView {
