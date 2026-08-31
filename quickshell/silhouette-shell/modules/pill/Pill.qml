@@ -88,14 +88,12 @@ Item {
     readonly property bool powerOpen: surface === "power"
     readonly property bool mediaOpen: surface === "media"
     readonly property bool linkOpen: surface === "link"
-    readonly property bool batteryOpen: surface === "battery"
     readonly property bool settingsOpen: surface === "settings"
     readonly property bool keybindsOpen: surface === "keybinds"
     readonly property bool workspacesOpen: surface === "workspaces"
     readonly property bool stashOpen: surface === "stash"
     readonly property bool spaceappsOpen: surface === "spaceapps"
     readonly property bool recorderOpen: surface === "recorder"
-    readonly property bool sysmonOpen: surface === "sysmon"
     readonly property bool appearanceOpen: surface === "appearance"
     readonly property bool updatesOpen: surface === "updates"
     readonly property bool displayOpen: surface === "display"
@@ -369,6 +367,22 @@ Item {
      * is still building (null) and re-evaluate the moment it lands, so the
      * morph starts immediately and settles on the real measurement.
      */
+
+    /**
+     * Descriptor for the common surface shape: fixed width, measured height
+     * with a fallback while an async loader is still building, and Ame anchored
+     * to the loaded item. Pass `ameTarget: null` for a surface with no anchor
+     * (timer). Surfaces that measure their width or size themselves differently
+     * (calendar, launcher, mixer…) keep their own entries in the map below.
+     */
+    function stdSurface(ld, name, w, hPad, fallbackH, ameTarget) {
+        const anchor = ameTarget === undefined ? name : ameTarget;
+        return {
+            size: () => Qt.size(w, surfaceHeight(ld, name, hPad, fallbackH)),
+            ame: () => anchor === null ? null : surfaceItem(ld, anchor)
+        };
+    }
+
     readonly property var surfaces: ({
         calendar:  { size: () => Qt.size(surfaceWidth(ldCalendar, "calendar", 36 * s, 318 * s), surfaceHeight(ldCalendar, "calendar", 32 * s, 272 * s)), ame: () => surfaceItem(ldCalendar, "calendar") },
         launcher:  { size: () => { surfaceItem(ldLauncher, "launcher"); return Qt.size(launcherW, launcherH); }, ame: () => surfaceItem(ldLauncher, "launcher") },
@@ -378,24 +392,24 @@ Item {
         media:     { size: () => { surfaceItem(ldMedia, "media"); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia, "media") },
         mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceProp(ldMixer, "mixer", "faderCount", 4)) * s, mixerH), ame: () => surfaceItem(ldMixer, "mixer") },
         link:      { size: () => Qt.size(surfaceProp(ldLink, "link", "desiredW", 330 * s), surfaceHeight(ldLink, "link", 26 * s, 300 * s)), ame: () => surfaceItem(ldLink, "link") },
-        battery:   { size: () => Qt.size(batteryW, surfaceHeight(ldBattery, "battery", 26 * s, 160 * s)), ame: () => surfaceItem(ldBattery, "battery") },
-        settings:  { size: () => Qt.size(settingsW, surfaceHeight(ldSettings, "settings", 29 * s, 400 * s)), ame: () => surfaceItem(ldSettings, "settings") },
-        keybinds:  { size: () => Qt.size(keybindsW, surfaceHeight(ldKeybinds, "keybinds", 29 * s, 420 * s)), ame: () => surfaceItem(ldKeybinds, "keybinds") },
-        workspaces: { size: () => Qt.size(workspacesW, surfaceHeight(ldWorkspaces, "workspaces", 29 * s, 300 * s)), ame: () => surfaceItem(ldWorkspaces, "workspaces") },
-        stash:     { size: () => Qt.size(stashW, surfaceHeight(ldStash, "stash", 29 * s, 300 * s)), ame: () => surfaceItem(ldStash, "stash") },
-        spaceapps: { size: () => Qt.size(spaceappsW, surfaceHeight(ldSpaceapps, "spaceapps", 29 * s, 300 * s)), ame: () => surfaceItem(ldSpaceapps, "spaceapps") },
-        recorder:  { size: () => Qt.size(recorderW, surfaceHeight(ldRecorder, "recorder", 33 * s, 300 * s)), ame: () => surfaceItem(ldRecorder, "recorder") },
-        sysmon:    { size: () => Qt.size(sysmonW, surfaceHeight(ldSysmon, "sysmon", 33 * s, 420 * s)), ame: () => surfaceItem(ldSysmon, "sysmon") },
-        appearance: { size: () => Qt.size(appearanceW, surfaceHeight(ldAppearance, "appearance", 29 * s, 400 * s)), ame: () => surfaceItem(ldAppearance, "appearance") },
-        updates:    { size: () => Qt.size(updatesW, surfaceHeight(ldUpdates, "updates", 29 * s, 360 * s)), ame: () => surfaceItem(ldUpdates, "updates") },
-        display:    { size: () => Qt.size(displayW, surfaceHeight(ldDisplay, "display", 29 * s, 400 * s)), ame: () => surfaceItem(ldDisplay, "display") },
-        input:      { size: () => Qt.size(inputW, surfaceHeight(ldInput, "input", 29 * s, 400 * s)), ame: () => surfaceItem(ldInput, "input") },
-        look:       { size: () => Qt.size(lookW, surfaceHeight(ldLook, "look", 29 * s, 400 * s)), ame: () => surfaceItem(ldLook, "look") },
-        idlelock:   { size: () => Qt.size(idlelockW, surfaceHeight(ldIdlelock, "idlelock", 29 * s, 400 * s)), ame: () => surfaceItem(ldIdlelock, "idlelock") },
-        animation:  { size: () => Qt.size(animationW, surfaceHeight(ldAnimation, "animation", 29 * s, 400 * s)), ame: () => surfaceItem(ldAnimation, "animation") },
-        fontpicker: { size: () => Qt.size(fontpickerW, surfaceHeight(ldFontpicker, "fontpicker", 29 * s, 400 * s)), ame: () => surfaceItem(ldFontpicker, "fontpicker") },
-        timer:    { size: () => Qt.size(timerW, surfaceHeight(ldTimer, "timer", 28 * s, 460 * s)), ame: () => null },
-        polkit:    { size: () => Qt.size(polkitW, surfaceHeight(ldPolkit, "polkit", 28 * s, 200 * s)), ame: () => surfaceItem(ldPolkit, "polkit") }
+        battery:   stdSurface(ldBattery, "battery", batteryW, 26 * s, 160 * s),
+        settings:  stdSurface(ldSettings, "settings", settingsW, 29 * s, 400 * s),
+        keybinds:  stdSurface(ldKeybinds, "keybinds", keybindsW, 29 * s, 420 * s),
+        workspaces: stdSurface(ldWorkspaces, "workspaces", workspacesW, 29 * s, 300 * s),
+        stash:     stdSurface(ldStash, "stash", stashW, 29 * s, 300 * s),
+        spaceapps: stdSurface(ldSpaceapps, "spaceapps", spaceappsW, 29 * s, 300 * s),
+        recorder:  stdSurface(ldRecorder, "recorder", recorderW, 33 * s, 300 * s),
+        sysmon:    stdSurface(ldSysmon, "sysmon", sysmonW, 33 * s, 420 * s),
+        appearance: stdSurface(ldAppearance, "appearance", appearanceW, 29 * s, 400 * s),
+        updates:    stdSurface(ldUpdates, "updates", updatesW, 29 * s, 360 * s),
+        display:    stdSurface(ldDisplay, "display", displayW, 29 * s, 400 * s),
+        input:      stdSurface(ldInput, "input", inputW, 29 * s, 400 * s),
+        look:       stdSurface(ldLook, "look", lookW, 29 * s, 400 * s),
+        idlelock:   stdSurface(ldIdlelock, "idlelock", idlelockW, 29 * s, 400 * s),
+        animation:  stdSurface(ldAnimation, "animation", animationW, 29 * s, 400 * s),
+        fontpicker: stdSurface(ldFontpicker, "fontpicker", fontpickerW, 29 * s, 400 * s),
+        timer:    stdSurface(ldTimer, "timer", timerW, 28 * s, 460 * s, null),
+        polkit:    stdSurface(ldPolkit, "polkit", polkitW, 28 * s, 200 * s)
     })
 
     /**
@@ -1277,8 +1291,8 @@ Item {
          */
         suppressed: pill.held || pill.surface === "polkit"
         expanded: pill.expanded
-        mixerOpen: pill.surface === "mixer"
-        mediaOpen: pill.surface === "media"
+        mixerOpen: pill.mixerOpen
+        mediaOpen: pill.mediaOpen
         surfaceOpen: pill.surfaceOpen
         enabled: pill.mode === "osd"
         opacity: pill.mode === "osd" ? 1 : 0

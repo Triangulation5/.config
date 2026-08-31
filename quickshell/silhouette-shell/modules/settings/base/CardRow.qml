@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * A wide settings line for card-style tabs (Display): a leading glyph or icon
@@ -29,7 +30,7 @@ Item {
         onHoveredChanged: if (crow.surface) crow.surface.reportRowHover(crow, hovered)
     }
 
-    Rectangle {
+    HoverTile {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -38,8 +39,8 @@ Item {
         anchors.rightMargin: -7 * crow.s
         height: 32 * crow.s
         radius: 8 * crow.s
-        color: (crowHover.hovered || crow.focused) ? Theme.frameBg : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        focused: crow.focused
+        hovered: crowHover.hovered
     }
 
     MouseArea {

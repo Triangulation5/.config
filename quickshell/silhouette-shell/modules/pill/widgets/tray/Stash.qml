@@ -7,6 +7,8 @@ import qs.services
 import qs.modules.launcher
 import qs.modules.settings
 import qs.components.icons
+import qs.components.controls
+import qs.components.layout
 import qs.modules.pill.surfaces
 
 /**
@@ -185,45 +187,11 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        Item {
-            width: parent.width
-            height: 22 * root.s
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8 * root.s
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Flags.showGlyphs
-                    text: "蔵"
-                    color: Theme.cream
-                    font.family: Theme.fontJp
-                    font.weight: Font.Medium
-                    font.pixelSize: 16 * root.s
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "STASH"
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 10 * root.s
-                    font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1.6 * root.s
-                }
-            }
-
-            GlyphIcon {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-left"
-                color: Theme.iconDim
-                stroke: 2.2
-            }
+        SurfaceHeader {
+            s: root.s
+            kanji: "蔵"
+            label: "STASH"
+            showBack: true
         }
 
         Item { width: 1; height: 9 * root.s }
@@ -271,15 +239,14 @@ PillSurface {
                 width: ListView.view.width
                 height: 46 * root.s
 
-                Rectangle {
+                HoverTile {
                     anchors.fill: parent
                     anchors.topMargin: 3 * root.s
                     anchors.bottomMargin: 3 * root.s
                     radius: 10 * root.s
-                    color: rowHover.hovered || erow.focused ? Theme.frameBg : "transparent"
-                    border.width: 1
-                    border.color: rowHover.hovered || erow.focused ? Theme.frameBorder : "transparent"
-                    Behavior on color { ColorAnimation { duration: Motion.fast } }
+                    hovered: rowHover.hovered
+                    focused: erow.focused
+                    edge: Theme.frameBorder
                 }
 
                 HoverHandler { id: rowHover }

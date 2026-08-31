@@ -226,43 +226,11 @@ Column {
     }
 
 
-    Item {
-        width: parent.width
-        height: visible ? 22 * picker.s : 0
+    BackHeader {
         visible: picker.addOpen
-
-        Row {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 7 * picker.s
-
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16 * picker.s
-                height: 16 * picker.s
-
-                HoverIcon {
-                    anchors.fill: parent
-                    name: "chevron-left"
-                    color: Theme.iconDim
-                    hoverColor: Theme.cream
-                    stroke: 1.8
-                    hitPad: 6 * picker.s
-                    onClicked: picker.closeAdd()
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "ADD APP"
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 9.5 * picker.s
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.4 * picker.s
-            }
-        }
+        s: picker.s
+        title: "ADD APP"
+        onBack: picker.closeAdd()
     }
 
     Item { width: 1; height: visible ? 4 * picker.s : 0; visible: picker.addOpen }

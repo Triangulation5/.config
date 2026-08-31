@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * One compact settings line (icon + label + caption + control), shared by the
@@ -39,13 +40,13 @@ Item {
         onHoveredChanged: if (!frow.collapsed && frow.surface) frow.surface.reportRowHover(frow, hovered)
     }
 
-    Rectangle {
+    HoverTile {
         anchors.fill: parent
         anchors.topMargin: 3 * frow.s
         anchors.bottomMargin: 3 * frow.s
         radius: 9 * frow.s
-        color: (fhover.hovered || frow.focused) ? Theme.frameBg : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        focused: frow.focused
+        hovered: fhover.hovered
     }
 
     MouseArea {

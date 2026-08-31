@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.services
+import qs.components.controls
 
 /**
  * One keybind row in the keybinds list. All data is passed from the delegate
@@ -32,13 +33,13 @@ Item {
         onHoveredChanged: if (hovered && surface && !surface.listening) surface.focusIndex = brow.rowIndex
     }
 
-    Rectangle {
+    HoverTile {
         anchors.fill: parent
         anchors.topMargin: 3 * s
         anchors.bottomMargin: 3 * s
         radius: 9 * s
-        color: (rowHover.hovered || brow.focused) ? Theme.frameBg : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        hovered: rowHover.hovered
+        focused: brow.focused
     }
 
     Rectangle {
