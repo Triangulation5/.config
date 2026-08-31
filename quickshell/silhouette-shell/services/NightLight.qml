@@ -179,15 +179,16 @@ Singleton {
     /**
      * The daemon's own profile scheduler normally flips the tint at the profile
      * times (the conf hands the clock to it). Re-push the resolved state on a
-     * slow tick anyway, so a daemon that never armed those profiles — an older
+     * tick anyway, so a daemon that never armed those profiles — an older
      * hyprsunset without the scheduler, a failed service restart, a conf the
      * running daemon never reloaded — still goes on and off at the set times.
+     * The 4s tick bounds the flip to land within a few seconds of the boundary;
      * pushLive no-ops while a push is in flight and when the desired state is
-     * unchanged, so this tick costs one string compare when nothing moved.
+     * unchanged, so the tick costs one string compare when nothing moved.
      */
     Timer {
         id: boundaryTimer
-        interval: 10000
+        interval: 4000
         repeat: true
         running: Flags.nightLightMode === "scheduled"
         onTriggered: root.pushLive()
