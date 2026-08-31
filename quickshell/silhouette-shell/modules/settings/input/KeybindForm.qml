@@ -22,42 +22,10 @@ Column {
 
     spacing: 10 * surface.s
 
-    Item {
-        width: parent.width
-        height: 22 * surface.s
-
-        Row {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 7 * surface.s
-
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16 * surface.s
-                height: 16 * surface.s
-
-                HoverIcon {
-                    anchors.fill: parent
-                    name: "chevron-left"
-                    color: Theme.iconDim
-                    hoverColor: Theme.cream
-                    stroke: 1.8
-                    hitPad: 6 * surface.s
-                    onClicked: surface.closeForm()
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: surface.formAdd ? "NEW BIND" : "EDIT BIND"
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 9.5 * surface.s
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.4 * surface.s
-            }
-        }
+    BackHeader {
+        s: surface.s
+        title: surface.formAdd ? "NEW BIND" : "EDIT BIND"
+        onBack: surface.closeForm()
     }
 
     Item {

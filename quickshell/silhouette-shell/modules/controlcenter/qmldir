@@ -1,11 +1,14 @@
 module qs.modules.controlcenter
 
+BtDeviceRow 1.0 BtDeviceRow.qml
 CredRow 1.0 CredRow.qml
 Ember 1.0 Ember.qml
 HotspotControl 1.0 HotspotControl.qml
 Link 1.0 Link.qml
 LinkBt 1.0 LinkBt.qml
+LinkDrillIn 1.0 LinkDrillIn.qml
 LinkInbox 1.0 LinkInbox.qml
+LinkListFrame 1.0 LinkListFrame.qml
 LinkRow 1.0 LinkRow.qml
 LinkToggle 1.0 LinkToggle.qml
 LinkWifi 1.0 LinkWifi.qml

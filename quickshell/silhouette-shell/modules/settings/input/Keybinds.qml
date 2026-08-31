@@ -10,6 +10,7 @@ import qs.services
 import qs.modules.settings
 import qs.modules.pill.surfaces
 import qs.components.icons
+import qs.components.layout
 
 /**
  * 鍵 KEYBINDS surface: a searchable list of the keyboard shortcuts parsed from
@@ -351,45 +352,11 @@ PillSurface {
         anchors.right: parent.right
         spacing: 0
 
-        Item {
-            width: parent.width
-            height: 22 * root.s
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8 * root.s
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: Flags.showGlyphs
-                    text: "鍵"
-                    color: Theme.cream
-                    font.family: Theme.fontJp
-                    font.weight: Font.Medium
-                    font.pixelSize: 16 * root.s
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "KEYBINDS"
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 10 * root.s
-                    font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                    font.letterSpacing: 1.6 * root.s
-                }
-            }
-
-            GlyphIcon {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-left"
-                color: Theme.iconDim
-                stroke: 2.2
-            }
+        SurfaceHeader {
+            s: root.s
+            kanji: "鍵"
+            label: "KEYBINDS"
+            showBack: true
         }
 
         Item { width: 1; height: 8 * root.s }

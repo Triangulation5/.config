@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * One workspace navigation row in the workspaces hub. All data is passed
@@ -24,15 +25,14 @@ Item {
     width: parent ? parent.width : 0
     height: 50 * s
 
-    Rectangle {
+    HoverTile {
         anchors.fill: parent
         anchors.topMargin: 3 * s
         anchors.bottomMargin: 3 * s
         radius: 10 * s
-        color: (wrow.nav && navHover.hovered) || wrow.focused ? Theme.frameBg : "transparent"
-        border.width: 1
-        border.color: (wrow.nav && navHover.hovered) || wrow.focused ? Theme.frameBorder : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        hovered: navHover.hovered
+        focused: wrow.focused
+        edge: Theme.frameBorder
     }
 
     HoverHandler { id: navHover; enabled: wrow.nav }

@@ -145,6 +145,22 @@ Singleton {
             root.restartNeeded = data.restartNeeded === true;
     }
 
+    /**
+     * Parses the engine's JSON reply and ingests it, flagging the generic
+     * error on a malformed body. `hard` (the apply path) also resets the
+     * previous result so a garbled apply never leaves stale state behind.
+     */
+    function ingestReply(text, hard) {
+        try {
+            root.ingest(JSON.parse(text));
+        } catch (e) {
+            if (hard)
+                root.resetResult();
+            root.status = "error";
+            root.errorText = "The updater returned something unexpected.";
+        }
+    }
+
     function startCheck() {
         if (root.busy)
             return;
@@ -188,12 +204,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.checking = false;
-                try {
-                    root.ingest(JSON.parse(this.text));
-                } catch (e) {
-                    root.status = "error";
-                    root.errorText = "The updater returned something unexpected.";
-                }
+                root.ingestReply(this.text, false);
             }
         }
     }
@@ -213,13 +224,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.applying = false;
-                try {
-                    root.ingest(JSON.parse(this.text));
-                } catch (e) {
-                    root.resetResult();
-                    root.status = "error";
-                    root.errorText = "The updater returned something unexpected.";
-                }
+                root.ingestReply(this.text, true);
                 /**
                  * Hold the auto-restart while any install failed: a restart wipes
                  * this surface, so the user would never see what didn't install. The

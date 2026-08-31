@@ -65,6 +65,7 @@ Item {
             font.weight: Font.DemiBold
             font.capitalization: Font.AllUppercase
             font.letterSpacing: 1.6 * root.s
+            elide: Text.ElideRight
         }
     }
 

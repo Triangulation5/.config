@@ -31,8 +31,8 @@ Column {
     property string pwDraft: ""
     property bool connecting: false
     property bool connectFailed: false
-    /** The list Flickable, for scroll-into-view on focus/expansion. */
-    property var flick: null
+    /** The list frame, for scroll-into-view on focus/expansion. */
+    property var list: null
 
     readonly property string ssid: (modelData && modelData.name) ? modelData.name : ""
     readonly property bool isActive: modelData ? modelData.connected === true : false
@@ -59,20 +59,10 @@ Column {
         pwField.forceActiveFocus();
     }
 
-    /**
-     * Keep the keyboard-focused (or just-expanded) row in view when the list
-     * overflows its fixed-height frame. `mapToItem` gives viewport coords, so
-     * scroll by the deficit against the visible bounds.
-     */
+    /** Keep the keyboard-focused (or just-expanded) row in view. */
     function ensureVisible() {
-        if (!row.flick)
-            return;
-        var y = row.mapToItem(row.flick, 0, 0).y;
-        var h = row.height;
-        if (y < 0)
-            row.flick.contentY += y;
-        else if (y + h > row.flick.height)
-            row.flick.contentY += y + h - row.flick.height;
+        if (row.list)
+            row.list.ensureVisible(row);
     }
     onFocusedChanged: if (focused) Qt.callLater(row.ensureVisible)
     onExpandedChanged: {
@@ -172,100 +162,31 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6 * row.s
 
-            Rectangle {
-                id: primaryBtn
+            PillButton {
                 anchors.verticalCenter: parent.verticalCenter
-                width: primaryLabel.implicitWidth + 20 * row.s
-                height: 22 * row.s
-                radius: 7 * row.s
-                color: (primaryArea.containsMouse || row.focusPrimary) ? Theme.tileBg : "transparent"
-                border.width: 1
-                border.color: (primaryArea.containsMouse || row.focusPrimary) ? Theme.vermDim : Theme.border
-
-                Text {
-                    id: primaryLabel
-                    anchors.centerIn: parent
-                    text: row.isActive ? "Disconnect" : "Connect"
-                    color: Theme.cream
-                    font.family: Theme.font
-                    font.pixelSize: 10 * row.s
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 0.3 * row.s
-                }
-
-                MouseArea {
-                    id: primaryArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: row.isActive ? row.requestDisconnect() : row.requestConnectKnown()
-                }
+                s: row.s
+                text: row.isActive ? "Disconnect" : "Connect"
+                focused: row.focusPrimary
+                onClicked: row.isActive ? row.requestDisconnect() : row.requestConnectKnown()
             }
 
-            Rectangle {
-                id: revealBtn
+            PillButton {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: row.known
-                readonly property bool shown: row.revealed
-                width: revealLabel.implicitWidth + 20 * row.s
-                height: 22 * row.s
-                radius: 7 * row.s
-                color: (revealArea.containsMouse || row.focusReveal) ? Theme.tileBg : "transparent"
-                border.width: 1
-                border.color: (revealBtn.shown || revealArea.containsMouse || row.focusReveal)
-                    ? Theme.vermDim
-                    : Theme.border
-
-                Text {
-                    id: revealLabel
-                    anchors.centerIn: parent
-                    text: revealBtn.shown ? "Hide" : "Show"
-                    color: Theme.cream
-                    font.family: Theme.font
-                    font.pixelSize: 10 * row.s
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 0.3 * row.s
-                }
-
-                MouseArea {
-                    id: revealArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: row.requestReveal()
-                }
+                s: row.s
+                text: row.revealed ? "Hide" : "Show"
+                focused: row.focusReveal
+                lit: row.revealed
+                onClicked: row.requestReveal()
             }
 
-            Rectangle {
-                id: forgetBtn
+            PillButton {
                 anchors.verticalCenter: parent.verticalCenter
-                width: forgetLabel.implicitWidth + 20 * row.s
-                height: 22 * row.s
-                radius: 7 * row.s
-                color: (forgetArea.containsMouse || row.focusForget)
-                    ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.2)
-                    : Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.12)
-                border.width: 1
-                border.color: Qt.rgba(Theme.vermLit.r, Theme.vermLit.g, Theme.vermLit.b, 0.45)
-
-                Text {
-                    id: forgetLabel
-                    anchors.centerIn: parent
-                    text: "Forget"
-                    color: Theme.vermLit
-                    font.family: Theme.font
-                    font.pixelSize: 10 * row.s
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 0.3 * row.s
-                }
-
-                MouseArea {
-                    id: forgetArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: row.requestForget()
-                }
+                s: row.s
+                text: "Forget"
+                kind: "danger"
+                focused: row.focusForget
+                onClicked: row.requestForget()
             }
         }
     }
