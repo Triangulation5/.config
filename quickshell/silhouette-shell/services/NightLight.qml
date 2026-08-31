@@ -68,6 +68,13 @@ Singleton {
     }
 
     /**
+     * The last command actually pushed to the daemon, as a joined string. Guards
+     * pushLive (and the boundary timer below) from re-issuing an identical
+     * hyprctl while nothing changed, so the periodic tick costs one compare.
+     */
+    property string lastPushed: ""
+
+    /**
      * Pushes the resolved state to the live daemon at once. A scrub tick that
      * lands while the prior hyprctl is still running is folded into the trailing
      * re-push in the process exit handler, so the final value always arrives.
@@ -75,7 +82,12 @@ Singleton {
     function pushLive() {
         if (ipc.running)
             return;
-        ipc.command = root.desiredCmd();
+        var want = root.desiredCmd();
+        var key = want.join(" ");
+        if (key === root.lastPushed)
+            return;
+        root.lastPushed = key;
+        ipc.command = want;
         ipc.running = true;
     }
 
@@ -137,7 +149,9 @@ Singleton {
         command: []
         onExited: {
             var want = root.desiredCmd();
-            if (want.join(" ") !== ipc.command.join(" ")) {
+            var key = want.join(" ");
+            if (key !== root.lastPushed) {
+                root.lastPushed = key;
                 ipc.command = want;
                 ipc.running = true;
             }
@@ -160,5 +174,22 @@ Singleton {
     Process {
         id: restartProc
         command: ["systemctl", "--user", "restart", "hyprsunset"]
+    }
+
+    /**
+     * The daemon's own profile scheduler normally flips the tint at the profile
+     * times (the conf hands the clock to it). Re-push the resolved state on a
+     * slow tick anyway, so a daemon that never armed those profiles — an older
+     * hyprsunset without the scheduler, a failed service restart, a conf the
+     * running daemon never reloaded — still goes on and off at the set times.
+     * pushLive no-ops while a push is in flight and when the desired state is
+     * unchanged, so this tick costs one string compare when nothing moved.
+     */
+    Timer {
+        id: boundaryTimer
+        interval: 10000
+        repeat: true
+        running: Flags.nightLightMode === "scheduled"
+        onTriggered: root.pushLive()
     }
 }
