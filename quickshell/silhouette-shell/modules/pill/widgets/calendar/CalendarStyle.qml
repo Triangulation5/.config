@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import Quickshell.Io
 import qs.services
 
 /**
@@ -153,26 +152,15 @@ Item {
     }
 
     /**
-     * A wall clock that jumps while the machine is suspended (through
-     * midnight, NTP correction, manual set) is caught on logind's
-     * PrepareForSleep wake signal, so the strip refreshes the moment the
-     * session resumes instead of waiting for the next timer tick. The wake
-     * half of the signal carries "boolean false". dbus-monitor failing (no
-     * dbus) degrades to the 1s timer alone, which already re-reads the clock
-     * on its first tick after resume.
+     * The shared logind wake monitor (one dbus-monitor for the whole shell,
+     * not one per pill) fires `resumed` the moment the session wakes, so a
+     * wall clock that jumped while suspended is re-anchored immediately
+     * instead of waiting for the next timer tick. If the monitor is down, the
+     * 1s timer alone still covers the rollover.
      */
-    Process {
-        id: sleepMon
-        command: ["dbus-monitor", "--system",
-            "type='signal',path='/org/freedesktop/login1',"
-            + "interface='org.freedesktop.login1.Manager',member='PrepareForSleep'"]
-        running: true
-        stdout: SplitParser {
-            onRead: (line) => {
-                if (line.indexOf("boolean false") >= 0)
-                    root.rolloverCheck()
-            }
-        }
+    Connections {
+        target: SuspendWatch
+        function onResumed() { root.rolloverCheck() }
     }
 
     ListView {

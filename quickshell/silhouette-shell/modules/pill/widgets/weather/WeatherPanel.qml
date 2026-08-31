@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import qs.services
+import qs.components.animation
 import qs.components.icons
 
 /**
@@ -21,27 +22,14 @@ Item {
     readonly property bool shown: Weather.ready
 
     /**
-     * Content reveal latch: the weather text stays invisible until the same
-     * delay the calendar's event editor uses after its panel shows, so it
-     * doesn't pop in while the surface is still settling.
+     * Content reveal latch: the weather text stays invisible until the shared
+     * 100ms delay after the panel shows, so it doesn't pop in while the
+     * surface is still settling.
      */
-    property bool _ready: false
-    Timer {
-        id: readyDelay
-        interval: 100
-        onTriggered: panel._ready = true
+    RevealLatch {
+        id: reveal
+        shown: panel.shown
     }
-    onShownChanged: {
-        if (shown) {
-            panel._ready = false;
-            readyDelay.restart();
-        } else {
-            readyDelay.stop();
-            panel._ready = true;
-        }
-    }
-    /** Weather may already be ready when the panel is first created. */
-    Component.onCompleted: if (panel.shown) readyDelay.restart()
 
     /** Width the panel occupies when shown. */
     readonly property real fullW: 152 * s
@@ -71,7 +59,7 @@ Item {
         anchors.top: parent.top
         anchors.rightMargin: 6 * s
         spacing: 9 * s
-        opacity: (panel.shown && panel._ready) ? 1 : 0
+        opacity: (panel.shown && reveal.ready) ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }

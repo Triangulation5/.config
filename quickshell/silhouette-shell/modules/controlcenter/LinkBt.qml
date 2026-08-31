@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Io
 import Quickshell.Bluetooth
 import qs.services
+import qs.components.animation
 import qs.components.layout
 import qs.components.icons
 import qs.components.controls
@@ -388,27 +389,16 @@ Item {
                         readonly property int battery: root.batteryLevel(modelData)
 
                         /**
-                         * The confirm row's text stays invisible until 100ms
-                         * after the row expands (the calendar editor's delayed
-                         * reveal pattern), so the expand reads as one motion
-                         * instead of text popping in mid-animation.
+                         * The confirm row's text stays invisible until the
+                         * shared 100ms delay after the row expands, so the
+                         * expand reads as one motion instead of text popping
+                         * in mid-animation.
                          */
-                        property bool confirmReady: false
-                        Timer {
-                            id: confirmDelay
-                            interval: 100
-                            onTriggered: devItem.confirmReady = true
+                        RevealLatch {
+                            id: confirmReveal
+                            shown: devItem.confirming
                         }
-                        onConfirmingChanged: {
-                            if (confirming) {
-                                confirmReady = false;
-                                confirmDelay.restart();
-                                Qt.callLater(devItem.ensureVisible);
-                            } else {
-                                confirmDelay.stop();
-                                confirmReady = false;
-                            }
-                        }
+                        onConfirmingChanged: if (confirming) Qt.callLater(devItem.ensureVisible)
                         width: devCol.width
                         spacing: 2 * root.s
 
@@ -565,7 +555,7 @@ Item {
                             visible: devItem.confirming
                             width: parent.width
                             height: 30 * root.s
-                            opacity: devItem.confirmReady ? 1 : 0
+                            opacity: confirmReveal.ready ? 1 : 0
                             Behavior on opacity {
                                 NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
                             }

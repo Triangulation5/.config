@@ -6,6 +6,7 @@ import Quickshell
 import qs.services
 import qs.modules.settings
 import qs.modules.pill.surfaces
+import qs.components.animation
 import qs.components.icons
 import qs.components.controls
 import qs.modules.pill.widgets
@@ -348,22 +349,10 @@ PillSurface {
         opacity: editor.opacity
     }
 
-    property bool _editorReady: false
-
-    Timer {
-        id: editorDelay
-        interval: 100
-        onTriggered: root._editorReady = true
-    }
-
-    onEditorShownChanged: {
-        if (editorShown) {
-            root._editorReady = false;
-            editorDelay.restart();
-        } else {
-            editorDelay.stop();
-            root._editorReady = true;
-        }
+    /** Content reveal latch: the editor text stays hidden until the shared 100ms delay after it grows out. */
+    RevealLatch {
+        id: editorReveal
+        shown: root.editorShown
     }
 
     CalendarEditor {
@@ -375,7 +364,7 @@ PillSurface {
         width: root.editorShown ? root.editorW : 0
         clip: true
         visible: width > 1
-        opacity: (root.editorShown && root._editorReady) ? 1 : 0
+        opacity: (root.editorShown && editorReveal.ready) ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
         surface: root
     }
