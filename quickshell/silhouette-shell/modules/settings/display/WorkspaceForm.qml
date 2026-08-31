@@ -21,42 +21,10 @@ Column {
     visible: root.host.formOpen
     spacing: 10 * root.s
 
-    Item {
-        width: parent.width
-        height: 22 * root.s
-
-        Row {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 7 * root.s
-
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16 * root.s
-                height: 16 * root.s
-
-                HoverIcon {
-                    anchors.fill: parent
-                    name: "chevron-left"
-                    color: Theme.iconDim
-                    hoverColor: Theme.cream
-                    stroke: 1.8
-                    hitPad: 6 * root.s
-                    onClicked: root.host.closeForm()
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "NEW WORKSPACE"
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 9.5 * root.s
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.4 * root.s
-            }
-        }
+    BackHeader {
+        s: root.s
+        title: "NEW WORKSPACE"
+        onBack: root.host.closeForm()
     }
 
     Item {

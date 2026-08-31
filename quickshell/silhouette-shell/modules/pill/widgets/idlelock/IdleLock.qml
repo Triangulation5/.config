@@ -6,6 +6,7 @@ import Quickshell.Io
 import qs.services
 import qs.modules.settings
 import qs.components.layout
+import qs.components.controls
 
 /**
  * 錠 IDLE / LOCK sub-surface: the three idle timeouts that drive hypridle, each
@@ -119,13 +120,13 @@ SettingsSurface {
             onHoveredChanged: root.reportRowHover(irow, hovered)
         }
 
-        Rectangle {
+        HoverTile {
             anchors.fill: parent
             anchors.topMargin: 3 * irow.s
             anchors.bottomMargin: 3 * irow.s
             radius: 9 * irow.s
-            color: (ih.hovered || root.focusRowItem === irow) ? Theme.frameBg : "transparent"
-            Behavior on color { ColorAnimation { duration: Motion.fast } }
+            hovered: ih.hovered
+            focused: root.focusRowItem === irow
         }
 
         Column {

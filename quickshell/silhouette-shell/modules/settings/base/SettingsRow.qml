@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.services
 import qs.components.icons
+import qs.components.controls
 
 /**
  * One settings line: an optional leading kanji, a name and an optional faint sub
@@ -34,13 +35,13 @@ Item {
         onHoveredChanged: if (srow.surface) srow.surface.reportRowHover(srow, hovered)
     }
 
-    Rectangle {
+    HoverTile {
         anchors.fill: parent
         anchors.topMargin: 3 * srow.s
         anchors.bottomMargin: 3 * srow.s
         radius: 9 * srow.s
-        color: (srowHover.hovered || srow.focused) ? Theme.frameBg : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        focused: srow.focused
+        hovered: srowHover.hovered
     }
 
     MouseArea {

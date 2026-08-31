@@ -4,10 +4,6 @@ import QtQuick
 import Quickshell.Io
 import Quickshell.Bluetooth
 import qs.services
-import qs.components.animation
-import qs.components.layout
-import qs.components.icons
-import qs.components.controls
 
 /**
  * Bluetooth drill-in for the link surface: back chevron, scan with 25s
@@ -15,14 +11,16 @@ import qs.components.controls
  * Quickshell connect/disconnect calls; unpaired devices run a bluetoothctl
  * pair-trust-connect flow with an inline ember while running and a transient
  * failure line.
+ *
+ * Built on LinkDrillIn, which owns the header, divider, scroll list and the
+ * keyboard scaffold; this panel supplies the adapter/device state, the row
+ * delegate and the hook implementations (activateAt, confirmCount, scan).
  */
-Item {
+LinkDrillIn {
     id: root
 
-    property real s: 1.1
-    property bool active: false
-
-    signal back()
+    title: "BLUETOOTH"
+    scanInterval: 25000
 
     readonly property var adapter: (typeof Bluetooth !== "undefined" && Bluetooth) ? Bluetooth.defaultAdapter : null
     readonly property var devices: (typeof Bluetooth !== "undefined" && Bluetooth && Bluetooth.devices) ? Bluetooth.devices.values : []
@@ -43,17 +41,15 @@ Item {
         if (r !== 0) return r;
         return String((a && a.name) || "").localeCompare(String((b && b.name) || ""));
     })
-    readonly property bool discovering: adapter ? adapter.discovering === true : false
 
     property string pairingAddress: ""
     property string failedAddress: ""
 
     /**
-     * Address of the known device whose inline confirm row (disconnect or
-     * connect, plus forget) is open, mirroring the wifi drill-in's expanded
-     * SSID.
+     * The expanded confirm row is keyed by device address in `expandedRow`
+     * (LinkDrillIn), so the shared Backspace-collapse and deactivation reset
+     * cover it along with the wifi panel.
      */
-    property string expandedAddress: ""
 
     implicitHeight: listFrame.y + listFrame.height
 
@@ -87,20 +83,20 @@ Item {
             return;
         if (d.connected || d.paired) {
             var addr = d.address || "";
-            expandedAddress = (addr.length && expandedAddress === addr) ? "" : addr;
+            expandedRow = (addr.length && expandedRow === addr) ? "" : addr;
             return;
         }
         pairDevice(d);
     }
 
     function connectDevice(d) {
-        expandedAddress = "";
+        expandedRow = "";
         if (d && typeof d.connect === "function")
             d.connect();
     }
 
     function disconnectDevice(d) {
-        expandedAddress = "";
+        expandedRow = "";
         if (d && typeof d.disconnect === "function")
             d.disconnect();
     }
@@ -111,7 +107,7 @@ Item {
      * falls back to its Pair chip.
      */
     function forgetDevice(d) {
-        expandedAddress = "";
+        expandedRow = "";
         if (d && typeof d.forget === "function")
             d.forget();
     }
@@ -127,22 +123,46 @@ Item {
         pairProc.running = true;
     }
 
-    onActiveChanged: {
-        if (!active) {
-            scanTimer.stop();
-            expandedAddress = "";
-            confirmFocus = -1;
-            kbIndex = -1;
-            if (adapter && adapter.discovering)
-                adapter.discovering = false;
-        }
+    // ---- keyboard scaffold hooks (LinkDrillIn) ----
+
+    function rowCount() {
+        return root.devicesSorted.length;
     }
 
-    Timer {
-        id: scanTimer
-        interval: 25000
-        repeat: false
-        onTriggered: if (root.adapter) root.adapter.discovering = false
+    function confirmCount(i) {
+        var d = root.devicesSorted[i];
+        var addr = d ? (d.address || "") : "";
+        if (addr.length && root.expandedRow === addr)
+            return 2;
+        return 0;
+    }
+
+    /**
+     * Return on the bt list: fire the focused confirm button when one is
+     * armed, else activate (connect / pair / manage) the focused device.
+     */
+    function activateAt(i) {
+        var d = root.devicesSorted[i];
+        var addr = d ? (d.address || "") : "";
+        if (addr.length && root.expandedRow === addr) {
+            return root.confirmFire(d, [
+                d.connected ? (it) => root.disconnectDevice(it) : (it) => root.connectDevice(it),
+                (it) => root.forgetDevice(it)
+            ]);
+        }
+        root.activateDevice(d);
+        return true;
+    }
+
+    /** Scan side effects: BlueZ discovery is the scan; the 25s timer stops it. */
+    function scanStarted() {
+        if (root.adapter)
+            root.adapter.discovering = true;
+    }
+
+    function scanStopped() {
+        if (root.adapter && root.adapter.discovering)
+            root.adapter.discovering = false;
     }
 
     Timer {
@@ -166,502 +186,71 @@ Item {
         }
     }
 
-    Item {
-        id: header
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 24 * root.s
+    Row {
+        anchors.right: root.headerBar.right
+        anchors.verticalCenter: root.headerBar.verticalCenter
+        spacing: 10 * root.s
 
-        Row {
-            anchors.left: parent.left
+        Text {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 8 * root.s
+            visible: root.adapter ? root.adapter.enabled === true : false
+            text: root.scanning ? "Scanning…" : "Scan"
+            color: root.scanning ? Theme.vermLit : Theme.dim
+            font.family: Theme.font
+            font.pixelSize: 9.5 * root.s
+            font.weight: Font.DemiBold
 
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 17 * root.s
-                height: 17 * root.s
-
-                HoverIcon {
-                    anchors.fill: parent
-                    name: "chevron-left"
-                    color: Theme.iconDim
-                    hoverColor: Theme.cream
-                    stroke: 1.8
-                    hitPad: 6 * root.s
-                    onClicked: root.back()
-                }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "BLUETOOTH"
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.6 * root.s
+            MouseArea {
+                anchors.fill: parent
+                anchors.margins: -6 * root.s
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.scanning ? root.stopScan() : root.startScan()
             }
         }
 
-        Row {
-            anchors.right: parent.right
+        LinkToggle {
+            s: root.s
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 10 * root.s
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.adapter ? root.adapter.enabled === true : false
-                text: root.discovering ? "Scanning…" : "Scan"
-                color: root.discovering ? Theme.vermLit : Theme.dim
-                font.family: Theme.font
-                font.pixelSize: 9.5 * root.s
-                font.weight: Font.DemiBold
-
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -6 * root.s
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (!root.adapter)
-                            return;
-                        root.adapter.discovering = !root.adapter.discovering;
-                        if (root.adapter.discovering)
-                            scanTimer.restart();
-                        else
-                            scanTimer.stop();
-                    }
-                }
-            }
-
-            LinkToggle {
-                s: root.s
-                anchors.verticalCenter: parent.verticalCenter
-                on: root.adapter ? root.adapter.enabled === true : false
-                onToggled: if (root.adapter) root.adapter.enabled = !root.adapter.enabled
-            }
+            on: root.adapter ? root.adapter.enabled === true : false
+            onToggled: if (root.adapter) root.adapter.enabled = !root.adapter.enabled
         }
     }
 
-    /**
-     * Keyboard focus over the device rows; -1 until the first arrow so the
-     * first press lands on the top device.
-     */
-    property int kbIndex: -1
-
-    function kbMove(dir) {
-        var n = root.devicesSorted.length;
-        if (n === 0)
-            return false;
-        if (kbIndex < 0 || kbIndex >= n)
-            kbIndex = 0;
-        else
-            kbIndex = (kbIndex + dir + n) % n;
-        return true;
-    }
-
-    /**
-     * Return on the bt list: fire the focused confirm button when one is
-     * armed, else activate (connect / pair / manage) the focused device.
-     */
-    function kbActivate() {
-        var n = root.devicesSorted.length;
-        if (n === 0)
-            return false;
-        if (kbIndex < 0 || kbIndex >= n)
-            kbIndex = 0;
-        var d = root.devicesSorted[kbIndex];
-        var addr = d ? (d.address || "") : "";
-        if (addr.length && root.expandedAddress === addr && root.confirmFocus >= 0) {
-            if (root.confirmFocus === 0) {
-                if (d.connected) root.disconnectDevice(d);
-                else root.connectDevice(d);
-            } else {
-                root.forgetDevice(d);
-            }
-            return true;
-        }
-        root.activateDevice(d);
-        return true;
-    }
-
-    /**
-     * Confirm-button focus for the expanded row: 0 = primary (Connect/
-     * Disconnect), 1 = Forget. Resets whenever the expanded row changes.
-     */
-    property int confirmFocus: -1
-    onExpandedAddressChanged: confirmFocus = -1
-
-    /**
-     * Left/right on the bt list: cycle the expanded row's confirm buttons.
-     * Returns false when there is nothing to adjust, so vim h/l fall through
-     * to back/enter.
-     */
-    function kbAdjust(dir) {
-        var n = root.devicesSorted.length;
-        if (n === 0 || kbIndex < 0 || kbIndex >= n)
-            return false;
-        var d = root.devicesSorted[kbIndex];
-        var addr = d ? (d.address || "") : "";
-        if (addr.length === 0 || root.expandedAddress !== addr)
-            return false;
-        if (confirmFocus < 0)
-            confirmFocus = 0;
-        else
-            confirmFocus = (confirmFocus + dir + 2) % 2;
-        return true;
-    }
-
-    /**
-     * Backspace on the bt list: collapse the expanded row before the caller
-     * pops the subview. Returns true when a row was open and got collapsed.
-     */
-    function kbBack() {
-        if (root.expandedAddress.length) {
-            root.expandedAddress = "";
-            return true;
-        }
-        return false;
-    }
-
-    Rectangle {
-        id: divider
-        anchors.top: header.bottom
-        anchors.topMargin: 9 * root.s
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 1
-        color: Theme.hair
-    }
-
-    Item {
+    LinkListFrame {
         id: listFrame
-        anchors.top: divider.bottom
+        anchors.top: root.dividerBar.bottom
         anchors.topMargin: 8 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
-        height: root.devices.length > 0 ? Math.min(devCol.implicitHeight, 200 * root.s) : 24 * root.s
+        s: root.s
+        emptyText: root.scanning ? "Scanning…" : "No devices found"
+        listEmpty: root.devices.length === 0
+        listMaxH: 200 * root.s
+        listMinH: 24 * root.s
 
-        Text {
-            visible: root.devices.length === 0
-            anchors.centerIn: parent
-            text: root.discovering ? "Scanning…" : "No devices found"
-            color: Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 10.5 * root.s
-        }
+        Repeater {
+            model: root.devicesSorted
 
-        Flickable {
-            id: devFlick
-            visible: root.devices.length > 0
-            anchors.fill: parent
-            contentHeight: devCol.implicitHeight
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-
-            Column {
-                id: devCol
-                width: devFlick.width
-                spacing: 2 * root.s
-
-                Repeater {
-                    model: root.devicesSorted
-
-                    Column {
-                        id: devItem
-                        required property var modelData
-                        required property int index
-                        readonly property bool isConnected: modelData ? modelData.connected === true : false
-                        readonly property bool isPaired: modelData ? modelData.paired === true : false
-                        readonly property string addr: (modelData && modelData.address) ? modelData.address : ""
-                        readonly property bool pairing: addr.length > 0 && root.pairingAddress === addr
-                        readonly property bool failed: addr.length > 0 && root.failedAddress === addr
-                        readonly property bool busy: (modelData && typeof BluetoothDeviceState !== "undefined")
-                            ? (modelData.state === BluetoothDeviceState.Connecting
-                                || modelData.state === BluetoothDeviceState.Disconnecting)
-                            : false
-                        readonly property bool confirming: addr.length > 0 && root.expandedAddress === addr
-                        readonly property bool focused: root.kbIndex === index
-                        readonly property bool focusPrimary: root.confirmFocus === 0
-                        readonly property bool focusForget: root.confirmFocus === 1
-                        readonly property int battery: root.batteryLevel(modelData)
-
-                        /**
-                         * The confirm row's text stays invisible until the
-                         * shared 100ms delay after the row expands, so the
-                         * expand reads as one motion instead of text popping
-                         * in mid-animation.
-                         */
-                        RevealLatch {
-                            id: confirmReveal
-                            shown: devItem.confirming
-                        }
-                        onConfirmingChanged: if (confirming) Qt.callLater(devItem.ensureVisible)
-                        width: devCol.width
-                        spacing: 2 * root.s
-
-                        /**
-                         * Keep the keyboard-focused (or just-expanded) row in
-                         * view when the list overflows its fixed-height frame.
-                         * `mapToItem` gives viewport coords, so scroll by the
-                         * deficit against the visible bounds.
-                         */
-                        function ensureVisible() {
-                            var y = devItem.mapToItem(devFlick, 0, 0).y;
-                            var h = devItem.height;
-                            if (y < 0)
-                                devFlick.contentY += y;
-                            else if (y + h > devFlick.height)
-                                devFlick.contentY += y + h - devFlick.height;
-                        }
-                        onFocusedChanged: if (focused) Qt.callLater(devItem.ensureVisible)
-
-                        Rectangle {
-                            width: parent.width
-                            height: 38 * root.s
-                            radius: 9 * root.s
-                            color: rowHover.hovered || devItem.focused ? Theme.frameBg : "transparent"
-
-                            HoverHandler {
-                                id: rowHover
-                                onHoveredChanged: if (hovered) root.kbIndex = devItem.index
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.activateDevice(devItem.modelData)
-                            }
-
-                            Rectangle {
-                                id: devTile
-                                anchors.left: parent.left
-                                anchors.leftMargin: 6 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 26 * root.s
-                                height: 26 * root.s
-                                radius: 8 * root.s
-                                color: Theme.tileBg
-                                border.width: 1
-                                border.color: Theme.border
-
-                                GlyphIcon {
-                                    anchors.centerIn: parent
-                                    width: 15 * root.s
-                                    height: 15 * root.s
-                                    name: "bluetooth"
-                                    color: devItem.isConnected ? Theme.vermLit : Theme.iconDim
-                                    stroke: 1.7
-                                }
-                            }
-
-                            Column {
-                                anchors.left: devTile.right
-                                anchors.leftMargin: 10 * root.s
-                                anchors.right: devRight.left
-                                anchors.rightMargin: 8 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 1 * root.s
-
-                                Text {
-                                    width: parent.width
-                                    text: devItem.modelData ? (devItem.modelData.deviceName || devItem.modelData.name || "Unknown") : "Unknown"
-                                    color: devItem.isConnected ? Theme.cream : Theme.subtle
-                                    font.family: Theme.font
-                                    font.pixelSize: 11.5 * root.s
-                                    font.weight: devItem.isConnected ? Font.DemiBold : Font.Medium
-                                    elide: Text.ElideRight
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    visible: text.length > 0
-                                    text: root.metaFor(devItem.modelData)
-                                    color: Theme.faint
-                                    font.family: Theme.font
-                                    font.pixelSize: 9.5 * root.s
-                                    font.weight: Font.Medium
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            Row {
-                                id: devRight
-                                anchors.right: parent.right
-                                anchors.rightMargin: 8 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 8 * root.s
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: devItem.pairing || devItem.busy
-                                    width: 4 * root.s
-                                    height: 4 * root.s
-                                    radius: width / 2
-                                    color: Theme.flameGlow
-
-                                    SequentialAnimation on opacity {
-                                        running: devItem.pairing || devItem.busy
-                                        loops: Animation.Infinite
-                                        NumberAnimation { from: 0.35; to: 1; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                                        NumberAnimation { from: 1; to: 0.35; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                                    }
-                                }
-
-                                Filament {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: devItem.isConnected && devItem.battery >= 0
-                                    s: root.s
-                                    kind: "battery"
-                                    level: Math.max(0, devItem.battery) / 100
-                                }
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: !devItem.isPaired && !devItem.pairing
-                                    radius: 999
-                                    color: pairArea.containsMouse ? Theme.frameBg : Theme.tileBg
-                                    border.width: 1
-                                    border.color: pairArea.containsMouse ? Theme.vermDim : Theme.border
-                                    height: 18 * root.s
-                                    width: pairText.implicitWidth + 16 * root.s
-                                    Behavior on color { ColorAnimation { duration: Motion.fast } }
-                                    Behavior on border.color { ColorAnimation { duration: Motion.fast } }
-
-                                    Text {
-                                        id: pairText
-                                        anchors.centerIn: parent
-                                        text: "Pair"
-                                        color: pairArea.containsMouse ? Theme.cream : Theme.dim
-                                        font.family: Theme.font
-                                        font.pixelSize: 9.5 * root.s
-                                        font.weight: Font.DemiBold
-                                    }
-
-                                    MouseArea {
-                                        id: pairArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.activateDevice(devItem.modelData)
-                                    }
-                                }
-                            }
-                        }
-
-                        Item {
-                            visible: devItem.confirming
-                            width: parent.width
-                            height: 30 * root.s
-                            opacity: confirmReveal.ready ? 1 : 0
-                            Behavior on opacity {
-                                NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
-                            }
-
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10 * root.s
-                                anchors.right: confirmBtns.left
-                                anchors.rightMargin: 8 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: devItem.isConnected ? "Connected" : "Paired"
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 9.5 * root.s
-                                font.weight: Font.Medium
-                                elide: Text.ElideRight
-                            }
-
-                            Row {
-                                id: confirmBtns
-                                anchors.right: parent.right
-                                anchors.rightMargin: 10 * root.s
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 6 * root.s
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: primaryLabel.implicitWidth + 20 * root.s
-                                    height: 22 * root.s
-                                    radius: 7 * root.s
-                                    color: (primaryArea.containsMouse || devItem.focusPrimary) ? Theme.tileBg : "transparent"
-                                    border.width: 1
-                                    border.color: (primaryArea.containsMouse || devItem.focusPrimary) ? Theme.vermDim : Theme.border
-
-                                    Text {
-                                        id: primaryLabel
-                                        anchors.centerIn: parent
-                                        text: devItem.isConnected ? "Disconnect" : "Connect"
-                                        color: Theme.cream
-                                        font.family: Theme.font
-                                        font.pixelSize: 10 * root.s
-                                        font.weight: Font.DemiBold
-                                        font.letterSpacing: 0.3 * root.s
-                                    }
-
-                                    MouseArea {
-                                        id: primaryArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: devItem.isConnected
-                                            ? root.disconnectDevice(devItem.modelData)
-                                            : root.connectDevice(devItem.modelData)
-                                    }
-                                }
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: forgetLabel.implicitWidth + 20 * root.s
-                                    height: 22 * root.s
-                                    radius: 7 * root.s
-                                    color: (forgetArea.containsMouse || devItem.focusForget)
-                                        ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.2)
-                                        : Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.12)
-                                    border.width: 1
-                                    border.color: Qt.rgba(Theme.vermLit.r, Theme.vermLit.g, Theme.vermLit.b, 0.45)
-
-                                    Text {
-                                        id: forgetLabel
-                                        anchors.centerIn: parent
-                                        text: "Forget"
-                                        color: Theme.vermLit
-                                        font.family: Theme.font
-                                        font.pixelSize: 10 * root.s
-                                        font.weight: Font.DemiBold
-                                        font.letterSpacing: 0.3 * root.s
-                                    }
-
-                                    MouseArea {
-                                        id: forgetArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.forgetDevice(devItem.modelData)
-                                    }
-                                }
-                            }
-                        }
-
-                        Text {
-                            visible: devItem.failed
-                            text: "Pairing failed"
-                            color: Theme.vermLit
-                            font.family: Theme.font
-                            font.pixelSize: 9.5 * root.s
-                            leftPadding: 42 * root.s
-                        }
-                    }
-                }
+            BtDeviceRow {
+                s: root.s
+                expanded: (modelData && modelData.address)
+                    ? root.expandedRow === modelData.address
+                    : false
+                focused: root.kbIndex === index
+                confirmFocus: root.confirmFocus
+                pairing: root.pairingAddress.length > 0
+                    && root.pairingAddress === (modelData && modelData.address)
+                failed: root.failedAddress.length > 0
+                    && root.failedAddress === (modelData && modelData.address)
+                battery: root.batteryLevel(modelData)
+                meta: root.metaFor(modelData)
+                list: listFrame
+                onRequestActivate: root.activateDevice(modelData)
+                onRequestConnect: root.connectDevice(modelData)
+                onRequestDisconnect: root.disconnectDevice(modelData)
+                onRequestForget: root.forgetDevice(modelData)
+                onRequestFocus: root.kbIndex = index
             }
-        }
-
-        WheelScroller {
-            anchors.fill: parent
-            s: root.s
-            flick: devFlick
         }
     }
 }

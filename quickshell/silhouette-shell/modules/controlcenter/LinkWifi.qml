@@ -17,14 +17,19 @@ import qs.components.controls
  * shared hotspot is rendered by WifiHotspot with its state and nmcli processes
  * owned by HotspotControl. The pill body provides the surface material, so
  * this item draws no background.
+ *
+ * Built on LinkDrillIn, which owns the header, divider, scroll list and the
+ * keyboard scaffold; this panel supplies the network state, the row delegate,
+ * the hotspot footer and the hook implementations (activateAt, confirmCount,
+ * adjustExtra, scan, activate/deactivate resets).
  */
-Item {
+LinkDrillIn {
     id: root
 
-    property real s: 1.1
-    property bool active: false
-
-    signal back()
+    title: "WIFI"
+    caption: !wifiOn ? "Off"
+        : (activeNet ? (activeNet.name || "Connected") : "Not connected")
+    captionColor: root.activeNet ? Theme.vermLit : Theme.faint
 
     readonly property var devices: (typeof Networking !== "undefined" && Networking && Networking.devices) ? Networking.devices.values : []
     readonly property var wifiDev: devices.find(function(d) { return d && d.type === DeviceType.Wifi }) || null
@@ -34,15 +39,11 @@ Item {
         return ((b ? b.signalStrength : 0) || 0) - ((a ? a.signalStrength : 0) || 0)
     })
     readonly property var activeNet: nets.find(function(n) { return n && n.connected }) || null
-    readonly property string statusText: !wifiOn ? "Off"
-        : (activeNet ? (activeNet.name || "Connected") : "Not connected")
 
     property var securityMap: ({})
     property var knownProfiles: ({})
-    property string expandedSsid: ""
     property bool connecting: false
     property bool connectFailed: false
-    property bool scanning: false
 
     /**
      * SSID of the saved network whose stored password is currently shown, plus
@@ -57,22 +58,14 @@ Item {
     readonly property string hsIface: wifiDev ? (wifiDev.name || "wlan0") : "wlan0"
 
     /**
-     * Draft of the password being typed for `expandedSsid`. Lives on the root so
-     * the field can restore itself from the draft if the keyed list model swaps
-     * the delegate's network object under it on a rescan.
+     * Draft of the password being typed for the expanded network. Lives on the
+     * root so the field can restore itself from the draft if the keyed list
+     * model swaps the delegate's network object under it on a rescan.
      */
     property string pwDraft: ""
     property string pendingPw: ""
     property string attemptSsid: ""
     property bool attemptWasKnown: false
-
-    implicitHeight: hsBlock.y + hsBlock.height
-
-    /**
-     * Keyboard focus over the network rows and hotspot block; -1 until the
-     * first arrow so the first press lands on the top network.
-     */
-    property int kbIndex: -1
 
     /**
      * Hotspot rows follow the network list in the keyboard cursor: index
@@ -82,108 +75,7 @@ Item {
     readonly property int hsRowCount: root.wifiOn ? 3 : 0
     readonly property int hsToggleIndex: root.netsSorted.length
 
-    function kbMove(dir) {
-        var n = root.netsSorted.length;
-        var total = n + root.hsRowCount;
-        if (total === 0)
-            return false;
-        if (kbIndex < 0 || kbIndex >= total)
-            kbIndex = 0;
-        else
-            kbIndex = (kbIndex + dir + total) % total;
-        return true;
-    }
-
-    /**
-     * Return on the wifi list: fire the focused confirm button when one is
-     * armed, else activate (expand / connect) the focused network. Connect/
-     * Disconnect at index 0, Show/Hide at 1 for saved networks, Forget at the
-     * last index. Hotspot rows toggle the AP or start an inline name/password
-     * edit.
-     */
-    function kbActivate() {
-        var n = root.netsSorted.length;
-        var total = n + root.hsRowCount;
-        if (total === 0)
-            return false;
-        if (kbIndex < 0 || kbIndex >= total)
-            kbIndex = 0;
-        if (kbIndex >= n) {
-            var row = kbIndex - n;
-            if (row === 0) {
-                hs.toggle();
-            } else if (row === 1) {
-                hsBlock.startEdit("name");
-            } else {
-                hsBlock.startEdit("pw");
-            }
-            return true;
-        }
-        var net = root.netsSorted[kbIndex];
-        var ssid = net ? (net.name || "") : "";
-        if (ssid.length && root.expandedSsid === ssid && root.confirmFocus >= 0) {
-            if (root.confirmFocus === 0) {
-                if (net.connected) root.disconnectNetwork(net);
-                else root.connectKnown(net);
-            } else if (root.confirmFocus === 1) {
-                if (root.knownProfiles[ssid] === true) root.revealPassword(ssid);
-                else root.forgetNetwork(ssid);
-            } else {
-                root.forgetNetwork(ssid);
-            }
-            return true;
-        }
-        root.activateNetwork(net);
-        return true;
-    }
-
-    /**
-     * Confirm-button focus for the expanded row: 0 = primary (Connect/
-     * Disconnect), 1 = Show/Hide (saved only) or Forget, 2 = Forget (saved
-     * only). Resets whenever the expanded row changes.
-     */
-    property int confirmFocus: -1
-
-    /**
-     * Left/right on the wifi list: cycle the expanded row's confirm buttons,
-     * or flip the hotspot toggle (left = off, right = on). Returns false when
-     * there is nothing to adjust, so vim h/l fall through to back/enter.
-     */
-    function kbAdjust(dir) {
-        var n = root.netsSorted.length;
-        if (kbIndex >= 0 && kbIndex < n) {
-            var net = root.netsSorted[kbIndex];
-            var ssid = net ? (net.name || "") : "";
-            if (ssid.length && root.expandedSsid === ssid
-                && (net.connected === true || root.knownProfiles[ssid] === true)) {
-                var count = root.knownProfiles[ssid] === true ? 3 : 2;
-                if (confirmFocus < 0)
-                    confirmFocus = 0;
-                else
-                    confirmFocus = (confirmFocus + dir + count) % count;
-                return true;
-            }
-            return false;
-        }
-        if (kbIndex === n && root.wifiOn) {
-            if ((dir > 0 && !hs.active) || (dir < 0 && hs.active))
-                hs.toggle();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Backspace on the wifi list: collapse the expanded row before the caller
-     * pops the subview. Returns true when a row was open and got collapsed.
-     */
-    function kbBack() {
-        if (root.expandedSsid.length) {
-            root.expandedSsid = "";
-            return true;
-        }
-        return false;
-    }
+    implicitHeight: hsBlock.y + hsBlock.height
 
     function isSecured(ssid) {
         var sec = securityMap[ssid];
@@ -217,18 +109,18 @@ Item {
         if (!net)
             return;
         var ssid = net.name || "";
-        if (expandedSsid === ssid && ssid.length) {
-            expandedSsid = "";
+        if (expandedRow === ssid && ssid.length) {
+            expandedRow = "";
             return;
         }
         if (net.connected || knownProfiles[ssid] === true) {
             connectFailed = false;
             pwDraft = "";
-            expandedSsid = ssid;
+            expandedRow = ssid;
             return;
         }
         if (!isSecured(ssid)) {
-            expandedSsid = "";
+            expandedRow = "";
             if (typeof net.connect === "function")
                 net.connect();
             refresh();
@@ -236,7 +128,7 @@ Item {
         }
         connectFailed = false;
         pwDraft = "";
-        expandedSsid = ssid;
+        expandedRow = ssid;
     }
 
     /**
@@ -246,7 +138,7 @@ Item {
     function connectKnown(net) {
         if (!net)
             return;
-        expandedSsid = "";
+        expandedRow = "";
         if (typeof net.connect === "function")
             net.connect();
         refresh();
@@ -255,7 +147,7 @@ Item {
     function disconnectNetwork(net) {
         if (!net)
             return;
-        expandedSsid = "";
+        expandedRow = "";
         if (typeof net.disconnect === "function")
             net.disconnect();
         refresh();
@@ -269,7 +161,7 @@ Item {
     function forgetNetwork(ssid) {
         if (forgetProc.running || !ssid.length)
             return;
-        expandedSsid = "";
+        expandedRow = "";
         forgetProc.command = ["nmcli", "connection", "delete", "id", ssid];
         forgetProc.running = true;
     }
@@ -318,57 +210,105 @@ Item {
         connProc.running = true;
     }
 
+    // ---- keyboard scaffold hooks (LinkDrillIn) ----
+
+    function rowCount() {
+        return root.netsSorted.length + root.hsRowCount;
+    }
+
     /**
-     * Reload pulse: forces a fresh nmcli rescan and spins the control for up to
-     * 10s. The device scanner already runs while the drill-in is open, so the
-     * list never empties; this only refreshes results and drives the spinner.
+     * Confirm buttons on the expanded network row: 3 for a saved profile
+     * (Connect/Disconnect, Show/Hide, Forget), 2 otherwise (no reveal).
      */
-    function startScan() {
-        if (!wifiOn)
-            return;
-        scanning = true;
-        rescanProc.running = true;
-        scanTimer.restart();
+    function confirmCount(i) {
+        if (i >= root.netsSorted.length)
+            return 0;
+        var net = root.netsSorted[i];
+        var ssid = net ? (net.name || "") : "";
+        if (ssid.length && root.expandedRow === ssid
+            && (net.connected === true || root.knownProfiles[ssid] === true))
+            return root.knownProfiles[ssid] === true ? 3 : 2;
+        return 0;
     }
 
-    function stopScan() {
-        scanning = false;
-        scanTimer.stop();
-    }
-
-    onActiveChanged: {
-        if (active) {
-            refresh();
-            hs.refresh();
-        } else {
-            stopScan();
-            expandedSsid = "";
-            confirmFocus = -1;
-            kbIndex = -1;
-            connectFailed = false;
-            hs.edit = "";
-            hidePassword();
+    /**
+     * Return on the wifi list: fire the focused confirm button when one is
+     * armed, else activate (expand / connect) the focused network, or drive
+     * the hotspot rows. Connect/Disconnect at index 0, Show/Hide at 1 for
+     * saved networks, Forget at the last index.
+     */
+    function activateAt(i) {
+        var n = root.netsSorted.length;
+        if (i >= n) {
+            var row = i - n;
+            if (row === 0) {
+                hs.toggle();
+            } else if (row === 1) {
+                hsBlock.startEdit("name");
+            } else {
+                hsBlock.startEdit("pw");
+            }
+            return true;
         }
+        var net = root.netsSorted[i];
+        var ssid = net ? (net.name || "") : "";
+        if (ssid.length && root.expandedRow === ssid) {
+            var actions = [
+                net.connected ? (it) => root.disconnectNetwork(it) : (it) => root.connectKnown(it)
+            ];
+            if (root.knownProfiles[ssid] === true)
+                actions.push((it) => root.revealPassword(ssid));
+            actions.push((it) => root.forgetNetwork(ssid));
+            return root.confirmFire(net, actions);
+        }
+        root.activateNetwork(net);
+        return true;
+    }
+
+    /**
+     * Left/right off the network list: flip the hotspot toggle (left = off,
+     * right = on). Network rows with no confirm row return false so vim h/l
+     * fall through to back/enter.
+     */
+    function adjustExtra(dir) {
+        if (root.kbIndex === root.netsSorted.length && root.wifiOn) {
+            if ((dir > 0 && !hs.active) || (dir < 0 && hs.active))
+                hs.toggle();
+            return true;
+        }
+        return false;
+    }
+
+    /** Scan side effects: a fresh nmcli rescan; the 10s timer stops the spin. */
+    function scanStarted() {
+        if (root.wifiOn)
+            rescanProc.running = true;
+    }
+
+    /** The reveal row follows the expanded row: closing one hides the other. */
+    function onExpandedChanged() {
+        if (root.revealedSsid !== root.expandedRow)
+            root.hidePassword();
+    }
+
+    function onActivated() {
+        root.refresh();
+        root.hs.refresh();
+    }
+
+    function onDeactivated() {
+        root.connectFailed = false;
+        root.hs.edit = "";
+        root.hidePassword();
     }
 
     onWifiOnChanged: if (!wifiOn) stopScan()
-
-    onExpandedSsidChanged: {
-        confirmFocus = -1;
-        if (revealedSsid !== expandedSsid) hidePassword();
-    }
 
     Binding {
         target: root.wifiDev
         property: "scannerEnabled"
         value: root.active && root.wifiOn
         when: root.wifiDev !== null
-    }
-
-    Timer {
-        id: scanTimer
-        interval: 10000
-        onTriggered: root.stopScan()
     }
 
     Process {
@@ -424,7 +364,7 @@ Item {
         onExited: function(exitCode) {
             root.connecting = false;
             if (exitCode === 0) {
-                root.expandedSsid = "";
+                root.expandedRow = "";
                 root.pwDraft = "";
                 root.connectFailed = false;
                 root.refresh();
@@ -492,175 +432,90 @@ Item {
         values: root.netsSorted
     }
 
-    Item {
-        id: header
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 24 * root.s
+    Row {
+        anchors.right: root.headerBar.right
+        anchors.verticalCenter: root.headerBar.verticalCenter
+        spacing: 12 * root.s
 
-        Row {
-            anchors.left: parent.left
+        Item {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 8 * root.s
+            visible: root.wifiOn
+            width: 16 * root.s
+            height: 16 * root.s
 
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 17 * root.s
-                height: 17 * root.s
+            HoverIcon {
+                id: reloadGlyph
+                anchors.fill: parent
+                name: "reboot"
+                color: root.scanning ? Theme.flameGlow : Theme.iconDim
+                hoverColor: root.scanning ? Theme.flameGlow : Theme.cream
+                stroke: 1.8
+                hitPad: 6 * root.s
+                onClicked: root.scanning ? root.stopScan() : root.startScan()
 
-                HoverIcon {
-                    anchors.fill: parent
-                    name: "chevron-left"
-                    color: Theme.iconDim
-                    hoverColor: Theme.cream
-                    stroke: 1.8
-                    hitPad: 6 * root.s
-                    onClicked: root.back()
+                RotationAnimator {
+                    target: reloadGlyph
+                    running: root.scanning
+                    from: 0
+                    to: 360
+                    duration: 1000
+                    loops: Animation.Infinite
+                    onRunningChanged: if (!running) reloadGlyph.rotation = 0
                 }
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "WIFI"
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                font.letterSpacing: 1.6 * root.s
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "· " + root.statusText
-                color: root.activeNet ? Theme.vermLit : Theme.faint
-                font.family: Theme.font
-                font.pixelSize: 9.5 * root.s
-                font.weight: Font.Medium
-                elide: Text.ElideRight
             }
         }
 
-        Row {
-            anchors.right: parent.right
+        LinkToggle {
+            s: root.s
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 12 * root.s
-
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.wifiOn
-                width: 16 * root.s
-                height: 16 * root.s
-
-                HoverIcon {
-                    id: reloadGlyph
-                    anchors.fill: parent
-                    name: "reboot"
-                    color: root.scanning ? Theme.flameGlow : Theme.iconDim
-                    hoverColor: root.scanning ? Theme.flameGlow : Theme.cream
-                    stroke: 1.8
-                    hitPad: 6 * root.s
-                    onClicked: root.scanning ? root.stopScan() : root.startScan()
-
-                    RotationAnimator {
-                        target: reloadGlyph
-                        running: root.scanning
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        loops: Animation.Infinite
-                        onRunningChanged: if (!running) reloadGlyph.rotation = 0
-                    }
-                }
-            }
-
-            LinkToggle {
-                s: root.s
-                anchors.verticalCenter: parent.verticalCenter
-                on: root.wifiOn
-                onToggled: {
-                    if (typeof Networking !== "undefined" && Networking)
-                        Networking.wifiEnabled = !Networking.wifiEnabled;
-                }
+            on: root.wifiOn
+            onToggled: {
+                if (typeof Networking !== "undefined" && Networking)
+                    Networking.wifiEnabled = !Networking.wifiEnabled;
             }
         }
     }
 
-    Rectangle {
-        id: divider
-        anchors.top: header.bottom
-        anchors.topMargin: 9 * root.s
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 1
-        color: Theme.hair
-    }
-
-    Item {
+    LinkListFrame {
         id: listFrame
-        anchors.top: divider.bottom
+        anchors.top: root.dividerBar.bottom
         anchors.topMargin: 8 * root.s
         anchors.left: parent.left
         anchors.right: parent.right
-        height: root.wifiOn ? Math.min(Math.max(netCol.implicitHeight, 26 * root.s), 280 * root.s) : 0
+        s: root.s
+        emptyText: "Searching networks…"
+        listEmpty: root.wifiOn && root.nets.length === 0
+        listMaxH: 280 * root.s
+        listMinH: 26 * root.s
+        listHidden: !root.wifiOn
 
-        Text {
-            anchors.centerIn: parent
-            visible: root.wifiOn && root.nets.length === 0
-            text: "Searching networks…"
-            color: Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 10.5 * root.s
-        }
+        Repeater {
+            model: netModel
 
-        Flickable {
-            id: netFlick
-            anchors.fill: parent
-            contentHeight: netCol.implicitHeight
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-
-            Column {
-                id: netCol
-                width: netFlick.width
-                spacing: 2 * root.s
-
-                Repeater {
-                    model: netModel
-
-                    WifiNetRow {
-                        s: root.s
-                        secured: root.isSecured((modelData && modelData.name) || "")
-                        known: root.knownProfiles[(modelData && modelData.name) || ""] === true
-                        expanded: (modelData && modelData.name) ? root.expandedSsid === modelData.name : false
-                        focused: root.kbIndex === index
-                        confirmFocus: root.confirmFocus
-                        revealed: root.revealedSsid === ((modelData && modelData.name) || "")
-                        revealedPw: root.revealedPw
-                        revealResolved: root.revealResolved
-                        pwDraft: root.pwDraft
-                        connecting: root.connecting
-                        connectFailed: root.connectFailed
-                        flick: netFlick
-                        onRequestActivate: root.activateNetwork(modelData)
-                        onRequestConnectKnown: root.connectKnown(modelData)
-                        onRequestDisconnect: root.disconnectNetwork(modelData)
-                        onRequestForget: root.forgetNetwork((modelData && modelData.name) || "")
-                        onRequestReveal: root.revealPassword((modelData && modelData.name) || "")
-                        onRequestConnectWithPassword: function(pw) {
-                            root.connectWithPassword((modelData && modelData.name) || "", pw);
-                        }
-                        onRequestFocus: root.kbIndex = index
-                    }
+            WifiNetRow {
+                s: root.s
+                secured: root.isSecured((modelData && modelData.name) || "")
+                known: root.knownProfiles[(modelData && modelData.name) || ""] === true
+                expanded: (modelData && modelData.name) ? root.expandedRow === modelData.name : false
+                focused: root.kbIndex === index
+                confirmFocus: root.confirmFocus
+                revealed: root.revealedSsid === ((modelData && modelData.name) || "")
+                revealedPw: root.revealedPw
+                revealResolved: root.revealResolved
+                pwDraft: root.pwDraft
+                connecting: root.connecting
+                connectFailed: root.connectFailed
+                list: listFrame
+                onRequestActivate: root.activateNetwork(modelData)
+                onRequestConnectKnown: root.connectKnown(modelData)
+                onRequestDisconnect: root.disconnectNetwork(modelData)
+                onRequestForget: root.forgetNetwork((modelData && modelData.name) || "")
+                onRequestReveal: root.revealPassword((modelData && modelData.name) || "")
+                onRequestConnectWithPassword: function(pw) {
+                    root.connectWithPassword((modelData && modelData.name) || "", pw);
                 }
+                onRequestFocus: root.kbIndex = index
             }
-        }
-
-        WheelScroller {
-            anchors.fill: parent
-            s: root.s
-            flick: netFlick
         }
     }
 
