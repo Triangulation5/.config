@@ -17,6 +17,7 @@ singleton Polkit          1.0 Polkit.qml
 RecEngine 1.0 RecEngine.qml
 singleton ScreenRec       1.0 ScreenRec.qml
 singleton Spaces          1.0 Spaces.qml
+singleton SuspendWatch    1.0 SuspendWatch.qml
 singleton Sysmon          1.0 Sysmon.qml
 singleton Theme           1.0 Theme.qml
 singleton Updates         1.0 Updates.qml

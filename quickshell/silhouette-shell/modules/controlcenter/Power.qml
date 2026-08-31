@@ -135,29 +135,13 @@ PillSurface {
 
     /**
      * Content reveal latch: the header, tiles and action label stay hidden
-     * until the same 100ms delay the calendar's panels use after the surface
-     * opens, so the glyphs don't pop in while the pill is still settling into
-     * the power surface.
+     * until the shared 100ms delay after the surface opens, so the glyphs
+     * don't pop in while the pill is still settling into the power surface.
      */
-    property bool _ready: false
-
-    Timer {
-        id: readyDelay
-        interval: 100
-        onTriggered: root._ready = true
+    RevealLatch {
+        id: reveal
+        shown: root.open
     }
-
-    onOpenChanged: {
-        if (open) {
-            root._ready = false;
-            readyDelay.restart();
-        } else {
-            readyDelay.stop();
-            root._ready = true;
-        }
-    }
-    /** The surface may already be open when first lazily created. */
-    Component.onCompleted: if (root.open) readyDelay.restart()
 
     Item {
         id: header
@@ -165,7 +149,7 @@ PillSurface {
         anchors.left: parent.left
         anchors.right: parent.right
         height: 22 * root.s
-        opacity: (root.open && root._ready) ? 1 : 0
+        opacity: (root.open && reveal.ready) ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }
@@ -202,7 +186,7 @@ PillSurface {
         anchors.top: header.bottom
         anchors.topMargin: 14 * root.s
         spacing: 12 * root.s
-        opacity: (root.open && root._ready) ? 1 : 0
+        opacity: (root.open && reveal.ready) ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }
@@ -369,7 +353,7 @@ PillSurface {
         font.pixelSize: 11 * root.s
         font.weight: Font.Medium
         font.letterSpacing: 0.4 * root.s
-        opacity: (text.length > 0 && root.open && root._ready) ? 1 : 0
+        opacity: (text.length > 0 && root.open && reveal.ready) ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
     }
 }
