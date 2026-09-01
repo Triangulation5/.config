@@ -186,6 +186,9 @@ ShellRoot {
     function close() {
         if (root.openSurface === "polkit" && Polkit.pending)
             return;
+        /** A live call surface is non-dismissible, exactly like the polkit prompt: the only way out is its red hang-up ✕. */
+        if (root.openSurface === "call" && Calls.onCall)
+            return;
         root.openMon = "";
         root.openSurface = "";
     }
@@ -315,6 +318,27 @@ ShellRoot {
             Polkit.pending = false;
             if (root.openSurface === "polkit")
                 root.close();
+        }
+    }
+
+    /**
+     * Calls (ModemManager) drive the pill directly: a ringing call summons the
+     * call surface on the focused monitor, and the surface is non-dismissible
+     * until the call ends (see close above), so Escape or a backdrop press
+     * can't hide an active call — only the surface's red ✕ hangs up. When the
+     * call ends the surface folds back automatically.
+     */
+    Connections {
+        target: Calls
+        function onOnCallChanged() {
+            if (Calls.onCall)
+                root.toggleSurface("", "call");
+            else if (root.openSurface === "call")
+                root.close();
+        }
+        function onRingingChanged() {
+            if (Calls.ringing)
+                root.toggleSurface("", "call");
         }
     }
 }
