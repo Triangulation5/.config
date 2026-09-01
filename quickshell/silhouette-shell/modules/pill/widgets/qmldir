@@ -8,6 +8,7 @@ CalendarStyle 1.0 calendar/CalendarStyle.qml
 CallSurface 1.0 call/CallSurface.qml
 Clipboard 1.0 clipboard/Clipboard.qml
 DeviceMenu 1.0 mixer/DeviceMenu.qml
+DownloadBud 1.0 downloads/DownloadBud.qml
 EventList 1.0 calendar/EventList.qml
 GameBar 1.0 game/GameBar.qml
 IconChip 1.0 mixer/IconChip.qml
