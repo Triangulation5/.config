@@ -36,7 +36,11 @@ SettingsSurface {
     id: root
 
     backSurface: "settings"
-    implicitHeight: content.implicitHeight
+    kanji: "画"
+    label: "DISPLAY"
+    headerGap: 12 * root.s
+    contentExtra: root.mBottom * root.s
+    contentClip: true
 
     readonly property string monitorsPath: Quickshell.env("HOME") + "/.config/hypr/modules/monitors.lua"
     readonly property string helper: Quickshell.env("HOME") + "/.config/hypr/scripts/display-apply.sh"
@@ -426,70 +430,51 @@ SettingsSurface {
         }
     }
 
+
     Column {
-        id: content
-        z: 100
-        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: 0
-        height: root.height + root.mBottom * root.s
-        clip: true
+        anchors.leftMargin: 12 * root.s
+        anchors.rightMargin: 12 * root.s
+        spacing: 12 * root.s
 
-        SurfaceHeader {
+        MonitorMap {
+            id: monitorMap
+            width: parent.width
+            height: root.mapLayout.h
             s: root.s
-            kanji: "画"
-            label: "DISPLAY"
-            showBack: true
+            tiles: root.mapLayout.tiles
+            selName: root.selName
+            mainName: root.mainName
+            pendingMove: root.pendingMove
+            canDrag: root.monitors.length >= 2
+            busy: root.pendingOut.length > 0
+            onTilePressed: (name) => { root.selName = name; }
+            onTileDropped: (name, cx, cy) => { root.dropTile(name, cx, cy); }
         }
 
-        Item { width: 1; height: 12 * root.s }
-
-        Column {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-            spacing: 12 * root.s
-
-            MonitorMap {
-                id: monitorMap
-                width: parent.width
-                height: root.mapLayout.h
-                s: root.s
-                tiles: root.mapLayout.tiles
-                selName: root.selName
-                mainName: root.mainName
-                pendingMove: root.pendingMove
-                canDrag: root.monitors.length >= 2
-                busy: root.pendingOut.length > 0
-                onTilePressed: (name) => { root.selName = name; }
-                onTileDropped: (name, cx, cy) => { root.dropTile(name, cx, cy); }
-            }
-
-            MonitorCard {
-                id: card
-                host: root
-            }
-
-            Text {
-                width: parent.width
-                visible: root.note.length > 0
-                text: root.note
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.Medium
-                wrapMode: Text.WordWrap
-                lineHeight: 1.25
-            }
+        MonitorCard {
+            id: card
+            host: root
         }
 
-        Item { width: 1; height: 4 * root.s }
+        Text {
+            width: parent.width
+            visible: root.note.length > 0
+            text: root.note
+            color: Theme.subtle
+            font.family: Theme.font
+            font.pixelSize: 10 * root.s
+            font.weight: Font.Medium
+            wrapMode: Text.WordWrap
+            lineHeight: 1.25
+        }
     }
 
+    Item { width: 1; height: 4 * root.s }
+
     MouseArea {
-        anchors.fill: parent
+        anchors.fill: root
         enabled: root.pendingOut.length > 0
         z: 50
         onClicked: {}

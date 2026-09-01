@@ -51,6 +51,23 @@ Item {
             field.cursorRectangle.y + field.cursorRectangle.height / 2);
     }
 
+    /**
+     * Row-seam docking for the "rowseam" ame form: the focused row's left-edge
+     * centre in surface coords, falling back to the surface centre while no row
+     * is focused. Pass any extra value the caller's binding should re-evaluate
+     * on (a list's contentY, a focus index, …) as `extra`. Surfaces with a
+     * focusable row registry just set `ameForm: "rowseam"` and
+     * `amePoint: rowSeamPoint(focusRowItem, list.contentY)`.
+     */
+    function rowSeamPoint(focusItem, extra) {
+        void width;
+        void height;
+        void extra;
+        if (!focusItem)
+            return Qt.point(4 * s, height / 2);
+        return focusItem.mapToItem(surface, 4 * s, focusItem.height / 2);
+    }
+
     readonly property bool active: open
 
     /**

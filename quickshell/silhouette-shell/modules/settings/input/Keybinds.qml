@@ -287,18 +287,8 @@ PillSurface {
 
     readonly property bool rowFocused: focusRowItem !== null && active && !formOpen
 
-    readonly property point rowPoint: {
-        void root.width;
-        void root.height;
-        void root.focusIndex;
-        void list.contentY;
-        if (!focusRowItem)
-            return Qt.point(4 * root.s, root.height / 2);
-        return focusRowItem.mapToItem(root, 4 * root.s, focusRowItem.height / 2);
-    }
-
     ameForm: rowFocused ? "rowseam" : "off"
-    amePoint: rowPoint
+    amePoint: root.rowSeamPoint(root.focusRowItem, root.focusIndex + list.contentY)
 
     FileView {
         id: bindsFile

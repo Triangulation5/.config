@@ -277,20 +277,11 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 7 * row.s
 
-            Rectangle {
+            PulseDot {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: row.connecting && row.asking
-                width: 4 * row.s
-                height: 4 * row.s
-                radius: width / 2
-                color: Theme.flameGlow
-
-                SequentialAnimation on opacity {
-                    running: row.connecting && row.asking
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 0.35; to: 1; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 1; to: 0.35; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                }
+                s: row.s
+                running: row.connecting && row.asking
             }
 
             HoverIcon {

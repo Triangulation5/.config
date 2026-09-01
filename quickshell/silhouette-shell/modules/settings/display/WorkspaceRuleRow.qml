@@ -112,25 +112,10 @@ Item {
             }
         }
 
-        Rectangle {
+        KeyChip {
             anchors.verticalCenter: parent.verticalCenter
-            width: cKeyText.implicitWidth + 16 * s
-            height: cKeyText.implicitHeight + 8 * s
-            radius: 7 * s
-            color: Theme.frameBg
-            border.width: 1
-            border.color: Theme.hairSoft
-
-            Text {
-                id: cKeyText
-                anchors.centerIn: parent
-                text: crow.wsKey
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 11 * s
-                font.weight: Font.Bold
-                font.letterSpacing: 0.3 * s
-            }
+            s: s
+            text: crow.wsKey
         }
 
         GlyphIcon {
