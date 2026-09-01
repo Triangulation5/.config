@@ -57,18 +57,8 @@ PillSurface {
 
     readonly property bool rowFocused: focusRowItem !== null && subview === "main" && active
 
-    readonly property point rowPoint: {
-        void root.width;
-        void root.height;
-        void mainCol.implicitHeight;
-        void root.focusRowItem;
-        if (!focusRowItem)
-            return Qt.point(4 * s, root.height / 2);
-        return focusRowItem.mapToItem(root, 4 * s, focusRowItem.height / 2);
-    }
-
     ameForm: rowFocused ? "rowseam" : "off"
-    amePoint: rowPoint
+    amePoint: root.rowSeamPoint(root.focusRowItem, mainCol.implicitHeight)
 
     implicitHeight: subview === "wifi" ? wifiPage.implicitHeight
         : subview === "bt" ? btPage.implicitHeight

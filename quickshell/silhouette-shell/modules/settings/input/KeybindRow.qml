@@ -42,29 +42,14 @@ Item {
         focused: brow.focused
     }
 
-    Rectangle {
+    KeyChip {
         id: comboChip
         anchors.left: parent.left
         anchors.leftMargin: 12 * s
         anchors.verticalCenter: parent.verticalCenter
-        width: comboText.implicitWidth + 16 * s
-        height: comboText.implicitHeight + 8 * s
-        radius: 7 * s
-        color: brow.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.frameBg
-        border.width: 1
-        border.color: brow.focused ? Qt.alpha(Theme.vermLit, 0.45) : Theme.hairSoft
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-        Text {
-            id: comboText
-            anchors.centerIn: parent
-            text: surface ? surface.comboPretty(brow.kbCombo) : brow.kbCombo
-            color: brow.focused ? Theme.cream : Theme.subtle
-            font.family: Theme.font
-            font.pixelSize: 11 * s
-            font.weight: Font.Bold
-            font.letterSpacing: 0.3 * s
-        }
+        s: s
+        text: surface ? surface.comboPretty(brow.kbCombo) : brow.kbCombo
+        focused: brow.focused
     }
 
     Column {

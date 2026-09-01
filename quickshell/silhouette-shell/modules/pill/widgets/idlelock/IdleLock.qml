@@ -22,7 +22,9 @@ SettingsSurface {
     id: root
 
     backSurface: "settings"
-    implicitHeight: content.implicitHeight
+    kanji: "錠"
+    label: "IDLE / LOCK"
+    headerGap: 12 * root.s
 
     readonly property string confPath: Quickshell.env("HOME") + "/.config/hypr/hypridle.conf"
     readonly property string lockScript: Quickshell.env("HOME") + "/.config/hypr/scripts/lock.sh"
@@ -171,78 +173,62 @@ SettingsSurface {
         }
     }
 
-    Column {
-        id: content
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        spacing: 0
 
-        SurfaceHeader {
+    IdleRow {
+        id: lockRow
+        name: "Auto-lock"
+        caption: "Lock the screen after idle"
+
+        SettingsSeg {
             s: root.s
-            kanji: "錠"
-            label: "IDLE / LOCK"
-            showBack: true
+            flushLeft: true
+            options: root.lockOptions
+            value: Flags.idleLockMin
+            onPicked: (v) => { Flags.idleLockMin = v; root.apply(); }
         }
-
-        Item { width: 1; height: 12 * root.s }
-
-        IdleRow {
-            id: lockRow
-            name: "Auto-lock"
-            caption: "Lock the screen after idle"
-
-            SettingsSeg {
-                s: root.s
-                flushLeft: true
-                options: root.lockOptions
-                value: Flags.idleLockMin
-                onPicked: (v) => { Flags.idleLockMin = v; root.apply(); }
-            }
-        }
-
-        IdleRow {
-            id: screenRow
-            name: "Screen off"
-            caption: "Blank the display after idle"
-
-            SettingsSeg {
-                s: root.s
-                flushLeft: true
-                options: root.screenOptions
-                value: Flags.idleScreenOffMin
-                onPicked: (v) => { Flags.idleScreenOffMin = v; root.apply(); }
-            }
-        }
-
-        IdleRow {
-            id: suspendRow
-            name: "Suspend"
-            caption: "Sleep the machine after idle"
-            last: true
-
-            SettingsSeg {
-                s: root.s
-                flushLeft: true
-                options: root.suspendOptions
-                value: Flags.idleSuspendMin
-                onPicked: (v) => { Flags.idleSuspendMin = v; root.apply(); }
-            }
-        }
-
-        Text {
-            topPadding: 12 * root.s
-            leftPadding: 12 * root.s
-            rightPadding: 12 * root.s
-            width: parent.width
-            text: "Keep-awake (in the mixer) pauses all of this while it is on."
-            color: Theme.faint
-            font.family: Theme.font
-            font.pixelSize: 9.5 * root.s
-            font.weight: Font.Medium
-            wrapMode: Text.WordWrap
-        }
-
-        Item { width: 1; height: 10 * root.s }
     }
+
+    IdleRow {
+        id: screenRow
+        name: "Screen off"
+        caption: "Blank the display after idle"
+
+        SettingsSeg {
+            s: root.s
+            flushLeft: true
+            options: root.screenOptions
+            value: Flags.idleScreenOffMin
+            onPicked: (v) => { Flags.idleScreenOffMin = v; root.apply(); }
+        }
+    }
+
+    IdleRow {
+        id: suspendRow
+        name: "Suspend"
+        caption: "Sleep the machine after idle"
+        last: true
+
+        SettingsSeg {
+            s: root.s
+            flushLeft: true
+            options: root.suspendOptions
+            value: Flags.idleSuspendMin
+            onPicked: (v) => { Flags.idleSuspendMin = v; root.apply(); }
+        }
+    }
+
+    Text {
+        topPadding: 12 * root.s
+        leftPadding: 12 * root.s
+        rightPadding: 12 * root.s
+        width: parent.width
+        text: "Keep-awake (in the mixer) pauses all of this while it is on."
+        color: Theme.faint
+        font.family: Theme.font
+        font.pixelSize: 9.5 * root.s
+        font.weight: Font.Medium
+        wrapMode: Text.WordWrap
+    }
+
+    Item { width: 1; height: 10 * root.s }
 }

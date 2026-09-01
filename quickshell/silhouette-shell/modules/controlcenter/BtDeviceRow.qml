@@ -146,20 +146,11 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8 * dev.s
 
-            Rectangle {
+            PulseDot {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: dev.pairing || dev.busy
-                width: 4 * dev.s
-                height: 4 * dev.s
-                radius: width / 2
-                color: Theme.flameGlow
-
-                SequentialAnimation on opacity {
-                    running: dev.pairing || dev.busy
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 0.35; to: 1; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 1; to: 0.35; duration: Motion.pulse; easing.type: Easing.InOutSine }
-                }
+                s: dev.s
+                running: dev.pairing || dev.busy
             }
 
             Filament {

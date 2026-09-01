@@ -71,25 +71,10 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 8 * s
 
-        Rectangle {
+        KeyChip {
             anchors.verticalCenter: parent.verticalCenter
-            width: keyText.implicitWidth + 16 * s
-            height: keyText.implicitHeight + 8 * s
-            radius: 7 * s
-            color: Theme.frameBg
-            border.width: 1
-            border.color: Theme.hairSoft
-
-            Text {
-                id: keyText
-                anchors.centerIn: parent
-                text: wrow.wsKey
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 11 * s
-                font.weight: Font.Bold
-                font.letterSpacing: 0.3 * s
-            }
+            s: s
+            text: wrow.wsKey
         }
 
         GlyphIcon {
