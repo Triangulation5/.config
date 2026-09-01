@@ -541,6 +541,41 @@ Item {
     function vimBack() { return navHost.vimBack(); }
     function vimEnter() { return navHost.vimEnter(); }
 
+    /**
+     * The item of the surface that most recently closed, kept while it is
+     * still dissolving so the hover face can hold its entrance until the
+     * dissolve clears (see `closingOpacity`). Advances whenever the `surface`
+     * string changes: a close latches the closing item, an open (or any other
+     * change) releases it.
+     */
+    property var closingSurface: null
+
+    /** The previous `surface` value, used to pick the closing loader. */
+    property string prevSurface: ""
+
+    onSurfaceChanged: {
+        if (pill.surface.length === 0 && pill.prevSurface.length > 0) {
+            const ld = pill._surfaceLoaders[pill.prevSurface];
+            pill.closingSurface = ld ? ld.item : null;
+        } else {
+            pill.closingSurface = null;
+        }
+        pill.prevSurface = pill.surface;
+    }
+
+    /**
+     * Current opacity of the dissolving surface, 1 while it is fully visible
+     * and animating down to 0 with its close fade. 0 with no surface closing.
+     * The hover face reads this so its entrance on a close is an exact
+     * crossfade against the dissolving surface instead of popping over it —
+     * for surfaces whose close barely moves the pill (the media card) the old
+     * morphCloseness gate alone was already satisfied the instant the close
+     * began, so the hover clock and media bud flashed over the still-visible
+     * card.
+     */
+    readonly property real closingOpacity: (pill.closingSurface && typeof pill.closingSurface.opacity === "number")
+        ? pill.closingSurface.opacity : 0
+
     onSurfaceOpenChanged: if (surfaceOpen) {
         pinned = false;
         if (quickHere && ScreenRec.quickChoosing) {
