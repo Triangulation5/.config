@@ -5,6 +5,7 @@ AmeBody 1.0 ame/AmeBody.qml
 Calendar 1.0 calendar/Calendar.qml
 CalendarEditor 1.0 calendar/CalendarEditor.qml
 CalendarStyle 1.0 calendar/CalendarStyle.qml
+CallSurface 1.0 call/CallSurface.qml
 Clipboard 1.0 clipboard/Clipboard.qml
 DeviceMenu 1.0 mixer/DeviceMenu.qml
 EventList 1.0 calendar/EventList.qml

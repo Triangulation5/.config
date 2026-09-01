@@ -2,6 +2,7 @@ module qs.services
 
 singleton Backlight       1.0 Backlight.qml
 singleton Battery         1.0 Battery.qml
+singleton Calls           1.0 Calls.qml
 singleton Cava            1.0 Cava.qml
 singleton Cliphist        1.0 Cliphist.qml
 singleton Devices         1.0 Devices.qml
