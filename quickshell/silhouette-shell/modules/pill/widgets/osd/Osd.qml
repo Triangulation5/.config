@@ -12,8 +12,8 @@ import qs.modules.pill.widgets.osd
  *
  * This root owns the flash state machine and the per-face wiring; each face is a
  * small component under osd/ (OsdLevelFace for the bar-style volume, brightness
- * and battery states; OsdMic, OsdTrack, OsdWorkspace and OsdRecord for the
- * others) that renders one state from props.
+ * and battery states; OsdMic, OsdTrack, OsdWorkspace, OsdRecord and
+ * OsdDownload for the others) that renders one state from props.
  */
 
 Item {
@@ -99,8 +99,9 @@ Item {
     readonly property bool micMuted: source && source.audio ? source.audio.muted : false
 
     readonly property real desiredW: kind === "workspace" ? Math.max(120 * s, wsFace.indicatorWidth + 40 * s)
-        : (kind === "track" ? 344 * s : (kind === "record" ? 256 * s : (kind === "mic" ? 220 * s : 248 * s)))
-    readonly property real desiredH: kind === "track" ? 64 * s : 44 * s
+        : (kind === "track" ? 344 * s : (kind === "record" ? 256 * s
+        : (kind === "mic" ? 220 * s : (kind === "download" ? 300 * s : 248 * s))))
+    readonly property real desiredH: kind === "track" || kind === "download" ? 64 * s : 44 * s
 
     /**
      * Active workspace name on this monitor. Any switch (Super+arrow,
@@ -180,7 +181,7 @@ Item {
         kind = which;
         flashing = true;
         startedOnSurface = root.surfaceOpen;
-        hideTimer.interval = (which === "battery" || which === "record") ? 2000 : 1800;
+        hideTimer.interval = (which === "battery" || which === "record" || which === "download") ? 2000 : 1800;
         hideTimer.restart();
         return true;
     }
@@ -213,6 +214,9 @@ Item {
             flashing = false;
         } else if (dirty) {
             tryShow();
+        } else if (Downloads.active) {
+            /** A download that started under an open surface flashes once the pill is free again. */
+            root.flash("download");
         }
     }
 
@@ -296,6 +300,16 @@ Item {
     }
 
     Connections {
+        target: Downloads
+        function onActiveChanged() {
+            if (Downloads.active)
+                root.flash("download");
+            else if (root.kind === "download")
+                root.flashing = false;
+        }
+    }
+
+    Connections {
         target: Backlight
         function onChanged() {
             root.flash("brightness");
@@ -320,6 +334,12 @@ Item {
         s: root.s
         active: root.kind === "mic"
         micMuted: root.micMuted
+    }
+
+    OsdDownload {
+        anchors.fill: parent
+        s: root.s
+        active: root.kind === "download"
     }
 
     OsdTrack {
