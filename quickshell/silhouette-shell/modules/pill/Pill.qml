@@ -87,6 +87,7 @@ Item {
     readonly property bool wallpaperOpen: surface === "wallpaper"
     readonly property bool powerOpen: surface === "power"
     readonly property bool mediaOpen: surface === "media"
+    readonly property bool callOpen: surface === "call"
     readonly property bool linkOpen: surface === "link"
     readonly property bool settingsOpen: surface === "settings"
     readonly property bool keybindsOpen: surface === "keybinds"
@@ -219,6 +220,8 @@ Item {
     readonly property real powerH: 150 * s
     readonly property real mediaW: (Players.pickable.length > 1 ? 460 : 390) * s
     readonly property real mediaH: 150 * s
+    readonly property real callW: 380 * s
+    readonly property real callH: 150 * s
     readonly property real batteryW: 316 * s
     readonly property real settingsW: 392 * s
     readonly property real keybindsW: 460 * s
@@ -390,6 +393,7 @@ Item {
         wallpaper: { size: () => { surfaceItem(ldWall, "wallpaper"); return Qt.size(wallpaperW, wallpaperH); }, ame: () => null },
         power:     { size: () => { surfaceItem(ldPower, "power"); return Qt.size(powerW, powerH); }, ame: () => surfaceItem(ldPower, "power") },
         media:     { size: () => { surfaceItem(ldMedia, "media"); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia, "media") },
+        call:      { size: () => { surfaceItem(ldCall, "call"); return Qt.size(callW, callH); }, ame: () => surfaceItem(ldCall, "call") },
         mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceProp(ldMixer, "mixer", "faderCount", 4)) * s, mixerH), ame: () => surfaceItem(ldMixer, "mixer") },
         link:      { size: () => Qt.size(surfaceProp(ldLink, "link", "desiredW", 330 * s), surfaceHeight(ldLink, "link", 26 * s, 300 * s)), ame: () => surfaceItem(ldLink, "link") },
         battery:   stdSurface(ldBattery, "battery", batteryW, 26 * s, 160 * s),
@@ -1267,6 +1271,9 @@ Item {
     PillSurfaceLoader { id: ldPower; name: "power"; host: pill; sourceComponent: Power { onRequestClose: pill.requestClose() } }
 
     PillSurfaceLoader { id: ldMedia; name: "media"; asynchronous: true; host: pill; sourceComponent: Media { shown: pill.mediaOpen; onRequestClose: pill.requestClose() } }
+
+    /** Synchronous: an incoming call must appear on the ringing frame, not a build late. */
+    PillSurfaceLoader { id: ldCall; name: "call"; host: pill; sourceComponent: CallSurface {} }
 
     PillSurfaceLoader { id: ldLink; name: "link"; asynchronous: true; host: pill; sourceComponent: Link {
         initialView: pill.linkInitialView
