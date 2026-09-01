@@ -13,7 +13,10 @@ import qs.services
  * While the text overflows, a palette-colored fade dissolves both edges so the
  * scrolling label sinks into the card instead of clipping hard. The fade color
  * derives from the theme palette (cardTop/cardBot), so it tracks dynamic
- * palette mode instead of breaking against it.
+ * palette mode instead of breaking against it, and the fade's own opacity
+ * rides the pill's surface opacity (Flags.pillOpacity, floor 0.75) so the
+ * edge bands stay as translucent as the pill around them and never go too
+ * weak to dissolve the label on a heavily translucent pill.
  */
 Item {
     id: root
@@ -93,11 +96,20 @@ Item {
                 y2: 0
                 GradientStop {
                     position: fade.mirrored ? 1.0 : 0.0
+                    /**
+                     * Follow the pill's own surface opacity (Flags.pillOpacity
+                     * is applied to the whole pill body behind this text) so
+                     * the fade blends the label into the surface without
+                     * leaving visible strips — but never drop below 0.75:
+                     * on a heavily translucent pill a 1:1 fade goes so weak
+                     * the scrolling label ends up with a hard, readable edge
+                     * at the fade boundary instead of dissolving.
+                     */
                     color: Qt.rgba(
                         root.fadeColor.r,
                         root.fadeColor.g,
                         root.fadeColor.b,
-                        0.75
+                        Math.max(Flags.pillOpacity, 0.75)
                     )
                 }
                 GradientStop { position: fade.mirrored ? 0.0 : 1.0; color: "transparent" }

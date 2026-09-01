@@ -9,10 +9,11 @@ import qs.components.animation
 import qs.components.icons
 
 /**
- * Now-playing card. Album art bleeds edge-to-edge on the left, faded into the
- * card; a blurred copy glows through a near-opaque warm wash behind everything.
- * Right of the cover: title, artist, a dim source/time line, the play/pause
- * seal (奏/休) flanked by 前/次 skips. Playback runs as a brush stroke along the
+ * Now-playing card. Album art sits in a rounded tile on the left; the rest of
+ * the card is transparent, so the pill body reads through it like every other
+ * surface — no background panel of its own to ghost during a morph. Right of
+ * the cover: title, artist, a dim source/time line, the play/pause seal
+ * (奏/休) flanked by 前/次 skips. Playback runs as a brush stroke along the
  * bottom, its painted head the dock for the pill's soul bead. All now-playing
  * data comes from [[Players]]; when two or more players run, the source token
  * glows into a bubble that opens a picker.
@@ -63,14 +64,6 @@ PillSurface {
 
     readonly property real textX: 148 * s
     readonly property real edgePad: 18 * s
-    /**
-     * Warm wash base for the card. The flat card tone reads as pure black next
-     * to the album art, so the background lifts off it with a verm glow — the
-     * "warm wash" the card was designed around (see the header comment).
-     */
-    readonly property color washMid: Theme.mix(Theme.cardTop, Theme.verm, 0.14)
-    /** The cover tile's fallback tone, kept just under the card wash so an art-less track doesn't sit on a black square. */
-    readonly property color tileWash: Theme.mix(Theme.tileBg, root.washMid, 0.5)
     property real sealPulse: 0
 
     onTitleChanged: if (playing && active) pulseAnim.restart()
@@ -157,27 +150,12 @@ PillSurface {
         bottomLeftRadius: 22 * root.s
         bottomRightRadius: 22 * root.s
 
+        /**
+         * Transparent: the pill body is the card's background, exactly as it is
+         * for every other surface, so the media view stays one continuous pill
+         * and its own opacity always matches the pill's.
+         */
         color: "transparent"
-
-        Image {
-            id: bleedSrc
-            anchors.fill: parent
-            source: root.coverSource
-            sourceSize: Qt.size(128, 128)
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            retainWhileLoading: true
-            cache: String(source).indexOf("file:") !== 0
-            visible: false
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.alpha(Theme.mix(root.washMid, Theme.cardTop, 0.45), 0.92) }
-                GradientStop { position: 1.0; color: Qt.alpha(root.washMid, 0.95) }
-            }
-        }
 
         ClippingRectangle {
             id: coverBox
@@ -189,12 +167,13 @@ PillSurface {
             width: parent.height - 32 * root.s
             height: width
 
+            /** The tile's resting tone, standard shell tile dark — sits just under the pill body so art-less tracks still read as a cover frame. */
             radius: 16 * root.s
-            color: root.tileWash
+            color: Theme.tileBg
 
             Rectangle {
                 anchors.fill: parent
-                color: root.tileWash
+                color: Theme.tileBg
                 visible: !root.everReady
             }
 

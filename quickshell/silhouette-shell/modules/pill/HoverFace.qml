@@ -136,13 +136,19 @@ Item {
      * above hover height), so every staggered widget would sit at full
      * strength the instant hover mode begins — the face would pop in at full
      * opacity while the closing surface is still dissolving and ghost over
-     * it. faceArrive instead rides the pill's settle (morphCloseness): the
-     * face fades in as the pill descends to hover size, so the close reads as
-     * one continuous retreat into the hover face. From a rest→hover hop
+     * it. faceArrive instead rides the pill's settle (morphCloseness) fade
+     * gated by the dissolving surface itself: while the closing surface fades
+     * out (host.closingOpacity) the face fades in against it 1:1, an exact
+     * crossfade for surfaces whose close barely moves the pill (the media
+     * card — there the pill sits at hover size the whole dissolve, so the
+     * morphCloseness gate alone was already wide open). Once the surface is
+     * gone the face rides the pill's descent as before. From a rest→hover hop
      * faceArrive stays 1 and the existing stagger plays unchanged.
      */
     readonly property bool closeArrive: host.closeArrive
-    readonly property real faceArrive: closeArrive ? Math.pow(Math.max(0, (host.morphCloseness - 0.3) / 0.7), 1.3) : 1
+    readonly property real faceArrive: closeArrive
+        ? (1 - host.closingOpacity) * Math.pow(Math.max(0, (host.morphCloseness - 0.3) / 0.7), 1.3)
+        : 1
 
     /**
      * The face stays up while the pill collapses from hover back to rest
@@ -193,7 +199,15 @@ Item {
 
                 x: -72 * host.s * (1 - face.mediaMorph)
 
-                opacity: face.mediaMorph
+                /**
+                 * Drops the bud the instant any surface opens, before the
+                 * hover face's own fade finishes, so the incoming surface
+                 * never fades in over a second copy of the now-playing card.
+                 * The close path is handled by faceArrive's crossfade above,
+                 * which holds the whole hover face (bud included) until the
+                 * closing surface has dissolved.
+                 */
+                opacity: face.mediaMorph * (host.surfaceOpen ? 0 : 1)
                 scale: 0.78 + 0.22 * face.mediaMorph
 
                 active: host.hasMedia
