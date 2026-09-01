@@ -49,6 +49,7 @@ Singleton {
     property alias musicViz: adapter.musicViz
     property alias vizStyle: adapter.vizStyle
     property alias vizFps: adapter.vizFps
+    property alias mediaStyle: adapter.mediaStyle
     property alias gameMode: adapter.gameMode
     property alias gamePrevDnd: adapter.gamePrevDnd
     property alias gamePrevViz: adapter.gamePrevViz
@@ -119,6 +120,8 @@ Singleton {
             property string vizStyle: "bars"
             /** Spectrum capture framerate (the pill EQ is visually identical at 30). */
             property int vizFps: 30
+            /** Now-playing card backdrop: "bleed" blurred album art, "wash" the legacy warm tint, or "none" fully transparent. */
+            property string mediaStyle: "none"
             property bool gameMode: false
             property bool gamePrevDnd: false
             property bool gamePrevViz: true
