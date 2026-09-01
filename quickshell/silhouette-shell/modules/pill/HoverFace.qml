@@ -254,6 +254,22 @@ Item {
                 border.color: Qt.alpha(Theme.vermLit, 0.65)
             }
 
+            /**
+             * Live Firefox download chip, shown while anything is in progress.
+             * Pure indicator (no pause/cancel — Firefox exposes none); rides
+             * the same mediaMorph stagger as the media bud for entrance and
+             * exit.
+             */
+            DownloadBud {
+                anchors.verticalCenter: parent.verticalCenter
+
+                s: host.s
+
+                visible: Downloads.active
+                opacity: face.mediaMorph
+                scale: 0.9 + 0.1 * face.mediaMorph
+            }
+
             MinimizedTray {
                 id: minimized
 

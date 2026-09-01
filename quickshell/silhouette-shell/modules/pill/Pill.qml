@@ -1228,6 +1228,66 @@ Item {
                 font.weight: Font.DemiBold
             }
         }
+
+        /**
+         * Persistent download indicator: while Firefox is downloading, a compact
+         * flame ring with the percent inside parks in the rest pill's left
+         * padding. Anchored outside the centered row, so the clock never moves
+         * and no layout re-run happens when a download starts or ends — the
+         * progress is simply always on the pill, with the OSD reveal and hover
+         * bud covering their own moments.
+         */
+        Item {
+            id: restDownload
+            anchors.left: parent.left
+            anchors.leftMargin: 8 * pill.s
+            anchors.verticalCenter: parent.verticalCenter
+            width: 22 * pill.s
+            height: 22 * pill.s
+
+            opacity: Downloads.active ? 1 : 0
+            visible: opacity > 0.01
+
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+            /** Tiny flame ring: hairline track, flame arc, redraw on progress ticks. */
+            Canvas {
+                id: dlRing
+                anchors.fill: parent
+
+                property real p: Downloads.progress
+                onPChanged: requestPaint()
+
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    var cx = width / 2;
+                    var cy = height / 2;
+                    var r = Math.min(width, height) / 2 - 2 * pill.s;
+                    ctx.lineWidth = 2 * pill.s;
+                    ctx.lineCap = "round";
+                    ctx.strokeStyle = Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.14);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                    if (dlRing.p > 0) {
+                        ctx.strokeStyle = Theme.flameGlow;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + dlRing.p * Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: Downloads.pctText.length > 0 ? Downloads.pctText : ""
+                color: Theme.cream
+                font.family: Theme.font
+                font.pixelSize: 7.5 * pill.s
+                font.weight: Font.DemiBold
+            }
+        }
     }
 
     /**

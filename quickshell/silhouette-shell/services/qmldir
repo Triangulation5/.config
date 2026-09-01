@@ -6,6 +6,7 @@ singleton Calls           1.0 Calls.qml
 singleton Cava            1.0 Cava.qml
 singleton Cliphist        1.0 Cliphist.qml
 singleton Devices         1.0 Devices.qml
+singleton Downloads       1.0 Downloads.qml
 singleton Dyn             1.0 Dyn.qml
 singleton Events          1.0 Events.qml
 singleton Flags           1.0 Flags.qml
