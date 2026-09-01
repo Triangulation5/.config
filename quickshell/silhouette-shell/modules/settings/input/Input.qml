@@ -25,7 +25,10 @@ SettingsSurface {
     id: root
 
     backSurface: "settings"
-    implicitHeight: content.implicitHeight
+    kanji: "操"
+    label: "INPUT"
+    contentExtra: root.mBottom * root.s
+    contentClip: true
 
     /**
      * Row registry; scrub rows expose a bump that steps their ScrubValue one
@@ -255,223 +258,206 @@ SettingsSurface {
         }
     }
 
+
     Column {
-        id: content
-        z: 100
-        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.leftMargin: 12 * root.s
+        anchors.rightMargin: 12 * root.s
         spacing: 0
-        height: root.height + root.mBottom * root.s
-        clip: true
 
-        SurfaceHeader {
-            s: root.s
-            kanji: "操"
-            label: "INPUT"
-            showBack: true
+        GroupLabel { s: root.s; text: "Pointer" }
+
+        FieldRow {
+            surface: root
+            id: sensRow
+            label: "Sensitivity"
+            caption: "Pointer speed offset"
+            icon: "mouse"
+            ScrubValue {
+                id: sensScrub
+                s: root.s
+                value: root.sensitivity
+                openValue: root.base.sensitivity
+                from: -1; to: 1; step: 0.1; decimals: 1
+                onEdited: v => {
+                    root.sensitivity = v;
+                    root.writeInputField("sensitivity", String(v));
+                }
+            }
         }
 
-        Column {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-            spacing: 0
-
-            GroupLabel { s: root.s; text: "Pointer" }
-
-            FieldRow {
-                surface: root
-                id: sensRow
-                label: "Sensitivity"
-                caption: "Pointer speed offset"
-                icon: "mouse"
-                ScrubValue {
-                    id: sensScrub
-                    s: root.s
-                    value: root.sensitivity
-                    openValue: root.base.sensitivity
-                    from: -1; to: 1; step: 0.1; decimals: 1
-                    onEdited: v => {
-                        root.sensitivity = v;
-                        root.writeInputField("sensitivity", String(v));
-                    }
+        FieldRow {
+            surface: root
+            id: accelRow
+            label: "Acceleration"
+            caption: "How pointer speed follows motion"
+            icon: "bolt"
+            SettingsSeg {
+                s: root.s
+                options: root.accelOptions
+                value: root.accelProfile
+                onPicked: (v) => {
+                    root.accelProfile = v;
+                    root.writeInputField("accel_profile", "\"" + v + "\"");
                 }
             }
-
-            FieldRow {
-                surface: root
-                id: accelRow
-                label: "Acceleration"
-                caption: "How pointer speed follows motion"
-                icon: "bolt"
-                SettingsSeg {
-                    s: root.s
-                    options: root.accelOptions
-                    value: root.accelProfile
-                    onPicked: (v) => {
-                        root.accelProfile = v;
-                        root.writeInputField("accel_profile", "\"" + v + "\"");
-                    }
-                }
-            }
-
-            GroupLabel { s: root.s; text: "Keyboard" }
-
-            FieldRow {
-                surface: root
-                id: layoutRow
-                label: "Layout"
-                caption: "Click to cycle common layouts"
-                icon: "language"
-
-                Rectangle {
-                    width: layoutLbl.implicitWidth + 20 * root.s
-                    height: 22 * root.s
-                    radius: 9 * root.s
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Theme.hairSoft
-
-                    Text {
-                        id: layoutLbl
-                        anchors.centerIn: parent
-                        text: root.kbLayout
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 11 * root.s
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
-
-            FieldRow {
-                surface: root
-                id: rateRow
-                label: "Repeat rate"
-                caption: "Key repeats per second when held"
-                icon: "keyboard"
-                ScrubValue {
-                    id: rateScrub
-                    s: root.s
-                    value: root.repeatRate
-                    openValue: root.base.repeatRate
-                    from: 10; to: 80; step: 1; unit: "Hz"
-                    onEdited: v => {
-                        root.repeatRate = v;
-                        root.writeInputField("repeat_rate", String(v));
-                    }
-                }
-            }
-
-            FieldRow {
-                surface: root
-                id: delayRow
-                label: "Repeat delay"
-                caption: "Hold time before a key repeats"
-                icon: "stopwatch"
-                ScrubValue {
-                    id: delayScrub
-                    s: root.s
-                    value: root.repeatDelay
-                    openValue: root.base.repeatDelay
-                    from: 150; to: 1000; step: 25; unit: "ms"
-                    onEdited: v => {
-                        root.repeatDelay = v;
-                        root.writeInputField("repeat_delay", String(v));
-                    }
-                }
-            }
-
-            FieldRow {
-                surface: root
-                id: numlockRow
-                label: "Numlock"
-                caption: "Numlock on at startup"
-                icon: "lock"
-                LinkToggle {
-                    s: root.s
-                    on: root.numlockOn
-                    onToggled: {
-                        root.numlockOn = !root.numlockOn;
-                        root.writeInputField("numlock_by_default", root.numlockOn ? "true" : "false");
-                    }
-                }
-            }
-
-            GroupLabel { s: root.s; text: "Cursor" }
-
-            FieldRow {
-                surface: root
-                id: sizeRow
-                label: "Size"
-                caption: "Cursor size in pixels"
-                icon: "cursor"
-                ScrubValue {
-                    id: sizeScrub
-                    s: root.s
-                    value: root.cursorSize
-                    openValue: root.base.cursorSize
-                    from: 12; to: 96; step: 4; unit: "px"
-                    onEdited: v => {
-                        root.cursorSize = v;
-                        root.applyCursor(root.cursorTheme, v);
-                    }
-                }
-            }
-
-            Item { width: 1; height: 8 * root.s }
-
-            /**
-             * DisplayPicker draws its own chip and dropdown, so the wrapper only
-             * adds what the registry needs: hover for the soul seam and a
-             * fall-through click that toggles the picker like the chip does.
-             */
-            Item {
-                id: themeRow
-                width: parent ? parent.width : 0
-                height: themePick.implicitHeight
-
-                HoverHandler {
-                    onHoveredChanged: root.reportRowHover(themeRow, hovered)
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: root.activateRow(themeRow)
-                }
-
-                DisplayPicker {
-                    id: themePick
-                    s: root.s
-                    label: "Theme"
-                    options: root.cursorThemes.map(function (t) { return { label: t, value: t }; })
-                    value: root.cursorTheme
-                    open: root.themeOpen
-                    onRequestToggle: root.themeOpen = !root.themeOpen
-                    onPicked: (v) => {
-                        root.cursorTheme = v;
-                        root.themeOpen = false;
-                        root.applyCursor(v, root.cursorSize);
-                    }
-                }
-            }
-
-            Text {
-                width: parent.width
-                topPadding: 8 * root.s
-                visible: root.note.length > 0
-                text: root.note
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.Medium
-                wrapMode: Text.WordWrap
-                lineHeight: 1.25
-            }
-
-            Item { width: 1; height: 10 * root.s }
         }
+
+        GroupLabel { s: root.s; text: "Keyboard" }
+
+        FieldRow {
+            surface: root
+            id: layoutRow
+            label: "Layout"
+            caption: "Click to cycle common layouts"
+            icon: "language"
+
+            Rectangle {
+                width: layoutLbl.implicitWidth + 20 * root.s
+                height: 22 * root.s
+                radius: 9 * root.s
+                color: "transparent"
+                border.width: 1
+                border.color: Theme.hairSoft
+
+                Text {
+                    id: layoutLbl
+                    anchors.centerIn: parent
+                    text: root.kbLayout
+                    color: Theme.cream
+                    font.family: Theme.font
+                    font.pixelSize: 11 * root.s
+                    font.weight: Font.DemiBold
+                }
+            }
+        }
+
+        FieldRow {
+            surface: root
+            id: rateRow
+            label: "Repeat rate"
+            caption: "Key repeats per second when held"
+            icon: "keyboard"
+            ScrubValue {
+                id: rateScrub
+                s: root.s
+                value: root.repeatRate
+                openValue: root.base.repeatRate
+                from: 10; to: 80; step: 1; unit: "Hz"
+                onEdited: v => {
+                    root.repeatRate = v;
+                    root.writeInputField("repeat_rate", String(v));
+                }
+            }
+        }
+
+        FieldRow {
+            surface: root
+            id: delayRow
+            label: "Repeat delay"
+            caption: "Hold time before a key repeats"
+            icon: "stopwatch"
+            ScrubValue {
+                id: delayScrub
+                s: root.s
+                value: root.repeatDelay
+                openValue: root.base.repeatDelay
+                from: 150; to: 1000; step: 25; unit: "ms"
+                onEdited: v => {
+                    root.repeatDelay = v;
+                    root.writeInputField("repeat_delay", String(v));
+                }
+            }
+        }
+
+        FieldRow {
+            surface: root
+            id: numlockRow
+            label: "Numlock"
+            caption: "Numlock on at startup"
+            icon: "lock"
+            LinkToggle {
+                s: root.s
+                on: root.numlockOn
+                onToggled: {
+                    root.numlockOn = !root.numlockOn;
+                    root.writeInputField("numlock_by_default", root.numlockOn ? "true" : "false");
+                }
+            }
+        }
+
+        GroupLabel { s: root.s; text: "Cursor" }
+
+        FieldRow {
+            surface: root
+            id: sizeRow
+            label: "Size"
+            caption: "Cursor size in pixels"
+            icon: "cursor"
+            ScrubValue {
+                id: sizeScrub
+                s: root.s
+                value: root.cursorSize
+                openValue: root.base.cursorSize
+                from: 12; to: 96; step: 4; unit: "px"
+                onEdited: v => {
+                    root.cursorSize = v;
+                    root.applyCursor(root.cursorTheme, v);
+                }
+            }
+        }
+
+        Item { width: 1; height: 8 * root.s }
+
+        /**
+         * DisplayPicker draws its own chip and dropdown, so the wrapper only
+         * adds what the registry needs: hover for the soul seam and a
+         * fall-through click that toggles the picker like the chip does.
+         */
+        Item {
+            id: themeRow
+            width: parent ? parent.width : 0
+            height: themePick.implicitHeight
+
+            HoverHandler {
+                onHoveredChanged: root.reportRowHover(themeRow, hovered)
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.activateRow(themeRow)
+            }
+
+            DisplayPicker {
+                id: themePick
+                s: root.s
+                label: "Theme"
+                options: root.cursorThemes.map(function (t) { return { label: t, value: t }; })
+                value: root.cursorTheme
+                open: root.themeOpen
+                onRequestToggle: root.themeOpen = !root.themeOpen
+                onPicked: (v) => {
+                    root.cursorTheme = v;
+                    root.themeOpen = false;
+                    root.applyCursor(v, root.cursorSize);
+                }
+            }
+        }
+
+        Text {
+            width: parent.width
+            topPadding: 8 * root.s
+            visible: root.note.length > 0
+            text: root.note
+            color: Theme.subtle
+            font.family: Theme.font
+            font.pixelSize: 10 * root.s
+            font.weight: Font.Medium
+            wrapMode: Text.WordWrap
+            lineHeight: 1.25
+        }
+
+        Item { width: 1; height: 10 * root.s }
     }
 }

@@ -20,7 +20,10 @@ SettingsSurface {
     id: root
 
     backSurface: "settings"
-    implicitHeight: content.implicitHeight
+    kanji: "飾"
+    label: "LOOK"
+    contentExtra: root.mBottom * root.s
+    contentClip: true
 
     /**
      * Row registry, rebound whenever a group folds or a dependent toggle flips.
@@ -236,46 +239,34 @@ SettingsSurface {
 
     Process { id: opacityRefresh; command: [] }
 
+
     Column {
-        id: content
-        z: 100
-        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.leftMargin: 12 * root.s
+        anchors.rightMargin: 12 * root.s
         spacing: 0
-        height: root.height + root.mBottom * root.s
-        clip: true
 
-        SurfaceHeader { s: root.s; kanji: "飾"; label: "LOOK"; showBack: true }
+        WindowGroup { id: winGrp; look: root }
+        NightLightGroup { id: nightGrp; look: root }
+        ShadowGroup { id: shadowGrp; look: root }
+        BlurGroup { id: blurGrp; look: root }
+        OpacityGroup { id: opGrp; look: root }
+        PillGroup { id: pillGrp; look: root }
 
-        Column {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 12 * root.s
-            anchors.rightMargin: 12 * root.s
-            spacing: 0
-
-            WindowGroup { id: winGrp; look: root }
-            NightLightGroup { id: nightGrp; look: root }
-            ShadowGroup { id: shadowGrp; look: root }
-            BlurGroup { id: blurGrp; look: root }
-            OpacityGroup { id: opGrp; look: root }
-            PillGroup { id: pillGrp; look: root }
-
-            Text {
-                width: parent.width
-                topPadding: 8 * root.s
-                visible: root.note.length > 0
-                text: root.note
-                color: Theme.subtle
-                font.family: Theme.font
-                font.pixelSize: 10 * root.s
-                font.weight: Font.Medium
-                wrapMode: Text.WordWrap
-                lineHeight: 1.25
-            }
-
-            Item { width: 1; height: 10 * root.s }
+        Text {
+            width: parent.width
+            topPadding: 8 * root.s
+            visible: root.note.length > 0
+            text: root.note
+            color: Theme.subtle
+            font.family: Theme.font
+            font.pixelSize: 10 * root.s
+            font.weight: Font.Medium
+            wrapMode: Text.WordWrap
+            lineHeight: 1.25
         }
+
+        Item { width: 1; height: 10 * root.s }
     }
 }

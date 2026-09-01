@@ -3,7 +3,9 @@ module qs.components.controls
 BackHeader 1.0 BackHeader.qml
 HoverIcon 1.0 HoverIcon.qml
 HoverTile 1.0 HoverTile.qml
+KeyChip 1.0 KeyChip.qml
 PillButton 1.0 PillButton.qml
+PulseDot 1.0 PulseDot.qml
 TextHoverLabel 1.0 TextHoverLabel.qml
 ScrubValue 1.0 ScrubValue.qml
 Tooltip 1.0 Tooltip.qml

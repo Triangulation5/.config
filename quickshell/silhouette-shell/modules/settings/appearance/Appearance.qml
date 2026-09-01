@@ -25,7 +25,9 @@ SettingsSurface {
     id: root
 
     backSurface: "settings"
-    implicitHeight: content.implicitHeight
+    kanji: "相"
+    label: "APPEARANCE"
+    headerGap: 12 * root.s
 
     property string hueArg: String(Math.round(Flags.manualHue))
     property string modeArg: Flags.manualDark ? "dark" : "light"
@@ -100,390 +102,374 @@ SettingsSurface {
         { item: fontRow, kind: "nav", surface: "fontpicker" }
     ]
 
-    Column {
-        id: content
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        spacing: 0
 
-        SurfaceHeader {
+    SettingsRow {
+        id: timeRow
+        surface: root
+        name: "Time format"
+        icon: "clock"
+
+        SettingsSeg {
             s: root.s
-            kanji: "相"
-            label: "APPEARANCE"
-            showBack: true
+            options: [{ label: "24H", value: false }, { label: "12H", value: true }]
+            value: Flags.time12h
+            onPicked: (v) => Flags.time12h = v
         }
+    }
 
-        Item { width: 1; height: 12 * root.s }
+    SettingsRow {
+        id: secRow
+        surface: root
+        name: "Clock seconds"
+        icon: "stopwatch"
 
-        SettingsRow {
-            id: timeRow
-            surface: root
-            name: "Time format"
-            icon: "clock"
-
-            SettingsSeg {
-                s: root.s
-                options: [{ label: "24H", value: false }, { label: "12H", value: true }]
-                value: Flags.time12h
-                onPicked: (v) => Flags.time12h = v
-            }
+        LinkToggle {
+            s: root.s
+            on: Flags.clockSeconds
+            onToggled: Flags.clockSeconds = !Flags.clockSeconds
         }
+    }
 
-        SettingsRow {
-            id: secRow
-            surface: root
-            name: "Clock seconds"
-            icon: "stopwatch"
+    SettingsRow {
+        id: glyphRow
+        surface: root
+        name: "Japanese glyphs"
+        icon: "language"
 
-            LinkToggle {
-                s: root.s
-                on: Flags.clockSeconds
-                onToggled: Flags.clockSeconds = !Flags.clockSeconds
-            }
+        LinkToggle {
+            s: root.s
+            on: Flags.showGlyphs
+            onToggled: Flags.showGlyphs = !Flags.showGlyphs
         }
+    }
 
-        SettingsRow {
-            id: glyphRow
-            surface: root
-            name: "Japanese glyphs"
-            icon: "language"
+    SettingsRow {
+        id: vizRow
+        surface: root
+        name: "Music visualizer"
+        icon: "music"
 
-            LinkToggle {
-                s: root.s
-                on: Flags.showGlyphs
-                onToggled: Flags.showGlyphs = !Flags.showGlyphs
-            }
+        LinkToggle {
+            s: root.s
+            on: Flags.musicViz
+            onToggled: Flags.musicViz = !Flags.musicViz
         }
+    }
 
-        SettingsRow {
-            id: vizRow
-            surface: root
-            name: "Music visualizer"
-            icon: "music"
+    SettingsRow {
+        id: vizStyleRow
+        surface: root
+        name: "Visualizer style"
+        icon: "sparkles"
 
-            LinkToggle {
-                s: root.s
-                on: Flags.musicViz
-                onToggled: Flags.musicViz = !Flags.musicViz
-            }
+        SettingsSeg {
+            s: root.s
+            options: [
+                { label: "Bars", value: "bars" },
+                { label: "Center", value: "centered" },
+                { label: "String", value: "string" }
+            ]
+            value: Flags.vizStyle
+            onPicked: (v) => Flags.vizStyle = v
         }
+    }
 
-        SettingsRow {
-            id: vizStyleRow
-            surface: root
-            name: "Visualizer style"
-            icon: "sparkles"
+    SettingsRow {
+        id: vizFpsRow
+        surface: root
+        name: "Visualizer framerate"
+        icon: "activity"
 
-            SettingsSeg {
-                s: root.s
-                options: [
-                    { label: "Bars", value: "bars" },
-                    { label: "Center", value: "centered" },
-                    { label: "String", value: "string" }
-                ]
-                value: Flags.vizStyle
-                onPicked: (v) => Flags.vizStyle = v
-            }
+        SettingsSeg {
+            s: root.s
+            options: [
+                { label: "15", value: 15 },
+                { label: "30", value: 30 },
+                { label: "60", value: 60 }
+            ]
+            value: Flags.vizFps
+            onPicked: (v) => Flags.vizFps = v
         }
+    }
 
-        SettingsRow {
-            id: vizFpsRow
-            surface: root
-            name: "Visualizer framerate"
-            icon: "activity"
+    SettingsRow {
+        id: notchRow
+        surface: root
+        name: "Show as notch"
+        icon: "dynamic-island"
 
-            SettingsSeg {
-                s: root.s
-                options: [
-                    { label: "15", value: 15 },
-                    { label: "30", value: 30 },
-                    { label: "60", value: 60 }
-                ]
-                value: Flags.vizFps
-                onPicked: (v) => Flags.vizFps = v
-            }
+        LinkToggle {
+            id: notchToggle
+            s: root.s
+            on: Flags.notchStyle
+            onToggled: Flags.notchStyle = !Flags.notchStyle
+            onOnChanged: Flags.topGap = notchToggle.on ? -0.2 : 0.7
         }
+    }
 
-        SettingsRow {
-            id: notchRow
-            surface: root
-            name: "Show as notch"
-            icon: "dynamic-island"
+    SettingsRow {
+        id: paletteRow
+        surface: root
+        name: "Palette"
+        icon: "palette"
 
-            LinkToggle {
-                id: notchToggle
-                s: root.s
-                on: Flags.notchStyle
-                onToggled: Flags.notchStyle = !Flags.notchStyle
-                onOnChanged: Flags.topGap = notchToggle.on ? -0.2 : 0.7
-            }
+        SettingsSeg {
+            s: root.s
+            options: [{ label: "Static", value: "static" }, { label: "Dynamic", value: "dynamic" }, { label: "Manual", value: "manual" }]
+            value: Flags.paletteMode
+            onPicked: (v) => root.applyMode(v)
         }
+    }
 
-        SettingsRow {
-            id: paletteRow
-            surface: root
-            name: "Palette"
-            icon: "palette"
+    /**
+     * Manual hue editor, folded shut unless the palette is on Manual. Holds a
+     * rainbow strip with a draggable thumb, then a single line pairing a live
+     * accent swatch and its hex caption with the dark/light choice, and a hex
+     * input that drives both hue and saturation. The strip is mouse-driven and
+     * stays out of the keyboard row registry.
+     */
+    Item {
+        id: manualSection
+        width: parent.width
+        height: Flags.paletteMode === "manual" ? manualCol.implicitHeight : 0
+        clip: true
+        Behavior on height { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
 
-            SettingsSeg {
-                s: root.s
-                options: [{ label: "Static", value: "static" }, { label: "Dynamic", value: "dynamic" }, { label: "Manual", value: "manual" }]
-                value: Flags.paletteMode
-                onPicked: (v) => root.applyMode(v)
-            }
-        }
+        Column {
+            id: manualCol
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 12 * root.s
+            anchors.rightMargin: 12 * root.s
+            topPadding: 4 * root.s
+            bottomPadding: 16 * root.s
+            spacing: 14 * root.s
 
-        /**
-         * Manual hue editor, folded shut unless the palette is on Manual. Holds a
-         * rainbow strip with a draggable thumb, then a single line pairing a live
-         * accent swatch and its hex caption with the dark/light choice, and a hex
-         * input that drives both hue and saturation. The strip is mouse-driven and
-         * stays out of the keyboard row registry.
-         */
-        Item {
-            id: manualSection
-            width: parent.width
-            height: Flags.paletteMode === "manual" ? manualCol.implicitHeight : 0
-            clip: true
-            Behavior on height { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+            Item {
+                width: parent.width
+                height: 14 * root.s
 
-            Column {
-                id: manualCol
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 12 * root.s
-                anchors.rightMargin: 12 * root.s
-                topPadding: 4 * root.s
-                bottomPadding: 16 * root.s
-                spacing: 14 * root.s
-
-                Item {
-                    width: parent.width
-                    height: 14 * root.s
-
-                    Rectangle {
-                        id: hueStrip
-                        anchors.fill: parent
-                        radius: 7 * root.s
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0.0; color: Qt.hsla(0.0, 0.7, 0.5, 1) }
-                            GradientStop { position: 1 / 6; color: Qt.hsla(1 / 6, 0.7, 0.5, 1) }
-                            GradientStop { position: 2 / 6; color: Qt.hsla(2 / 6, 0.7, 0.5, 1) }
-                            GradientStop { position: 3 / 6; color: Qt.hsla(3 / 6, 0.7, 0.5, 1) }
-                            GradientStop { position: 4 / 6; color: Qt.hsla(4 / 6, 0.7, 0.5, 1) }
-                            GradientStop { position: 5 / 6; color: Qt.hsla(5 / 6, 0.7, 0.5, 1) }
-                            GradientStop { position: 1.0; color: Qt.hsla(1.0, 0.7, 0.5, 1) }
-                        }
-
-                        Rectangle {
-                            id: hueThumb
-                            width: 16 * root.s
-                            height: 16 * root.s
-                            radius: width / 2
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: (Flags.manualHue / 359) * (hueStrip.width - width)
-                            color: root.accentColor
-                            border.width: 2.5 * root.s
-                            border.color: Theme.cream
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            function setHue(mx) {
-                                if (Flags.manualSat < 0.05)
-                                    Flags.manualSat = 0.5;
-                                Flags.manualHue = Math.round(Math.max(0, Math.min(1, mx / hueStrip.width)) * 359);
-                            }
-                            onPressed: (mouse) => setHue(mouse.x)
-                            onPositionChanged: (mouse) => setHue(mouse.x)
-                        }
+                Rectangle {
+                    id: hueStrip
+                    anchors.fill: parent
+                    radius: 7 * root.s
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Qt.hsla(0.0, 0.7, 0.5, 1) }
+                        GradientStop { position: 1 / 6; color: Qt.hsla(1 / 6, 0.7, 0.5, 1) }
+                        GradientStop { position: 2 / 6; color: Qt.hsla(2 / 6, 0.7, 0.5, 1) }
+                        GradientStop { position: 3 / 6; color: Qt.hsla(3 / 6, 0.7, 0.5, 1) }
+                        GradientStop { position: 4 / 6; color: Qt.hsla(4 / 6, 0.7, 0.5, 1) }
+                        GradientStop { position: 5 / 6; color: Qt.hsla(5 / 6, 0.7, 0.5, 1) }
+                        GradientStop { position: 1.0; color: Qt.hsla(1.0, 0.7, 0.5, 1) }
                     }
-                }
-
-                Item {
-                    width: parent.width
-                    height: Math.max(34 * root.s, toneSeg.implicitHeight)
 
                     Rectangle {
-                        id: accentSwatch
-                        anchors.left: parent.left
+                        id: hueThumb
+                        width: 16 * root.s
+                        height: 16 * root.s
+                        radius: width / 2
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 34 * root.s
-                        height: 34 * root.s
-                        radius: 9 * root.s
+                        x: (Flags.manualHue / 359) * (hueStrip.width - width)
                         color: root.accentColor
-                        border.width: 1
-                        border.color: Theme.border
+                        border.width: 2.5 * root.s
+                        border.color: Theme.cream
                     }
 
-                    Column {
-                        anchors.left: accentSwatch.right
-                        anchors.leftMargin: 12 * root.s
-                        anchors.right: toneSeg.left
-                        anchors.rightMargin: 12 * root.s
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3 * root.s
-
-                        Text {
-                            text: "Accent hue"
-                            color: Theme.cream
-                            font.family: Theme.font
-                            font.pixelSize: 12 * root.s
-                            font.weight: Font.DemiBold
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        function setHue(mx) {
+                            if (Flags.manualSat < 0.05)
+                                Flags.manualSat = 0.5;
+                            Flags.manualHue = Math.round(Math.max(0, Math.min(1, mx / hueStrip.width)) * 359);
                         }
-                        Text {
-                            text: root.currentHex + " · " + (Flags.manualDark ? "dark" : "light")
-                            color: Theme.faint
-                            font.family: Theme.font
-                            font.pixelSize: 10.5 * root.s
-                            font.features: { "tnum": 1 }
-                            elide: Text.ElideRight
-                            width: parent.width
-                        }
-                    }
-
-                    SettingsSeg {
-                        id: toneSeg
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        s: root.s
-                        options: [{ label: "Dark", value: true }, { label: "Light", value: false }]
-                        value: Flags.manualDark
-                        onPicked: (v) => { Flags.manualDark = v; root.applyManual(); }
+                        onPressed: (mouse) => setHue(mouse.x)
+                        onPositionChanged: (mouse) => setHue(mouse.x)
                     }
                 }
+            }
 
-                Item {
-                    width: parent.width
-                    height: 30 * root.s
+            Item {
+                width: parent.width
+                height: Math.max(34 * root.s, toneSeg.implicitHeight)
+
+                Rectangle {
+                    id: accentSwatch
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 34 * root.s
+                    height: 34 * root.s
+                    radius: 9 * root.s
+                    color: root.accentColor
+                    border.width: 1
+                    border.color: Theme.border
+                }
+
+                Column {
+                    anchors.left: accentSwatch.right
+                    anchors.leftMargin: 12 * root.s
+                    anchors.right: toneSeg.left
+                    anchors.rightMargin: 12 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 3 * root.s
 
                     Text {
-                        id: hexHint
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12 * root.s
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "#"
-                        color: Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 14 * root.s
-                        font.weight: Font.DemiBold
-                    }
-
-                    TextField {
-                        id: hexField
-                        anchors.left: hexHint.right
-                        anchors.leftMargin: 6 * root.s
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12 * root.s
-                        anchors.verticalCenter: parent.verticalCenter
-                        background: null
-                        padding: 0
+                        text: "Accent hue"
                         color: Theme.cream
                         font.family: Theme.font
-                        font.pixelSize: 13 * root.s
-                        font.features: { "tnum": 1 }
-                        placeholderText: root.currentHex
-                        placeholderTextColor: Theme.faint
-                        selectByMouse: true
-                        selectionColor: Theme.verm
-                        maximumLength: 7
-
-                        onActiveFocusChanged: if (!activeFocus) text = "";
-
-                        function commit() {
-                            var raw = text.trim();
-                            var clean = raw.charAt(0) === "#" ? raw.slice(1) : raw;
-                            if (/^[0-9a-fA-F]{6}$/.test(clean)) {
-                                var c = Qt.color("#" + clean);
-                                if (c.hslHue >= 0) {
-                                    Flags.manualHue = Math.round(c.hslHue * 359);
-                                    Flags.manualSat = c.hslSaturation;
-                                } else {
-                                    Flags.manualSat = 0;
-                                }
-                                root.applyManual();
-                            }
-                            text = "";
-                            focus = false;
-                        }
-
-                        onAccepted: commit()
-                        onEditingFinished: commit()
+                        font.pixelSize: 12 * root.s
+                        font.weight: Font.DemiBold
                     }
-
-                    Rectangle {
-                        anchors.left: hexField.left
-                        anchors.right: hexField.right
-                        anchors.top: hexField.bottom
-                        anchors.topMargin: 3 * root.s
-                        height: 1
+                    Text {
+                        text: root.currentHex + " · " + (Flags.manualDark ? "dark" : "light")
                         color: Theme.faint
-                        opacity: hexField.activeFocus ? 0.7 : 0.18
-                        Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+                        font.family: Theme.font
+                        font.pixelSize: 10.5 * root.s
+                        font.features: { "tnum": 1 }
+                        elide: Text.ElideRight
+                        width: parent.width
                     }
+                }
+
+                SettingsSeg {
+                    id: toneSeg
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    s: root.s
+                    options: [{ label: "Dark", value: true }, { label: "Light", value: false }]
+                    value: Flags.manualDark
+                    onPicked: (v) => { Flags.manualDark = v; root.applyManual(); }
+                }
+            }
+
+            Item {
+                width: parent.width
+                height: 30 * root.s
+
+                Text {
+                    id: hexHint
+                    anchors.left: parent.left
+                    anchors.leftMargin: 12 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "#"
+                    color: Theme.faint
+                    font.family: Theme.font
+                    font.pixelSize: 14 * root.s
+                    font.weight: Font.DemiBold
+                }
+
+                TextField {
+                    id: hexField
+                    anchors.left: hexHint.right
+                    anchors.leftMargin: 6 * root.s
+                    anchors.right: parent.right
+                    anchors.rightMargin: 12 * root.s
+                    anchors.verticalCenter: parent.verticalCenter
+                    background: null
+                    padding: 0
+                    color: Theme.cream
+                    font.family: Theme.font
+                    font.pixelSize: 13 * root.s
+                    font.features: { "tnum": 1 }
+                    placeholderText: root.currentHex
+                    placeholderTextColor: Theme.faint
+                    selectByMouse: true
+                    selectionColor: Theme.verm
+                    maximumLength: 7
+
+                    onActiveFocusChanged: if (!activeFocus) text = "";
+
+                    function commit() {
+                        var raw = text.trim();
+                        var clean = raw.charAt(0) === "#" ? raw.slice(1) : raw;
+                        if (/^[0-9a-fA-F]{6}$/.test(clean)) {
+                            var c = Qt.color("#" + clean);
+                            if (c.hslHue >= 0) {
+                                Flags.manualHue = Math.round(c.hslHue * 359);
+                                Flags.manualSat = c.hslSaturation;
+                            } else {
+                                Flags.manualSat = 0;
+                            }
+                            root.applyManual();
+                        }
+                        text = "";
+                        focus = false;
+                    }
+
+                    onAccepted: commit()
+                    onEditingFinished: commit()
+                }
+
+                Rectangle {
+                    anchors.left: hexField.left
+                    anchors.right: hexField.right
+                    anchors.top: hexField.bottom
+                    anchors.topMargin: 3 * root.s
+                    height: 1
+                    color: Theme.faint
+                    opacity: hexField.activeFocus ? 0.7 : 0.18
+                    Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
                 }
             }
         }
+    }
 
-        SettingsRow {
-            id: scaleRow
-            surface: root
-            name: "UI scale"
-            icon: "scaling"
+    SettingsRow {
+        id: scaleRow
+        surface: root
+        name: "UI scale"
+        icon: "scaling"
 
-            SettingsSeg {
-                s: root.s
-                options: [{ label: "90%", value: 0.9 }, { label: "100%", value: 1.0 }, { label: "110%", value: 1.1 }, { label: "125%", value: 1.25 }]
-                value: Flags.uiScale
-                onPicked: (v) => Flags.uiScale = v
-            }
+        SettingsSeg {
+            s: root.s
+            options: [{ label: "90%", value: 0.9 }, { label: "100%", value: 1.0 }, { label: "110%", value: 1.1 }, { label: "125%", value: 1.25 }]
+            value: Flags.uiScale
+            onPicked: (v) => Flags.uiScale = v
         }
+    }
 
-        SettingsRow {
-            id: motionRow
-            surface: root
-            name: "Reduce motion"
-            icon: "waves"
+    SettingsRow {
+        id: motionRow
+        surface: root
+        name: "Reduce motion"
+        icon: "waves"
 
-            LinkToggle {
-                s: root.s
-                on: Flags.reduceMotion
-                onToggled: Flags.reduceMotion = !Flags.reduceMotion
-            }
+        LinkToggle {
+            s: root.s
+            on: Flags.reduceMotion
+            onToggled: Flags.reduceMotion = !Flags.reduceMotion
         }
+    }
 
-        SettingsRow {
-            id: autoHideRow
-            surface: root
-            name: "Auto hide"
-            icon: "eye-off"
+    SettingsRow {
+        id: autoHideRow
+        surface: root
+        name: "Auto hide"
+        icon: "eye-off"
 
-            LinkToggle {
-                s: root.s
-                on: Flags.autoHide
-                onToggled: Flags.autoHide = !Flags.autoHide
-            }
+        LinkToggle {
+            s: root.s
+            on: Flags.autoHide
+            onToggled: Flags.autoHide = !Flags.autoHide
         }
+    }
 
-        SettingsRow {
-            id: fontRow
-            surface: root
-            name: "Font"
-            icon: "type"
-            sub: Flags.uiFont.length > 0 ? Flags.uiFont : "Inter"
-            last: true
+    SettingsRow {
+        id: fontRow
+        surface: root
+        name: "Font"
+        icon: "type"
+        sub: Flags.uiFont.length > 0 ? Flags.uiFont : "Inter"
+        last: true
 
-            GlyphIcon {
-                width: 16 * root.s
-                height: 16 * root.s
-                name: "chevron-right"
-                color: root.focusRowItem === fontRow ? Theme.cream : Theme.iconDim
-                stroke: 1.9
-            }
+        GlyphIcon {
+            width: 16 * root.s
+            height: 16 * root.s
+            name: "chevron-right"
+            color: root.focusRowItem === fontRow ? Theme.cream : Theme.iconDim
+            stroke: 1.9
         }
     }
 }

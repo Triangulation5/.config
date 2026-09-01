@@ -2,13 +2,16 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.modules.pill.surfaces
+import qs.components.layout
 
 /**
  * Shared base for the morphing settings surfaces: the category index and each
- * sub-surface. Carries the keyboard-navigable row registry and the glowing
- * row-soul seam, and morphs back to the parent index when empty space is clicked
- * on a sub-surface. The deriving surface sets `rows`, optionally `backSurface`,
- * and lays out its own content column (header, section labels, SettingsRow lines).
+ * sub-surface. Owns the surface header (kanji + label, back chevron or cog),
+ * the content column that carries the page's rows, the keyboard-navigable row
+ * registry and the glowing row-soul seam, and morphs back to the parent index
+ * when empty space is clicked on a sub-surface. The deriving surface sets
+ * `rows`, `kanji`/`label`, optionally `backSurface`, and declares its rows as
+ * direct children (they land in the shared content column under the header).
  *
  * Each `rows` entry pairs a row item with its control kind and the backing getter
  * and setter: `seg` cycles a segmented choice (wrapping), `toggle` flips a
@@ -31,6 +34,28 @@ PillSurface {
     property Item focusRowItem: null
     property int kbIndex: -1
     property var rows: []
+
+    /** Header: kanji glyph + ALL-CAPS label; showBack or a cog icon on the right. */
+    property string kanji: ""
+    property string label: ""
+    property bool showBack: true
+    property string icon: ""
+
+    /** Gap under the header before the first content child. */
+    property real headerGap: 0
+
+    /**
+     * Extra content-column height past the content (sub-surfaces let the column
+     * bleed into the bottom margin so nothing is cut at the last row).
+     */
+    property real contentExtra: 0
+    /** Clip the content column to its rect (paired with contentExtra). */
+    property bool contentClip: false
+
+    /** The page's body, laid out under the shared header. */
+    default property alias content: contentCol.data
+
+    implicitHeight: contentCol.implicitHeight
 
     function reportRowHover(item, hovered) {
         if (hovered) {
@@ -115,15 +140,30 @@ PillSurface {
 
     readonly property bool rowFocused: focusRowItem !== null && active
 
-    readonly property point rowPoint: {
-        void root.width;
-        void root.height;
-        void root.focusRowItem;
-        if (!focusRowItem)
-            return Qt.point(4 * root.s, root.height / 2);
-        return focusRowItem.mapToItem(root, 4 * root.s, focusRowItem.height / 2);
-    }
-
     ameForm: rowFocused ? "rowseam" : "off"
-    amePoint: rowPoint
+    amePoint: root.rowSeamPoint(root.focusRowItem)
+
+    Column {
+        id: contentCol
+        z: 100
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        spacing: 0
+        height: implicitHeight + root.contentExtra
+        clip: root.contentClip
+
+        SurfaceHeader {
+            s: root.s
+            kanji: root.kanji
+            label: root.label
+            showBack: root.showBack
+            icon: root.icon
+        }
+
+        Item {
+            width: 1
+            height: root.headerGap
+        }
+    }
 }
