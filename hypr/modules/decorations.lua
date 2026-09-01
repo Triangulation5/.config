@@ -1,8 +1,8 @@
 -- https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in  = 4,
-        gaps_out = 8,
+        gaps_in  = 5,
+        gaps_out = 10,
         border_size = 1,
 
         col = {
@@ -16,7 +16,7 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 10,
+        rounding       = 12,
         rounding_power = 4,
 
         active_opacity   = 1.0,
