@@ -9,13 +9,16 @@ import qs.components.animation
 import qs.components.icons
 
 /**
- * Now-playing card. Album art sits in a rounded tile on the left; the rest of
- * the card is transparent, so the pill body reads through it like every other
- * surface — no background panel of its own to ghost during a morph. Right of
- * the cover: title, artist, a dim source/time line, the play/pause seal
- * (奏/休) flanked by 前/次 skips. Playback runs as a brush stroke along the
- * bottom, its painted head the dock for the pill's soul bead. All now-playing
- * data comes from [[Players]]; when two or more players run, the source token
+ * Now-playing card. Its backdrop follows Flags.mediaStyle, chosen in
+ * Appearance: "bleed" — a blurred, low-res copy of the cover stretching
+ * across the card, subtle and riding the pill's own opacity; "wash" — the
+ * legacy near-opaque warm tint, verbatim; or "none" — fully transparent,
+ * the pill body reading through like every other surface. The album art
+ * itself always sits in a rounded tile on the left. Right of the cover:
+ * title, artist, a dim source/time line, the play/pause seal (奏/休) flanked
+ * by 前/次 skips. Playback runs as a brush stroke along the bottom, its
+ * painted head the dock for the pill's soul bead. All now-playing data
+ * comes from [[Players]]; when two or more players run, the source token
  * glows into a bubble that opens a picker.
  */
 PillSurface {
@@ -64,6 +67,30 @@ PillSurface {
 
     readonly property real textX: 148 * s
     readonly property real edgePad: 18 * s
+
+    /** Card backdrop mode from Appearance: "bleed", "wash", or "none". */
+    readonly property bool bleedOn: Flags.mediaStyle === "bleed"
+    readonly property bool washOn: Flags.mediaStyle === "wash"
+
+    /**
+     * Strength of the blurred cover bleed behind the card. Subtle on purpose:
+     * it lifts the now-playing view off the flat pill body with the track's
+     * own palette, and it scales with the pill's surface opacity
+     * (Flags.pillOpacity) so a translucent pill stays uniformly translucent —
+     * never a hard band like the old flat wash.
+     */
+    readonly property real artBleed: 0.28 * Flags.pillOpacity
+
+    /**
+     * Warm wash base for the legacy tint option (Flags.mediaStyle "wash"):
+     * the card's original near-opaque verm glow, kept verbatim so the option
+     * restores exactly what the surface looked like before the bleed.
+     */
+    readonly property color washMid: Theme.mix(Theme.cardTop, Theme.verm, 0.14)
+
+    /** Cover tile tone: warm-tinted under the legacy wash, standard shell tile dark otherwise. */
+    readonly property color tileTone: root.washOn ? Theme.mix(Theme.tileBg, root.washMid, 0.5) : Theme.tileBg
+
     property real sealPulse: 0
 
     onTitleChanged: if (playing && active) pulseAnim.restart()
@@ -151,11 +178,63 @@ PillSurface {
         bottomRightRadius: 22 * root.s
 
         /**
-         * Transparent: the pill body is the card's background, exactly as it is
-         * for every other surface, so the media view stays one continuous pill
-         * and its own opacity always matches the pill's.
+         * Transparent by default: the pill body is the card's background, so
+         * the media view stays one continuous pill and its opacity always
+         * matches the pill's. Only the legacy "wash" mode paints its own
+         * background (the Rectangle below); "bleed" and "none" read through
+         * to the body.
          */
         color: "transparent"
+
+        /**
+         * Legacy warm wash (Flags.mediaStyle "wash"): the original near-opaque
+         * verm-tinted gradient the card shipped before the bleed, restored
+         * verbatim behind everything (its baked alphas ignore the pill opacity,
+         * exactly as the original did).
+         */
+        Rectangle {
+            anchors.fill: parent
+            opacity: root.washOn ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.alpha(Theme.mix(root.washMid, Theme.cardTop, 0.45), 0.92) }
+                GradientStop { position: 1.0; color: Qt.alpha(root.washMid, 0.95) }
+            }
+        }
+
+        /**
+         * Blurred cover bleed (Flags.mediaStyle "bleed"): a tiny decode of
+         * the art (already soft when upscaled) blurred through a MultiEffect
+         * layer and stretched across the whole card, under the cover tile,
+         * title and transport. The blur layer only exists while the card is
+         * actually shown (`shown`), so it costs nothing at rest or while a
+         * different surface owns the pill, and the fade rides the pill's
+         * opacity like everything else.
+         */
+        Image {
+            id: artBg
+
+            anchors.fill: parent
+
+            source: root.coverSource
+            sourceSize: Qt.size(192, 192)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            retainWhileLoading: true
+            cache: String(source).indexOf("file:") !== 0
+
+            visible: status === Image.Ready
+            opacity: root.shown && root.bleedOn ? root.artBleed : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+            /** Stay blurred while the fade-out runs so the tail never snaps sharp. */
+            layer.enabled: root.bleedOn && (root.shown || opacity > 0.01)
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blurMax: 32
+                blur: 0.7
+            }
+        }
 
         ClippingRectangle {
             id: coverBox
@@ -167,13 +246,13 @@ PillSurface {
             width: parent.height - 32 * root.s
             height: width
 
-            /** The tile's resting tone, standard shell tile dark — sits just under the pill body so art-less tracks still read as a cover frame. */
+            /** Tile tone follows the backdrop mode: warm-tinted under the legacy wash, standard shell tile dark otherwise, so art-less tracks still read as a cover frame. */
             radius: 16 * root.s
-            color: Theme.tileBg
+            color: root.tileTone
 
             Rectangle {
                 anchors.fill: parent
-                color: Theme.tileBg
+                color: root.tileTone
                 visible: !root.everReady
             }
 
