@@ -217,7 +217,7 @@ Item {
                         : Theme.ghost
                     opacity: cell.inMonth && !cell.current && !cell.weekend && !cell.hasEvent ? 0.85 : 1.0
                     font.family: Theme.font
-                    font.pixelSize: 11 * root.s
+                    font.pixelSize: 13 * root.s
                     font.weight: cell.current || cell.hasEvent ? Font.DemiBold : Font.Normal
                     font.features: { "tnum": 1 }
                 }
