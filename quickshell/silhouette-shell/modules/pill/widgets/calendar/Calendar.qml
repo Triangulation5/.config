@@ -32,6 +32,9 @@ import qs.modules.pill.widgets
 PillSurface {
     id: root
 
+    /** Forwards to the pill: the weather glance taps open the detail surface. */
+    signal requestSurface(string name)
+
     mTop: 16
     mLeft: 18
     mRight: 18
@@ -297,6 +300,7 @@ PillSurface {
     WeatherPanel {
         id: weatherPanel
         s: root.s
+        onOpenDetail: root.requestSurface("weather")
     }
 
     Rectangle {

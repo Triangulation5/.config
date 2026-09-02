@@ -18,6 +18,7 @@ KeybindForm 1.0 input/KeybindForm.qml
 KeybindRow 1.0 input/KeybindRow.qml
 KeybindSearch 1.0 input/KeybindSearch.qml
 Keybinds 1.0 input/Keybinds.qml
+LockScreenGroup 1.0 look/LockScreenGroup.qml
 Look 1.0 look/Look.qml
 MonitorCard 1.0 display/MonitorCard.qml
 MonitorMap 1.0 display/MonitorMap.qml

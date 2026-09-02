@@ -73,7 +73,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: parent.height * 0.55
+        height: parent.height * 0.72
     }
 
     Content {

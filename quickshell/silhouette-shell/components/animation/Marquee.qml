@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Shapes
+import qs.components.animation
 import qs.services
 
 /**
@@ -63,71 +63,37 @@ Item {
     }
 
     /**
-     * One edge's palette fade: a horizontal LinearGradient shape with the
-     * palette color at the outer card edge dissolving to transparent at the
-     * inner edge (toward the text center), so the scrolling label sinks into
-     * the card instead of clipping hard. Without this, the fade would sit
-     * opaque over the readable text and clear right at the boundary, which is
-     * exactly backwards. The right edge flips the stop order (`mirrored`)
-     * since its local coordinate space runs the opposite direction (local 0
-     * is the inner side, local fadeWidth is the outer/card side) — flipping
-     * the shape itself would also work, but flipping the stop order keeps the
-     * geometry identical and the color mapping explicit.
+     * The fade bands' outer-edge color: the palette wash at the pill's own
+     * surface opacity (Flags.pillOpacity is applied to the whole pill body
+     * behind this text) so the bands blend the label into the surface without
+     * leaving visible strips — but never drop below 0.75: on a heavily
+     * translucent pill a 1:1 fade goes so weak the scrolling label ends up
+     * with a hard, readable edge at the fade boundary instead of dissolving.
      */
-    component EdgeFade: Shape {
-        id: fade
-
-        property bool mirrored: false
-
-        width: root.fadeWidth
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        visible: root.overflowing && root.fadeWidth > 0
-
-        ShapePath {
-            startX: 0
-            startY: 0
-            /** No stroke: the ShapePath's default black pen would box the fade in. */
-            strokeColor: "transparent"
-            fillGradient: LinearGradient {
-                x1: 0
-                y1: 0
-                x2: root.fadeWidth
-                y2: 0
-                GradientStop {
-                    position: fade.mirrored ? 1.0 : 0.0
-                    /**
-                     * Follow the pill's own surface opacity (Flags.pillOpacity
-                     * is applied to the whole pill body behind this text) so
-                     * the fade blends the label into the surface without
-                     * leaving visible strips — but never drop below 0.75:
-                     * on a heavily translucent pill a 1:1 fade goes so weak
-                     * the scrolling label ends up with a hard, readable edge
-                     * at the fade boundary instead of dissolving.
-                     */
-                    color: Qt.rgba(
-                        root.fadeColor.r,
-                        root.fadeColor.g,
-                        root.fadeColor.b,
-                        Math.max(Flags.pillOpacity, 0.75)
-                    )
-                }
-                GradientStop { position: fade.mirrored ? 0.0 : 1.0; color: "transparent" }
-            }
-            PathLine { x: root.fadeWidth; y: 0 }
-            PathLine { x: root.fadeWidth; y: height }
-            PathLine { x: 0; y: height }
-            PathLine { x: 0; y: 0 }
-        }
-    }
+    readonly property color edgeColor: Qt.rgba(
+        root.fadeColor.r,
+        root.fadeColor.g,
+        root.fadeColor.b,
+        Math.max(Flags.pillOpacity, 0.75)
+    )
 
     EdgeFade {
         anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        fadeWidth: root.fadeWidth
+        fadeColor: root.edgeColor
+        active: root.overflowing
     }
 
     EdgeFade {
         anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        fadeWidth: root.fadeWidth
+        fadeColor: root.edgeColor
         mirrored: true
+        active: root.overflowing
     }
 
     SequentialAnimation {
