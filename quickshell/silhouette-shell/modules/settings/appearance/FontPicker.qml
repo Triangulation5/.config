@@ -19,6 +19,8 @@ import qs.components.layout
 SettingsSurface {
     id: root
 
+    /* Few rows — quick reveal. */
+    cascadeDuration: 400
     backSurface: "appearance"
     kanji: "字"
     label: "FONT"

@@ -17,6 +17,8 @@ import qs.components.layout
 SettingsSurface {
     id: root
 
+    /** The index is the entry point with the most rows — a fuller, slower sweep. */
+    cascadeDuration: 560
     kanji: "設"
     label: "SETTINGS"
     showBack: false
