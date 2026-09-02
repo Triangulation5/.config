@@ -48,15 +48,38 @@ Item {
      */
     property real lockMorph: 0
 
+    /**
+     * The wake/return rides a slow, smooth ease rather than the fast
+     * front-loaded morph curve, so the idle text dissolves instead of
+     * snapping away and the capsule settles rather than slamming in.
+     */
     Behavior on lockMorph {
         NumberAnimation {
-            duration: Motion.glide
-            easing.type: Motion.easeMorph
-            easing.bezierCurve: Motion.morphCurve
+            duration: Math.round(470 * Motion.mult)
+            easing.type: Easing.InOutCubic
         }
     }
 
-    onPasswordArmedChanged: lockMorph = content.passwordArmed ? 1 : 0
+    /**
+     * Fires both the slow morph and the capsule chrome's own spring (see
+     * capsuleChrome), so arming inflates with an OutBack settle and
+     * disarming eases back to the idle stub.
+     */
+    onPasswordArmedChanged: {
+        lockMorph = content.passwordArmed ? 1 : 0;
+        chromeSpring.from = capsuleChrome.scale;
+        chromeSpring.to = content.passwordArmed ? 1.0 : 0.9;
+        chromeSpring.duration = Math.round((content.passwordArmed ? 520 : 430) * Motion.mult);
+        chromeSpring.easing.type = content.passwordArmed ? Easing.OutBack : Easing.InOutCubic;
+        chromeSpring.easing.overshoot = 1.3;
+        chromeSpring.restart();
+    }
+
+    /** Gentle InOutSine dissolve envelope for the prompt crossfade: soft at both ends. */
+    function diss(t) {
+        var x = Math.max(0, Math.min(1, t));
+        return (1 - Math.cos(Math.PI * x)) / 2;
+    }
 
     Shortcut {
         sequence: "Escape"
@@ -252,22 +275,36 @@ Item {
             border.width: content.passwordArmed ? 1 : 0
             border.color: Theme.capsuleBorder
 
-            scale: 0.90 + 0.10 * content.lockMorph + 0.05 * Math.sin(content.lockMorph * Math.PI)
+            scale: 0.90
             transformOrigin: Item.Bottom
+
+            /**
+             * Owns the scale so arming can spring (OutBack overshoot then
+             * settle) instead of puffing mid-morph; disarming eases back.
+             * Fired from the root's onPasswordArmedChanged so the spring and
+             * the lockMorph motion share one trigger; `from` is the live
+             * value so a mid-flight reversal never jumps.
+             */
+            NumberAnimation {
+                id: chromeSpring
+                target: capsuleChrome
+                property: "scale"
+                duration: 520
+                easing.type: Easing.OutBack
+                easing.overshoot: 1.3
+            }
 
             Behavior on color {
                 ColorAnimation {
-                    duration: Motion.glide
-                    easing.type: Motion.easeMorph
-                    easing.bezierCurve: Motion.morphCurve
+                    duration: Math.round(480 * Motion.mult)
+                    easing.type: Easing.InOutCubic
                 }
             }
 
             Behavior on border.width {
                 NumberAnimation {
-                    duration: Motion.glide
-                    easing.type: Motion.easeMorph
-                    easing.bezierCurve: Motion.morphCurve
+                    duration: Math.round(480 * Motion.mult)
+                    easing.type: Easing.InOutCubic
                 }
             }
 
@@ -384,10 +421,10 @@ Item {
                 font.letterSpacing: 1 * content.s
 
                 visible: !content.showError
-                opacity: 1 - content.lockMorph
-                scale: 1 - 0.06 * content.lockMorph
+                opacity: 1 - content.diss(content.lockMorph)
+                scale: 1 - 0.07 * content.diss(content.lockMorph)
                 transform: Translate {
-                    y: -4 * content.s * content.lockMorph
+                    y: -7 * content.s * content.diss(content.lockMorph)
                 }
 
                 layer.enabled: true
@@ -396,10 +433,10 @@ Item {
                     shadowColor: Qt.rgba(0, 0, 0, 0.5)
                     shadowBlur: 0.7
                     shadowVerticalOffset: 1.5
-                    /** macOS dissolve: the hint blurs away as the capsule forms instead of just fading. */
+                    /** macOS dissolve: the hint blurs progressively away as the capsule forms. */
                     blurEnabled: content.lockMorph > 0.01
                     blurMax: 16
-                    blur: content.lockMorph * 0.35
+                    blur: 0.5 * content.diss(content.lockMorph)
                 }
             }
 
@@ -414,10 +451,10 @@ Item {
                 font.letterSpacing: 1 * content.s
 
                 visible: !content.showError
-                opacity: content.lockMorph
-                scale: 0.95 + 0.05 * content.lockMorph
+                opacity: content.diss(content.lockMorph)
+                scale: 0.94 + 0.06 * content.diss(content.lockMorph)
                 transform: Translate {
-                    y: 3 * content.s * (1 - content.lockMorph)
+                    y: 4 * content.s * (1 - content.diss(content.lockMorph))
                 }
 
                 layer.enabled: true
