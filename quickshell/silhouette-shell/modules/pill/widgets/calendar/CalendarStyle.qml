@@ -166,7 +166,10 @@ Item {
     ListView {
         id: wheel
 
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        y: 5
+        height: parent.height
         z: 1
 
         orientation: ListView.Horizontal
