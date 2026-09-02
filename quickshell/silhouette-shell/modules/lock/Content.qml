@@ -54,7 +54,7 @@ Item {
      */
     Behavior on lockMorph {
         NumberAnimation {
-            duration: Math.round(410 * Motion.mult)
+            duration: Math.round(460 * Motion.mult)
             easing.type: Easing.BezierSpline
             easing.bezierCurve: [0.16, 1, 0.30, 1, 1, 1]
         }
@@ -64,7 +64,7 @@ Item {
      * Everything in the wake/return gesture rides the one lockMorph clock (see
      * its Behavior above): the hint dissolves out, the chrome fades in, the
      * armed prompt rises. No second spring or per-property animation clock is
-     * started here, so arming and the 10 s idle return can never fight or
+     * started here, so arming and the 6/10 s idle return can never fight or
      * visibly stutter against each other.
      */
     onPasswordArmedChanged: {
@@ -81,7 +81,7 @@ Item {
      * The wake gesture uses two staggered envelopes so it reads as a
      * macOS-style handoff instead of a simultaneous swap: the idle hint
      * dissolves away first, then the capsule and armed prompt settle into place.
-     * Reversing (10s idle) plays the same envelopes backwards, keeping the
+     * Reversing (6/10 s idle) plays the same envelopes backwards, keeping the
      * return calm instead of cutting between states.
      */
     function hintOut() {
@@ -89,12 +89,12 @@ Item {
     }
 
     function capIn() {
-        return diss(Math.max(0, (content.lockMorph - 0.14) / 0.86));
+        return diss(Math.max(0, (content.lockMorph - 0.15) / 0.85));
     }
 
     /** The password content follows the material by a short beat, avoiding a raw first-frame pop. */
     function fieldIn() {
-        return diss(Math.max(0, (content.lockMorph - 0.20) / 0.80));
+        return diss(Math.max(0, (content.lockMorph - 0.28) / 0.72));
     }
 
     Shortcut {
@@ -106,15 +106,15 @@ Item {
     }
 
     /**
-     * Idle is timed, not focus-driven: 10 seconds of silence while the field is
-     * armed wipes a half-typed password and returns the lock to the bare "press
-     * any key" prompt. Activity while armed (typing, any key, a click) restarts
-     * the countdown; authenticating pauses it so a slow auth never disarms
-     * mid-flight.
+     * Idle is timed, not focus-driven: an empty armed capsule waits 6 seconds,
+     * while a capsule with password characters waits 10 seconds, then returns
+     * to the bare "press any key" prompt. Activity while armed (typing, any key,
+     * a click) restarts the countdown; authenticating pauses it so a slow auth
+     * never disarms mid-flight.
      */
     Timer {
         id: idleTimer
-        interval: 10000
+        interval: input.text.length > 0 ? 10000 : 6000
         /**
          * Only the surface that actually holds the field's focus runs the idle
          * countdown, so silence on one monitor can never wipe a password being
@@ -274,11 +274,10 @@ Item {
         }
 
         /**
-         * The capsule's material starts close to the prompt's measure and
-         * grows around the field as it wakes. This gives the handoff a physical
-         * focal point: the label leaves first, then the surface widens, then the
-         * password content settles inside it. Only opacity and geometry change
-         * during the handoff, keeping the animation cheap enough to stay smooth.
+         * The capsule's material starts as a quiet, compact surface and grows
+         * around the field as it wakes. The label leaves first, the surface then
+         * widens through its settle, and the password content lands last. Only
+         * opacity and geometry change during the handoff, keeping it smooth.
          */
         Rectangle {
             id: capsuleHalo
@@ -295,8 +294,8 @@ Item {
         Rectangle {
             id: capsuleChrome
             anchors.centerIn: parent
-            width: parent.width * (0.58 + 0.42 * content.capIn())
-            height: parent.height * (0.72 + 0.28 * content.capIn())
+            width: parent.width * (0.64 + 0.36 * content.capIn())
+            height: parent.height * (0.76 + 0.24 * content.capIn())
             radius: height / 2
 
             color: Theme.capsule
@@ -305,86 +304,146 @@ Item {
             opacity: content.capIn()
         }
 
-        TextInput {
-            id: input
-            anchors.fill: parent
-            anchors.leftMargin: 48 * content.s
-            anchors.rightMargin: 48 * content.s
-            verticalAlignment: TextInput.AlignVCenter
-            horizontalAlignment: TextInput.AlignHCenter
-
-            echoMode: revealPassword ? TextInput.Normal : TextInput.NoEcho
-            color: revealPassword ? Qt.alpha(Theme.bright, content.fieldIn()) : "transparent"
-
-            font.family: Theme.font
-            font.pixelSize: 15 * content.s
-            font.letterSpacing: 2 * content.s
+        /**
+         * Rounded compositor mask for the editable content. TextInput's own
+         * clip is rectangular, so it can leak through the capsule's curved
+         * ends while the capsule is narrowing. The mask follows the animated
+         * capsule and stays warm so the first key cannot trigger a mask
+         * allocation in the middle of the handoff.
+         */
+        Item {
+            id: inputClip
+            anchors.fill: capsuleChrome
             clip: true
-            focus: !content.clockExpanded
-            enabled: !content.authenticating
+            /** Keep the small mask surface warm so the first key does not allocate it mid-gesture. */
+            layer.enabled: true
+            layer.smooth: true
+            layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: inputMask
+            }
 
-            onTextChanged: {
-                if (text.length > 0) {
-                    content.showError = false;
-                    content.passwordArmed = true;
-                    idleTimer.restart();
+            TextInput {
+                id: input
+                /** Keep the editable region inside the animated capsule, not the larger hit target. */
+                anchors.fill: parent
+                anchors.leftMargin: 48 * content.s
+                anchors.rightMargin: 48 * content.s
+                verticalAlignment: TextInput.AlignVCenter
+                horizontalAlignment: TextInput.AlignHCenter
+
+                echoMode: revealPassword ? TextInput.Normal : TextInput.NoEcho
+                color: revealPassword ? Qt.alpha(Theme.bright, content.fieldIn()) : "transparent"
+
+                font.family: Theme.font
+                font.pixelSize: 15 * content.s
+                font.letterSpacing: 2 * content.s
+                clip: true
+                focus: !content.clockExpanded
+                enabled: !content.authenticating
+
+                onTextChanged: {
+                    if (text.length > 0) {
+                        content.showError = false;
+                        content.passwordArmed = true;
+                    }
+                    if (content.passwordArmed)
+                        idleTimer.restart();
+                    if (content.pw && content.pw.text !== text)
+                        content.pw.text = text;
                 }
-                if (content.pw && content.pw.text !== text)
-                    content.pw.text = text;
-            }
 
-            Keys.onPressed: {
-                if (content.passwordArmed)
-                    idleTimer.restart();
-            }
+                Keys.onPressed: {
+                    if (content.passwordArmed)
+                        idleTimer.restart();
+                }
 
-            Connections {
-                target: content.pw
-                enabled: content.pw !== null
-                function onTextChanged() {
-                    if (input.text !== content.pw.text)
-                        input.text = content.pw.text;
+                Connections {
+                    target: content.pw
+                    enabled: content.pw !== null
+                    function onTextChanged() {
+                        if (input.text !== content.pw.text)
+                            input.text = content.pw.text;
+                    }
+                }
+
+                onAccepted: {
+                    if (content.auth && text.length > 0)
+                        content.auth.submit(text);
+                }
+
+                cursorDelegate: Rectangle {
+                    visible: content.showCursor && input.activeFocus && content.fieldIn() > 0.01
+                    width: 2 * content.s
+                    height: input.cursorRectangle.height
+                    color: Theme.verm
+
+                    SequentialAnimation on opacity {
+                        running: content.showCursor && input.activeFocus
+                        loops: Animation.Infinite
+
+                        NumberAnimation { to: 0; duration: 0 }
+                        PauseAnimation { duration: 550 }
+                        NumberAnimation { to: 1; duration: 0 }
+                        PauseAnimation { duration: 550 }
+                    }
+                }
+
+                PasswordDots {
+                    anchors.centerIn: parent
+                    s: content.s
+                    host: content
+                    field: input
+                    opacity: content.fieldIn()
                 }
             }
 
-            onAccepted: {
-                if (content.auth && text.length > 0)
-                    content.auth.submit(text);
-            }
+            /** Keep the edge fades in the same coordinate space as the rounded input mask. */
+            Item {
+                anchors.fill: input
 
-            cursorDelegate: Rectangle {
-                visible: content.showCursor && input.activeFocus && content.fieldIn() > 0.01
-                width: 2 * content.s
-                height: input.cursorRectangle.height
-                color: Theme.verm
+                EdgeFade {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    fadeWidth: 30 * content.s
+                    fadeColor: Theme.capsule
+                    active: input.text.length > 0
+                }
 
-                SequentialAnimation on opacity {
-                    running: content.showCursor && input.activeFocus
-                    loops: Animation.Infinite
-
-                    NumberAnimation { to: 0; duration: 0 }
-                    PauseAnimation { duration: 550 }
-                    NumberAnimation { to: 1; duration: 0 }
-                    PauseAnimation { duration: 550 }
+                EdgeFade {
+                    /** Nudge the right fade past the clip so the final dot remains readable. */
+                    anchors.right: parent.right
+                    anchors.rightMargin: -2
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    fadeWidth: 30 * content.s
+                    fadeColor: Theme.capsule
+                    mirrored: true
+                    active: input.text.length > 0
                 }
             }
 
-            PasswordDots {
-                anchors.centerIn: parent
-                s: content.s
-                host: content
-                field: input
-                opacity: content.fieldIn()
+        }
+
+        /** Rounded alpha mask matching the visible capsule, used by inputClip above. */
+        Item {
+            id: inputMask
+            anchors.fill: capsuleChrome
+            visible: false
+            layer.enabled: true
+
+            Rectangle {
+                anchors.fill: parent
+                radius: capsuleChrome.radius
             }
         }
 
         /**
-         * The idle prompts live outside the field so the input's hard clip
-         * never cuts them: the widened side margins keep typed text clear of
-         * the eye icon, but a clipped field would also trim the wide "press
-         * any key" hint. As a capsule sibling the block centers on the pill
-         * exactly where the input centers (the margins are symmetric), and it
-         * only appears while the field is empty anyway.
+         * The idle prompts live outside the rounded field layer so the input's
+         * clip never cuts them. The widened side margins keep typed text clear
+         * of the eye icon, while this separate label layer stays alive for the
+         * short handoff after the first character arrives.
          */
         Item {
             anchors.centerIn: parent
@@ -392,13 +451,11 @@ Item {
             visible: content.showError || input.text.length === 0 || content.lockMorph < 0.98
 
             /**
-             * The two prompts hand off to each other on staggered clocks: as the
-             * field arms, the idle hint dissolves mostly in place — a faint drift,
-             * a stronger blur — on its own fast clock, and only once it is most of
-             * the way out does "enter password" un-blur up from below. Returning
-             * to idle plays the same gesture backwards, so waking and settling
-             * read as one continuous macOS-style handoff. The soft shadow keeps
-             * whichever prompt floats over the wallpaper readable.
+             * The two prompts hand off on staggered envelopes: as the field
+             * arms, the idle hint lifts and softens, then the armed label settles
+             * upward inside the forming capsule. Returning to idle plays the same
+             * gesture backwards, so waking and settling read as one continuous
+             * macOS-style handoff.
              */
             Text {
                 id: idlePrompt
@@ -416,7 +473,6 @@ Item {
                 transform: Translate {
                     y: -6 * content.s * content.hintOut()
                 }
-
             }
 
             Text {
@@ -435,7 +491,6 @@ Item {
                 transform: Translate {
                     y: 7 * content.s * (1 - content.capIn())
                 }
-
             }
 
             Text {
@@ -455,39 +510,6 @@ Item {
             }
         }
 
-        /**
-         * The typed content - password dots or revealed text - is clipped at
-         * the input's side margins, and these bands dissolve its tail into
-         * the capsule fill so a long password sinks past the edges instead of
-         * clipping hard against them. The band color matches the chrome fill
-         * exactly, so while the text is short enough to fit the bands are
-         * invisible: they only appear where content passes beneath them.
-         */
-        Item {
-            anchors.fill: input
-
-            EdgeFade {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                fadeWidth: 30 * content.s
-                fadeColor: Theme.capsule
-                active: input.text.length > 0
-            }
-
-            EdgeFade {
-                /** -2 margin nudges the band ~2px past the clip toward the eye, so it eats 2px less of the rightmost dots. */
-                anchors.right: parent.right
-                anchors.rightMargin: -2
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                fadeWidth: 30 * content.s
-                fadeColor: Theme.capsule
-                mirrored: true
-                active: input.text.length > 0
-            }
-        }
-
         MouseArea {
             anchors.fill: parent
             enabled: !content.authenticating
@@ -503,9 +525,9 @@ Item {
 
         GlyphIcon {
             z: 2
-            anchors.right: parent.right
+            anchors.right: capsuleChrome.right
             anchors.rightMargin: 16 * content.s
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: capsuleChrome.verticalCenter
             width: 20 * content.s
             height: 20 * content.s
             name: content.revealPassword ? "eye-off" : "eye"
