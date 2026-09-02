@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.modules.pill.surfaces
 import qs.components.layout
-import qs.components.animation
 
 /**
  * Shared base for the morphing settings surfaces: the category index and each
@@ -53,50 +52,10 @@ PillSurface {
     /** Clip the content column to its rect (paired with contentExtra). */
     property bool contentClip: false
 
-    /**
-     * The page's rows, laid out under the shared header inside `body`, where
-     * the cascade arms per-row stagger on creation.
-     */
-    default property alias content: body.data
+    /** The page's body, laid out under the shared header. */
+    default property alias content: contentCol.data
 
     implicitHeight: contentCol.implicitHeight
-
-    /**
-     * Row reveal cascade: rows fade in one after another once the morph lands
-     * (a touch quicker than the weather surface's bands — ~480 ms). Each row's
-     * opacity and a small scale are bound to its index band of the shared
-     * Cascade driver at creation; the header is not staggered. Deriving
-     * surfaces may tune `cascadeDuration` per surface type — the index and
-     * dense sub-menus cascade slower, small pages faster.
-     */
-    property real cascadeDuration: 480
-
-    Cascade {
-        id: cascade
-        morphCloseness: root.morphCloseness
-        duration: root.cascadeDuration
-        count: 1
-    }
-
-    Component.onCompleted: root.armReveal()
-
-    function rowReveal(i) {
-        return cascade.item(i);
-    }
-
-    function armReveal() {
-        var kids = body.children;
-        cascade.count = kids.length;
-        for (var i = 0; i < kids.length; i++) {
-            var k = kids[i];
-            if (!k)
-                continue;
-            (function(idx) {
-                k.opacity = Qt.binding(() => root.rowReveal(idx));
-                k.scale = Qt.binding(() => 0.96 + 0.04 * root.rowReveal(idx));
-            })(i);
-        }
-    }
 
     function reportRowHover(item, hovered) {
         if (hovered) {
@@ -205,17 +164,6 @@ PillSurface {
         Item {
             width: 1
             height: root.headerGap
-        }
-
-        /**
-         * Rows land here (default property alias above); armReveal staggers
-         * them. A Column so its implicit height still measures the rows, like
-         * when they were direct children of the page column.
-         */
-        Column {
-            id: body
-            width: parent.width
-            spacing: 0
         }
     }
 }
