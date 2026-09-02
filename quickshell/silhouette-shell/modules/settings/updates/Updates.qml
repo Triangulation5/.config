@@ -19,8 +19,6 @@ import qs.components.controls
 SettingsSurface {
     id: root
 
-    /* Short page — snappier than the default. */
-    cascadeDuration: 420
     backSurface: "settings"
     kanji: "更"
     label: "UPDATES"

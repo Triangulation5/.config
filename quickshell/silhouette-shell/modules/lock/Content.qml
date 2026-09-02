@@ -69,9 +69,9 @@ Item {
         lockMorph = content.passwordArmed ? 1 : 0;
         chromeSpring.from = capsuleChrome.scale;
         chromeSpring.to = content.passwordArmed ? 1.0 : 0.9;
-        chromeSpring.duration = Math.round((content.passwordArmed ? 520 : 430) * Motion.mult);
+        chromeSpring.duration = Math.round((content.passwordArmed ? 560 : 440) * Motion.mult);
         chromeSpring.easing.type = content.passwordArmed ? Easing.OutBack : Easing.InOutCubic;
-        chromeSpring.easing.overshoot = 1.3;
+        chromeSpring.easing.overshoot = 1.15;
         chromeSpring.restart();
     }
 
@@ -79,6 +79,23 @@ Item {
     function diss(t) {
         var x = Math.max(0, Math.min(1, t));
         return (1 - Math.cos(Math.PI * x)) / 2;
+    }
+
+    /**
+     * The wake gesture runs on two staggered clocks so it reads as a macOS-
+     * style handoff instead of a simultaneous swap: the idle hint dissolves
+     * away on its own faster clock (gone by ~74% of the morph), and the
+     * capsule's material un-blurs and settles in on a gentler one that only
+     * starts just after the hint begins leaving. Reversing (10s idle) plays
+     * the same envelopes backwards — the chrome silently recedes, then the
+     * hint re-forms — never a hard cut in either direction.
+     */
+    function hintOut() {
+        return diss(Math.min(1, content.lockMorph * 1.35));
+    }
+
+    function capIn() {
+        return diss(Math.max(0, (content.lockMorph - 0.14) / 0.86));
     }
 
     Shortcut {
@@ -255,44 +272,43 @@ Item {
             NumberAnimation { target: capsuleShift; property: "x"; to: 6 * content.s; duration: 50 }
             NumberAnimation { target: capsuleShift; property: "x"; to: -6 * content.s; duration: 50 }
             NumberAnimation { target: capsuleShift; property: "x"; to: 0; duration: 50 }
-        }
-
-        /**
-         * The capsule's material: fill, hairline border, and a soft drop shadow,
-         * rendered behind the input. It materializes macOS-style: the chrome
-         * grows up from the capsule's bottom edge as it fades in, with a gentle
-         * spring puff at the midpoint (the sin term), so the idle text is handed
-         * off to a formed capsule instead of a flat colour blink. The scale
-         * rides lockMorph while the fill and border animate on the same curve,
-         * keeping one in sync with the other.
-         */
-        Rectangle {
-            id: capsuleChrome
-            anchors.fill: parent
-            radius: height / 2
-
-            color: content.passwordArmed ? Theme.capsule : "transparent"
-            border.width: content.passwordArmed ? 1 : 0
-            border.color: Theme.capsuleBorder
-
-            scale: 0.90
-            transformOrigin: Item.Bottom
-
-            /**
-             * Owns the scale so arming can spring (OutBack overshoot then
-             * settle) instead of puffing mid-morph; disarming eases back.
-             * Fired from the root's onPasswordArmedChanged so the spring and
-             * the lockMorph motion share one trigger; `from` is the live
-             * value so a mid-flight reversal never jumps.
+        }            /**
+             * The capsule's material: fill, hairline border, and a soft drop
+             * shadow, rendered behind the input. It materializes macOS-style: the
+             * chrome grows up from the capsule's bottom edge, un-blurring from a
+             * frosted blur as it fades in, with a soft spring settle at the end
+             * (never a flat colour blink). The scale rides its own spring while
+             * the fill, border, opacity and blur follow capIn, keeping the
+             * handoff from the idle hint legible.
              */
-            NumberAnimation {
-                id: chromeSpring
-                target: capsuleChrome
-                property: "scale"
-                duration: 520
-                easing.type: Easing.OutBack
-                easing.overshoot: 1.3
-            }
+            Rectangle {
+                id: capsuleChrome
+                anchors.fill: parent
+                radius: height / 2
+
+                color: content.passwordArmed ? Theme.capsule : "transparent"
+                border.width: content.passwordArmed ? 1 : 0
+                border.color: Theme.capsuleBorder
+
+                scale: 0.90
+                transformOrigin: Item.Bottom
+                opacity: content.capIn()
+
+                /**
+                 * Owns the scale so arming can spring (soft OutBack overshoot
+                 * then settle) instead of puffing mid-morph; disarming eases
+                 * back. Fired from the root's onPasswordArmedChanged so the
+                 * spring and the lockMorph motion share one trigger; `from` is
+                 * the live value so a mid-flight reversal never jumps.
+                 */
+                NumberAnimation {
+                    id: chromeSpring
+                    target: capsuleChrome
+                    property: "scale"
+                    duration: 520
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 1.15
+                }
 
             Behavior on color {
                 ColorAnimation {
@@ -315,6 +331,10 @@ Item {
                 shadowColor: Qt.rgba(0, 0, 0, 0.35)
                 shadowBlur: 0.7
                 shadowVerticalOffset: 2 * content.s
+                /** Frosted materialize: the chrome un-blurs as it forms. */
+                blurEnabled: content.lockMorph > 0.01
+                blurMax: 16
+                blur: 9 * (1 - content.capIn())
             }
         }
 
@@ -403,12 +423,13 @@ Item {
             visible: input.text.length === 0
 
             /**
-             * The two prompts morph into each other on the pill's motion
-             * curve: as the field arms, the idle hint scales and drifts up
-             * out while "enter password" rises in from below. Returning to
-             * idle plays the same morph back, so waking and settling read as
-             * one continuous gesture. The soft shadow keeps whichever prompt
-             * floats over the wallpaper readable, like the clock and name.
+             * The two prompts hand off to each other on staggered clocks: as the
+             * field arms, the idle hint dissolves mostly in place — a faint drift,
+             * a stronger blur — on its own fast clock, and only once it is most of
+             * the way out does "enter password" un-blur up from below. Returning
+             * to idle plays the same gesture backwards, so waking and settling
+             * read as one continuous macOS-style handoff. The soft shadow keeps
+             * whichever prompt floats over the wallpaper readable.
              */
             Text {
                 id: idlePrompt
@@ -421,10 +442,10 @@ Item {
                 font.letterSpacing: 1 * content.s
 
                 visible: !content.showError
-                opacity: 1 - content.diss(content.lockMorph)
-                scale: 1 - 0.07 * content.diss(content.lockMorph)
+                opacity: 1 - content.hintOut()
+                scale: 1 - 0.05 * content.hintOut()
                 transform: Translate {
-                    y: -7 * content.s * content.diss(content.lockMorph)
+                    y: -3 * content.s * content.hintOut()
                 }
 
                 layer.enabled: true
@@ -433,10 +454,10 @@ Item {
                     shadowColor: Qt.rgba(0, 0, 0, 0.5)
                     shadowBlur: 0.7
                     shadowVerticalOffset: 1.5
-                    /** macOS dissolve: the hint blurs progressively away as the capsule forms. */
+                    /** macOS dissolve: the hint blurs progressively away. */
                     blurEnabled: content.lockMorph > 0.01
                     blurMax: 16
-                    blur: 0.5 * content.diss(content.lockMorph)
+                    blur: 4 * content.hintOut()
                 }
             }
 
@@ -451,10 +472,10 @@ Item {
                 font.letterSpacing: 1 * content.s
 
                 visible: !content.showError
-                opacity: content.diss(content.lockMorph)
-                scale: 0.94 + 0.06 * content.diss(content.lockMorph)
+                opacity: content.capIn()
+                scale: 0.96 + 0.04 * content.capIn()
                 transform: Translate {
-                    y: 4 * content.s * (1 - content.diss(content.lockMorph))
+                    y: 3 * content.s * (1 - content.capIn())
                 }
 
                 layer.enabled: true
@@ -463,6 +484,10 @@ Item {
                     shadowColor: Qt.rgba(0, 0, 0, 0.5)
                     shadowBlur: 0.7
                     shadowVerticalOffset: 1.5
+                    /** Un-blurs with the chrome, like text settling on frosted glass. */
+                    blurEnabled: content.lockMorph > 0.01
+                    blurMax: 16
+                    blur: 6 * (1 - content.capIn())
                 }
             }
 
@@ -540,9 +565,9 @@ Item {
             color: Theme.placeholder
             stroke: 1.8
 
-            opacity: content.lockMorph
+            opacity: content.capIn()
             visible: opacity > 0.01
-            scale: 0.85 + 0.15 * content.lockMorph
+            scale: 0.85 + 0.15 * content.capIn()
 
             MouseArea {
                 anchors.fill: parent
