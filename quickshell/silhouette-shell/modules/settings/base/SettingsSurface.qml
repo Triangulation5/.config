@@ -65,12 +65,16 @@ PillSurface {
      * Row reveal cascade: rows fade in one after another once the morph lands
      * (a touch quicker than the weather surface's bands — ~480 ms). Each row's
      * opacity and a small scale are bound to its index band of the shared
-     * Cascade driver at creation; the header is not staggered.
+     * Cascade driver at creation; the header is not staggered. Deriving
+     * surfaces may tune `cascadeDuration` per surface type — the index and
+     * dense sub-menus cascade slower, small pages faster.
      */
+    property real cascadeDuration: 480
+
     Cascade {
         id: cascade
         morphCloseness: root.morphCloseness
-        duration: 480
+        duration: root.cascadeDuration
         count: 1
     }
 
