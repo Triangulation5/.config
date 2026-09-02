@@ -55,6 +55,14 @@ Rectangle {
      */
     property bool forcedDown: false
 
+    /**
+     * True while an audio peak has been seen recently, mirroring Cava's own
+     * activity latch. The string owns its capture, so it reports its own
+     * aliveness for the pill's vizShown gate instead of borrowing the bars
+     * capture's (which is rightly down in string mode - see Cava.wanted).
+     */
+    property bool active: false
+
     property variant cavaData: [
         0,0,0,0,0,0,0,0,0,0
     ]
@@ -105,9 +113,18 @@ Rectangle {
 
                 var parts = data.trim().split(";")
                 var out = new Array(parts.length - 1)
-                for (var i = 0; i < out.length; i++)
+                var peak = 0
+                for (var i = 0; i < out.length; i++) {
                     out[i] = parseFloat(parts[i]) / 1000
+                    if (out[i] > peak)
+                        peak = out[i]
+                }
                 cavaData = out
+
+                if (peak > 0.02) {
+                    musicLineContainer.active = true
+                    stringIdle.restart()
+                }
             }
         }
     }
@@ -127,6 +144,20 @@ Rectangle {
         running: !musicLineContainer.resting
         repeat: false
         onTriggered: musicLineContainer.forcedDown = true
+    }
+
+    /**
+     * How long a silent stretch keeps the string lit before it drops, the
+     * same 300ms ride-out Cava uses for the bars: long enough to cover short
+     * speech pauses, short enough that the string retracts once audio stops.
+     */
+    Timer {
+        id: stringIdle
+        interval: 300
+        onTriggered: {
+            musicLineContainer.active = false
+            musicLineContainer.cavaData = musicLineContainer.cavaData.map(function (v) { return 0; })
+        }
     }
 
     onRestingChanged: if (resting)

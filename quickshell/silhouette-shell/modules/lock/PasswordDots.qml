@@ -1,14 +1,17 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Effects
 import qs.services
+import qs.modules.lock
 
 /**
- * Lock screen password dots: one spring-popped bead per typed character,
- * synced to the field's text length. The last bead slides out and back as it
- * lands, giving each keystroke a little tail. `field` is the password TextInput
- * and `host` the lock surface (for `revealPassword`).
+ * Lock screen password dots: one bead per typed character, synced to the
+ * field's text length. The entrance style is driven by the LOCKSCREEN setting
+ * (Flags.lockDotsMode) and each style lives in its own component - DropDot
+ * springs beads in from above with a bounce, MobileDot pops them in with a
+ * scale overshoot, and PulseDot makes the freshest bead breathe like a wick
+ * tip. `field` is
+ * the password TextInput and `host` the lock surface (for `revealPassword`).
  */
 Item {
     id: root
@@ -16,6 +19,21 @@ Item {
     property real s: 1.1
     property var host: null
     property var field: null
+    /** Entrance style for new beads, driven by the shared LOCKSCREEN setting. */
+    readonly property string mode: Flags.lockDotsMode
+
+    Component {
+        id: dropDot
+        DropDot {}
+    }
+    Component {
+        id: mobileDot
+        MobileDot {}
+    }
+    Component {
+        id: pulseDot
+        PulseDot {}
+    }
 
     Row {
         anchors.centerIn: parent
@@ -49,82 +67,18 @@ Item {
         Repeater {
             model: passwordDots
 
-            Rectangle {
-                id: dot
-
-                width: 9 * root.s
-                height: width
-                radius: width / 2
-                color: Theme.bright
-
-                antialiasing: true
-                smooth: true
-
-                property real lift: -4 * root.s
-                property real dotScale: 0.72
-                property real dotOpacity: 0
-                property real slideX: 0
-                /** Declared so `index` resolves inside the compiled onCompleted handler. */
+            Loader {
                 required property int index
 
-                opacity: dotOpacity
-                scale: dotScale
+                sourceComponent: root.mode === "drop" ? dropDot
+                    : (root.mode === "mobile" ? mobileDot : pulseDot)
 
-                transform: Translate {
-                    x: dot.slideX
-                    y: dot.lift
-                }
-
-                layer.enabled: true
-                layer.smooth: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowBlur: 0.55
-                    shadowVerticalOffset: 1
-                    shadowHorizontalOffset: 0
-                    shadowColor: Qt.rgba(0, 0, 0, 0.16)
-                }
-
-                Behavior on lift {
-                    SpringAnimation {
-                        spring: 4.8
-                        damping: 0.34
-                    }
-                }
-
-                Behavior on dotScale {
-                    SpringAnimation {
-                        spring: 5.5
-                        damping: 0.36
-                    }
-                }
-
-                Behavior on dotOpacity {
-                    NumberAnimation {
-                        duration: 90
-                        easing.type: Easing.OutQuad
-                    }
-                }
-
-                Behavior on slideX {
-                    NumberAnimation {
-                        duration: 220
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                Component.onCompleted: {
-                    dotOpacity = 1;
-                    dotScale = 1;
-                    lift = 0;
-
-                    if (index === passwordDots.count - 1) {
-                        slideX = 8 * root.s;
-
-                        Qt.callLater(function() {
-                            slideX = 0;
-                        });
-                    }
+                onLoaded: {
+                    item.s = Qt.binding(() => root.s);
+                    item.last = Qt.binding(() => index === passwordDots.count - 1);
+                    /** Pulse beads cycle a small palette per slot, fixed at creation. */
+                    if (root.mode === "pulse")
+                        item.tone = index % 4;
                 }
             }
         }

@@ -5,9 +5,12 @@ BatterySurface 1.0 BatterySurface.qml
 BlurredShot 1.0 BlurredShot.qml
 Clock 1.0 Clock.qml
 Content 1.0 Content.qml
+DropDot 1.0 DropDot.qml
+MobileDot 1.0 MobileDot.qml
 LinkSurface 1.0 LinkSurface.qml
 LockPlayer 1.0 LockPlayer.qml
 LockRoot 1.0 LockRoot.qml
 PasswordDots 1.0 PasswordDots.qml
+PulseDot 1.0 PulseDot.qml
 LockSurface 1.0 LockSurface.qml
 Profile 1.0 Profile.qml

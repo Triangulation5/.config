@@ -37,7 +37,19 @@ Row {
     width: stringVisualizer ? 24 * s : Cava.bars * (2.8 * s + 1.4 * s)
     spacing: stringVisualizer ? 0 : 1.8 * s
 
+    /**
+     * True while audio is actually flowing through whichever capture renders
+     * this slot: the string's own cava in string mode, Cava's bars capture
+     * otherwise. The pill's vizShown gate reads this so string mode never
+     * depends on the bars capture staying warm (it is deliberately down
+     * there).
+     */
+    readonly property bool active: root.stringVisualizer
+        ? (stringLoader.item ? stringLoader.item.active : false)
+        : Cava.active
+
     Loader {
+        id: stringLoader
         active: root.stringVisualizer && root.live
         width: root.width
         height: root.height
@@ -84,6 +96,8 @@ Row {
 
             anchors.verticalCenter: root.centeredVisualizer ? parent.verticalCenter : undefined
             anchors.bottom: root.centeredVisualizer ? undefined : parent.bottom
+            /** Bars style: seat the embers 1px below the slot baseline to sit on the pill's optical baseline. */
+            anchors.bottomMargin: root.centeredVisualizer ? 0 : -1
 
             height: Math.max(
                 2 * root.s,

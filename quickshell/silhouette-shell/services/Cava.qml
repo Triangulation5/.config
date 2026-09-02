@@ -59,9 +59,12 @@ Singleton {
     /**
      * The pill pipeline only answers to the pill visualizer flag and the
      * graced capture gate; the lock's forced capture is a separate process
-     * below.
+     * below. The string style never needs this capture: FastMusicLine runs
+     * its own 10-segment cava, so keeping the bars capture alive too would
+     * run two cava processes for one visible visualizer.
      */
     readonly property bool wanted: Flags.musicViz && available && root.pillCaptureWanted
+        && Flags.vizStyle !== "string"
 
     /**
      * Lock-glow capture: its own cava run (12 bars, ascii range 100), matching

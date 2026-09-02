@@ -22,6 +22,13 @@ Item {
     readonly property bool shown: Weather.ready
 
     /**
+     * Emitted when the panel is tapped: the host calendar opens the full
+     * WeatherDetail surface (curtain pull) with the hourly strip, sun/moon
+     * rows and the editable town.
+     */
+    signal openDetail()
+
+    /**
      * Content reveal latch: the weather text stays invisible until the shared
      * 100ms delay after the panel shows, so it doesn't pop in while the
      * surface is still settling.
@@ -42,6 +49,16 @@ Item {
         visible: width > 1
         opacity: shown ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+
+        /** Tap the glance (outside the town field) to pull open the full weather detail. */
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: 4 * s
+            z: 1
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: panel.openDetail()
+        }
         /**
          * The panel glides open on the same liquid morph curve the pill uses
          * for its own width, so the calendar grid it carries is pushed along
@@ -54,6 +71,8 @@ Item {
 
     Column {
         id: wxCol
+        /** Sits above the tap layer so the town field keeps its own clicks. */
+        z: 2
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top

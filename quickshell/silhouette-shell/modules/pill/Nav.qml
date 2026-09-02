@@ -105,6 +105,11 @@ Item {
             itemFor("calendar").closeEditor();
             return;
         }
+        /** The weather detail opens from the calendar glance; back returns there. */
+        if (host.weatherOpen) {
+            host.requestSurface("calendar");
+            return;
+        }
         if (host.appearanceOpen || host.updatesOpen || host.displayOpen || host.inputOpen || host.lookOpen || host.idlelockOpen || host.animationOpen || host.workspacesOpen) {
             host.requestSurface("settings");
             return;
