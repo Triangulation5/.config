@@ -117,8 +117,20 @@ Item {
      * from birth — a monitor hotplug while its pill is peeked — so a
      * collapse then still flies from the rest clock's real position.
      */
-    onLiveChanged: if (live) captureClockStart()
-    Component.onCompleted: if (live) captureClockStart()
+    onLiveChanged: {
+        if (live) {
+            captureClockStart()
+            /** First open sweeps from a week behind onto today; later opens
+             *  snap the strip back to the current date. */
+            calendarStyle.onFaceOpened()
+        }
+    }
+    Component.onCompleted: {
+        if (live) {
+            captureClockStart()
+            calendarStyle.onFaceOpened()
+        }
+    }
 
     /**
      * The hover clock's settled centre in hoverClock's frame: the clock
