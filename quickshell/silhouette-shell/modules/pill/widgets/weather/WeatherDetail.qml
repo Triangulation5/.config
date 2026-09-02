@@ -103,6 +103,72 @@ PillSurface {
     }
 
     /**
+     * Local moon-phase disc for the weather surface. Painted procedurally (no
+     * network, no image assets) from the moon's age, so the phase always
+     * renders — online or offline. The lit share is carved out of the full
+     * disc by an offset shadow circle (waxing lit on the right, waning on
+     * the left), which lands exactly on the real phases at the quarters.
+     */
+    component MoonIcon: Canvas {
+        id: phaseFace
+
+        property real s: 1
+        /** Moon age as a 0..1 fraction of the synodic month (0 new, 0.5 full). */
+        property real age: 0
+
+        implicitWidth: 30 * phaseFace.s
+        implicitHeight: implicitWidth
+
+        onAgeChanged: requestPaint()
+        Component.onCompleted: requestPaint()
+
+        onPaint: {
+            var ctx = getContext("2d");
+            ctx.clearRect(0, 0, width, height);
+            var cx = width / 2;
+            var cy = height / 2;
+            var r = Math.max(1, Math.min(width, height) / 2 - 1);
+
+            /* Unlit face + hairline rim so the disc reads against the card. */
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.09);
+            ctx.fill();
+            ctx.strokeStyle = Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.16);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            /* Lit share: 0 at new, 1 at full. */
+            var lit = (1 - Math.cos(Math.PI * 2 * phaseFace.age)) / 2;
+            if (lit >= 0.996) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = Theme.mix(Theme.cream, Theme.todayWarm, 0.10);
+                ctx.fill();
+                return;
+            }
+            if (lit <= 0.004)
+                return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            /* Paint the whole disc lit, then erase the shadowed side. */
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = Theme.mix(Theme.cream, Theme.todayWarm, 0.10);
+            ctx.fill();
+            var off = (phaseFace.age < 0.5 ? -1 : 1) * 2 * r * lit;
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.beginPath();
+            ctx.arc(cx + off, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    /**
      * Curtain pull. The surface fills the grown pill, but its content hangs
      * above the visible window and rides down as the pill settles — read as
      * one cloth being pulled over the opening instead of a fade. The hairline
@@ -111,12 +177,14 @@ PillSurface {
     Item {
         id: window
         anchors.fill: parent
-        clip: true            Column {
-                id: contentColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                spacing: 15 * root.s
+        clip: true
+
+        Column {
+            id: contentColumn
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            spacing: 15 * root.s
 
             transform: Translate {
                 y: -contentColumn.height * (1 - root.curtain)
@@ -255,85 +323,99 @@ PillSurface {
                 transform: Translate { y: 14 * root.s * (1 - root.sHours) }
             }
 
-            Flickable {
-                id: hourFlick
+            /**
+             * The scroll band wraps the hourly Flickable so the edge fades can
+             * sit beside it as true siblings: anchoring them to hourFlick from
+             * outside the curtain-transformed content column was unreliable,
+             * and a y-anchored child inside a Column collapses the column's
+             * layout. The band owns the section entrance, so the fades ride it
+             * in with the chips.
+            */
+            Item {
+                id: hourBand
                 width: parent.width
                 height: 106 * root.s
-                contentWidth: hourRow.width
-                clip: true
-                interactive: true
-                contentX: 0
                 opacity: root.sHours
                 transform: Translate { y: 14 * root.s * (1 - root.sHours) }
 
-                Row {
-                    id: hourRow
-                    spacing: 8 * root.s
-                    /** Centre the chips vertically so the strip has no dead band under them. */
-                    anchors.verticalCenter: parent.verticalCenter
+                Flickable {
+                    id: hourFlick
+                    anchors.fill: parent
+                    contentWidth: hourRow.width
+                    clip: true
+                    interactive: true
+                    contentX: 0
 
-                    Repeater {
-                        model: Weather.hourly
+                    Row {
+                        id: hourRow
+                        spacing: 8 * root.s
+                        /** Centre the chips vertically so the strip has no dead band under them. */
+                        anchors.verticalCenter: parent.verticalCenter
 
-                        Column {
-                            required property var modelData
-                            required property int index
-                            width: 50 * root.s
-                            spacing: 5 * root.s
-                            opacity: root.chip(cascade.settle, index)
-                            scale: 0.85 + 0.15 * root.chip(cascade.settle, index)
+                        Repeater {
+                            model: Weather.hourly
 
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: root.fmtHour(modelData.hour)
-                                color: Theme.faint
-                                font.family: Theme.font
-                                font.pixelSize: 10.5 * root.s
-                                font.features: { "tnum": 1 }
-                            }
-                            GlyphIcon {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                width: 18 * root.s
-                                height: 18 * root.s
-                                name: Weather.glyphFor(modelData.code, true)
-                                color: Theme.subtle
-                                stroke: 1.7
-                            }
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: modelData.temp + "°"
-                                color: Theme.cream
-                                font.family: Theme.font
-                                font.pixelSize: 13 * root.s
-                                font.weight: Font.Medium
-                                font.features: { "tnum": 1 }
+                            Column {
+                                required property var modelData
+                                required property int index
+                                width: 50 * root.s
+                                spacing: 5 * root.s
+                                opacity: root.chip(cascade.settle, index)
+                                scale: 0.85 + 0.15 * root.chip(cascade.settle, index)
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: root.fmtHour(modelData.hour)
+                                    color: Theme.faint
+                                    font.family: Theme.font
+                                    font.pixelSize: 10.5 * root.s
+                                    font.features: { "tnum": 1 }
+                                }
+                                GlyphIcon {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: 18 * root.s
+                                    height: 18 * root.s
+                                    name: Weather.glyphFor(modelData.code, true)
+                                    color: Theme.subtle
+                                    stroke: 1.7
+                                }
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: modelData.temp + "°"
+                                    color: Theme.cream
+                                    font.family: Theme.font
+                                    font.pixelSize: 13 * root.s
+                                    font.weight: Font.Medium
+                                    font.features: { "tnum": 1 }
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            /**
-             * Subtle side fades on the hourly strip so scrolling chips sink
-             * into the surface instead of clipping hard: soft alpha, short
-             * band, and only while the strip actually overflows.
-             */
-            EdgeFade {
-                anchors.top: hourFlick.top
-                anchors.bottom: hourFlick.bottom
-                anchors.left: hourFlick.left
-                fadeWidth: 20 * root.s
-                fadeColor: Qt.alpha(Theme.cardTop, 0.55)
-                active: hourRow.width > hourFlick.width
-            }
-            EdgeFade {
-                anchors.top: hourFlick.top
-                anchors.bottom: hourFlick.bottom
-                anchors.right: hourFlick.right
-                fadeWidth: 20 * root.s
-                fadeColor: Qt.alpha(Theme.cardTop, 0.55)
-                mirrored: true
-                active: hourRow.width > hourFlick.width
+                /**
+                 * Subtle side fades on the hourly strip so scrolling chips
+                 * sink into the surface instead of clipping hard: soft alpha,
+                 * short band, and only while the strip actually overflows.
+                 * True siblings of the Flickable, painted above it.
+                */
+                EdgeFade {
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    fadeWidth: 20 * root.s
+                    fadeColor: Qt.alpha(Theme.cardTop, 0.55)
+                    active: hourRow.width > hourFlick.width
+                }
+                EdgeFade {
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.right: parent.right
+                    fadeWidth: 20 * root.s
+                    fadeColor: Qt.alpha(Theme.cardTop, 0.55)
+                    mirrored: true
+                    active: hourRow.width > hourFlick.width
+                }
             }
 
             Rectangle {
@@ -421,17 +503,14 @@ PillSurface {
             /* Moon phase row. */
             Row {
                 width: parent.width
-                spacing: 9 * root.s
+                spacing: 10 * root.s
                 opacity: root.sMoon
                 transform: Translate { y: 12 * root.s * (1 - root.sMoon) }
 
-                GlyphIcon {
+                MoonIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 20 * root.s
-                    height: 20 * root.s
-                    name: "moon"
-                    color: Theme.subtle
-                    stroke: 1.7
+                    s: root.s
+                    age: Weather.moonAge
                 }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
@@ -442,6 +521,8 @@ PillSurface {
                         font.family: Theme.font
                         font.pixelSize: 10.5 * root.s
                         font.weight: Font.Medium
+                        font.capitalization: Font.AllUppercase
+                        font.letterSpacing: 0.8 * root.s
                     }
                     Text {
                         text: Weather.moonPhase
@@ -450,6 +531,17 @@ PillSurface {
                         font.pixelSize: 16 * root.s
                         font.weight: Font.DemiBold
                     }
+                }
+                Text {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    /** "46% lit · age 13.2d" style hint, still purely local. */
+                    text: Weather.moonAge >= 0 ? Math.round(100 * (1 - Math.cos(Math.PI * 2 * Weather.moonAge)) / 2) + "% lit" : ""
+                    color: Theme.faint
+                    font.family: Theme.font
+                    font.pixelSize: 9 * root.s
+                    font.weight: Font.Medium
+                    font.features: { "tnum": 1 }
                 }
             }
         }

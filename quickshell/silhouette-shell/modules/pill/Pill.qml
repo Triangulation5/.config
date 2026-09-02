@@ -415,7 +415,7 @@ Item {
         idlelock:   stdSurface(ldIdlelock, "idlelock", idlelockW, 29 * s, 400 * s),
         animation:  stdSurface(ldAnimation, "animation", animationW, 29 * s, 400 * s),
         fontpicker: stdSurface(ldFontpicker, "fontpicker", fontpickerW, 29 * s, 400 * s),
-        weather:   stdSurface(ldWeather, "weather", weatherW, 28 * s, 480 * s, null),
+        weather:   stdSurface(ldWeather, "weather", weatherW, 40 * s, 480 * s, null),
         timer:    stdSurface(ldTimer, "timer", timerW, 28 * s, 460 * s, null),
         polkit:    stdSurface(ldPolkit, "polkit", polkitW, 28 * s, 200 * s)
     })
