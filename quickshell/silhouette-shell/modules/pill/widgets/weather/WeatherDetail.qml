@@ -5,6 +5,7 @@ import QtQuick.Controls
 import qs.services
 import qs.modules.pill.surfaces
 import qs.components.icons
+import qs.components.animation
 
 /**
  * Weather detail surface: the deep-dive view behind the calendar's weather
@@ -33,45 +34,28 @@ PillSurface {
     /** Curtain reveal: how far the content has spilled down from the top, 0 → full on open. */
     readonly property real curtain: Math.pow(root.morphCloseness, 0.8)
 
-    /** Smoothstep band reveal: 0 until `delay`, easing to 1 as t → 1. */
-    function sect(t, delay) {
-        var x = Math.max(0, Math.min(1, (t - delay) / (1 - delay)));
-        return x * x * (3 - 2 * x);
-    }
-
     /**
      * Section cascade: once the curtain has finished pulling (the morph has
      * settled), the bands peel in top-down — header, hours, sun, moon — each
-     * fading up and rising a touch after its predecessor. Driven by `settle`,
-     * which stays 0 until the morph lands, then animates to 1 over the
-     * cascade window. Snap back to 0 on close so the next open re-cascades.
+     * fading up and rising a touch after its predecessor. Driven by the shared
+     * Cascade driver (see components/animation/Cascade.qml), which other
+     * surfaces reuse.
      */
-    property real settle: 0
-    readonly property real sHeader: root.sect(root.settle, 0.0)
-    readonly property real sHours: root.sect(root.settle, 0.22)
-    readonly property real sSun: root.sect(root.settle, 0.44)
-    readonly property real sMoon: root.sect(root.settle, 0.6)
+    Cascade {
+        id: cascade
+        morphCloseness: root.morphCloseness
+        duration: 700
+        count: 4
+    }
+    readonly property real sHeader: cascade.section(0.0)
+    readonly property real sHours: cascade.section(0.22)
+    readonly property real sSun: cascade.section(0.44)
+    readonly property real sMoon: cascade.section(0.6)
 
     /** Per-chip pop: each hourly chip scales and fades in after its neighbour. */
     function chip(t, i) {
         var x = Math.max(0, Math.min(1, (t - 0.15) * 2.0 - i * 0.05));
         return x * x * (3 - 2 * x);
-    }
-
-    onMorphClosenessChanged: {
-        if (root.morphCloseness > 0.92 && root.settle < 1)
-            settleAnim.restart();
-        else if (root.morphCloseness < 0.05 && root.settle > 0)
-            root.settle = 0;
-    }
-
-    NumberAnimation {
-        id: settleAnim
-        target: root
-        property: "settle"
-        to: 1
-        duration: 700
-        easing.type: Easing.OutCubic
     }
 
     /** Soft pulse on the temperature whenever a fresh forecast lands. */
@@ -127,14 +111,12 @@ PillSurface {
     Item {
         id: window
         anchors.fill: parent
-        clip: true
-
-        Column {
-            id: contentColumn
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            spacing: 13 * root.s
+        clip: true            Column {
+                id: contentColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                spacing: 15 * root.s
 
             transform: Translate {
                 y: -contentColumn.height * (1 - root.curtain)
@@ -276,7 +258,7 @@ PillSurface {
             Flickable {
                 id: hourFlick
                 width: parent.width
-                height: 84 * root.s
+                height: 106 * root.s
                 contentWidth: hourRow.width
                 clip: true
                 interactive: true
@@ -298,8 +280,8 @@ PillSurface {
                             required property int index
                             width: 50 * root.s
                             spacing: 5 * root.s
-                            opacity: root.chip(root.settle, index)
-                            scale: 0.85 + 0.15 * root.chip(root.settle, index)
+                            opacity: root.chip(cascade.settle, index)
+                            scale: 0.85 + 0.15 * root.chip(cascade.settle, index)
 
                             Text {
                                 anchors.horizontalCenter: parent.horizontalCenter
@@ -329,6 +311,29 @@ PillSurface {
                         }
                     }
                 }
+            }
+
+            /**
+             * Subtle side fades on the hourly strip so scrolling chips sink
+             * into the surface instead of clipping hard: soft alpha, short
+             * band, and only while the strip actually overflows.
+             */
+            EdgeFade {
+                anchors.top: hourFlick.top
+                anchors.bottom: hourFlick.bottom
+                anchors.left: hourFlick.left
+                fadeWidth: 20 * root.s
+                fadeColor: Qt.alpha(Theme.cardTop, 0.55)
+                active: hourRow.width > hourFlick.width
+            }
+            EdgeFade {
+                anchors.top: hourFlick.top
+                anchors.bottom: hourFlick.bottom
+                anchors.right: hourFlick.right
+                fadeWidth: 20 * root.s
+                fadeColor: Qt.alpha(Theme.cardTop, 0.55)
+                mirrored: true
+                active: hourRow.width > hourFlick.width
             }
 
             Rectangle {
