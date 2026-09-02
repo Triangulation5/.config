@@ -31,6 +31,8 @@ import qs.components.layout
 SettingsSurface {
     id: root
 
+    /* Single row — the quickest reveal. */
+    cascadeDuration: 380
     backSurface: "settings"
     kanji: "動"
     label: "ANIMATION"

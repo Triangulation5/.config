@@ -19,6 +19,8 @@ import qs.components.layout
 SettingsSurface {
     id: root
 
+    /** Dense sub-menu (several collapsible groups) — a touch slower than default. */
+    cascadeDuration: 520
     backSurface: "settings"
     kanji: "飾"
     label: "LOOK"

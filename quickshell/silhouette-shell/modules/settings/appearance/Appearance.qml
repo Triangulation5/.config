@@ -24,6 +24,8 @@ import qs.components.layout
 SettingsSurface {
     id: root
 
+    /* Long page (20+ small rows) — the adaptive gap sweeps them; a touch fuller. */
+    cascadeDuration: 500
     backSurface: "settings"
     kanji: "相"
     label: "APPEARANCE"
