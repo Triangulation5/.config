@@ -11,6 +11,7 @@ import qs.modules.settings
 import qs.modules.pill.surfaces
 import qs.components.icons
 import qs.components.layout
+import qs.components.animation
 
 /**
  * 鍵 KEYBINDS surface: a searchable list of the keyboard shortcuts parsed from
@@ -37,6 +38,22 @@ PillSurface {
     mLeft: 19
     mRight: 19
     mBottom: 14
+
+    /**
+     * Cascade driver for the binds only (see the ListView delegate): each
+     * keybind row fades in after its neighbour once the morph lands. The rest
+     * of the menu (header, search, form) keeps its own opening animation.
+     */
+    Cascade {
+        id: cascade
+        morphCloseness: root.morphCloseness
+        duration: 450
+        count: root.filtered.length
+    }
+
+    function bindStep(i) {
+        return cascade.item(i);
+    }
 
     implicitHeight: content.implicitHeight
 
@@ -378,9 +395,18 @@ PillSurface {
                 kbCombo: modelData.combo
                 kbLabel: modelData.label
                 kbCmd: modelData.cmd
-                kbIsMouse: modelData.isMouse
-            }
-        }
+                kbIsMouse: modelData.isMouse        /**
+         * Only the binds themselves cascade in — the header, search and
+         * form keep the surface's own opening animation untouched.
+         * Driven by the shared Cascade after the morph lands, so
+         * filtering the list mid-session never re-staggers (settle 1 →
+         * every row fully visible).
+         */
+        opacity: root.bindStep(index)
+        scale: 0.96 + 0.04 * root.bindStep(index)
+    }
+}
+
 
         KeybindAddBar {
             s: root.s
