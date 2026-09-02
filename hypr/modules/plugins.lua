@@ -23,17 +23,17 @@ hl.config { plugin = { dynamic_cursors = {
 
     shake = {
         enabled = true,
-        threshold = 5,
+        threshold = 4,
 
         base = 3.5,
 
-        speed = 2.0,
+        speed = 2.5,
 
         influence = 0.0,
 
         limit = 5.0,
 
-        timeout = 900,
+        timeout = 1100,
 
         effects = false,
 
