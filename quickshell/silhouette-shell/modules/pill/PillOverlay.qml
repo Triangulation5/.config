@@ -30,16 +30,7 @@ Variants {
         readonly property string surface: host.openMon === modelData.name ? host.openSurface : ""
         readonly property bool surfaceOpen: surface.length > 0
 
-        /**
-         * The timer surface is the one surface meant to run in the background
-         * while the user works, so it is deliberately non-modal: the input mask
-         * stays on the pill and clicks pass through to windows underneath. It
-         * dismisses itself the moment the user stops clicking on it (see the
-         * auto-close connections below); the pomodoro keeps ticking in its
-         * loader either way.
-         */
-        readonly property bool timerSurface: surface === "timer"
-        readonly property bool modal: pill.authPending ? false : ((surfaceOpen && !timerSurface) || pill.held || pill.quickChoosing)
+        readonly property bool modal: pill.authPending ? false : (surfaceOpen || pill.held || pill.quickChoosing)
 
         /**
          * True while something keeps the pill over fullscreen content: an
@@ -111,7 +102,7 @@ Variants {
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: (((surfaceOpen && !timerSurface) || pill.quickChoosing) && !pill.authPending) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
+        WlrLayershell.keyboardFocus: ((surfaceOpen || pill.quickChoosing) && !pill.authPending) ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
         WlrLayershell.namespace: "pill"
 
         anchors { top: true; left: true; right: true; bottom: true }
@@ -448,7 +439,7 @@ Variants {
          * while hovered), so a timer opened from an app doesn't steal the
          * user's typing focus.
          */
-        onSurfaceOpenChanged: if (surfaceOpen && !timerSurface) focusScope.forceActiveFocus()
+        onSurfaceOpenChanged: if (surfaceOpen) focusScope.forceActiveFocus()
 
         Connections {
             target: pill
@@ -470,22 +461,5 @@ Variants {
             }
         }
 
-        /**
-         * Auto-close the non-modal timer surface once the user stops clicking
-         * on it: when the compositor's active window changes (a click or
-         * alt-tab landed on another window) or the focused monitor moves (a
-         * click or workspace switch landed elsewhere). These are real focus
-         * changes, not hover transitions, so merely passing the mouse over the
-         * timer never dismisses it. Only acts while the timer surface is open;
-         * the pomodoro keeps ticking in its loader either way.
-         */
-        Connections {
-            target: Hyprland
-            function onRawEvent(event) {
-                if (overlay.timerSurface
-                        && (event.name === "activewindowv2" || event.name === "focusedmon" || event.name === "focusedmonv2"))
-                    host.close();
-            }
-        }
     }
 }

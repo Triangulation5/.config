@@ -78,6 +78,9 @@ SettingsSurface {
             if (Flags.notchStyle)
                 r.push({ item: pillGrp.notchFlareRow, kind: "scrub", bump: function (d) { pillGrp.notchFlareScrub.bump(d); } });
         }
+        if (lockGrp.open) {
+            r.push({ item: lockGrp.dotsRow, kind: "seg", vals: ["drop", "mobile", "pulse"], get: function () { return Flags.lockDotsMode; }, set: function (v) { Flags.lockDotsMode = v; } });
+        }
         return r;
     }
 
@@ -253,6 +256,7 @@ SettingsSurface {
         BlurGroup { id: blurGrp; look: root }
         OpacityGroup { id: opGrp; look: root }
         PillGroup { id: pillGrp; look: root }
+        LockScreenGroup { id: lockGrp; look: root }
 
         Text {
             width: parent.width

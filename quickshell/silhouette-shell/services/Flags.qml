@@ -45,6 +45,7 @@ Singleton {
     property alias idleLockMin: adapter.idleLockMin
     property alias idleScreenOffMin: adapter.idleScreenOffMin
     property alias idleSuspendMin: adapter.idleSuspendMin
+    property alias lockDotsMode: adapter.lockDotsMode
     property alias weatherCity: adapter.weatherCity
     property alias musicViz: adapter.musicViz
     property alias vizStyle: adapter.vizStyle
@@ -114,6 +115,8 @@ Singleton {
             property int idleLockMin: 5
             property int idleScreenOffMin: 6
             property int idleSuspendMin: 0
+            /** Lock-screen password bead entrance: "drop", "mobile", or "pulse". */
+            property string lockDotsMode: "drop"
             property string weatherCity: ""
             property bool musicViz: true
             /** Rest-pill spectrum renderer: bars, centered bars, or the flowing string. */

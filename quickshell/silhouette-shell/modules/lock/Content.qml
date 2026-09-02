@@ -5,6 +5,7 @@ import QtQuick.Effects
 import Quickshell
 import "../../utils/format.js" as Fmt
 import qs.services
+import qs.components.animation
 import qs.components.icons
 
 /**
@@ -235,11 +236,12 @@ Item {
 
         /**
          * The capsule's material: fill, hairline border, and a soft drop shadow,
-         * rendered behind the input. It inflates around the prompt on the pill's
-         * morph curve - growing from the centre as it fades in - so the idle text
-         * is handed off to a formed capsule instead of a flat colour blink. The
-         * scale rides lockMorph while the fill and border animate on the same
-         * curve, keeping one in sync with the other.
+         * rendered behind the input. It materializes macOS-style: the chrome
+         * grows up from the capsule's bottom edge as it fades in, with a gentle
+         * spring puff at the midpoint (the sin term), so the idle text is handed
+         * off to a formed capsule instead of a flat colour blink. The scale
+         * rides lockMorph while the fill and border animate on the same curve,
+         * keeping one in sync with the other.
          */
         Rectangle {
             id: capsuleChrome
@@ -250,8 +252,8 @@ Item {
             border.width: content.passwordArmed ? 1 : 0
             border.color: Theme.capsuleBorder
 
-            scale: 0.90 + 0.10 * content.lockMorph
-            transformOrigin: Item.Center
+            scale: 0.90 + 0.10 * content.lockMorph + 0.05 * Math.sin(content.lockMorph * Math.PI)
+            transformOrigin: Item.Bottom
 
             Behavior on color {
                 ColorAnimation {
@@ -282,8 +284,8 @@ Item {
         TextInput {
             id: input
             anchors.fill: parent
-            anchors.leftMargin: 24 * content.s
-            anchors.rightMargin: 24 * content.s
+            anchors.leftMargin: 48 * content.s
+            anchors.rightMargin: 48 * content.s
             verticalAlignment: TextInput.AlignVCenter
             horizontalAlignment: TextInput.AlignHCenter
 
@@ -349,86 +351,131 @@ Item {
                 host: content
                 field: input
             }
+        }
 
-            Item {
+        /**
+         * The idle prompts live outside the field so the input's hard clip
+         * never cuts them: the widened side margins keep typed text clear of
+         * the eye icon, but a clipped field would also trim the wide "press
+         * any key" hint. As a capsule sibling the block centers on the pill
+         * exactly where the input centers (the margins are symmetric), and it
+         * only appears while the field is empty anyway.
+         */
+        Item {
+            anchors.centerIn: parent
+            visible: input.text.length === 0
+
+            /**
+             * The two prompts morph into each other on the pill's motion
+             * curve: as the field arms, the idle hint scales and drifts up
+             * out while "enter password" rises in from below. Returning to
+             * idle plays the same morph back, so waking and settling read as
+             * one continuous gesture. The soft shadow keeps whichever prompt
+             * floats over the wallpaper readable, like the clock and name.
+             */
+            Text {
+                id: idlePrompt
                 anchors.centerIn: parent
-                visible: input.text.length === 0
+                text: "<i>press any key to enter password</i>"
+                textFormat: Text.RichText
+                color: Theme.subtle
+                font.family: Theme.font
+                font.pixelSize: 14 * content.s
+                font.letterSpacing: 1 * content.s
 
-                /**
-                 * The two prompts morph into each other on the pill's motion
-                 * curve: as the field arms, the idle hint scales and drifts up
-                 * out while "enter password" rises in from below. Returning to
-                 * idle plays the same morph back, so waking and settling read as
-                 * one continuous gesture. The soft shadow keeps whichever prompt
-                 * floats over the wallpaper readable, like the clock and name.
-                 */
-                Text {
-                    id: idlePrompt
-                    anchors.centerIn: parent
-                    text: "<i>press any key to enter password</i>"
-                    textFormat: Text.RichText
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 14 * content.s
-                    font.letterSpacing: 1 * content.s
-
-                    visible: !content.showError
-                    opacity: 1 - content.lockMorph
-                    scale: 1 - 0.12 * content.lockMorph
-                    transform: Translate {
-                        y: -6 * content.s * content.lockMorph
-                    }
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                        shadowBlur: 0.7
-                        shadowVerticalOffset: 1.5
-                    }
+                visible: !content.showError
+                opacity: 1 - content.lockMorph
+                scale: 1 - 0.06 * content.lockMorph
+                transform: Translate {
+                    y: -4 * content.s * content.lockMorph
                 }
 
-                Text {
-                    id: armedPrompt
-                    anchors.centerIn: parent
-                    text: "<i>enter password</i>"
-                    textFormat: Text.RichText
-                    color: Theme.placeholder
-                    font.family: Theme.font
-                    font.pixelSize: 14 * content.s
-                    font.letterSpacing: 1 * content.s
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                    shadowBlur: 0.7
+                    shadowVerticalOffset: 1.5
+                    /** macOS dissolve: the hint blurs away as the capsule forms instead of just fading. */
+                    blurEnabled: content.lockMorph > 0.01
+                    blurMax: 16
+                    blur: content.lockMorph * 0.35
+                }
+            }
 
-                    visible: !content.showError
-                    opacity: content.lockMorph
-                    scale: 0.88 + 0.12 * content.lockMorph
-                    transform: Translate {
-                        y: 6 * content.s * (1 - content.lockMorph)
-                    }
+            Text {
+                id: armedPrompt
+                anchors.centerIn: parent
+                text: "<i>enter password</i>"
+                textFormat: Text.RichText
+                color: Theme.placeholder
+                font.family: Theme.font
+                font.pixelSize: 14 * content.s
+                font.letterSpacing: 1 * content.s
 
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                        shadowBlur: 0.7
-                        shadowVerticalOffset: 1.5
-                    }
+                visible: !content.showError
+                opacity: content.lockMorph
+                scale: 0.95 + 0.05 * content.lockMorph
+                transform: Translate {
+                    y: 3 * content.s * (1 - content.lockMorph)
                 }
 
-                Text {
-                    id: errorPrompt
-                    anchors.centerIn: parent
-                    text: {
-                        var pamMsg = content.auth ? content.auth.lastError : "";
-                        return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
-                    }
-                    textFormat: Text.RichText
-                    color: Theme.error
-                    font.family: Theme.font
-                    font.pixelSize: 14 * content.s
-                    font.letterSpacing: 1 * content.s
-
-                    visible: content.showError
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                    shadowBlur: 0.7
+                    shadowVerticalOffset: 1.5
                 }
+            }
+
+            Text {
+                id: errorPrompt
+                anchors.centerIn: parent
+                text: {
+                    var pamMsg = content.auth ? content.auth.lastError : "";
+                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
+                }
+                textFormat: Text.RichText
+                color: Theme.error
+                font.family: Theme.font
+                font.pixelSize: 14 * content.s
+                font.letterSpacing: 1 * content.s
+
+                visible: content.showError
+            }
+        }
+
+        /**
+         * The typed content - password dots or revealed text - is clipped at
+         * the input's side margins, and these bands dissolve its tail into
+         * the capsule fill so a long password sinks past the edges instead of
+         * clipping hard against them. The band color matches the chrome fill
+         * exactly, so while the text is short enough to fit the bands are
+         * invisible: they only appear where content passes beneath them.
+         */
+        Item {
+            anchors.fill: input
+
+            EdgeFade {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                fadeWidth: 30 * content.s
+                fadeColor: Theme.capsule
+                active: input.text.length > 0
+            }
+
+            EdgeFade {
+                /** -2 margin nudges the band ~2px past the clip toward the eye, so it eats 2px less of the rightmost dots. */
+                anchors.right: parent.right
+                anchors.rightMargin: -2
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                fadeWidth: 30 * content.s
+                fadeColor: Theme.capsule
+                mirrored: true
+                active: input.text.length > 0
             }
         }
 

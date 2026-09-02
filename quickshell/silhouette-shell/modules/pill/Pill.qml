@@ -103,9 +103,11 @@ Item {
     readonly property bool idlelockOpen: surface === "idlelock"
     readonly property bool animationOpen: surface === "animation"
     readonly property bool fontpickerOpen: surface === "fontpicker"
+    readonly property bool weatherOpen: surface === "weather"
     readonly property bool timerOpen: surface === "timer"
     readonly property bool settingsLike: settingsOpen || appearanceOpen || updatesOpen
-        || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen || fontpickerOpen
+        || lookOpen || inputOpen || displayOpen || animationOpen || idlelockOpen
+        || fontpickerOpen
     /**
      * True while any valid media source exists: a playing or paused player
      * with a track loaded (Players.has). Gates the hover media bud, so a
@@ -238,6 +240,7 @@ Item {
     readonly property real idlelockW: 392 * s
     readonly property real animationW: 392 * s
     readonly property real fontpickerW: 360 * s
+    readonly property real weatherW: 400 * s
     readonly property real timerW: 340 * s
     readonly property real polkitW: 440 * s
     readonly property real timerH: 460 * s
@@ -269,7 +272,7 @@ Item {
      * thunks null-safe; never deref `ld.item` directly in a thunk.
      */
     function surfaceItem(ld, name) {
-        ld.active = true;
+        ld.activate();
         if (name && name.length)
             _surfaceLastOpened[name] = Date.now();
         return ld.item;
@@ -412,6 +415,7 @@ Item {
         idlelock:   stdSurface(ldIdlelock, "idlelock", idlelockW, 29 * s, 400 * s),
         animation:  stdSurface(ldAnimation, "animation", animationW, 29 * s, 400 * s),
         fontpicker: stdSurface(ldFontpicker, "fontpicker", fontpickerW, 29 * s, 400 * s),
+        weather:   stdSurface(ldWeather, "weather", weatherW, 28 * s, 420 * s, null),
         timer:    stdSurface(ldTimer, "timer", timerW, 28 * s, 460 * s, null),
         polkit:    stdSurface(ldPolkit, "polkit", polkitW, 28 * s, 200 * s)
     })
@@ -1127,7 +1131,7 @@ Item {
                  * sub-pixel layout stepping that made the old layout-driven
                  * slide stutter.
                  */
-                readonly property bool barsOn: Flags.musicViz && Cava.active
+                readonly property bool barsOn: Flags.musicViz && musicBars.active
 
                 /**
                  * The visualizer only renders while the pill is actually at
@@ -1307,76 +1311,94 @@ Item {
     /**
      * Morphing surfaces, one self-registering PillSurfaceLoader each. Each
      * names its surface and is registered into _surfaceLoaders on creation;
-     * the loader supplies s/open/morphCloseness, so the sourceComponents only
-     * carry their surface-specific props and signals.
+     * the loader supplies s/open/morphCloseness, extra surfaceProps and the
+     * close/surface signal forwards, so the declarations only carry the
+     * surface's file URL (sourceUrl) and any per-surface props.
      *
-     * Surfaces build asynchronously (`asynchronous: true`) so their first open
-     * never blocks the frame that starts the morph — the size thunks above
+     * Compilation is deferred to first open (see PillSurfaceLoader.activate), so
+     * a surface that is never opened in a session never pays its compile cost.
+     * Surfaces also build asynchronously (`asynchronous: true`) so their first
+     * open never blocks the frame that starts the morph — the size thunks above
      * fall back to a default size until the item lands, then the pill re-morphs
      * to the real measurement. Only the instant-expected surfaces (polkit
      * prompt, power, mixer, timer, battery, calendar) stay synchronous so they
      * appear on the opening frame.
      */
 
-    PillSurfaceLoader { id: ldMixer; name: "mixer"; host: pill; sourceComponent: Mixer {} }
+    PillSurfaceLoader { id: ldMixer; name: "mixer"; host: pill; sourceUrl: "widgets/mixer/Mixer.qml" }
 
-    PillSurfaceLoader { id: ldCalendar; name: "calendar"; host: pill; sourceComponent: Calendar { targetDate: pill.calendarFocusDate } }
+    PillSurfaceLoader {
+        id: ldCalendar; name: "calendar"; host: pill
+        sourceUrl: "widgets/calendar/Calendar.qml"
+        surfaceProps: { "targetDate": () => pill.calendarFocusDate }
+    }
 
-    PillSurfaceLoader { id: ldLauncher; name: "launcher"; asynchronous: true; host: pill; sourceComponent: Launcher { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldLauncher; name: "launcher"; asynchronous: true; host: pill; sourceUrl: "../launcher/Launcher.qml" }
 
-    PillSurfaceLoader { id: ldClip; name: "clipboard"; asynchronous: true; host: pill; sourceComponent: Clipboard { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldClip; name: "clipboard"; asynchronous: true; host: pill; sourceUrl: "widgets/clipboard/Clipboard.qml" }
 
-    PillSurfaceLoader { id: ldWall; name: "wallpaper"; asynchronous: true; host: pill; sourceComponent: Wallpaper { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldWall; name: "wallpaper"; asynchronous: true; host: pill; sourceUrl: "widgets/wallpaper/Wallpaper.qml" }
 
-    PillSurfaceLoader { id: ldPower; name: "power"; host: pill; sourceComponent: Power { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldPower; name: "power"; host: pill; sourceUrl: "../controlcenter/Power.qml" }
 
-    PillSurfaceLoader { id: ldMedia; name: "media"; asynchronous: true; host: pill; sourceComponent: Media { shown: pill.mediaOpen; onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader {
+        id: ldMedia; name: "media"; asynchronous: true; host: pill
+        sourceUrl: "widgets/media/Media.qml"
+        surfaceProps: { "shown": () => pill.mediaOpen }
+    }
 
     /** Synchronous: an incoming call must appear on the ringing frame, not a build late. */
-    PillSurfaceLoader { id: ldCall; name: "call"; host: pill; sourceComponent: CallSurface {} }
+    PillSurfaceLoader { id: ldCall; name: "call"; host: pill; sourceUrl: "widgets/call/CallSurface.qml" }
 
-    PillSurfaceLoader { id: ldLink; name: "link"; asynchronous: true; host: pill; sourceComponent: Link {
-        initialView: pill.linkInitialView
-        onRequestClose: pill.requestClose()
-    } }
+    PillSurfaceLoader {
+        id: ldLink; name: "link"; asynchronous: true; host: pill
+        sourceUrl: "../controlcenter/Link.qml"
+        surfaceProps: { "initialView": () => pill.linkInitialView }
+    }
 
     onLinkOpenChanged: if (!linkOpen) linkInitialView = "main"
 
-    PillSurfaceLoader { id: ldBattery; name: "battery"; host: pill; sourceComponent: BatterySurface { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldBattery; name: "battery"; host: pill; sourceUrl: "../lock/BatterySurface.qml" }
 
-    PillSurfaceLoader { id: ldSettings; name: "settings"; asynchronous: true; host: pill; sourceComponent: Settings { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldSettings; name: "settings"; asynchronous: true; host: pill; sourceUrl: "../settings/base/Settings.qml" }
 
-    PillSurfaceLoader { id: ldKeybinds; name: "keybinds"; asynchronous: true; host: pill; sourceComponent: Keybinds { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldKeybinds; name: "keybinds"; asynchronous: true; host: pill; sourceUrl: "../settings/input/Keybinds.qml" }
 
-    PillSurfaceLoader { id: ldWorkspaces; name: "workspaces"; asynchronous: true; host: pill; sourceComponent: WorkspacesSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldWorkspaces; name: "workspaces"; asynchronous: true; host: pill; sourceUrl: "../settings/display/WorkspacesSurface.qml" }
 
-    PillSurfaceLoader { id: ldStash; name: "stash"; asynchronous: true; host: pill; sourceComponent: Stash { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldStash; name: "stash"; asynchronous: true; host: pill; sourceUrl: "widgets/tray/Stash.qml" }
 
-    PillSurfaceLoader { id: ldSpaceapps; name: "spaceapps"; asynchronous: true; host: pill; sourceComponent: SpaceApps { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldSpaceapps; name: "spaceapps"; asynchronous: true; host: pill; sourceUrl: "widgets/tray/SpaceApps.qml" }
 
-    PillSurfaceLoader { id: ldRecorder; name: "recorder"; asynchronous: true; host: pill; sourceComponent: Recorder { screenName: pill.screenName; onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader {
+        id: ldRecorder; name: "recorder"; asynchronous: true; host: pill
+        sourceUrl: "../recording/recorder/Recorder.qml"
+        surfaceProps: { "screenName": () => pill.screenName }
+    }
 
-    PillSurfaceLoader { id: ldPolkit; name: "polkit"; host: pill; sourceComponent: PolkitPrompt { onRequestClose: Polkit.cancel() } }
+    PillSurfaceLoader { id: ldPolkit; name: "polkit"; host: pill; sourceUrl: "widgets/polkit/PolkitPrompt.qml"; closeAction: () => Polkit.cancel() }
 
-    PillSurfaceLoader { id: ldSysmon; name: "sysmon"; asynchronous: true; host: pill; sourceComponent: SysmonSurface { onRequestClose: pill.requestClose() } }
+    PillSurfaceLoader { id: ldSysmon; name: "sysmon"; asynchronous: true; host: pill; sourceUrl: "surfaces/SysmonSurface.qml" }
 
-    PillSurfaceLoader { id: ldAppearance; name: "appearance"; asynchronous: true; host: pill; sourceComponent: Appearance { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldAppearance; name: "appearance"; asynchronous: true; host: pill; sourceUrl: "../settings/appearance/Appearance.qml" }
 
-    PillSurfaceLoader { id: ldUpdates; name: "updates"; asynchronous: true; host: pill; sourceComponent: Updates { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldUpdates; name: "updates"; asynchronous: true; host: pill; sourceUrl: "../settings/updates/Updates.qml" }
 
-    PillSurfaceLoader { id: ldDisplay; name: "display"; asynchronous: true; host: pill; sourceComponent: Display { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldDisplay; name: "display"; asynchronous: true; host: pill; sourceUrl: "../settings/display/Display.qml" }
 
-    PillSurfaceLoader { id: ldInput; name: "input"; asynchronous: true; host: pill; sourceComponent: Input { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldInput; name: "input"; asynchronous: true; host: pill; sourceUrl: "../settings/input/Input.qml" }
 
-    PillSurfaceLoader { id: ldLook; name: "look"; asynchronous: true; host: pill; sourceComponent: Look { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldLook; name: "look"; asynchronous: true; host: pill; sourceUrl: "../settings/look/Look.qml" }
 
-    PillSurfaceLoader { id: ldIdlelock; name: "idlelock"; asynchronous: true; host: pill; sourceComponent: IdleLock { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldIdlelock; name: "idlelock"; asynchronous: true; host: pill; sourceUrl: "widgets/idlelock/IdleLock.qml" }
 
-    PillSurfaceLoader { id: ldAnimation; name: "animation"; asynchronous: true; host: pill; sourceComponent: AnimationSurface { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldAnimation; name: "animation"; asynchronous: true; host: pill; sourceUrl: "../settings/animation/AnimationSurface.qml" }
 
-    PillSurfaceLoader { id: ldFontpicker; name: "fontpicker"; asynchronous: true; host: pill; sourceComponent: FontPicker { onRequestSurface: (name) => pill.requestSurface(name) } }
+    PillSurfaceLoader { id: ldFontpicker; name: "fontpicker"; asynchronous: true; host: pill; sourceUrl: "../settings/appearance/FontPicker.qml" }
 
-    PillSurfaceLoader { id: ldTimer; name: "timer"; host: pill; sourceComponent: Pomodoro {} }
+    PillSurfaceLoader { id: ldWeather; name: "weather"; asynchronous: true; host: pill; sourceUrl: "widgets/weather/WeatherDetail.qml" }
+
+    PillSurfaceLoader { id: ldTimer; name: "timer"; host: pill; sourceUrl: "widgets/timer/Pomodoro.qml" }
     Osd {
         id: osd
         anchors.fill: parent

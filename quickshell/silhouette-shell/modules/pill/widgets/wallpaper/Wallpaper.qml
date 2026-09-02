@@ -8,6 +8,7 @@ import Quickshell.Widgets
 import qs.services
 import qs.modules.launcher
 import qs.components.animation
+import qs.components.icons
 import qs.modules.pill.surfaces
 
 /**
@@ -386,6 +387,16 @@ PillSurface {
                 Rectangle {
                     anchors.fill: parent
                     color: Theme.tileBg
+                    visible: thumbImage.status === Image.Error
+                }
+
+                /** Fallback rung: a dim glyph over the tile when the thumb is missing. */
+                GlyphIcon {
+                    anchors.centerIn: parent
+                    width: 22 * root.s
+                    height: 22 * root.s
+                    name: "monitor"
+                    color: Theme.faint
                     visible: thumbImage.status === Image.Error
                 }
 

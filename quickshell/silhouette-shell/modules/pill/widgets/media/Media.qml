@@ -54,9 +54,26 @@ PillSurface {
             return "";
         return u.indexOf("file:") === 0 ? u + "#" + Players.trackKey : u;
     }
-    /** Latched on first decode so the fallback glyph doesn't flash back while a track change reloads behind the retained cover. */
+    /**
+     * Latched on first decode so the fallback glyph doesn't flash back while a
+     * track change reloads behind the retained cover. Reset on an empty art
+     * URL; an Error status also drops the latch so the chain below can step
+     * down to the app icon.
+     */
     property bool everReady: false
     onCoverSourceChanged: if (coverSource.length === 0) everReady = false
+
+    /** Second rung of the art fallback chain: the player's own app icon. */
+    readonly property string appIcon: hasPlayer ? Players.appIconFor(player) : ""
+    /**
+     * Whether the track itself carries art. Keyed on the player's art URL, not
+     * on the transient `coverSource` (which empties whenever the surface is
+     * inactive), so the fallback chain never flashes the app icon during the
+     * open/close morph on a track that does have art.
+     */
+    readonly property bool hasArt: hasPlayer && Players.artUrl && Players.artUrl.length > 0
+    /** True while the app icon is being shown in the cover tile — only when the track has no art at all. */
+    readonly property bool artFallbackIcon: !root.hasArt && root.appIcon.length > 0
 
     /** Source picker is open; only reachable when more than one player runs. */
     property bool picking: false
@@ -269,16 +286,31 @@ PillSurface {
                 onStatusChanged: {
                     if (status === Image.Ready)
                         root.everReady = true
+                    else if (status === Image.Error)
+                        root.everReady = false
                 }
             }
 
+            /** Second rung: the player's app icon when the track has no art at all. */
+            Image {
+                anchors.fill: parent
+                anchors.margins: 12 * root.s
+                source: root.appIcon
+                sourceSize: Qt.size(Math.ceil(width * 2), Math.ceil(height * 2))
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                cache: true
+                visible: root.artFallbackIcon && status === Image.Ready
+            }
+
+            /** Last rung: the generic music glyph, only for art-less tracks without an app icon. */
             GlyphIcon {
                 anchors.centerIn: parent
                 width: 40 * root.s
                 height: width
                 name: "music"
                 color: Theme.subtle
-                visible: !root.everReady
+                visible: !root.hasArt && !root.artFallbackIcon
             }
         }
     }

@@ -24,5 +24,6 @@ Stash 1.0 tray/Stash.qml
 Toast 1.0 toast/Toast.qml
 Tray 1.0 tray/Tray.qml
 Wallpaper 1.0 wallpaper/Wallpaper.qml
+WeatherDetail 1.0 weather/WeatherDetail.qml
 WeatherPanel 1.0 weather/WeatherPanel.qml
 Workspaces 1.0 workspaces/Workspaces.qml

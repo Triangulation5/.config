@@ -90,7 +90,12 @@ Singleton {
             return;
         if (root.available)
             listProc.running = true;
-        webProc.running = true;
+        /**
+         * The pactl spawn costs a process every tick: while a modem call is
+         * live a web call can never be shown (webShown is false), so skip it.
+         */
+        if (!root.modemLive)
+            webProc.running = true;
     }
 
     /** Smallest live call's index from the list output, or -1. */
