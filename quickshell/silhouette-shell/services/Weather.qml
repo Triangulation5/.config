@@ -41,6 +41,13 @@ Singleton {
     /** Moon phase name for today's date, computed locally (no network). */
     property string moonPhase: "New moon"
 
+    /**
+     * Moon age as a 0..1 fraction of the synodic month (0 new, 0.25 first
+     * quarter, 0.5 full, 0.75 last quarter), for the phase disc on the
+     * weather surface. Computed locally from the same epoch as moonPhaseFor.
+     */
+    property real moonAge: 0
+
     property bool ready: false
 
     property real lat: 0
@@ -128,6 +135,11 @@ Singleton {
      * signals do not reliably fire for a file that is simply not there.
      */
     Component.onCompleted: {
+        /** Moon phase is computed locally, so it is right even before or
+         *  without any forecast — the offline fallback for the phase row. */
+        root.moonPhase = root.moonPhaseFor(new Date());
+        root.moonAge = root.moonAgeFor(new Date());
+
         try {
             var c = JSON.parse(locCache.text());
             if (c && typeof c.lat === "number" && typeof c.lon === "number") {
@@ -335,6 +347,7 @@ Singleton {
                             root.sunset = dd.sunset[0].slice(11, 16);
                     }
                     root.moonPhase = root.moonPhaseFor(new Date());
+                    root.moonAge = root.moonAgeFor(new Date());
                     root.tempNow = Math.round(cur.temperature_2m);
                     root.codeNow = cur.weather_code;
                     root.humidity = Math.round(cur.relative_humidity_2m);
@@ -353,19 +366,26 @@ Singleton {
      * within the cycle picks one of the eight classic phase names.
      */
     function moonPhaseFor(date) {
+        var age = root.moonAgeFor(date);
+        var a = age * 29.53058867;
+        if (a < 1.84566) return "New moon";
+        if (a < 5.53699) return "Waxing crescent";
+        if (a < 9.22831) return "First quarter";
+        if (a < 12.91963) return "Waxing gibbous";
+        if (a < 16.61096) return "Full moon";
+        if (a < 20.30228) return "Waning gibbous";
+        if (a < 23.99361) return "Last quarter";
+        if (a < 27.68493) return "Waning crescent";
+        return "New moon";
+    }
+
+    /** Moon age as a 0..1 fraction of the synodic month (0 new, 0.5 full). */
+    function moonAgeFor(date) {
         var epoch = Date.UTC(2000, 0, 6, 18, 14, 0);
         var synodic = 29.53058867;
         var days = (date.getTime() - epoch) / 86400000;
         var age = days - Math.floor(days / synodic) * synodic;
-        if (age < 1.84566) return "New moon";
-        if (age < 5.53699) return "Waxing crescent";
-        if (age < 9.22831) return "First quarter";
-        if (age < 12.91963) return "Waxing gibbous";
-        if (age < 16.61096) return "Full moon";
-        if (age < 20.30228) return "Waning gibbous";
-        if (age < 23.99361) return "Last quarter";
-        if (age < 27.68493) return "Waning crescent";
-        return "New moon";
+        return age / synodic;
     }
 
     /**

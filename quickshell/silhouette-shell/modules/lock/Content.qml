@@ -61,18 +61,14 @@ Item {
     }
 
     /**
-     * Fires both the slow morph and the capsule chrome's own spring (see
-     * capsuleChrome), so arming inflates with an OutBack settle and
-     * disarming eases back to the idle stub.
+     * Everything in the wake/return gesture rides the one lockMorph clock (see
+     * its Behavior above): the hint dissolves out, the chrome fades in, the
+     * armed prompt rises. No second spring or per-property animation clock is
+     * started here, so arming and the 10 s idle return can never fight or
+     * visibly stutter against each other.
      */
     onPasswordArmedChanged: {
         lockMorph = content.passwordArmed ? 1 : 0;
-        chromeSpring.from = capsuleChrome.scale;
-        chromeSpring.to = content.passwordArmed ? 1.0 : 0.9;
-        chromeSpring.duration = Math.round((content.passwordArmed ? 560 : 440) * Motion.mult);
-        chromeSpring.easing.type = content.passwordArmed ? Easing.OutBack : Easing.InOutCubic;
-        chromeSpring.easing.overshoot = 1.15;
-        chromeSpring.restart();
     }
 
     /** Gentle InOutSine dissolve envelope for the prompt crossfade: soft at both ends. */
@@ -82,13 +78,13 @@ Item {
     }
 
     /**
-     * The wake gesture runs on two staggered clocks so it reads as a macOS-
-     * style handoff instead of a simultaneous swap: the idle hint dissolves
-     * away on its own faster clock (gone by ~74% of the morph), and the
-     * capsule's material un-blurs and settles in on a gentler one that only
-     * starts just after the hint begins leaving. Reversing (10s idle) plays
-     * the same envelopes backwards — the chrome silently recedes, then the
-     * hint re-forms — never a hard cut in either direction.
+     * The wake gesture runs on two staggered envelopes so it reads as a
+     * macOS-style handoff instead of a simultaneous swap: the idle hint
+     * dissolves away on its own faster clock (gone by ~74% of the morph), and
+     * the capsule's material fades in on a gentler one that only starts just
+     * after the hint begins leaving. Reversing (10s idle) plays the same
+     * envelopes backwards — the chrome silently recedes, then the hint
+     * re-forms — never a hard cut in either direction.
      */
     function hintOut() {
         return diss(Math.min(1, content.lockMorph * 1.35));
@@ -272,57 +268,26 @@ Item {
             NumberAnimation { target: capsuleShift; property: "x"; to: 6 * content.s; duration: 50 }
             NumberAnimation { target: capsuleShift; property: "x"; to: -6 * content.s; duration: 50 }
             NumberAnimation { target: capsuleShift; property: "x"; to: 0; duration: 50 }
-        }            /**
-             * The capsule's material: fill, hairline border, and a soft drop
-             * shadow, rendered behind the input. It materializes macOS-style: the
-             * chrome grows up from the capsule's bottom edge, un-blurring from a
-             * frosted blur as it fades in, with a soft spring settle at the end
-             * (never a flat colour blink). The scale rides its own spring while
-             * the fill, border, opacity and blur follow capIn, keeping the
-             * handoff from the idle hint legible.
-             */
-            Rectangle {
-                id: capsuleChrome
-                anchors.fill: parent
-                radius: height / 2
+        }
 
-                color: content.passwordArmed ? Theme.capsule : "transparent"
-                border.width: content.passwordArmed ? 1 : 0
-                border.color: Theme.capsuleBorder
+        /**
+         * The capsule's material: fill, hairline border, and a soft drop
+         * shadow, rendered behind the input. It fades in on the single
+         * lockMorph clock (opacity follows capIn) at full size — it never
+         * scales, so the field content inside it can never stick out past the
+         * capsule's rounded ends while it appears. The chrome is always
+         * capsule-filled; opacity alone reveals it, and the soft shadow keeps
+         * it readable over the wallpaper.
+         */
+        Rectangle {
+            id: capsuleChrome
+            anchors.fill: parent
+            radius: height / 2
 
-                scale: 0.90
-                transformOrigin: Item.Bottom
-                opacity: content.capIn()
-
-                /**
-                 * Owns the scale so arming can spring (soft OutBack overshoot
-                 * then settle) instead of puffing mid-morph; disarming eases
-                 * back. Fired from the root's onPasswordArmedChanged so the
-                 * spring and the lockMorph motion share one trigger; `from` is
-                 * the live value so a mid-flight reversal never jumps.
-                 */
-                NumberAnimation {
-                    id: chromeSpring
-                    target: capsuleChrome
-                    property: "scale"
-                    duration: 520
-                    easing.type: Easing.OutBack
-                    easing.overshoot: 1.15
-                }
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: Math.round(480 * Motion.mult)
-                    easing.type: Easing.InOutCubic
-                }
-            }
-
-            Behavior on border.width {
-                NumberAnimation {
-                    duration: Math.round(480 * Motion.mult)
-                    easing.type: Easing.InOutCubic
-                }
-            }
+            color: Theme.capsule
+            border.width: 1
+            border.color: Theme.capsuleBorder
+            opacity: content.capIn()
 
             layer.enabled: content.lockMorph > 0.01
             layer.smooth: true
@@ -331,10 +296,6 @@ Item {
                 shadowColor: Qt.rgba(0, 0, 0, 0.35)
                 shadowBlur: 0.7
                 shadowVerticalOffset: 2 * content.s
-                /** Frosted materialize: the chrome un-blurs as it forms. */
-                blurEnabled: content.lockMorph > 0.01
-                blurMax: 16
-                blur: 9 * (1 - content.capIn())
             }
         }
 
@@ -447,18 +408,6 @@ Item {
                 transform: Translate {
                     y: -3 * content.s * content.hintOut()
                 }
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                    shadowBlur: 0.7
-                    shadowVerticalOffset: 1.5
-                    /** macOS dissolve: the hint blurs progressively away. */
-                    blurEnabled: content.lockMorph > 0.01
-                    blurMax: 16
-                    blur: 4 * content.hintOut()
-                }
             }
 
             Text {
@@ -476,18 +425,6 @@ Item {
                 scale: 0.96 + 0.04 * content.capIn()
                 transform: Translate {
                     y: 3 * content.s * (1 - content.capIn())
-                }
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                    shadowBlur: 0.7
-                    shadowVerticalOffset: 1.5
-                    /** Un-blurs with the chrome, like text settling on frosted glass. */
-                    blurEnabled: content.lockMorph > 0.01
-                    blurMax: 16
-                    blur: 6 * (1 - content.capIn())
                 }
             }
 
