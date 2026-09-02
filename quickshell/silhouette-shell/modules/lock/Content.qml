@@ -34,7 +34,7 @@ Item {
      * only the bare prompt floats over the backdrop. Any printable key lands
      * straight in the input (the field keeps focus the whole time, so the very
      * first keystroke is captured, never swallowed), flips this on, and the
-     * capsule fades back in around the text. Ten seconds without a key or click
+     * capsule grows back in around the text. Ten seconds without a key or click
      * while armed resets to idle again.
      */
     property bool passwordArmed: false
@@ -49,14 +49,14 @@ Item {
     property real lockMorph: 0
 
     /**
-     * The wake/return rides a slow, smooth ease rather than the fast
-     * front-loaded morph curve, so the idle text dissolves instead of
-     * snapping away and the capsule settles rather than slamming in.
+     * The wake/return uses one compositor-friendly ease rather than several
+     * independent clocks, so the idle text and capsule settle as one gesture.
      */
     Behavior on lockMorph {
         NumberAnimation {
-            duration: Math.round(470 * Motion.mult)
-            easing.type: Easing.InOutCubic
+            duration: Math.round(410 * Motion.mult)
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: [0.16, 1, 0.30, 1, 1, 1]
         }
     }
 
@@ -78,13 +78,11 @@ Item {
     }
 
     /**
-     * The wake gesture runs on two staggered envelopes so it reads as a
+     * The wake gesture uses two staggered envelopes so it reads as a
      * macOS-style handoff instead of a simultaneous swap: the idle hint
-     * dissolves away on its own faster clock (gone by ~74% of the morph), and
-     * the capsule's material fades in on a gentler one that only starts just
-     * after the hint begins leaving. Reversing (10s idle) plays the same
-     * envelopes backwards — the chrome silently recedes, then the hint
-     * re-forms — never a hard cut in either direction.
+     * dissolves away first, then the capsule and armed prompt settle into place.
+     * Reversing (10s idle) plays the same envelopes backwards, keeping the
+     * return calm instead of cutting between states.
      */
     function hintOut() {
         return diss(Math.min(1, content.lockMorph * 1.35));
@@ -92,6 +90,11 @@ Item {
 
     function capIn() {
         return diss(Math.max(0, (content.lockMorph - 0.14) / 0.86));
+    }
+
+    /** The password content follows the material by a short beat, avoiding a raw first-frame pop. */
+    function fieldIn() {
+        return diss(Math.max(0, (content.lockMorph - 0.20) / 0.80));
     }
 
     Shortcut {
@@ -271,32 +274,35 @@ Item {
         }
 
         /**
-         * The capsule's material: fill, hairline border, and a soft drop
-         * shadow, rendered behind the input. It fades in on the single
-         * lockMorph clock (opacity follows capIn) at full size — it never
-         * scales, so the field content inside it can never stick out past the
-         * capsule's rounded ends while it appears. The chrome is always
-         * capsule-filled; opacity alone reveals it, and the soft shadow keeps
-         * it readable over the wallpaper.
+         * The capsule's material starts close to the prompt's measure and
+         * grows around the field as it wakes. This gives the handoff a physical
+         * focal point: the label leaves first, then the surface widens, then the
+         * password content settles inside it. Only opacity and geometry change
+         * during the handoff, keeping the animation cheap enough to stay smooth.
          */
         Rectangle {
+            id: capsuleHalo
+            anchors.centerIn: capsuleChrome
+            width: capsuleChrome.width + 8 * content.s
+            height: capsuleChrome.height + 8 * content.s
+            radius: height / 2
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.alpha(Theme.cream, 0.22)
+            opacity: 0.8 * content.capIn()
+        }
+
+        Rectangle {
             id: capsuleChrome
-            anchors.fill: parent
+            anchors.centerIn: parent
+            width: parent.width * (0.58 + 0.42 * content.capIn())
+            height: parent.height * (0.72 + 0.28 * content.capIn())
             radius: height / 2
 
             color: Theme.capsule
             border.width: 1
             border.color: Theme.capsuleBorder
             opacity: content.capIn()
-
-            layer.enabled: content.lockMorph > 0.01
-            layer.smooth: true
-            layer.effect: MultiEffect {
-                shadowEnabled: content.lockMorph > 0.01
-                shadowColor: Qt.rgba(0, 0, 0, 0.35)
-                shadowBlur: 0.7
-                shadowVerticalOffset: 2 * content.s
-            }
         }
 
         TextInput {
@@ -308,7 +314,7 @@ Item {
             horizontalAlignment: TextInput.AlignHCenter
 
             echoMode: revealPassword ? TextInput.Normal : TextInput.NoEcho
-            color: revealPassword ? Theme.bright : "transparent"
+            color: revealPassword ? Qt.alpha(Theme.bright, content.fieldIn()) : "transparent"
 
             font.family: Theme.font
             font.pixelSize: 15 * content.s
@@ -347,7 +353,7 @@ Item {
             }
 
             cursorDelegate: Rectangle {
-                visible: content.showCursor && input.activeFocus
+                visible: content.showCursor && input.activeFocus && content.fieldIn() > 0.01
                 width: 2 * content.s
                 height: input.cursorRectangle.height
                 color: Theme.verm
@@ -368,6 +374,7 @@ Item {
                 s: content.s
                 host: content
                 field: input
+                opacity: content.fieldIn()
             }
         }
 
@@ -381,7 +388,8 @@ Item {
          */
         Item {
             anchors.centerIn: parent
-            visible: input.text.length === 0
+            /** Keep the label layer alive while the first character crosses into the field. */
+            visible: content.showError || input.text.length === 0 || content.lockMorph < 0.98
 
             /**
              * The two prompts hand off to each other on staggered clocks: as the
@@ -406,8 +414,9 @@ Item {
                 opacity: 1 - content.hintOut()
                 scale: 1 - 0.05 * content.hintOut()
                 transform: Translate {
-                    y: -3 * content.s * content.hintOut()
+                    y: -6 * content.s * content.hintOut()
                 }
+
             }
 
             Text {
@@ -421,11 +430,12 @@ Item {
                 font.letterSpacing: 1 * content.s
 
                 visible: !content.showError
-                opacity: content.capIn()
-                scale: 0.96 + 0.04 * content.capIn()
+                opacity: content.capIn() * (input.text.length > 0 ? 1 - content.fieldIn() : 1)
+                scale: 0.92 + 0.08 * content.capIn()
                 transform: Translate {
-                    y: 3 * content.s * (1 - content.capIn())
+                    y: 7 * content.s * (1 - content.capIn())
                 }
+
             }
 
             Text {
