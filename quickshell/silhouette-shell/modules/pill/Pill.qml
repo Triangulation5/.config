@@ -1358,7 +1358,7 @@ Item {
 
     onLinkOpenChanged: if (!linkOpen) linkInitialView = "main"
 
-    PillSurfaceLoader { id: ldBattery; name: "battery"; host: pill; sourceUrl: "../lock/BatterySurface.qml" }
+    PillSurfaceLoader { id: ldBattery; name: "battery"; host: pill; sourceUrl: "surfaces/BatterySurface.qml" }
 
     PillSurfaceLoader { id: ldSettings; name: "settings"; asynchronous: true; host: pill; sourceUrl: "../settings/base/Settings.qml" }
 

@@ -55,6 +55,7 @@ instead.
 ### Development
 
 - [Roadmap](development/roadmap.md) — ideas grouped by difficulty
+- [Memory](development/memory.md) — the 200 MB budget, soak tooling, measured numbers
 
 ## Credits
 
