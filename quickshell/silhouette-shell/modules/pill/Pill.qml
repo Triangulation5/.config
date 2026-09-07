@@ -929,9 +929,16 @@ Item {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, Theme.shadowOpacity)
-                shadowBlur: 0.7
-                shadowVerticalOffset: 3 * pill.s
+                /**
+                 * The shadow rides notchProgress: in notch mode it deepens into
+                 * an iOS Dynamic Island-style glow (softer, wider, dropping
+                 * further) so the bar reads as floating over the screen; the
+                 * rounded-pill look keeps its original subtle shadow.
+                 */
+                shadowColor: Qt.rgba(0, 0, 0,
+                    Theme.shadowOpacity + 0.25 * pill.notchProgress)
+                shadowBlur: 0.7 + 0.4 * pill.notchProgress
+                shadowVerticalOffset: (3 + 2 * pill.notchProgress) * pill.s
             }
 
             Rectangle {
