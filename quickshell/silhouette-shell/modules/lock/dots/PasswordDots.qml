@@ -11,12 +11,18 @@ import "shapeGeometry.js" as Shapes
  * (Flags.lockDotsMode) and each style lives in its own component - DropDot
  * springs beads in from above with a bounce, PulseDot makes the freshest
  * bead breathe like a wick tip, and GPixelDot faithfully ports the AOSP
- * PIN-shape entry animation: each
- * bead plays one of six per-session-shuffled geometric flourishes (sparkle,
- * triangle, star, circle ripple, heart, rounded square) that collapse into
- * the standard dot on the AOSP 350ms timeline, with the ring cross-fade on
- * backspace. `field` is the password TextInput and `host` the lock surface
- * (for `revealPassword`).
+ * PIN-shape entry animation: each bead plays one of six geometric
+ * flourishes (sparkle, triangle, star,
+ * circle ripple, heart, rounded square) that collapse into the standard dot
+ * on the AOSP 350ms timeline, with the ring cross-fade on backspace. The six
+ * shapes are shuffled afresh every typing session — mirroring AOSP's
+ * per-bouncer PinShapeAdapter — and walked round-robin, so each session
+ * opens a different order. Once the row is wider than the field it follows
+ * AOSP's non-hinting Gravity.END fallback and pins to the field's right
+ * edge, scrolling the oldest beads out under the left edge fade while the
+ * newest dot always stays visible — every move smoothed by a 160ms slide.
+ * `field` is the password TextInput and `host` the lock surface (for
+ * `revealPassword`).
  */
 Item {
     id: root
@@ -85,12 +91,42 @@ Item {
         root.liveCount = Math.max(0, root.liveCount - 1);
     }
 
+    /** Wipe every bead instantly and drop any queued deletes (the held-
+     * backspace clear). Rows mid-cross-fade are simply destroyed; the next
+     * typing session reshuffles and starts fresh. */
+    function clearAll() {
+        root.deleteInFlight = false;
+        root.pendingDelete = 0;
+        passwordDots.clear();
+        root.liveCount = 0;
+    }
+
     Row {
-        anchors.centerIn: parent
+        id: dotsRow
+        anchors.verticalCenter: parent.verticalCenter
         /** GPixel's big flourish canvases sit tighter together; the classic
          * styles keep their original spacing. */
         spacing: root.mode === "gpixel" ? 3 * root.s : 7 * root.s
         visible: passwordDots.count > 0 && !host.revealPassword
+
+        /**
+         * Horizontal follow so the row scrolls instead of piling up past the
+         * field: centered while it fits (x = -w/2), then the right edge is
+         * pinned to the field's right edge once wider (x = fw/2 - w) — AOSP
+         * non-hinting Gravity.END. The formula is continuous across the
+         * boundary, and the Behavior slides the row left as beads are added
+         * and right as they're removed, so the newest dot always scrolls
+         * into view and the oldest slide out under the left edge fade.
+         */
+        x: root.field ? Math.min(dotsRow.implicitWidth, root.field.width) / 2 - dotsRow.implicitWidth : -(dotsRow.implicitWidth / 2)
+
+        Behavior on x {
+            NumberAnimation {
+                /** AOSP's 160ms reflow slide (LINEAR_OUT_SLOW_IN ≈ OutCubic). */
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
+        }
 
         ListModel {
             id: passwordDots
@@ -105,6 +141,11 @@ Item {
                 var current = field.text.length;
 
                 if (current > previousLength) {
+                    /** A typing session starts from an empty row: reshuffle the
+                     * six shapes, mirroring AOSP's per-bouncer PinShapeAdapter
+                     * so every session opens a different order. */
+                    if (previousLength === 0)
+                        root.shuffleCycle();
                     for (var i = previousLength; i < current; ++i) {
                         /** Shape slot is fixed at creation, like getShape(mPosition). */
                         passwordDots.append({
