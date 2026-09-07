@@ -7,6 +7,7 @@ import "../../utils/format.js" as Fmt
 import qs.services
 import qs.components.icons
 import qs.components.animation
+import qs.modules.lock
 
 /**
  * The lock screen's main face. Carries the profile block, the password capsule
