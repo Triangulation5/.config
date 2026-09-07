@@ -15,9 +15,9 @@ import "shapeGeometry.js" as Shapes
  * pops in over 67ms, then a second flash layer snaps visible and morphs into
  * the standard dot while the flourish collapses, hidden inside it. The entry
  * is 350ms total (67ms pop/hold + 283ms morph) with the AOSP
- * pathInterpolators; every bead rests as the identical dot. Backspacing
- * removes the bead instantly, no animation. No rotation or alpha pulsing,
- * exactly like the AVDs.
+ * pathInterpolators; every bead rests as the identical dot. Deleting
+ * cross-fades the dot (scale 1→0.43, then fade) into the ring from
+ * pin_dot_delete_avd. No rotation or alpha pulsing, exactly like the AVDs.
  */
 Canvas {
     id: dot
@@ -27,12 +27,20 @@ Canvas {
     property bool last: false
     /** Which of the six AOSP flourishes this bead plays (0-5, fixed at creation). */
     property int shapeIndex: 0
+    /** True once the bead has been backspaced: plays the delete cross-fade. */
+    property bool deleting: false
 
     /** Flourish progress 0→1 over 350ms (linear; per-phase easing applied in paint). */
     property real t: 0
+    /** Delete progress 0→1 over 350ms. */
+    property real dt: 0
 
-    /** AOSP phase boundary (fraction of the 350ms total). */
+    signal deleteDone()
+
+    /** AOSP phase boundaries (fractions of the 350ms total). */
     readonly property real tPop: 67 / 350    // flourish pop / hold phase
+    readonly property real dPop: 150 / 350   // delete: dot shrink phase
+    readonly property real dFade: 200 / 350  // delete: fade + ring phase
 
     width: 26 * dot.s
     height: width
@@ -58,11 +66,34 @@ Canvas {
         easing.type: Easing.Linear
     }
 
+    NumberAnimation {
+        id: deleteAnim
+        target: dot
+        property: "dt"
+        to: 1
+        duration: 120 // sped up from AOSP's 350ms
+        easing.type: Easing.Linear
+        onFinished: dot.deleteDone()
+    }
+
+    onDeletingChanged: {
+        if (dot.deleting) {
+            dot.dt = 0;
+            deleteAnim.restart();
+        }
+    }
+
     onTChanged: dot.requestPaint()
+    onDtChanged: dot.requestPaint()
     onWidthChanged: dot.requestPaint()
 
     function clamp01(v) {
         return Math.min(1, Math.max(0, v));
+    }
+
+    /** Snappy ease-out for the delete phases: starts fast, lands soft. */
+    function easeOut(v) {
+        return 1 - Math.pow(1 - v, 3);
     }
 
     function fillProfile(ctx, cx, cy, sc, prof, alpha) {
@@ -91,6 +122,10 @@ Canvas {
         var cy = dot.height / 2;
         var sc = (dot.width / 2 - 1.2 * dot.s) / Shapes.MAX_RADIUS;
 
+        if (dot.deleting) {
+            dot.paintDelete(ctx, cx, cy, sc);
+            return;
+        }
         dot.paintFlourish(ctx, cx, cy, sc);
     }
 
@@ -131,6 +166,34 @@ Canvas {
                 : (1 - (1 - sh.shrink) * Shapes.EASE_SHRINK(p2));
             dot.fillProfile(ctx, cx, cy, sc, Shapes.scaleProfile(sh.flourish, s2), 1);
         }
+    }
+
+    /** pin_dot_delete_avd: dot 1→0.43 (150ms), then fade while a ring grows. */
+    /**
+     * pin_dot_delete_avd: dot 1→0.43 (150ms), then fade while a ring grows.
+     * The phases use a snappy ease-out instead of AOSP's symmetric curve, so
+     * the bead reacts the instant it is backspaced instead of hesitating, and
+     * the ring cross-fades in as the dot dissolves — one continuous motion.
+     */
+    function paintDelete(ctx, cx, cy, sc) {
+        var d = dot.clamp01(dot.dt);
+        var p1 = dot.clamp01(d / dot.dPop);
+        var p2 = dot.clamp01((d - dot.dPop) / dot.dFade);
+
+        var ds = 1 - (1 - 0.43) * dot.easeOut(p1);
+        var da = 1 - dot.easeOut(p2);
+        dot.fillProfile(ctx, cx, cy, sc, Shapes.scaleProfile(Shapes.DOT, ds), da);
+
+        // The ring left where the dot was: even-odd donut, scales 0.65→1,
+        // fading in with the cross-fade instead of snapping on over the dot.
+        var rs = 0.65 + 0.35 * dot.easeOut(p2);
+        ctx.beginPath();
+        ctx.arc(cx, cy, Shapes.RING_OUTER * rs * sc, 0, 2 * Math.PI, false);
+        ctx.arc(cx, cy, Shapes.RING_INNER * rs * sc, 0, 2 * Math.PI, false);
+        ctx.globalAlpha = dot.easeOut(p2);
+        ctx.fillStyle = Theme.bright;
+        ctx.fill("evenodd");
+        ctx.globalAlpha = 1;
     }
 
     Component.onCompleted: {
