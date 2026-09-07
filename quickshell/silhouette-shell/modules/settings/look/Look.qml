@@ -79,7 +79,7 @@ SettingsSurface {
                 r.push({ item: pillGrp.notchFlareRow, kind: "scrub", bump: function (d) { pillGrp.notchFlareScrub.bump(d); } });
         }
         if (lockGrp.open) {
-            r.push({ item: lockGrp.dotsRow, kind: "seg", vals: ["drop", "mobile", "pulse"], get: function () { return Flags.lockDotsMode; }, set: function (v) { Flags.lockDotsMode = v; } });
+            r.push({ item: lockGrp.dotsRow, kind: "seg", vals: ["drop", "pulse", "gpixel"], get: function () { return Flags.lockDotsMode; }, set: function (v) { Flags.lockDotsMode = v; } });
         }
         return r;
     }
