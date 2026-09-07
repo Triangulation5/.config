@@ -14,9 +14,9 @@ import "shapeGeometry.js" as Shapes
  * PIN-shape entry animation: each
  * bead plays one of six per-session-shuffled geometric flourishes (sparkle,
  * triangle, star, circle ripple, heart, rounded square) that collapse into
- * the standard dot on the AOSP 350ms timeline, with the ring cross-fade on
- * backspace. `field` is the password TextInput and `host` the lock surface
- * (for `revealPassword`).
+ * the standard dot on the AOSP 350ms timeline. Backspacing removes beads
+ * instantly, for every style. `field` is the password TextInput and `host`
+ * the lock surface (for `revealPassword`).
  */
 Item {
     id: root
@@ -35,10 +35,6 @@ Item {
 
     /** Per-session shuffled order of the six flourishes (AOSP PinShapeAdapter). */
     property var gpixelCycle: []
-
-    /** True while a GPixel delete cross-fade plays; extra backspaces queue up. */
-    property bool deleteInFlight: false
-    property int pendingDelete: 0
 
     Component {
         id: dropDot
@@ -67,24 +63,6 @@ Item {
         root.gpixelCycle = order;
     }
 
-    /** Remove a bead whose delete cross-fade finished; drain the queue. */
-    function removeDeleting(i) {
-        if (i < 0 || i >= passwordDots.count) {
-            // The model was cleared underneath us (bulk remove).
-            root.deleteInFlight = false;
-            root.pendingDelete = 0;
-            return;
-        }
-        passwordDots.remove(i);
-        root.deleteInFlight = false;
-        if (root.pendingDelete > 0 && passwordDots.count > 0) {
-            root.pendingDelete--;
-            root.deleteInFlight = true;
-            passwordDots.setProperty(passwordDots.count - 1, "deleting", true);
-        }
-        root.liveCount = Math.max(0, root.liveCount - 1);
-    }
-
     Row {
         anchors.centerIn: parent
         // GPixel's big flourish canvases sit tighter together; the classic
@@ -108,36 +86,18 @@ Item {
                     for (var i = previousLength; i < current; ++i) {
                         // Shape slot is fixed at creation, like getShape(mPosition).
                         passwordDots.append({
-                            deleting: false,
                             gshape: root.gpixelCycle[root.liveCount % root.shapeCount]
                         });
                         root.liveCount++;
                     }
                 } else if (current < previousLength) {
+                    // Every removal is instant: single backspaces and bulk
+                    // clears (Ctrl+U, select+delete) drop beads immediately,
+                    // no animation, for every style.
                     var removed = previousLength - current;
-                    if (root.mode === "gpixel" && removed === 1 && passwordDots.count > 0) {
-                        // Single backspace: quick ring cross-fade, serialized so
-                        // each plays to completion; extra backspaces queue up.
-                        if (!root.deleteInFlight) {
-                            root.deleteInFlight = true;
-                            passwordDots.setProperty(passwordDots.count - 1, "deleting", true);
-                        } else {
-                            root.pendingDelete++;
-                        }
-                    } else if (root.mode === "gpixel") {
-                        // Bulk removal (Ctrl+U, select+delete): instant, no cross-fade.
-                        // The model may hold a pending-deleting row, so drop rows
-                        // until it matches the new text length.
-                        root.deleteInFlight = false;
-                        root.pendingDelete = 0;
-                        var toRemove = passwordDots.count - current;
-                        for (var k = 0; k < toRemove; ++k)
-                            passwordDots.remove(passwordDots.count - 1);
-                        root.liveCount = passwordDots.count;
-                    } else {
-                        for (var j = 0; j < removed; ++j)
-                            passwordDots.remove(passwordDots.count - 1);
-                    }
+                    for (var j = 0; j < removed; ++j)
+                        passwordDots.remove(passwordDots.count - 1);
+                    root.liveCount = passwordDots.count;
                 }
 
                 previousLength = current;
@@ -149,7 +109,6 @@ Item {
 
             Loader {
                 required property int index
-                required property bool deleting
                 required property int gshape
 
                 sourceComponent: root.mode === "drop" ? dropDot
@@ -161,13 +120,9 @@ Item {
                     /** Pulse beads cycle a small palette per slot, fixed at creation. */
                     if (root.mode === "pulse")
                         item.tone = index % 4;
-                    /** GPixel beads: fixed shape from the shuffled cycle, plus
-                        the serialized ring delete wired to the model row. */
-                    if (root.mode === "gpixel") {
+                    /** GPixel beads: fixed shape from the shuffled cycle. */
+                    if (root.mode === "gpixel")
                         item.shapeIndex = gshape;
-                        item.deleting = Qt.binding(() => deleting);
-                        item.deleteDone.connect(() => root.removeDeleting(index));
-                    }
                 }
             }
         }

@@ -28,10 +28,6 @@ var VIEWPORT = 30;
 /** Largest flourish extent (shape 3 scallop ≈ 18.94), for canvas scaling. */
 var MAX_RADIUS = 19;
 
-/** Delete: the ring left where the dot was (circle with a hole, r 5 / 3). */
-var RING_OUTER = 5;
-var RING_INNER = 3;
-
 /* ------------------------------------------------------------------ *
  * Exact pathData from the AOSP AVDs (trimmed whitespace, verbatim).   *
  * ------------------------------------------------------------------ */
