@@ -123,7 +123,7 @@ LinkDrillIn {
         pairProc.running = true;
     }
 
-    // ---- keyboard scaffold hooks (LinkDrillIn) ----
+    /** ---- keyboard scaffold hooks (LinkDrillIn) ---- */
 
     function rowCount() {
         return root.devicesSorted.length;

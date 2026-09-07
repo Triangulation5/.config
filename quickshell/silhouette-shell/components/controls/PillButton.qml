@@ -16,7 +16,8 @@ Rectangle {
 
     property real s: 1.1
     property string text: ""
-    property string kind: "primary" // "primary" | "danger"
+    /** Visual kind: "primary" | "danger". */
+    property string kind: "primary"
     property bool focused: false
     property bool lit: false
 

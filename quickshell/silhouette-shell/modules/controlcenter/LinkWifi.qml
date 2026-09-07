@@ -210,7 +210,7 @@ LinkDrillIn {
         connProc.running = true;
     }
 
-    // ---- keyboard scaffold hooks (LinkDrillIn) ----
+    /** ---- keyboard scaffold hooks (LinkDrillIn) ---- */
 
     function rowCount() {
         return root.netsSorted.length + root.hsRowCount;
