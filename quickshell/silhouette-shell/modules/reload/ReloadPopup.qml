@@ -83,8 +83,8 @@ Item {
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "quickshell:reload-popup"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            // Anchored to the top-left with generous breathing room from the
-            // screen edges so it doesn't feel cramped against the corner.
+            /** Anchored to the top-left with generous breathing room from the
+             * screen edges so it doesn't feel cramped against the corner. */
             anchors { left: true; top: true }
             Component.onCompleted: seq.restart()
         margins { left: 36 * root.s; top: 32 * root.s }
@@ -93,7 +93,7 @@ Item {
         Rectangle {
             id: card
             opacity: 0
-            // Slight upward/leftward settle on entry, matching the top-left anchor.
+            /** Slight upward/leftward settle on entry, matching the top-left anchor. */
             scale: 0.96
             transformOrigin: Item.TopLeft
             radius: 20 * root.s
@@ -110,14 +110,14 @@ Item {
                 shadowBlur: 0.75
                 shadowVerticalOffset: 4 * root.s
             }
-            // Track geometry lives here so the card's implicit height and the
-            // track's own anchors agree on exactly how much room it needs —
-            // this is what was causing the bar to clip past the bottom edge.
+            /** Track geometry lives here so the card's implicit height and the
+             * track's own anchors agree on exactly how much room it needs —
+             * this is what was causing the bar to clip past the bottom edge. */
             readonly property real trackHeight: 4 * root.s
             readonly property real trackSideMargin: 34 * root.s
             readonly property real trackTopGap: 18 * root.s
             readonly property real trackBottomGap: 16 * root.s
-            // More generous padding all around the content.
+            /** More generous padding all around the content. */
             implicitWidth: Math.max(column.implicitWidth, 260 * root.s) + 48 * root.s
             implicitHeight: 22 * root.s + column.implicitHeight + trackTopGap + trackHeight + trackBottomGap
             /** Hover pauses the dismiss countdown so a failure can be read. */
@@ -307,8 +307,8 @@ Item {
                     width: parent.width
                     radius: height / 2
                     color: root.failed ? Theme.error : Theme.verm
-                    // Faint glow riding the leading edge of the fill for a
-                    // little more polish than a flat bar.
+                    /** Faint glow riding the leading edge of the fill for a
+                     * little more polish than a flat bar. */
                     Rectangle {
                         anchors.right: parent.right
                         anchors.top: parent.top

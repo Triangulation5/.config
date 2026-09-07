@@ -22,7 +22,8 @@ Rectangle {
     property real s: 1.1
     property var options: []
     property var value
-    property string accent: "flame" // "flame" | "card"
+    /** Accent kind: "flame" | "card". */
+    property string accent: "flame"
     property bool flushLeft: false
 
     signal picked(var value)

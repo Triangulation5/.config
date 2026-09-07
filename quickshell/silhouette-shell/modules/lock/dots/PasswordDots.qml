@@ -70,7 +70,7 @@ Item {
     /** Remove a bead whose delete cross-fade finished; drain the queue. */
     function removeDeleting(i) {
         if (i < 0 || i >= passwordDots.count) {
-            // The model was cleared underneath us (bulk remove).
+            /** The model was cleared underneath us (bulk remove). */
             root.deleteInFlight = false;
             root.pendingDelete = 0;
             return;
@@ -87,8 +87,8 @@ Item {
 
     Row {
         anchors.centerIn: parent
-        // GPixel's big flourish canvases sit tighter together; the classic
-        // styles keep their original spacing.
+        /** GPixel's big flourish canvases sit tighter together; the classic
+         * styles keep their original spacing. */
         spacing: root.mode === "gpixel" ? 3 * root.s : 7 * root.s
         visible: passwordDots.count > 0 && !host.revealPassword
 
@@ -106,7 +106,7 @@ Item {
 
                 if (current > previousLength) {
                     for (var i = previousLength; i < current; ++i) {
-                        // Shape slot is fixed at creation, like getShape(mPosition).
+                        /** Shape slot is fixed at creation, like getShape(mPosition). */
                         passwordDots.append({
                             deleting: false,
                             gshape: root.gpixelCycle[root.liveCount % root.shapeCount]
@@ -116,8 +116,8 @@ Item {
                 } else if (current < previousLength) {
                     var removed = previousLength - current;
                     if (root.mode === "gpixel" && removed === 1 && passwordDots.count > 0) {
-                        // Single backspace: quick ring cross-fade, serialized so
-                        // each plays to completion; extra backspaces queue up.
+                        /** Single backspace: quick ring cross-fade, serialized so
+                         * each plays to completion; extra backspaces queue up. */
                         if (!root.deleteInFlight) {
                             root.deleteInFlight = true;
                             passwordDots.setProperty(passwordDots.count - 1, "deleting", true);
@@ -125,9 +125,9 @@ Item {
                             root.pendingDelete++;
                         }
                     } else if (root.mode === "gpixel") {
-                        // Bulk removal (Ctrl+U, select+delete): instant, no cross-fade.
-                        // The model may hold a pending-deleting row, so drop rows
-                        // until it matches the new text length.
+                        /** Bulk removal (Ctrl+U, select+delete): instant, no cross-fade.
+                         * The model may hold a pending-deleting row, so drop rows
+                         * until it matches the new text length. */
                         root.deleteInFlight = false;
                         root.pendingDelete = 0;
                         var toRemove = passwordDots.count - current;
