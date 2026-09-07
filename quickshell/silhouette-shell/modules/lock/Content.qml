@@ -356,6 +356,29 @@ Item {
             Keys.onPressed: {
                 if (content.passwordArmed)
                     idleTimer.restart();
+                /** A held Backspace clears the whole field at once after 2.5s
+                 * — key auto-repeat deletes one char per tick, which would
+                 * otherwise leave the serialized dot cross-fades draining long
+                 * after the text is gone. Timed from the first press only, so
+                 * repeat ticks can't keep resetting it. */
+                if (event.key === Qt.Key_Backspace && !event.isAutoRepeat)
+                    holdClear.restart();
+            }
+
+            Keys.onReleased: (event) => {
+                if (event.key === Qt.Key_Backspace)
+                    holdClear.stop();
+            }
+
+            /** 2.5s of continuous Backspace: wipe the field and every bead at
+             * once, abandoning the serialized delete queue mid-flight. */
+            Timer {
+                id: holdClear
+                interval: 2500
+                onTriggered: {
+                    input.text = "";
+                    dots.clearAll();
+                }
             }
 
             Connections {
@@ -390,6 +413,7 @@ Item {
             }
 
             PasswordDots {
+                id: dots
                 anchors.centerIn: parent
                 s: content.s
                 host: content
