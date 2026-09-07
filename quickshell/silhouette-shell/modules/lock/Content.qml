@@ -61,63 +61,44 @@ Item {
 
     /**
      * The armed "enter password" prompt rides the same motion curve as the
-     * capsule wake, but shows 200ms late every time it appears — when the
+     * capsule wake, but shows 100ms late every time it appears — when the
      * field arms and again when it empties out (backspace to zero) — so the
-     * hint always lands just after the chrome settles. Its opacity fades in on
-     * its own smooth curve (the morph curve is too front-loaded to read as a
-     * fade), while the scale/rise still follow the capsule. Fading back out is
-     * immediate, in sync with the capsule, no delay.
+     * hint always lands just after the chrome settles. The delay comes from
+     * the shared RevealLatch component (the same one the fade bands use): it
+     * holds `ready` false for 100ms after the prompt becomes visible, then
+     * latches, and drops the instant the prompt hides, so every appearance
+     * replays the delay from zero while removal stays immediate. Its opacity
+     * fades in on its own smooth curve (the morph curve is too front-loaded
+     * to read as a fade), while the scale/rise still follow the capsule.
      */
-    property real armedPromptMorph: 0
-    property real armedPromptFade: 0
+    readonly property bool promptVisible: content.passwordArmed && input.text.length === 0
 
-    SequentialAnimation {
-        id: armedPromptIn
-        // The prompt is visible only while the field is empty, so gating on
-        // the empty state restarts the 200ms delay every time it reappears,
-        // not just on the first arm.
-        running: content.passwordArmed && input.text.length === 0
-        PauseAnimation { duration: 200 }
-        ParallelAnimation {
-            NumberAnimation {
-                target: content
-                property: "armedPromptMorph"
-                to: 1
-                duration: Motion.glide
-                easing.type: Motion.easeMorph
-                easing.bezierCurve: Motion.morphCurve
-            }
-            NumberAnimation {
-                target: content
-                property: "armedPromptFade"
-                to: 1
-                duration: Motion.standard
-                easing.type: Motion.easeStandard
-            }
+    RevealLatch {
+        id: promptLatch
+        shown: content.promptVisible
+        delay: 100
+    }
+
+    /** The prompt is visible only while the field is empty, so gating on the
+     * empty state replays the 100ms latch delay every time it reappears, not
+     * just on the first arm. Bound through the latch's shown && ready
+     * contract per the component docs: ready stays true while shown is
+     * false, so hiding animates out in sync with the capsule, no delay. */
+    property real armedPromptMorph: promptLatch.shown && promptLatch.ready ? 1 : 0
+    property real armedPromptFade: promptLatch.shown && promptLatch.ready ? 1 : 0
+
+    Behavior on armedPromptMorph {
+        NumberAnimation {
+            duration: Motion.glide
+            easing.type: Motion.easeMorph
+            easing.bezierCurve: Motion.morphCurve
         }
     }
 
-    SequentialAnimation {
-        id: armedPromptOut
-        // Resets while the prompt is hidden (typing) or the field disarms, so
-        // the next appearance always replays the delay and fade from zero.
-        running: !(content.passwordArmed && input.text.length === 0)
-        ParallelAnimation {
-            NumberAnimation {
-                target: content
-                property: "armedPromptMorph"
-                to: 0
-                duration: Motion.glide
-                easing.type: Motion.easeMorph
-                easing.bezierCurve: Motion.morphCurve
-            }
-            NumberAnimation {
-                target: content
-                property: "armedPromptFade"
-                to: 0
-                duration: Motion.standard
-                easing.type: Motion.easeStandard
-            }
+    Behavior on armedPromptFade {
+        NumberAnimation {
+            duration: Motion.standard
+            easing.type: Motion.easeStandard
         }
     }
 

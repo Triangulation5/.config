@@ -16,8 +16,9 @@ import "shapeGeometry.js" as Shapes
  * the standard dot while the flourish collapses, hidden inside it. The entry
  * is 350ms total (67ms pop/hold + 283ms morph) with the AOSP
  * pathInterpolators; every bead rests as the identical dot. Deleting
- * cross-fades the dot (scale 1→0.43, then fade) into the ring from
- * pin_dot_delete_avd. No rotation or alpha pulsing, exactly like the AVDs.
+ * cross-fades the dot (scale 1→0.50, then fade) into the ring from
+ * pin_dot_delete_avd on the AVD's exact 350ms timeline and interpolator.
+ * No rotation or alpha pulsing, exactly like the AVDs.
  */
 Canvas {
     id: dot
@@ -37,10 +38,13 @@ Canvas {
 
     signal deleteDone()
 
-    /** AOSP phase boundaries (fractions of the 350ms total). */
-    readonly property real tPop: 67 / 350    // flourish pop / hold phase
-    readonly property real dPop: 150 / 350   // delete: dot shrink phase
-    readonly property real dFade: 200 / 350  // delete: fade + ring phase
+    /** AOSP phase boundaries (fractions of the 350ms totals). */
+    /** Flourish pop / hold phase. */
+    readonly property real tPop: 67 / 350
+    /** Delete: dot shrink phase. */
+    readonly property real dPop: 150 / 350
+    /** Delete: fade + ring phase. */
+    readonly property real dFade: 200 / 350
 
     width: 26 * dot.s
     height: width
@@ -71,7 +75,8 @@ Canvas {
         target: dot
         property: "dt"
         to: 1
-        duration: 120 // sped up from AOSP's 350ms
+        /** Full pin_dot_delete_avd timeline (100ms for the last bead). */
+        duration: 350
         easing.type: Easing.Linear
         onFinished: dot.deleteDone()
     }
@@ -79,6 +84,11 @@ Canvas {
     onDeletingChanged: {
         if (dot.deleting) {
             dot.dt = 0;
+            /** The freshest bead — the one actually being backspaced — dissolves
+             * in 100ms instead of the full AVD. Captured here at delete start
+             * so a keystroke landing mid-fade can't retarget the running
+             * animation. */
+            deleteAnim.duration = dot.last ? 100 : 350;
             deleteAnim.restart();
         }
     }
@@ -91,9 +101,14 @@ Canvas {
         return Math.min(1, Math.max(0, v));
     }
 
-    /** Snappy ease-out for the delete phases: starts fast, lands soft. */
-    function easeOut(v) {
-        return 1 - Math.pow(1 - v, 3);
+    /**
+     * The exact pathInterpolator from pin_dot_delete_avd.xml —
+     * "M 0.0,0.0 c0.167,0.167 0.833,0.833 1.0,1.0". Both control points sit
+     * on the diagonal, so the curve's y(x) is the bezier polynomial itself.
+     */
+    function aospEase(v) {
+        var w = 1 - v;
+        return 3 * 0.167 * w * w * v + 3 * 0.833 * w * v * v + v * v * v;
     }
 
     function fillProfile(ctx, cx, cy, sc, prof, alpha) {
@@ -140,7 +155,7 @@ Canvas {
         var p1 = dot.clamp01(t / dot.tPop);
         var p2 = dot.clamp01((t - dot.tPop) / (1 - dot.tPop));
 
-        // Flash layer: snaps visible at 67ms; shape 4 flashes the dot itself.
+        /** Flash layer: snaps visible at 67ms; shape 4 flashes the dot itself. */
         if (t >= dot.tPop) {
             var flash = sh.morph
                 ? Shapes.lerpProfile(sh.flash, Shapes.DOT, sh.morph(p2))
@@ -148,8 +163,8 @@ Canvas {
             dot.fillProfile(ctx, cx, cy, sc, flash, 1);
         }
 
-        // Flourish layer: pops in over 67ms, then collapses (scale-shrink,
-        // path-morph, or circle ripple depending on the shape).
+        /** Flourish layer: pops in over 67ms, then collapses (scale-shrink,
+         * path-morph, or circle ripple depending on the shape). */
         if (sh.ripple) {
             var R = t < dot.tPop
                 ? sh.ripple.a + (sh.ripple.b - sh.ripple.a) * Shapes.EASE_RIPPLE_1(p1)
@@ -168,29 +183,31 @@ Canvas {
         }
     }
 
-    /** pin_dot_delete_avd: dot 1→0.43 (150ms), then fade while a ring grows. */
     /**
-     * pin_dot_delete_avd: dot 1→0.43 (150ms), then fade while a ring grows.
-     * The phases use a snappy ease-out instead of AOSP's symmetric curve, so
-     * the bead reacts the instant it is backspaced instead of hesitating, and
-     * the ring cross-fades in as the dot dissolves — one continuous motion.
+     * pin_dot_delete_avd, faithful: the dot scales 1→0.50 over 150ms, then
+     * its fillAlpha fades 1→0 over the following 200ms while the replacement
+     * ring scales 0.65→1 — both on the AVD's c0.167,0.167 0.833,0.833
+     * interpolator. The ring ends fully opaque: in AOSP that is the "empty
+     * slot" state that persists because hinting slots are fixed, and the
+     * row here drops the bead when the animation lands.
      */
     function paintDelete(ctx, cx, cy, sc) {
         var d = dot.clamp01(dot.dt);
+        /** Dot shrink phase (0–150ms). */
         var p1 = dot.clamp01(d / dot.dPop);
+        /** Fade + ring phase (150–350ms). */
         var p2 = dot.clamp01((d - dot.dPop) / dot.dFade);
 
-        var ds = 1 - (1 - 0.43) * dot.easeOut(p1);
-        var da = 1 - dot.easeOut(p2);
+        var ds = 1 - (1 - 0.50) * dot.aospEase(p1);
+        var da = 1 - dot.aospEase(p2);
         dot.fillProfile(ctx, cx, cy, sc, Shapes.scaleProfile(Shapes.DOT, ds), da);
 
-        // The ring left where the dot was: even-odd donut, scales 0.65→1,
-        // fading in with the cross-fade instead of snapping on over the dot.
-        var rs = 0.65 + 0.35 * dot.easeOut(p2);
+        /** The ring: even-odd donut, scales 0.65→1, stays fully opaque. */
+        var rs = 0.65 + 0.35 * dot.aospEase(p2);
         ctx.beginPath();
         ctx.arc(cx, cy, Shapes.RING_OUTER * rs * sc, 0, 2 * Math.PI, false);
         ctx.arc(cx, cy, Shapes.RING_INNER * rs * sc, 0, 2 * Math.PI, false);
-        ctx.globalAlpha = dot.easeOut(p2);
+        ctx.globalAlpha = 1;
         ctx.fillStyle = Theme.bright;
         ctx.fill("evenodd");
         ctx.globalAlpha = 1;
