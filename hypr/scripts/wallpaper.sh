@@ -79,12 +79,47 @@ fi
 
 [ -n "$pic" ] || exit 0
 
-awww img "$pic" \
-    --transition-type wave \
-    --transition-angle 30 \
-    --transition-wave "60,30" \
-    --transition-fps 60 \
-    --transition-step 90
+rand_0_99() {
+    local r
+    while :; do
+        r=$RANDOM
+        (( r < 32700 )) && {
+            printf '%d\n' "$((r % 100))"
+            return
+        }
+    done
+}
+
+roll=$(rand_0_99)
+
+if (( roll < 55 )); then
+    awww img "$pic" \
+        --transition-type wave \
+        --transition-angle 30 \
+        --transition-wave "60,30" \
+        --transition-fps 60 \
+        --transition-step 90
+
+elif (( roll < 85 )); then
+    awww img "$pic" \
+        --transition-type grow \
+        --transition-pos top-right \
+        --transition-fps 60 \
+        --transition-step 90
+
+elif (( roll < 95 )); then
+    awww img "$pic" \
+        --transition-type wipe \
+        --transition-angle 30 \
+        --transition-fps 60 \
+        --transition-step 90
+
+else
+    awww img "$pic" \
+        --transition-type fade \
+        --transition-fps 60 \
+        --transition-step 90
+fi
 
 mkdir -p "$(dirname "$STATE")"
 printf '%s\n' "$pic" > "$STATE"
