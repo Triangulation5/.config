@@ -6,6 +6,7 @@ import Quickshell
 import "../../utils/format.js" as Fmt
 import qs.services
 import qs.components.icons
+import qs.components.animation
 
 /**
  * The lock screen's main face. Carries the profile block, the password capsule
@@ -351,85 +352,129 @@ Item {
                 field: input
             }
 
-            Item {
+            /**
+             * Side fades on the input so overflowing dots (and revealed text)
+             * sink into the capsule surface instead of clipping hard at the
+             * field's edge. The band is the capsule fill itself, so it stays
+             * invisible while the content fits and only appears where it rides
+             * over the dots. The vertical insets keep the band inside the
+             * capsule's rounded silhouette even while the chrome is still
+             * inflating (it scales from 0.9 up on the wake morph). Gated on
+             * typed text: while the field is empty the idle/armed prompts show
+             * and there is nothing to fade, so the bands stay off and can never
+             * brush the prompt text.
+             */
+            EdgeFade {
+                anchors.top: parent.top
+                anchors.topMargin: 7 * content.s
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 7 * content.s
+                anchors.left: parent.left
+                fadeWidth: 16 * content.s
+                fadeColor: Theme.capsule
+                active: content.passwordArmed && input.text.length > 0
+            }
+
+            EdgeFade {
+                anchors.top: parent.top
+                anchors.topMargin: 7 * content.s
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 7 * content.s
+                anchors.right: parent.right
+                anchors.rightMargin: -2 * content.s
+                fadeWidth: 16 * content.s
+                fadeColor: Theme.capsule
+                mirrored: true
+                active: content.passwordArmed && input.text.length > 0
+            }
+        }
+
+        /**
+         * The prompts live outside the clipped field on purpose: the input's
+         * rectangular clip cuts at its 48·s side insets, and the idle hint is
+         * wide enough to get shaved there. As a sibling of the field, the
+         * prompt stack stays centered on the capsule - the same spot, since
+         * the field is centered in it - but no clip can touch it, and it
+         * paints above the field's fade bands.
+         */
+        Item {
+            anchors.centerIn: capsule
+            visible: input.text.length === 0
+
+            /**
+             * The two prompts morph into each other on the pill's motion
+             * curve: as the field arms, the idle hint scales and drifts up
+             * out while "enter password" rises in from below. Returning to
+             * idle plays the same morph back, so waking and settling read as
+             * one continuous gesture. The soft shadow keeps whichever prompt
+             * floats over the wallpaper readable, like the clock and name.
+             */
+            Text {
+                id: idlePrompt
                 anchors.centerIn: parent
-                visible: input.text.length === 0
+                text: "<i>press any key to enter password</i>"
+                textFormat: Text.RichText
+                color: Theme.subtle
+                font.family: Theme.font
+                font.pixelSize: 14 * content.s
+                font.letterSpacing: 1 * content.s
 
-                /**
-                 * The two prompts morph into each other on the pill's motion
-                 * curve: as the field arms, the idle hint scales and drifts up
-                 * out while "enter password" rises in from below. Returning to
-                 * idle plays the same morph back, so waking and settling read as
-                 * one continuous gesture. The soft shadow keeps whichever prompt
-                 * floats over the wallpaper readable, like the clock and name.
-                 */
-                Text {
-                    id: idlePrompt
-                    anchors.centerIn: parent
-                    text: "<i>press any key to enter password</i>"
-                    textFormat: Text.RichText
-                    color: Theme.subtle
-                    font.family: Theme.font
-                    font.pixelSize: 14 * content.s
-                    font.letterSpacing: 1 * content.s
-
-                    visible: !content.showError
-                    opacity: 1 - content.lockMorph
-                    scale: 1 - 0.12 * content.lockMorph
-                    transform: Translate {
-                        y: -6 * content.s * content.lockMorph
-                    }
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                        shadowBlur: 0.7
-                        shadowVerticalOffset: 1.5
-                    }
+                visible: !content.showError
+                opacity: 1 - content.lockMorph
+                scale: 1 - 0.12 * content.lockMorph
+                transform: Translate {
+                    y: -6 * content.s * content.lockMorph
                 }
 
-                Text {
-                    id: armedPrompt
-                    anchors.centerIn: parent
-                    text: "<i>enter password</i>"
-                    textFormat: Text.RichText
-                    color: Theme.placeholder
-                    font.family: Theme.font
-                    font.pixelSize: 14 * content.s
-                    font.letterSpacing: 1 * content.s
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                    shadowBlur: 0.7
+                    shadowVerticalOffset: 1.5
+                }
+            }
 
-                    visible: !content.showError
-                    opacity: content.lockMorph
-                    scale: 0.88 + 0.12 * content.lockMorph
-                    transform: Translate {
-                        y: 6 * content.s * (1 - content.lockMorph)
-                    }
+            Text {
+                id: armedPrompt
+                anchors.centerIn: parent
+                text: "<i>enter password</i>"
+                textFormat: Text.RichText
+                color: Theme.placeholder
+                font.family: Theme.font
+                font.pixelSize: 14 * content.s
+                font.letterSpacing: 1 * content.s
 
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                        shadowBlur: 0.7
-                        shadowVerticalOffset: 1.5
-                    }
+                visible: !content.showError
+                opacity: content.lockMorph
+                scale: 0.88 + 0.12 * content.lockMorph
+                transform: Translate {
+                    y: 6 * content.s * (1 - content.lockMorph)
                 }
 
-                Text {
-                    id: errorPrompt
-                    anchors.centerIn: parent
-                    text: {
-                        var pamMsg = content.auth ? content.auth.lastError : "";
-                        return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
-                    }
-                    textFormat: Text.RichText
-                    color: Theme.error
-                    font.family: Theme.font
-                    font.pixelSize: 14 * content.s
-                    font.letterSpacing: 1 * content.s
-
-                    visible: content.showError
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                    shadowBlur: 0.7
+                    shadowVerticalOffset: 1.5
                 }
+            }
+
+            Text {
+                id: errorPrompt
+                anchors.centerIn: parent
+                text: {
+                    var pamMsg = content.auth ? content.auth.lastError : "";
+                    return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
+                }
+                textFormat: Text.RichText
+                color: Theme.error
+                font.family: Theme.font
+                font.pixelSize: 14 * content.s
+                font.letterSpacing: 1 * content.s
+
+                visible: content.showError
             }
         }
 
