@@ -7,8 +7,9 @@ import qs.components.controls
 
 /**
  * Lock-screen settings group: how the password beads land while typing (drop,
- * mobile, or pulse). Further lock-screen knobs land here as rows. Extracted
- * from the monolithic Look surface so the tab stays under 500 lines.
+ * pulse, or the Material 3 Expressive gpixel morph). Further
+ * lock-screen knobs land here as rows. Extracted from the monolithic Look
+ * surface so the tab stays under 500 lines.
  */
 Group {
     id: lockGrp
@@ -28,8 +29,8 @@ Group {
             s: look.s
             options: [
                 { label: "Drop", value: "drop" },
-                { label: "Mobile", value: "mobile" },
-                { label: "Pulse", value: "pulse" }
+                { label: "Pulse", value: "pulse" },
+                { label: "GPixel", value: "gpixel" }
             ]
             value: Flags.lockDotsMode
             onPicked: v => Flags.lockDotsMode = v

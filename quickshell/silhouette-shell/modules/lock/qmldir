@@ -6,7 +6,7 @@ BlurredShot 1.0 BlurredShot.qml
 Clock 1.0 Clock.qml
 Content 1.0 Content.qml
 DropDot 1.0 DropDot.qml
-MobileDot 1.0 MobileDot.qml
+GPixelDot 1.0 GPixelDot.qml
 LinkSurface 1.0 LinkSurface.qml
 LockPlayer 1.0 LockPlayer.qml
 LockRoot 1.0 LockRoot.qml
