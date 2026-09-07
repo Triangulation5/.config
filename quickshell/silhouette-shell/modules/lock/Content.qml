@@ -354,6 +354,20 @@ Item {
             }
 
             /**
+             * The fade bands ride a RevealLatch so they appear 100ms after
+             * the first character lands instead of snapping on with it - the
+             * dots get a beat to settle before the dissolve shows. The latch
+             * releases the instant the field empties, so removal is instant.
+             * (Consumers gate on shown && ready, per the component's
+             * contract: ready stays true while shown is false.)
+             */
+            RevealLatch {
+                id: fadeLatch
+                shown: content.passwordArmed && input.text.length > 0
+                delay: 100
+            }
+
+            /**
              * Side fades on the input so overflowing dots (and revealed text)
              * sink into the capsule surface instead of clipping hard at the
              * field's edge. The band is the capsule fill itself, so it stays
@@ -373,7 +387,7 @@ Item {
                 anchors.left: parent.left
                 fadeWidth: 16 * content.s
                 fadeColor: Theme.capsule
-                active: content.passwordArmed && input.text.length > 0
+                active: fadeLatch.shown && fadeLatch.ready
             }
 
             EdgeFade {
@@ -386,7 +400,7 @@ Item {
                 fadeWidth: 16 * content.s
                 fadeColor: Theme.capsule
                 mirrored: true
-                active: content.passwordArmed && input.text.length > 0
+                active: fadeLatch.shown && fadeLatch.ready
             }
         }
 
