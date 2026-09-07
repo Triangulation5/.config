@@ -129,7 +129,7 @@ PillSurface {
             var cy = height / 2;
             var r = Math.max(1, Math.min(width, height) / 2 - 1);
 
-            /* Unlit face + hairline rim so the disc reads against the card. */
+            /** Unlit face + hairline rim so the disc reads against the card. */
             ctx.beginPath();
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
             ctx.fillStyle = Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.09);
@@ -138,7 +138,7 @@ PillSurface {
             ctx.lineWidth = 1;
             ctx.stroke();
 
-            /* Lit share: 0 at new, 1 at full. */
+            /** Lit share: 0 at new, 1 at full. */
             var lit = (1 - Math.cos(Math.PI * 2 * phaseFace.age)) / 2;
             if (lit >= 0.996) {
                 ctx.beginPath();
@@ -154,7 +154,7 @@ PillSurface {
             ctx.beginPath();
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
             ctx.clip();
-            /* Paint the whole disc lit, then erase the shadowed side. */
+            /** Paint the whole disc lit, then erase the shadowed side. */
             ctx.beginPath();
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
             ctx.fillStyle = Theme.mix(Theme.cream, Theme.todayWarm, 0.10);
@@ -190,7 +190,7 @@ PillSurface {
                 y: -contentColumn.height * (1 - root.curtain)
             }
 
-            /* Header: city (tap to edit) + current conditions. */
+            /** Header: city (tap to edit) + current conditions. */
             Row {
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -425,7 +425,7 @@ PillSurface {
                 opacity: root.sSun
             }
 
-            /* Sunrise / sunset row. */
+            /** Sunrise / sunset row. */
             Row {
                 width: parent.width
                 spacing: 8 * root.s
@@ -500,7 +500,7 @@ PillSurface {
                 }
             }
 
-            /* Moon phase row. */
+            /** Moon phase row. */
             Row {
                 width: parent.width
                 spacing: 10 * root.s

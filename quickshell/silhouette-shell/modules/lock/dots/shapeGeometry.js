@@ -1,22 +1,24 @@
-// Faithful port of the AOSP keyguard "PIN shape" entry animation
-// (packages/SystemUI/res/drawable/pin_dot_shape_1..6_avd.xml, pin_dot_avd.xml,
-// pin_dot_delete_avd.xml — Android 14+, still current on main / Android 17).
-//
-// Each shape AVD carries TWO overlaid path layers:
-//   _R_G_L_0_G  the flourish (sparkle, triangle, star, circle ripple, heart,
-//               rounded square) that pops in over the first 67ms and then
-//               collapses (scale to 0.3–0.4 or path-morph to a small form)
-//               over the next 283ms, ending hidden inside the dot;
-//   _R_G_L_1_G  a second flash (flower/scallop/oval — or the dot itself for
-//               shape 4) that snaps visible at 67ms and morphs into the same
-//               universal dot path, which is the resting state of every bead.
-//
-// The exact pathData strings are lifted verbatim from those files. Every
-// profile is sampled at the SAME fixed angles on the shared angular grid, so a
-// morph is a per-sample lerp of two profiles — matching the AVD pathData
-// tweening for these star-shaped forms. All radii are in absolute vector
-// units (viewport 30x30), so sizes stay faithful: the dot is r≈8.7 and the
-// largest flourish (shape 3 scallop) reaches r≈18.9.
+/**
+ * Faithful port of the AOSP keyguard "PIN shape" entry animation
+ * (packages/SystemUI/res/drawable/pin_dot_shape_1..6_avd.xml, pin_dot_avd.xml,
+ * pin_dot_delete_avd.xml — Android 14+, still current on main / Android 17).
+ *
+ * Each shape AVD carries TWO overlaid path layers:
+ *   _R_G_L_0_G  the flourish (sparkle, triangle, star, circle ripple, heart,
+ *               rounded square) that pops in over the first 67ms and then
+ *               collapses (scale to 0.3–0.4 or path-morph to a small form)
+ *               over the next 283ms, ending hidden inside the dot;
+ *   _R_G_L_1_G  a second flash (flower/scallop/oval — or the dot itself for
+ *               shape 4) that snaps visible at 67ms and morphs into the same
+ *               universal dot path, which is the resting state of every bead.
+ *
+ * The exact pathData strings are lifted verbatim from those files. Every
+ * profile is sampled at the SAME fixed angles on the shared angular grid, so a
+ * morph is a per-sample lerp of two profiles — matching the AVD pathData
+ * tweening for these star-shaped forms. All radii are in absolute vector
+ * units (viewport 30x30), so sizes stay faithful: the dot is r≈8.7 and the
+ * largest flourish (shape 3 scallop) reaches r≈18.9.
+ */
 .pragma library
 
 /** Angular samples per profile; shared so morphs lerp radius-per-angle. */
@@ -32,7 +34,7 @@ var MAX_RADIUS = 19;
 var RING_OUTER = 5;
 var RING_INNER = 3;
 
-/* ------------------------------------------------------------------ *
+/** ------------------------------------------------------------------ *
  * Exact pathData from the AOSP AVDs (trimmed whitespace, verbatim).   *
  * ------------------------------------------------------------------ */
 
@@ -41,17 +43,17 @@ var DOT_PATH = "M-0.44 -8.69 C3.98,-8.69 7.56,-5.11 7.56,-0.69 C7.56,3.73 3.98,7
 
 /** _R_G_L_0_G flourish start paths, one per shape. */
 var FLOURISH_PATHS = [
-    // 1: four-point sparkle (concave star)
+    /** 1: four-point sparkle (concave star). */
     "M-13.65 -3.95 C-16.31,-10.09 -10.09,-16.31 -3.95,-13.65 C-3.95,-13.65 -2.94,-13.21 -2.94,-13.21 C-1.06,-12.39 1.06,-12.39 2.94,-13.21 C2.94,-13.21 3.95,-13.65 3.95,-13.65 C10.09,-16.31 16.31,-10.09 13.65,-3.95 C13.65,-3.95 13.21,-2.94 13.21,-2.94 C12.39,-1.06 12.39,1.06 13.21,2.94 C13.21,2.94 13.65,3.95 13.65,3.95 C16.31,10.09 10.09,16.31 3.95,13.65 C3.95,13.65 2.94,13.21 2.94,13.21 C1.06,12.39 -1.06,12.39 -2.94,13.21 C-2.94,13.21 -3.95,13.65 -3.95,13.65 C-10.09,16.31 -16.31,10.09 -13.65,3.95 C-13.65,3.95 -13.21,2.94 -13.21,2.94 C-12.39,1.06 -12.39,-1.06 -13.21,-2.94 C-13.21,-2.94 -13.65,-3.95 -13.65,-3.95c",
-    // 2: rounded triangle, point down
+    /** 2: rounded triangle, point down. */
     "M12.78 7.57 C12.78,7.57 4.72,-8.55 4.72,-8.55 C2.77,-12.44 -2.77,-12.44 -4.72,-8.55 C-4.72,-8.55 -12.78,7.57 -12.78,7.57 C-15,12.01 -10.42,16.78 -5.89,14.74 C-5.89,14.74 -2.17,13.07 -2.17,13.07 C-0.79,12.45 0.79,12.45 2.17,13.07 C2.17,13.07 5.9,14.74 5.9,14.74 C10.42,16.78 15,12.01 12.78,7.57c",
-    // 3: four-point star
+    /** 3: four-point star. */
     "M10.71 10.71 C5.92,15.5 -1.85,15.5 -6.64,10.71 C-6.64,10.71 -10.71,6.64 -10.71,6.64 C-15.5,1.85 -15.5,-5.92 -10.71,-10.71 C-5.92,-15.5 1.85,-15.5 6.64,-10.71 C6.64,-10.71 10.71,-6.64 10.71,-6.64 C15.5,-1.85 15.5,5.92 10.71,10.71c",
-    // 4: circle r8 (ripple: r8 -> r15 -> r7.73)
+    /** 4: circle r8 (ripple: r8 -> r15 -> r7.73). */
     "M8 0 C8,-1.35 7.97,-1.94 7.41,-3.02 C6.85,-4.09 6.61,-4.79 5.66,-5.66 C4.7,-6.52 4.2,-6.97 3.15,-7.36 C2.09,-7.74 1.39,-8 0,-8 C-1.39,-8 -2.18,-7.78 -3.12,-7.37 C-4.07,-6.96 -4.67,-6.63 -5.66,-5.66 C-6.64,-4.68 -6.98,-4.1 -7.37,-3.13 C-7.78,-2.08 -8,-1.39 -8,0 C-8,1.4 -7.86,1.98 -7.47,2.87 C-7.08,3.76 -6.68,4.66 -5.66,5.66 C-4.63,6.65 -4,6.96 -3.12,7.37 C-2.25,7.78 -1.32,8 0,8 C1.32,8 1.86,7.88 2.9,7.46 C3.95,7.03 4.85,6.63 5.66,5.66 C6.46,4.69 6.78,4.45 7.29,3.29 C7.81,2.14 8,1.35 8,0c",
-    // 5: heart / droplet
+    /** 5: heart / droplet. */
     "M-4.68 -13.34 C-2.59,-17.01 2.64,-17 4.72,-13.33 C4.72,-13.33 13.65,2.45 13.65,2.45 C15.72,6.11 13.11,10.66 8.94,10.65 C8.94,10.65 -8.98,10.62 -8.98,10.62 C-13.15,10.61 -15.75,6.05 -13.67,2.4 C-13.67,2.4 -4.68,-13.34 -4.68,-13.34c",
-    // 6: rounded square (eight-fold symmetric)
+    /** 6: rounded square (eight-fold symmetric). */
     "M-2.82 -14.07 C-1.14,-15.29 1.14,-15.29 2.82,-14.07 C2.82,-14.07 7.73,-10.53 7.73,-10.53 C7.73,-10.53 12.58,-7 12.58,-7 C14.29,-5.76 15,-3.55 14.35,-1.54 C14.35,-1.54 12.51,4.14 12.51,4.14 C12.51,4.14 10.64,9.85 10.64,9.85 C9.99,11.84 8.14,13.19 6.05,13.19 C6.05,13.19 0,13.2 0,13.2 C0,13.2 -6.05,13.19 -6.05,13.19 C-8.14,13.19 -9.98,11.84 -10.64,9.85 C-10.64,9.85 -12.51,4.14 -12.51,4.14 C-12.51,4.14 -14.35,-1.54 -14.35,-1.54 C-15,-3.55 -14.29,-5.76 -12.58,-7 C-12.58,-7 -7.73,-10.53 -7.73,-10.53 C-7.73,-10.53 -2.82,-14.07 -2.82,-14.07c"
 ];
 
@@ -76,21 +78,21 @@ var RIPPLE = { a: 8, b: 15, c: 7.73 };
 
 /** _R_G_L_1_G flash start paths (shape 4 flashes the dot itself). */
 var FLASH_PATHS = [
-    // 1: four-lobe flower
+    /** 1: four-lobe flower. */
     "M-0.44 -12.06 C13.5,-14.63 13.5,-14.63 10.9,-0.69 C13.5,13.25 13.5,13.25 -0.44,10.53 C-14.38,13.25 -14.38,13.25 -11.86,-0.69 C-14.38,-14.63 -14.38,-14.63 -0.44,-12.06c",
-    // 2: four-lobe flower (wider)
+    /** 2: four-lobe flower (wider). */
     "M-0.56 -14.03 C3.65,-13.99 14.58,7.64 11.51,10.42 C8.45,13.2 5.92,9.56 -0.46,9.61 C-6.85,9.65 -9.27,12.76 -12.33,10.46 C-15.39,8.15 -4.77,-14.07 -0.56,-14.03c",
-    // 3: scallop / burst
+    /** 3: scallop / burst. */
     "M-10.2 -11.16 C-1.58,-18.94 4.25,-12.72 8.06,-8.64 C11.88,-4.57 17.93,1.89 9.39,9.74 C0.85,17.6 -5.06,11.3 -8.87,7.22 C-12.69,3.14 -18.81,-3.39 -10.2,-11.16c",
-    // 4: the dot itself (revealed at 67ms, no morph)
+    /** 4: the dot itself (revealed at 67ms, no morph). */
     null,
-    // 5: three-lobe flower
+    /** 5: three-lobe flower. */
     "M-0.48 -12.86 C2.96,-12.87 14.59,5.93 11.98,9.12 C9.42,12.26 5.76,11.36 -0.48,11.41 C-6.72,11.45 -10.24,11.91 -12.78,9.16 C-15.4,6.32 -3.91,-12.85 -0.48,-12.86c",
-    // 6: tall oval
+    /** 6: tall oval. */
     "M-0.46 -13.65 C3.05,-13.65 12.63,-6.57 12.9,-3.63 C12.98,-2.7 12.65,12.85 -0.46,12.85 C-13.57,12.85 -13.77,-2.84 -13.76,-3.63 C-13.72,-6.87 -3.96,-13.65 -0.46,-13.65c"
 ];
 
-/* ------------------------------------------------------------------ *
+/** ------------------------------------------------------------------ *
  * Easing: cubic bezier pathInterpolators from the AVDs.               *
  * ------------------------------------------------------------------ */
 
@@ -135,7 +137,7 @@ var MORPH_EASE = [
 var EASE_RIPPLE_1 = bezierEase(0.167, 0, 0.833, 1);
 var EASE_RIPPLE_2 = bezierEase(0.3, 0, 0.7, 1);
 
-/* ------------------------------------------------------------------ *
+/** ------------------------------------------------------------------ *
  * Path parsing + radial sampling.                                      *
  * ------------------------------------------------------------------ */
 
@@ -196,7 +198,7 @@ function parsePath(data) {
                 x = q1[0]; y = q1[1];
             }
         } else if (cmd.type === "Z" || cmd.type === "z") {
-            // close: the polygon is treated as closed by rayRadius anyway
+            /** close: the polygon is treated as closed by rayRadius anyway. */
             x = startX; y = startY;
         }
     }
@@ -217,7 +219,7 @@ function rayRadius(poly, ang) {
         var denom = ex * dy - ey * dx;
         if (Math.abs(denom) < 1e-9)
             continue;
-        // u = cross(p1, e) / cross(d, e); denom here is cross(e, d) = -cross(d, e).
+        /** u = cross(p1, e) / cross(d, e); denom here is cross(e, d) = -cross(d, e). */
         var u = -(p1[0] * ey - p1[1] * ex) / denom;
         var t = -(p1[0] * dy - p1[1] * dx) / denom;
         if (t >= -1e-9 && t <= 1 + 1e-9 && u >= -1e-9 && u < best)
@@ -231,7 +233,8 @@ function profileOf(pathData) {
     var poly = parsePath(pathData);
     var out = [];
     for (var k = 0; k < SAMPLES; ++k) {
-        var ang = 2 * Math.PI * k / SAMPLES - Math.PI / 2; // start at the top
+        /** Sample angles start at the top (12 o'clock). */
+        var ang = 2 * Math.PI * k / SAMPLES - Math.PI / 2;
         out.push(rayRadius(poly, ang));
     }
     return out;
@@ -258,7 +261,7 @@ function lerpProfile(a, b, t) {
     return out;
 }
 
-/* ------------------------------------------------------------------ *
+/** ------------------------------------------------------------------ *
  * The six shape specs, sampled once.                                   *
  * ------------------------------------------------------------------ */
 
