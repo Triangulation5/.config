@@ -27,11 +27,21 @@ Item {
     property color innerShadowColor: Qt.rgba(0, 0, 0, 0)
     property real innerShadowSize: 0
 
+    /**
+     * Repaint the corner canvas when its painted inputs change, not just on
+     * resize: the notch ears bind color to Theme.border, which the dynamic
+     * palette retints at runtime - without this the canvas keeps drawing the
+     * stale color. (Size changes repaint on their own via the resize.)
+     */
+    onColorChanged: cornerCanvas.requestPaint()
+    onCornerChanged: cornerCanvas.requestPaint()
+
     implicitWidth: size
     implicitHeight: size
     clip: true
 
     Canvas {
+        id: cornerCanvas
         anchors.fill: parent
         antialiasing: true
         renderTarget: Canvas.FramebufferObject
