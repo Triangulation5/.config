@@ -25,15 +25,63 @@ Item {
     /** Retry once if fingerprint initialization immediately fails. */
     property bool retryingWithoutFingerprint: false
 
+    /**
+     * AOSP-style retry lockout: after lockoutThreshold consecutive failures the
+     * field locks for lockoutSeconds (doubling per repeat, capped), exactly like
+     * the keyguard's device-policy gate. `lockedOut` disables the input and
+     * `lockoutRemaining` ticks down live so the surface can show a countdown.
+     */
+    property int failedAttempts: 0
+    property int lockoutThreshold: 5
+    property int lockoutSeconds: 30
+    property int lockoutMax: 600
+    property bool lockedOut: false
+    property int lockoutRemaining: 0
+
     function clearState() {
         pendingPassword = ""
         lastError = ""
         statusMessage = ""
         retryingWithoutFingerprint = false
+        failedAttempts = 0
+        lockedOut = false
+        lockoutRemaining = 0
+    }
+
+    /** Count one real failure; crossing the threshold arms the lockout. */
+    function recordFailure() {
+        failedAttempts++
+        if (failedAttempts >= lockoutThreshold && !lockedOut) {
+            var repeat = failedAttempts - lockoutThreshold
+            lockoutRemaining = Math.min(lockoutMax, lockoutSeconds * Math.pow(2, repeat))
+            lockedOut = true
+        }
+    }
+
+    /** Successful auth clears the streak and any active lockout. */
+    function clearLockout() {
+        failedAttempts = 0
+        lockedOut = false
+        lockoutRemaining = 0
+    }
+
+    Timer {
+        id: lockoutTick
+        interval: 1000
+        repeat: true
+        running: auth.lockedOut
+        onTriggered: {
+            if (auth.lockoutRemaining > 1) {
+                auth.lockoutRemaining--
+            } else {
+                auth.lockoutRemaining = 0
+                auth.lockedOut = false
+            }
+        }
     }
 
     function submit(password) {
-        if (pam.active)
+        if (pam.active || lockedOut)
             return
 
         pendingPassword = password
@@ -93,6 +141,7 @@ Item {
                 auth.pendingPassword = ""
                 auth.lastError = ""
                 auth.retryingWithoutFingerprint = false
+                auth.clearLockout()
                 auth.succeeded()
                 return
             }
@@ -109,6 +158,7 @@ Item {
 
             auth.pendingPassword = ""
             auth.retryingWithoutFingerprint = false
+            auth.recordFailure()
             auth.failed()
         }
 
@@ -127,6 +177,7 @@ Item {
                 auth.lastError = "Authentication failed."
 
             auth.retryingWithoutFingerprint = false
+            auth.recordFailure()
             auth.failed()
         }
     }

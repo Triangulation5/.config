@@ -26,6 +26,7 @@ Item {
     property bool revealPassword: false
 
     readonly property bool authenticating: auth ? auth.authenticating : false
+    readonly property bool lockedOut: auth ? auth.lockedOut : false
     property bool showError: false
     property bool showCursor: false
 
@@ -145,6 +146,11 @@ Item {
             content.showError = false;
             input.text = "";
         }
+        /** Once the countdown ends, drop the stale error from the 5th failure. */
+        function onLockedOutChanged() {
+            if (!content.lockedOut)
+                content.showError = false;
+        }
     }
 
     /**
@@ -216,6 +222,34 @@ Item {
         anchors.rightMargin: parent.width * 0.055
         anchors.bottomMargin: parent.height * 0.09
         s: content.s
+    }
+
+    /**
+     * AOSP-style keyguard notifications: collapsed per-app cards below the
+     * date. They fade out while the clock is expanded (the surface gives the
+     * floor to the date layout) and dim while auth is in flight so the capsule
+     * reads as the focus; back to full when idle again.
+     */
+    LockNotifs {
+        id: lockNotifs
+
+        z: 15
+        s: content.s
+
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: parent.width * 0.055
+        anchors.topMargin: parent.height * 0.145
+
+        opacity: content.clockExpanded ? 0 : (content.authenticating ? 0.4 : 1)
+        enabled: opacity > 0.01
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+        }
     }
 
     Clock {
@@ -341,7 +375,7 @@ Item {
             font.letterSpacing: 2 * content.s
             clip: true
             focus: !content.clockExpanded
-            enabled: !content.authenticating
+            enabled: !content.authenticating && !content.lockedOut
 
             onTextChanged: {
                 if (text.length > 0) {
@@ -547,6 +581,8 @@ Item {
                 id: errorPrompt
                 anchors.centerIn: parent
                 text: {
+                    if (content.lockedOut)
+                        return "too many attempts — try again in " + content.auth.lockoutRemaining + "s";
                     var pamMsg = content.auth ? content.auth.lastError : "";
                     return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
                 }
@@ -556,13 +592,13 @@ Item {
                 font.pixelSize: 14 * content.s
                 font.letterSpacing: 1 * content.s
 
-                visible: content.showError
+                visible: content.showError || content.lockedOut
             }
         }
 
         MouseArea {
             anchors.fill: parent
-            enabled: !content.authenticating
+            enabled: !content.authenticating && !content.lockedOut
 
             onClicked: {
                 content.passwordArmed = true;
