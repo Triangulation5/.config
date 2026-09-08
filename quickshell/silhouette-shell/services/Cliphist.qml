@@ -134,8 +134,12 @@ Singleton {
 
     /**
      * A failed read (boot-time store lock, db hiccup) must not wipe the last
-     * good snapshot; one quiet retry heals the race without looping.
+     * good snapshot; one bounded retry heals the race, and a persistently
+     * failing read parks until the next clipboard event refreshes instead of
+     * re-arming the pipeline every two seconds forever.
      */
+    property int listFailures: 0
+
     Timer {
         id: listRetry
         interval: 2000
@@ -183,13 +187,28 @@ Singleton {
         id: listProc
         command: ["cliphist", "list"]
         stdout: StdioCollector { id: collected }
-        onExited: {
-            if (listProc.exitCode !== 0) {
-                console.warn("cliphist list failed with exit code " + listProc.exitCode + ", retrying once");
+        /**
+         * The exit code only arrives as the signal's argument: Quickshell's
+         * Process type has no `exitCode` property, so reading one always gave
+         * undefined and every successful read looked like a failure — the list
+         * was never applied and the history froze, which is why new copies
+         * (screenshots) stopped appearing. The retry is bounded to one extra
+         * attempt; a second consecutive failure waits for the next clipboard
+         * event instead of looping.
+         */
+        onExited: (exitCode) => {
+            if (exitCode !== 0) {
+                console.warn("cliphist list failed with exit code " + exitCode + ", retrying once");
                 root.pending = false;
-                listRetry.restart();
+                if (root.listFailures < 1) {
+                    root.listFailures++;
+                    listRetry.restart();
+                } else {
+                    root.listFailures = 0;
+                }
                 return;
             }
+            root.listFailures = 0;
             root.applyList(collected.text);
             if (root.pending) {
                 root.pending = false;

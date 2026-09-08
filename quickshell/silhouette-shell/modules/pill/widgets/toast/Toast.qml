@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
+import Quickshell.Widgets
 import qs.services
 import qs.components.controls
 
@@ -48,7 +49,12 @@ Item {
         }
     }
 
-    Rectangle {
+    /**
+     * ClippingRectangle clips the image to the rounded corners (plain
+     * Rectangle `clip` only clips to the square bounds, leaving the image's
+     * corners poking past the radius).
+     */
+    ClippingRectangle {
         id: iconTile
         anchors.left: parent.left
         anchors.top: parent.top

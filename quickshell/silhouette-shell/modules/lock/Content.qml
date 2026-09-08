@@ -224,34 +224,6 @@ Item {
         s: content.s
     }
 
-    /**
-     * AOSP-style keyguard notifications: collapsed per-app cards below the
-     * date. They fade out while the clock is expanded (the surface gives the
-     * floor to the date layout) and dim while auth is in flight so the capsule
-     * reads as the focus; back to full when idle again.
-     */
-    LockNotifs {
-        id: lockNotifs
-
-        z: 15
-        s: content.s
-
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.leftMargin: parent.width * 0.055
-        anchors.topMargin: parent.height * 0.145
-
-        opacity: content.clockExpanded ? 0 : (content.authenticating ? 0.4 : 1)
-        enabled: opacity > 0.01
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 220
-                easing.type: Easing.OutCubic
-            }
-        }
-    }
-
     Clock {
         id: mainClock
 
@@ -489,6 +461,8 @@ Item {
                 fadeWidth: 16 * content.s
                 fadeColor: Theme.capsule
                 active: fadeLatch.shown && fadeLatch.ready
+                opacity: content.revealPassword ? 0.45 : 1
+                Behavior on opacity { NumberAnimation { duration: 160 } }
             }
 
             EdgeFade {
@@ -502,6 +476,8 @@ Item {
                 fadeColor: Theme.capsule
                 mirrored: true
                 active: fadeLatch.shown && fadeLatch.ready
+                opacity: content.revealPassword ? 0.45 : 1
+                Behavior on opacity { NumberAnimation { duration: 160 } }
             }
         }
 
@@ -582,7 +558,7 @@ Item {
                 anchors.centerIn: parent
                 text: {
                     if (content.lockedOut)
-                        return "too many attempts — try again in " + content.auth.lockoutRemaining + "s";
+                        return "try again in " + content.auth.lockoutRemaining + "s";
                     var pamMsg = content.auth ? content.auth.lastError : "";
                     return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
                 }
