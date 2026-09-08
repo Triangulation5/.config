@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import qs.services
 import qs.components.controls
 import qs.components.icons
@@ -175,7 +176,12 @@ Item {
                                     onClicked: Notifs.toggleExpanded(group.modelData.app)
                                 }
 
-                                Rectangle {
+                                /**
+                                 * ClippingRectangle clips the image to the rounded
+                                 * corners (plain Rectangle `clip` only clips to the
+                                 * square bounds).
+                                 */
+                                ClippingRectangle {
                                     id: headTile
                                     anchors.left: parent.left
                                     anchors.leftMargin: 6 * s
