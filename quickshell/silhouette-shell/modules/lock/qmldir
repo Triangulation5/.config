@@ -8,7 +8,6 @@ Content 1.0 Content.qml
 DropDot 1.0 dots/DropDot.qml
 GPixelDot 1.0 dots/GPixelDot.qml
 LinkSurface 1.0 LinkSurface.qml
-LockNotifs 1.0 LockNotifs.qml
 LockPlayer 1.0 LockPlayer.qml
 LockRoot 1.0 LockRoot.qml
 PasswordDots 1.0 dots/PasswordDots.qml

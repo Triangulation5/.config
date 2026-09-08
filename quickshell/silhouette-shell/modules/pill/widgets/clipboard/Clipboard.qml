@@ -278,6 +278,18 @@ PillSurface {
             model: root.results.length
             interactive: root.listContentH > root.listMaxH
 
+            /**
+             * Wheel bridge lives inside the list viewport so it can anchor to
+             * its own parent (anchoring across the Column boundary was invalid
+             * and logged a runtime warning on every load). As a button-less
+             * overlay it only takes wheel notches, never clicks.
+             */
+            WheelScroller {
+                anchors.fill: parent
+                s: root.s
+                flick: list
+            }
+
             delegate: Item {
                 id: row
                 required property int index
@@ -417,18 +429,5 @@ PillSurface {
                 }
             }
         }
-
-    }
-
-    /**
-     * Outside the content Column: a Column child with anchors breaks the whole
-     * column layout ("Column will not function"), collapsing the search field,
-     * divider and list on top of each other. As a sibling anchored to the list
-     * it still routes wheel notches to the list without touching the layout.
-     */
-    WheelScroller {
-        anchors.fill: list
-        s: root.s
-        flick: list
     }
 }

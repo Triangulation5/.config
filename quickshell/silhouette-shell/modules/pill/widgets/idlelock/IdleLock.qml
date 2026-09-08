@@ -45,7 +45,8 @@ SettingsSurface {
     rows: [
         { item: lockRow, kind: "seg", vals: root.lockOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleLockMin; }, set: function (v) { Flags.idleLockMin = v; root.apply(); } },
         { item: screenRow, kind: "seg", vals: root.screenOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleScreenOffMin; }, set: function (v) { Flags.idleScreenOffMin = v; root.apply(); } },
-        { item: suspendRow, kind: "seg", vals: root.suspendOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleSuspendMin; }, set: function (v) { Flags.idleSuspendMin = v; root.apply(); } }
+        { item: suspendRow, kind: "seg", vals: root.suspendOptions.map(function (o) { return o.value; }), get: function () { return Flags.idleSuspendMin; }, set: function (v) { Flags.idleSuspendMin = v; root.apply(); } },
+        { item: dotsRow, kind: "seg", vals: ["drop", "pulse", "gpixel"], get: function () { return Flags.lockDotsMode; }, set: function (v) { Flags.lockDotsMode = v; } }
     ]
 
     /**
@@ -214,6 +215,24 @@ SettingsSurface {
             options: root.suspendOptions
             value: Flags.idleSuspendMin
             onPicked: (v) => { Flags.idleSuspendMin = v; root.apply(); }
+        }
+    }
+
+    IdleRow {
+        id: dotsRow
+        name: "Dots animation"
+        caption: "Password beads style"
+
+        SettingsSeg {
+            s: root.s
+            flushLeft: true
+            options: [
+                { label: "Drop", value: "drop" },
+                { label: "Pulse", value: "pulse" },
+                { label: "GPixel", value: "gpixel" }
+            ]
+            value: Flags.lockDotsMode
+            onPicked: (v) => { Flags.lockDotsMode = v; }
         }
     }
 
