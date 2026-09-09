@@ -54,6 +54,15 @@ ShellRoot {
     }
 
     function doLock(): void {
+        /**
+         * Already locked: hypridle can re-run lock_cmd a beat after a wake
+         * (its idle clock survives the sleep), which lands as a fresh trigger
+         * while the lock is still up. Honoring it would replay the reveal and
+         * look like the lockscreen reopening itself, so a locked session just
+         * absorbs the trigger and stays put.
+         */
+        if (sessionLock.locked)
+            return;
         root.pw.text = "";
         root.revealed = false;
         sessionLock.locked = true;
