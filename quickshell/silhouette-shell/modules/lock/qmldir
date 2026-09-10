@@ -8,9 +8,10 @@ Content 1.0 Content.qml
 DropDot 1.0 dots/DropDot.qml
 GPixelDot 1.0 dots/GPixelDot.qml
 LinkSurface 1.0 LinkSurface.qml
+LockMusicRing 1.0 LockMusicRing.qml
 LockPlayer 1.0 LockPlayer.qml
 LockRoot 1.0 LockRoot.qml
+LockSurface 1.0 LockSurface.qml
 PasswordDots 1.0 dots/PasswordDots.qml
 PulseDot 1.0 dots/PulseDot.qml
-LockSurface 1.0 LockSurface.qml
 Profile 1.0 Profile.qml
