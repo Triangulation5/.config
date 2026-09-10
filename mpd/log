@@ -53,3 +53,14 @@
 2026-07-20T12:35:09 player: played "youtube/Beach Bunny - Prom Queen (Lyrics).opus"
 2026-07-20T12:38:58 player: played "youtube/bôa - Duvet.opus"
 2026-07-20T12:41:12 player: played "youtube/Beach Bunny - Prom Queen (Lyrics).opus"
+2026-09-09T18:01:23 exception: Failed to decode "/home/josh/Music/youtube/Beach Bunny - Prom Queen (Lyrics).opus"; Failed to open "/home/josh/Music/youtube/Beach Bunny - Prom Queen (Lyrics).opus": No such file or directory
+2026-09-09T18:01:23 player: played "youtube/Beach Bunny - Prom Queen (Lyrics).opus"
+2026-09-09T18:01:23 update: removing youtube/Каникулы (Nightcore Edit).opus
+2026-09-09T18:01:23 update: removing youtube/Join Me In Death.opus
+2026-09-09T18:01:23 update: removing youtube/t.A.T.u. - All The Things She Said (Official Music Video).opus
+2026-09-09T18:01:23 update: removing youtube/Michael Jackson - Beat It (Official 4K Video).opus
+2026-09-09T18:01:23 update: removing youtube/Dedede´s Royal Payback Kirby Triple Deluxe.mp3
+2026-09-09T18:01:23 update: removing youtube/Beach Bunny - Prom Queen (Lyrics).opus
+2026-09-09T18:03:17 exception: Failed to open audio output
+2026-09-09T18:04:08 player: played "youtube/Gorillaz - Feel Good Inc. (Official Video).opus"
+2026-09-09T18:06:15 player: played "youtube/Arctic Monkeys - 505.opus"
