@@ -58,11 +58,18 @@ ShellRoot {
          * Already locked: hypridle can re-run lock_cmd a beat after a wake
          * (its idle clock survives the sleep), which lands as a fresh trigger
          * while the lock is still up. Honoring it would replay the reveal and
-         * look like the lockscreen reopening itself, so a locked session just
-         * absorbs the trigger and stays put.
+         * look like the lockscreen reopening itself, so a *stably* locked
+         * session just absorbs the trigger and stays put.
+         *
+         * But if we're mid-unlock (collapse pending after a successful auth),
+         * a fresh trigger is a genuine new lock request racing the unlock
+         * animation, not a duplicate. Dropping it here would let collapse
+         * finish on schedule and unlock anyway, silently eating the request -
+         * so cancel the collapse and relock instead.
          */
-        if (sessionLock.locked)
+        if (sessionLock.locked && !collapse.running)
             return;
+        collapse.stop();
         root.pw.text = "";
         root.revealed = false;
         sessionLock.locked = true;
