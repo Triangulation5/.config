@@ -14,7 +14,6 @@ hl.config({
     master = {
         new_status = "slave", -- "master", "slave", "inherit"
         allow_small_split = true,
-        special_scale_factor = 0.95,
         mfact = 0.55
     },
 })
