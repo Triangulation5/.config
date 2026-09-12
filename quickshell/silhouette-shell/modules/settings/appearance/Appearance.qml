@@ -92,7 +92,7 @@ SettingsSurface {
         { item: secRow, kind: "toggle", get: function () { return Flags.clockSeconds; }, set: function (v) { Flags.clockSeconds = v; } },
         { item: glyphRow, kind: "toggle", get: function () { return Flags.showGlyphs; }, set: function (v) { Flags.showGlyphs = v; } },
         { item: vizRow, kind: "toggle", get: function () { return Flags.musicViz; }, set: function (v) { Flags.musicViz = v; } },
-        { item: vizStyleRow, kind: "seg", vals: ["bars", "centered", "string"], get: function () { return Flags.vizStyle; }, set: function (v) { Flags.vizStyle = v; } },
+        { item: vizStyleRow, kind: "seg", vals: ["bars", "centered"], get: function () { return Flags.vizStyle; }, set: function (v) { Flags.vizStyle = v; } },
         { item: vizFpsRow, kind: "seg", vals: [15, 30, 60, 120], get: function () { return Flags.vizFps; }, set: function (v) { Flags.vizFps = v; } },
         { item: mediaBgRow, kind: "seg", vals: ["bleed", "wash", "none"], get: function () { return Flags.mediaStyle; }, set: function (v) { Flags.mediaStyle = v; } },
         { item: notchRow, kind: "toggle", get: function () { return Flags.notchStyle; }, set: function (v) { Flags.notchStyle = v; } },
@@ -167,8 +167,7 @@ SettingsSurface {
             s: root.s
             options: [
                 { label: "Bars", value: "bars" },
-                { label: "Center", value: "centered" },
-                { label: "String", value: "string" }
+                { label: "Center", value: "centered" }
             ]
             value: Flags.vizStyle
             onPicked: (v) => Flags.vizStyle = v

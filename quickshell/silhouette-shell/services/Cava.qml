@@ -36,8 +36,7 @@ Singleton {
      * period: when the pill briefly leaves rest (hovering for the workspace
      * dots, a quick surface open) the capture stays warm so the bars resume
      * instantly instead of paying a ~2s respawn; only once the grace expires
-     * while the pill is still away does the capture actually go down. Mirror
-     * of the string visualizer's expandKill policy.
+     * while the pill is still away does the capture actually go down.
      */
     property bool pillCaptureWanted: false
 
@@ -59,12 +58,9 @@ Singleton {
     /**
      * The pill pipeline only answers to the pill visualizer flag and the
      * graced capture gate; the lock's forced capture is a separate process
-     * below. The string style never needs this capture: FastMusicLine runs
-     * its own 10-segment cava, so keeping the bars capture alive too would
-     * run two cava processes for one visible visualizer.
+     * below.
      */
     readonly property bool wanted: Flags.musicViz && available && root.pillCaptureWanted
-        && Flags.vizStyle !== "string"
 
     /**
      * Lock-glow capture: its own cava run (12 bars, ascii range 100), matching

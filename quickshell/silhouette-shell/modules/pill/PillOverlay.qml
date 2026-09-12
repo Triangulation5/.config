@@ -77,19 +77,11 @@ Variants {
          * the layer is click-through so fullscreen content owns the
          * screen, until a surface or a peek summons it back over the
          * content. Maximize is suppressed globally, so only true
-         * fullscreen ever flips this.
+         * fullscreen ever flips this. Sourced from `Fullscreen` (hyprctl)
+         * because the Hyprland model's `hasfullscreen` is dead on this
+         * Hyprland/Quickshell pairing.
          */
-        readonly property bool monFullscreen: {
-            var mons = Hyprland.monitors.values;
-            for (var i = 0; i < mons.length; i++) {
-                if (mons[i].name === modelData.name) {
-                    var ws = mons[i].activeWorkspace;
-                    var o = ws ? ws.lastIpcObject : null;
-                    return o ? !!o.hasfullscreen : false;
-                }
-            }
-            return false;
-        }
+        readonly property bool monFullscreen: Fullscreen.isFullscreen(modelData.name)
 
         onMonFullscreenChanged: if (monFullscreen) {
             if (host.openMon === modelData.name) host.close();
@@ -164,8 +156,29 @@ Variants {
             focus: overlay.surfaceOpen || pill.quickChoosing
                 || (pill.mode === "hover" && pill.hovered)
 
-            HoverHandler {
-                onHoveredChanged: pill.hovered = hovered
+            HoverHandler { id: windowHover }
+
+            /**
+             * Hover normally comes straight from the window's own handler: while
+             * the mask is the pill's rect, "the window is hovered" already means
+             * "the pointer is on the pill", and it keeps tracking the pill's
+             * target rect through the morph, which the item's live geometry lags.
+             *
+             * An open surface grows the mask to the whole screen, though, and
+             * there "hovered" would only mean "the pointer is somewhere on this
+             * monitor". The pill then latched hover on every open and dropped
+             * back into hover mode — the clock and media bud flashing over the
+             * dissolve — for a beat after each surface closed, until the shrunken
+             * mask finally reported the pointer as gone. While a surface (or the
+             * quick-record chooser) owns the pill, the pointer has to be over
+             * the pill's own rect. The retracted pill is left alone: it must
+             * still wake from a hover on the mask band above it.
+             */
+            Binding {
+                target: pill
+                property: "hovered"
+                value: windowHover.hovered
+                    && (!(overlay.surfaceOpen || pill.quickChoosing) || pill.pillHovered)
             }
             Keys.onEscapePressed: {
                 if (pill.quickChoosing) {
