@@ -166,10 +166,32 @@ Item {
         }
         if (which !== "workspace" && !onFocusedMonitor)
             return false;
+        /**
+         * A running workspace flash owns the pill. A track announce landing with
+         * it is nearly always the same event's side effect — a browser player
+         * pausing or stopping because its workspace went away, which is exactly
+         * when announces fire — so letting it preempt the switcher reads as a
+         * flash of the now-playing card over the workspace you just landed on.
+         * Nothing is owed, so the pending announce is dropped too instead of
+         * replaying the instant the switcher clears.
+         */
+        if (which === "track" && flashing && kind === "workspace") {
+            dirty = false;
+            return false;
+        }
         if (which === "track" && flashing && (kind === "volume" || kind === "brightness"))
             return false;
         if (which === "track")
             holdExtends = 0;
+        /**
+         * Conversely, a workspace switch supersedes an announce already queued:
+         * the switcher is the event the user just caused, so a track flash that
+         * lost the race must not replay after it.
+         */
+        if (which === "workspace") {
+            dirty = false;
+            holdExtends = 0;
+        }
         kind = which;
         flashing = true;
         startedOnSurface = root.surfaceOpen;
