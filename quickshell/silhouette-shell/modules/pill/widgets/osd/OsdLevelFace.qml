@@ -8,9 +8,9 @@ import qs.modules.pill.widgets.osd
 /**
  * Level OSD face: a glyph at the left, a percentage at the right and a fill
  * bar between them that tracks `fill`. Shared by the volume, brightness and
- * battery faces, which only differ in glyph, percentage and fill styling:
- * `fillGradient` wins over `fillColor`, and `shimmerOn` runs the charging
- * sweep the battery face uses. Driven by the Osd root through `active`.
+ * power-source faces, which only differ in glyph, glyph colour, percentage and
+ * fill styling: `fillGradient` wins over `fillColor`. Driven by the Osd root
+ * through `active`.
  */
 OsdFace {
     id: face
@@ -26,8 +26,6 @@ OsdFace {
     property real fill: 0
     property color fillColor: Theme.vermLit
     property Gradient fillGradient: null
-
-    property bool shimmerOn: false
 
     GlyphIcon {
         id: levelGlyph
@@ -77,26 +75,6 @@ OsdFace {
             color: face.fillGradient ? "transparent" : face.fillColor
             Behavior on width { NumberAnimation { duration: Motion.fast } }
             Behavior on color { ColorAnimation { duration: Motion.fast } }
-
-            Rectangle {
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: 34 * face.s
-                visible: face.shimmerOn
-                color: "transparent"
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#00ffffff" }
-                    GradientStop { position: 0.5; color: "#55ffe6d6" }
-                    GradientStop { position: 1.0; color: "#00ffffff" }
-                }
-                NumberAnimation on x {
-                    from: -34 * face.s
-                    to: levelFill.width
-                    duration: 1200
-                    loops: Animation.Infinite
-                    running: face.active && face.shimmerOn
-                }
-            }
         }
     }
 }

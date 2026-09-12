@@ -70,6 +70,14 @@ ShellRoot {
         refresh();
         Devices.restore();
         void GameMode.active;
+        /**
+         * Warm the workspace-rule singleton now: it reads `hyprctl
+         * workspacerules` through a Process, and the switcher is something you
+         * see the instant you switch. Touching it at startup starts that read
+         * during boot instead of on the first flash, so the very first switch
+         * already has every assigned workspace and not just the live ones.
+         */
+        void Workspacerules.byMonitor;
     }
 
     /**

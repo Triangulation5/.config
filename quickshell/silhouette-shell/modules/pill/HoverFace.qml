@@ -24,9 +24,6 @@ Item {
     /** Current time text fed by the pill, formatted by the rest clock. */
     property string timeText: ""
 
-    /** Exposed for the pill's idle cleaner (reclaims the media bud). */
-    property alias mediaBud: hoverMedia
-
     /** Exposed for the pill's soul-bead anchor and hover-mode reset. */
     property alias calendarStrip: calendarStyle
 
@@ -222,7 +219,13 @@ Item {
                 opacity: face.mediaMorph * (host.surfaceOpen ? 0 : 1)
                 scale: 0.78 + 0.22 * face.mediaMorph
 
-                active: host.hasMedia
+                /**
+                 * `host.mediaBudIdle` is the idle cleaner's reclaim flag — see
+                 * Pill.mediaBudIdle. Read it instead of ever writing to this
+                 * Loader's own `active`, which would drop the binding above and
+                 * leave the bud gone for good.
+                 */
+                active: host.hasMedia && !host.mediaBudIdle
                 visible: active
 
                 /**
@@ -248,9 +251,7 @@ Item {
                     morphCloseness: face.mediaMorph
                     shown: host.mode === "hover"
 
-                    onRequestClose: {
-                        hoverMedia.active = false
-                    }
+                    onRequestClose: host.mediaBudIdle = true
                 }
             }
 

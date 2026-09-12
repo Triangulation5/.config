@@ -16,77 +16,16 @@ Row {
     property real s: 1.1
     property real span: 10
     property bool centeredVisualizer: false
-    property bool stringVisualizer: false
-
-    /**
-     * True while the visualizer slot is actually shown (pill at rest + audio
-     * flowing). Gates the string renderer's own cava capture: with nothing to
-     * display, the whole FastMusicLine (process, glow, shape) is unloaded.
-     */
-    property bool live: false
-
-    /**
-     * True only while the pill is actually at rest (vs expanded/hovered/game).
-     * The string's capture stays warm while hidden but only consumes frames
-     * when resting, so returning to rest resumes instantly without 60fps
-     * churn behind an open surface.
-     */
-    property bool resting: false
 
     height: span * s
-    width: stringVisualizer ? 24 * s : Cava.bars * (2.8 * s + 1.4 * s)
-    spacing: stringVisualizer ? 0 : 1.8 * s
+    width: Cava.bars * (2.8 * s + 1.4 * s)
+    spacing: 1.8 * s
 
-    /**
-     * True while audio is actually flowing through whichever capture renders
-     * this slot: the string's own cava in string mode, Cava's bars capture
-     * otherwise. The pill's vizShown gate reads this so string mode never
-     * depends on the bars capture staying warm (it is deliberately down
-     * there).
-     */
-    readonly property bool active: root.stringVisualizer
-        ? (stringLoader.item ? stringLoader.item.active : false)
-        : Cava.active
-
-    Loader {
-        id: stringLoader
-        active: root.stringVisualizer && root.live
-        width: root.width
-        height: root.height
-        visible: root.stringVisualizer
-        sourceComponent: musicLineComponent
-    }
-
-    Component {
-        id: musicLineComponent
-
-        FastMusicLine {
-            width: parent.width
-            height: parent.height
-            live: root.live
-            resting: root.resting
-
-            /**
-             * The string is drawn in a 200×200 coordinate space with its origin
-             * at the item's top-left. Scale it down to 0.16·s (a ~32·s-wide
-             * path) so it reads as a graceful line balanced against the clock
-             * instead of a band that nearly fills the pill, then recentre that
-             * footprint inside the slot (x = (root.width − 280·scale)/2,
-             * y = root.height/2·(1−scale)). The scaled line is wider than the
-             * 24·s slot, so it breathes past it into the pill's empty space
-             * instead of shoving the clock right - the gap to the clock still
-             * matches the bars mode and the string's middle lines up with the
-             * clock's.
-             */
-            transformOrigin: Item.TopLeft
-            scale: 0.16 * root.s
-            x: (root.width - 280 * scale) / 2
-            y: root.height / 2 * (1 - scale)
-        }
-    }
+    /** True while audio is actually flowing through the cava capture. */
+    readonly property bool active: Cava.active
 
     Repeater {
-        model: root.stringVisualizer ? 0 : Cava.bars
+        model: Cava.bars
 
         Rectangle {
             required property int index
