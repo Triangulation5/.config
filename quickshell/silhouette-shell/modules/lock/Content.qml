@@ -633,26 +633,4 @@ Item {
             }
         }
     }
-
-    LockMusicRing {
-        id: lockMusicRing
-
-        s: content.s
-        radius: 104 * content.s
-        dotRadius: 3 * content.s
-        amplitude: 11 * content.s
-        surfaceActive: surface.active
-        debugLog: true
-        visible: content.hasPlayer && content.playing && !content.clockExpanded && !content.authenticating
-        opacity: content.authenticating ? 0.55 : 1
-        x: profile.x + profile.width / 2 - lockMusicRing.radius
-        y: profile.y + profile.height / 2 - lockMusicRing.radius
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 220
-                easing.type: Easing.OutCubic
-            }
-        }
-    }
 }
