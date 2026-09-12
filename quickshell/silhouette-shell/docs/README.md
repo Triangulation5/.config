@@ -33,7 +33,7 @@ instead.
 
 - [Desktop Controls](features/desktop-controls.md) — launcher, AppImage installer, power menu, lockscreen
 - [System Integration](features/system-integration.md) — notifications, clipboard, media, tray, mixer
-- [Visualizers](features/visualizers.md) — cava bars and the music line
+- [Visualizers](features/visualizers.md) — cava bars in the rest pill
 - [Display & Hardware](features/display-hardware.md) — display switcher, OSD, bluetooth, wifi, input
 - [Calendar & Time](features/calendar-time.md) — calendar and weather
 - [Workspaces](features/workspaces.md) — workspace switcher, stash, space apps

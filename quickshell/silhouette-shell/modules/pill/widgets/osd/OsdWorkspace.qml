@@ -19,6 +19,11 @@ OsdFace {
     Workspaces {
         id: wsIndicator
         anchors.centerIn: parent
+        /** Pin the strip's own size from its implicit size so centerIn centres
+         *  the dots instead of a zero-width item (which pushes them off the
+         *  right half of the pill). */
+        width: implicitWidth
+        height: implicitHeight
         screenName: face.screenName
         s: face.s
         gap: 8 * face.s

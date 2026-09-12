@@ -118,6 +118,17 @@ Item {
     readonly property bool hasMedia: Players.has
 
     /**
+     * True once the idle cleaner has reclaimed the hover media bud: the bud's
+     * Loader drops it so an idle iGPU isn't paying for a full Media widget
+     * (player lookups, cover art) nobody can see. A plain flag, never a write
+     * to the Loader's own `active` — assigning that would destroy its
+     * `active: hasMedia` binding outright and the bud could never return.
+     * Cleared when the media source changes and when hover mode begins, so the
+     * bud rebuilds exactly when it is about to be looked at.
+     */
+    property bool mediaBudIdle: false
+
+    /**
      * The media source dropped out while the media surface owned the pill: a
      * pause keeps the surface up (Players.has stays true — the paused card is
      * still the live now-playing view, and the OSD drops track flashes over
@@ -127,7 +138,12 @@ Item {
      * state instead of parking on a stale card. Driven purely by state changes
      * - no timers or timeouts.
      */
-    onHasMediaChanged: if (!hasMedia && mediaOpen) pill.requestClose()
+    onHasMediaChanged: {
+        /** A new source always warrants a fresh bud, whatever the cleaner reclaimed. */
+        mediaBudIdle = false;
+        if (!hasMedia && mediaOpen)
+            pill.requestClose();
+    }
 
     /**
      * Subview the link surface should land on when next opened. The wifi glance
@@ -347,8 +363,8 @@ Item {
          * toggle. The visible bud is never touched: this only fires when the
          * pill is out of hover mode.
          */
-        if (pill.hoverFace && pill.hoverFace.mediaBud.active && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= timeout)
-            pill.hoverFace.mediaBud.active = false;
+        if (pill.hasMedia && !pill.mediaBudIdle && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= timeout)
+            pill.mediaBudIdle = true;
     }
 
     Timer {
@@ -440,7 +456,17 @@ Item {
     property string dragName: ""
     property string dragStage: ""
 
-    /** Mode ladder: drag-over, OSD, open surface, game, quick-record, toast, hover, rest. */
+    /**
+     * Mode ladder: drag-over, OSD, open surface, game, quick-record, toast,
+     * hover, rest.
+     *
+     * The hover branch spells `expanded` out instead of reading it. `expanded`
+     * is itself a binding over `surfaceOpen`, and `mode` is re-evaluated the
+     * moment `surfaceOpen` changes — one level deeper than `expanded` gets.
+     * Closing a surface therefore used to step through a phantom "hover" on the
+     * still-stale `expanded`, which set `hoverHop` and pinned the hover face
+     * (clock, media bud) at full opacity over the collapsing pill.
+     */
     readonly property string mode: (dragActive ? "dragOver"
         : (osdPreempts ? "osd"
         : (surfaceOpen && surfaces[surface] !== undefined ? surface
@@ -448,7 +474,7 @@ Item {
         : (quickChoosing ? "quickChoose"
         : (quickCounting ? "quickCount"
         : (toastActive && !held ? "toast"
-        : (expanded ? "hover" : "rest"))))))))
+        : ((surfaceOpen || held || hoverLatch) ? "hover" : "rest"))))))))
 
     signal requestSurface(string name)
     signal requestClose()
@@ -580,9 +606,27 @@ Item {
      * morphCloseness gate alone was already satisfied the instant the close
      * began, so the hover clock and media bud flashed over the still-visible
      * card.
+     *
+     * Pushed from the item's own opacity change signal rather than read live in
+     * a binding: a read through the `closingSurface` var is not a subscription,
+     * so the value only refreshed when `morphCloseness` happened to move — on a
+     * close that barely moves the pill the crossfade froze on its first frame
+     * and the hover face then arrived at full strength.
      */
-    readonly property real closingOpacity: (pill.closingSurface && typeof pill.closingSurface.opacity === "number")
-        ? pill.closingSurface.opacity : 0
+    property real closingOpacity: 0
+
+    function _syncClosingOpacity() {
+        const s = pill.closingSurface;
+        pill.closingOpacity = (s && typeof s.opacity === "number") ? s.opacity : 0;
+    }
+
+    onClosingSurfaceChanged: _syncClosingOpacity()
+
+    Connections {
+        target: pill.closingSurface
+        ignoreUnknownSignals: true
+        function onOpacityChanged() { pill._syncClosingOpacity(); }
+    }
 
     onSurfaceOpenChanged: if (surfaceOpen) {
         pinned = false;
@@ -722,6 +766,9 @@ Item {
         /** Touch the last-opened timestamp so the idle cleaner sees recent use. */
         if (pill.surfaces[mode] !== undefined)
             pill._surfaceLastOpened[mode] = Date.now();
+        /** Hovering is the only way to see the bud, so clear the reclaim on the way in. */
+        if (mode === "hover")
+            mediaBudIdle = false;
         hoverHop = (mode === "hover" || mode === "rest") && (lastMode === "hover" || lastMode === "rest");
         /** Computed before lastMode is overwritten: hover reached by shrinking from a non-rest mode, not by growing from rest. */
         closeArrive = mode === "hover" && lastMode !== "hover" && lastMode !== "rest";
@@ -1041,9 +1088,11 @@ Item {
      * nonexistent `budR`; while `shown` was an undeclared property it short-
      * circuited to 0, but once Media gained a real `shown` it evaluated
      * `undefined + 2*s` = NaN, which collapsed the window mask and killed all
-     * hover input on the pill.) pill.hovered is fed by a window-level
-     * HoverHandler in shell.qml: pointer events only exist inside the input
-     * mask, so "window hovered" means "pointer over the pill (or bud)".
+     * hover input on the pill.) pill.hovered is fed by the window-level
+     * HoverHandler in PillOverlay: pointer events only exist inside the input
+     * mask, so "window hovered" means "pointer over the pill (or bud)" — except
+     * while a surface has grown that mask to the whole screen (see pillHovered
+     * below).
      */
     readonly property real inputPadRight: 0
 
@@ -1055,6 +1104,20 @@ Item {
             graceTimer.restart();
         }
     }
+
+    /**
+     * Hover over the pill's own rect. `hovered` normally comes from the
+     * window-level handler in PillOverlay, because a retracted pill has to wake
+     * from a hover on the mask band above it — a region this item's own rect
+     * never covers. An open surface grows that mask to the whole screen though,
+     * and there "window hovered" only means "the pointer is somewhere on this
+     * monitor", which latched hover on every open and dropped the pill back
+     * into hover mode (clock, media bud) for a beat after the surface closed.
+     * The overlay reads this flag to disambiguate that case.
+     */
+    readonly property alias pillHovered: pillHover.hovered
+
+    HoverHandler { id: pillHover }
 
     Timer {
         id: graceTimer
@@ -1124,12 +1187,9 @@ Item {
 
                 /**
                  * Audio leaving the speakers flips the left slot into the live
-                 * waveform. The slot takes the visualizer's explicit size, not its
-                 * implicit one: MusicBars is a Row whose implicitWidth collapses to
-                 * zero in string mode (FastMusicLine is a transparent Rectangle),
-                 * which would park the string on a point and let it overlap the
-                 * clock. The explicit width keeps the slot stable for both the
-                 * bars and the string renderer.
+                 * waveform. The slot takes the visualizer's explicit size rather
+                 * than reading it back implicitly, so the row layout stays stable
+                 * as the bars appear and disappear.
                  *
                  * The slot keeps a constant footprint (while the normal row is
                  * showing) so the row layout never re-runs as the bars appear
@@ -1159,9 +1219,6 @@ Item {
                     s: pill.s
 
                     centeredVisualizer: Flags.vizStyle === "centered"
-                    stringVisualizer: Flags.vizStyle === "string"
-                    live: Flags.musicViz
-                    resting: pill.mode === "rest"
 
                     opacity: restKanji.vizShown ? 1 : 0
                     scale: restKanji.vizShown ? 1 : 0.7

@@ -18,16 +18,28 @@ Row {
     spacing: 8 * s
 
     /**
-     * Resolve the workspace id to restore into: the active workspace of the
+     * Resolve the workspace number to restore into: the active workspace of the
      * monitor this pill lives on, so a window reappears on the screen the user
      * clicked, falling back to the focused workspace.
+     *
+     * The number is parsed from the workspace name rather than read from
+     * `activeWorkspace.id`: on Hyprland 0.56 the workspace model reports every
+     * id as 0 or -1 (the compositor stopped sending `id` in `hyprctl
+     * workspaces -j` — see [[Workspacerules]]), so restoring by id moved the
+     * window nowhere.
      */
     function restoreWorkspace() {
         var ms = Hyprland.monitors.values;
-        for (var i = 0; i < ms.length; i++)
-            if (ms[i].name === root.screenName && ms[i].activeWorkspace)
-                return ms[i].activeWorkspace.id;
-        return Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1;
+        for (var i = 0; i < ms.length; i++) {
+            if (ms[i].name === root.screenName && ms[i].activeWorkspace) {
+                var n = parseInt(ms[i].activeWorkspace.name);
+                if (n >= 1)
+                    return n;
+            }
+        }
+        var fw = Hyprland.focusedWorkspace;
+        var fn = fw ? parseInt(fw.name) : NaN;
+        return fn >= 1 ? fn : 1;
     }
 
     readonly property var items: {

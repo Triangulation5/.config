@@ -122,18 +122,10 @@ Item {
      * True while this monitor's active workspace holds a fullscreen client.
      * Workspace flashes are skipped then (and cut short if fullscreen lands
      * mid-flash), so the switcher never lingers over fullscreen content.
+     * Sourced from `Fullscreen` (hyprctl): the Hyprland model's
+     * `hasfullscreen` is dead on this Hyprland/Quickshell pairing.
      */
-    readonly property bool wsFullscreen: {
-        var mons = Hyprland.monitors.values;
-        for (var i = 0; i < mons.length; i++) {
-            if (mons[i].name === screenName) {
-                var ws = mons[i].activeWorkspace;
-                var o = ws ? ws.lastIpcObject : null;
-                return o ? !!o.hasfullscreen : false;
-            }
-        }
-        return false;
-    }
+    readonly property bool wsFullscreen: Fullscreen.isFullscreen(screenName)
     onActiveWsNameChanged: if (activeWsName.length > 0 && !expanded && !wsFullscreen) flash("workspace");
 
     /**
@@ -285,6 +277,14 @@ Item {
     Connections {
         target: Battery
         enabled: Battery.present
+        /**
+         * Flash on both edges of the power source — plugged in and unplugged.
+         * Keyed off the AC line, not `charging`: on a threshold-capped battery
+         * the state never reaches `Charging`, so the old charging-only trigger
+         * never fired (which is why the plug/unplug flash looked dead).
+         */
+        function onPluggedChanged() { root.flash("battery"); }
+        /** And again when charging actually begins below the start threshold. */
         function onChargingChanged() {
             if (Battery.charging)
                 root.flash("battery");
@@ -369,17 +369,26 @@ Item {
         fillGradient: root.flameGradient
     }
 
+    /**
+     * The power-source flash reads like the other level faces — glyph, charge
+     * meter, percentage — at the same bar size and style as volume and
+     * brightness, so it never stands out as a different widget. The state
+     * carries through colour instead: a flame glyph and a lit vermillion meter
+     * while the cable is in, and a washed-out slate glyph over the faded
+     * `vermDim` meter on battery — the same fade the volume bar takes when
+     * muted. The bolt is shown on AC even when the device never reports
+     * `Charging` (a threshold-capped pack sits at `pending-charge` all day).
+     */
     OsdLevelFace {
         anchors.fill: parent
         s: root.s
         active: root.kind === "battery"
         glyph: "bolt"
-        glyphColor: Theme.flameGlow
+        glyphColor: Battery.plugged ? Theme.flameGlow : Theme.faint
         pctText: Battery.pct + "%"
-        pctWidth: 40 * root.s
+        pctColor: Battery.plugged ? Theme.flameGlow : Theme.dim
         fill: Battery.frac
-        fillGradient: root.flameGradient
-        shimmerOn: Battery.charging
+        fillColor: Battery.plugged ? Theme.vermLit : Theme.vermDim
     }
 
     OsdWorkspace {

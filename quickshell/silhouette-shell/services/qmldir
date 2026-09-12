@@ -9,8 +9,9 @@ singleton Devices         1.0 Devices.qml
 singleton Downloads       1.0 Downloads.qml
 singleton Dyn             1.0 Dyn.qml
 singleton Events          1.0 Events.qml
-singleton Flags           1.0 Flags.qml
-singleton GameMode        1.0 GameMode.qml
+singleton Flags          1.0 Flags.qml
+singleton Fullscreen     1.0 Fullscreen.qml
+singleton GameMode       1.0 GameMode.qml
 singleton Motion          1.0 Motion.qml
 singleton NightLight      1.0 NightLight.qml
 singleton Notifs          1.0 Notifs.qml
