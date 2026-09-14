@@ -79,12 +79,17 @@ Loader {
     property var closeAction: null
 
     /**
-     * Compiles (first open) and activates this loader. Called by the host's
-     * surfaceItem whenever a surface is requested. Subsequent calls are
-     * cheap: the source is already set, so only `active` flips.
+     * Compiles (first open) and activates this loader. Called imperatively
+     * by the host when the open target changes, and defensively by
+     * surfaceItem/ame thunks. Subsequent calls are no-ops: an already-active
+     * loader returns immediately, so a call from inside a binding can never
+     * write `active` mid-evaluation and re-invalidate that same binding
+     * (which QML reports as a binding loop on the host's ameSurface).
      */
     function activate() {
-        if (!loader.active && loader.sourceUrl.length && !loader.source.length)
+        if (loader.active)
+            return;
+        if (loader.sourceUrl.length && !loader.source.length)
             loader.setSource(loader.sourceUrl);
         loader.active = true;
     }

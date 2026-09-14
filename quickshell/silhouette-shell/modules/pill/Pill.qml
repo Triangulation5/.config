@@ -630,6 +630,15 @@ Item {
 
     onSurfaceOpenChanged: if (surfaceOpen) {
         pinned = false;
+        /**
+         * Activate the target loader imperatively, outside any binding: the
+         * ame/size thunks call surfaceItem() from inside bindings, and an
+         * activate() that flips `loader.active` mid-binding-evaluation used
+         * to re-invalidate the very binding that called it (the benign but
+         * noisy "binding loop on ameSurface" warning on every first open).
+         */
+        if (surfaces[surface] !== undefined)
+            surfaceItem(_surfaceLoaders[surface], surface);
         if (quickHere && ScreenRec.quickChoosing) {
             ScreenRec.quickChoosing = false;
             ScreenRec.quickScreenChoosing = false;
