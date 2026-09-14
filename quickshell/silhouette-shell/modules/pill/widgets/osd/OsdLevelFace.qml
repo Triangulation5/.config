@@ -83,9 +83,12 @@ OsdFace {
             /**
              * The charging sweep: a soft warm band travelling along the filled
              * bar while the pack takes charge, looping for as long as the face
-             * is active and `shimmerOn` holds. Restarting the flash mid-charge
-             * would reset the sweep, which is why battery edges never preempt
-             * a running battery flash (see Osd.flash).
+             * is active and `shimmerOn` holds. The gradient runs horizontal so
+             * the glint sweeps along the bar (the original OsdBattery face's
+             * behaviour, which a level-face merge silently flattened into a
+             * 4px vertical sliver). Restarting the flash mid-charge would
+             * reset the sweep, which is why battery edges never preempt a
+             * running battery flash (see Osd.flash).
              */
             Rectangle {
                 anchors.top: parent.top
@@ -94,6 +97,7 @@ OsdFace {
                 visible: face.shimmerOn
                 color: "transparent"
                 gradient: Gradient {
+                    orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "#00ffffff" }
                     GradientStop { position: 0.5; color: "#55ffe6d6" }
                     GradientStop { position: 1.0; color: "#00ffffff" }
