@@ -8,17 +8,18 @@ import qs.components.icons
 import qs.components.layout
 
 /**
- * 設 SETTINGS index: a short list of categories grouped into Shell and Control.
- * Each row carries its kanji, name and caption, and morphs the pill into that
- * category's sub-surface. Arrow keys move the focused row with the glowing seam
- * and Return opens it. The Shell group holds Appearance and Display; the Control
- * group holds Keybinds and Updates.
+ * 速 QUICK SETTINGS index: the category hub — a short list of surfaces grouped
+ * into Shell and Control, each row carrying its kanji, name and caption, and
+ * morphing the pill into that category's sub-surface. The searchable control
+ * center (quicksettings/SettingsPanel.qml) is the primary settings window that
+ * opens from the pill's cog over IPC; this index stays as the category browser
+ * inside the pill.
  */
 SettingsSurface {
     id: root
 
-    kanji: "設"
-    label: "SETTINGS"
+    kanji: "速"
+    label: "QUICK SETTINGS"
     showBack: false
     icon: "cog"
 

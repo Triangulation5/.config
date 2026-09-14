@@ -6,10 +6,11 @@ import qs.modules.lock
 import qs.modules.screencorner
 import qs.modules.launcher
 import qs.modules.reload
+import qs.modules.quicksettings
 
 /**
  * Shell entry point — a pure composition root. Each daemon is a self-contained
- * module that also owns its IPC surface (`qs ipc call pill|lock|launcher ...`):
+ * module that also owns its IPC surface (`qs ipc call pill|lock|launcher|settings ...`):
  * the pill's surface routing lives in PillRoot, the lock trigger in LockRoot and
  * the standalone launcher's show/hide/toggle in LauncherRoot. Adding or removing
  * a module never touches this file.
@@ -21,4 +22,5 @@ ShellRoot {
     ScreenCornerRoot { id: cornerRoot }
     LauncherRoot { id: launcherRoot }
     ReloadPopup { id: reloadRoot }
+    SettingsRoot { id: settingsRoot }
 }

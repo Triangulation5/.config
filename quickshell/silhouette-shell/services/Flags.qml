@@ -78,32 +78,32 @@ Singleton {
             id: adapter
             property bool dnd: false
             property bool keepAwake: false
-            property bool time12h: false
+            property bool time12h: true
             property bool clockSeconds: false
-            property bool showGlyphs: true
+            property bool showGlyphs: false
             property string paletteMode: "static"
             /** Empty means fall back to ~/Pictures. Lives in user state so an in-app update never clobbers a custom folder. */
             property string wallpaperDir: ""
-            property real uiScale: 1.0
+            property real uiScale: 1.1
             property bool reduceMotion: false
-            property int manualHue: 30
+            property int manualHue: 0
             property bool manualDark: true
             property real manualSat: 0.5
-            property string uiFont: ""
+            property string uiFont: "JetBrainsMono Nerd Font Mono"
             property real pillOpacity: 1.0
-            property bool pillBlur: false
+            property bool pillBlur: true
             /** Top margin as a fraction of the shipped 8px. 0 sits the pill flush to the screen edge. */
-            property real topGap: 1.0
+            property real topGap: 0.7
             /** Pill-to-window band as a fraction of the shipped 12px. 0 tucks the windows flush under the pill. */
             property real appGap: 1.0
             /** True renders the pill as a notch-style bar (ears out, square top corners); false keeps the rounded pill. */
             property bool notchStyle: false
             /** Notch ear flare offset (px). Higher flares both notch ears out. */
-            property real notchFlare: -2.45
+            property real notchFlare: 1
             /** Retract the pill off the top edge until the pointer touches it. */
             property bool autoHide: false
             /** hjkl navigation instead of arrow keys in the pill menus. */
-            property bool vimKeys: false
+            property bool vimKeys: true
             property int recordCountdown: 5
             property string recordDir: ""
             property int recordFps: 60
@@ -112,27 +112,27 @@ Singleton {
             property bool recordMic: true
             property bool recordDesktop: true
             property real recordClearedBefore: 0
-            property int idleLockMin: 5
-            property int idleScreenOffMin: 6
+            property int idleLockMin: 3
+            property int idleScreenOffMin: 0
             property int idleSuspendMin: 0
             /** Lock-screen password bead entrance: "drop", "pulse", or "gpixel". */
             property string lockDotsMode: "gpixel"
-            property string weatherCity: ""
+            property string weatherCity: "WELLAND"
             property bool musicViz: true
             /** Rest-pill spectrum renderer: bars, centered bars, or the flowing string. */
             property string vizStyle: "bars"
             /** Spectrum capture framerate (the pill EQ is visually identical at 30). */
-            property int vizFps: 30
+            property int vizFps: 60
             /** Now-playing card backdrop: "bleed" blurred album art over a wallpaper-derived tint, "wash" the legacy warm tint, or "none" fully transparent. */
-            property string mediaStyle: "none"
+            property string mediaStyle: "bleed"
             property bool gameMode: false
             property bool gamePrevDnd: false
             property bool gamePrevViz: true
             property bool gamePrevAwake: false
-            property string nightLightMode: "off"
-            property int nightLightTemp: 4000
-            property int nightLightOnMin: 1260
-            property int nightLightOffMin: 450
+            property string nightLightMode: "scheduled"
+            property int nightLightTemp: 3600
+            property int nightLightOnMin: 1200
+            property int nightLightOffMin: 420
         }
     }
 }
