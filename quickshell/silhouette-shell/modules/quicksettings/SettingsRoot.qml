@@ -15,7 +15,9 @@ import qs.modules.quicksettings
  * mode ladder. One window per screen, shown only on the target monitor, built
  * on first open via a lazy Loader and torn down when hidden, so an unused
  * panel costs nothing at runtime. Toggled over its own IPC surface
- * (`qs ipc call settings toggle`) or from anywhere in QML through `shown`.
+ * (`qs -c silhouette-shell ipc call settings toggle` — no arguments, always
+ * the focused monitor; quickshell's IPC enforces declared arity, so toggle
+ * is deliberately zero-arg) or from anywhere in QML through `shown`.
  *
  * Rip-out: delete modules/quicksettings/ and the single SettingsRoot line in
  * shell.qml.
@@ -113,9 +115,16 @@ ShellRoot {
         target: "settings"
         function show(mon: string): void { root.open(mon); }
         function hide(): void { root.shown = false; }
-        function toggle(mon: string): void {
+
+        /**
+         * Zero-arg on purpose: keybinds exec `qs ... ipc call settings toggle`
+         * bare, and quickshell's IPC rejects calls with fewer arguments than
+         * the function declares. Toggle always targets the focused monitor;
+         * use show() to pick one explicitly.
+         */
+        function toggle(): void {
             if (root.shown) { root.shown = false; return; }
-            root.open(mon);
+            root.open("");
         }
     }
 }
