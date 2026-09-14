@@ -27,6 +27,10 @@ hl.bind(mainMod .. " + T",         hl.dsp.exec_cmd(quickshell .. " sysmon"))
 hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
 hl.bind(mainMod .. " + I",         hl.dsp.exec_cmd(quickshell .. " keybinds"))
 hl.bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd(quickshell .. " settings"))
+
+-- Standalone settings window (searchable control center)
+local settingsWindow = "qs -c silhouette-shell ipc call settings toggle"
+hl.bind(mainMod .. " + comma",    hl.dsp.exec_cmd(settingsWindow))
 hl.bind(mainMod .. " + A",         hl.dsp.exec_cmd(quickshell .. " media"))
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd(quickshell .. " timer"))
 hl.bind(mainMod .. " + W",         hl.dsp.exec_cmd(quickshell .. " wallpaper"))
