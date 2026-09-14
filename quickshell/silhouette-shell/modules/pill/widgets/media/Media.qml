@@ -11,9 +11,10 @@ import qs.components.icons
 /**
  * Now-playing card. Its backdrop follows Flags.mediaStyle, chosen in
  * Appearance: "bleed" — a blurred, low-res copy of the cover stretching
- * across the card, subtle and riding the pill's own opacity; "wash" — the
- * legacy near-opaque warm tint, verbatim; or "none" — fully transparent,
- * the pill body reading through like every other surface. The album art
+ * across the card over a wallpaper-derived tint, subtle and riding the
+ * pill's own opacity; "wash" — the legacy near-opaque warm tint, verbatim;
+ * or "none" — fully transparent, the pill body reading through like every
+ * other surface. The album art
  * itself always sits in a rounded tile on the left. Right of the cover:
  * title, artist, a dim source/time line, the play/pause seal (奏/休) flanked
  * by 前/次 skips. Playback runs as a brush stroke along the bottom, its
@@ -97,6 +98,21 @@ PillSurface {
      * never a hard band like the old flat wash.
      */
     readonly property real artBleed: 0.28 * Flags.pillOpacity
+
+    /**
+     * Wallpaper-derived tint the bleed sits on (Flags.mediaStyle "bleed"):
+     * the container tone matugen pulled from the current wallpaper, read
+     * straight from [[Dyn]] rather than through Theme so it follows the
+     * wallpaper in both palette modes — the backdrop always matches what is
+     * actually on screen and never injects the static theme's own hues into
+     * someone's colours. The blurred cover floats above it, so the card
+     * reads as the wallpaper glowing through the track instead of either
+     * alone; with no art decoded it stands in for the bleed entirely.
+     * Scales with Flags.pillOpacity for the same translucency uniformity as
+     * the art layer.
+     */
+    readonly property color bleedTint: Dyn.primaryContainer
+    readonly property real tintBleed: 0.28 * Flags.pillOpacity
 
     /**
      * Warm wash base for the legacy tint option (Flags.mediaStyle "wash"):
@@ -220,13 +236,27 @@ PillSurface {
         }
 
         /**
+         * Wallpaper-derived tint base (Flags.mediaStyle "bleed"): the matugen
+         * container colour for the current wallpaper at a soft alpha, under
+         * the blurred cover so the backdrop always agrees with the screen
+         * behind the pill. Fades with `shown` exactly like the art layer.
+         */
+        Rectangle {
+            anchors.fill: parent
+            color: root.bleedTint
+            visible: root.bleedOn && opacity > 0.01
+            opacity: root.shown && root.bleedOn ? root.tintBleed : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+        }
+
+        /**
          * Blurred cover bleed (Flags.mediaStyle "bleed"): a tiny decode of
          * the art (already soft when upscaled) blurred through a MultiEffect
-         * layer and stretched across the whole card, under the cover tile,
-         * title and transport. The blur layer only exists while the card is
-         * actually shown (`shown`), so it costs nothing at rest or while a
-         * different surface owns the pill, and the fade rides the pill's
-         * opacity like everything else.
+         * layer and stretched across the whole card, over the wallpaper tint
+         * and under the cover tile, title and transport. The blur layer only
+         * exists while the card is actually shown (`shown`), so it costs
+         * nothing at rest or while a different surface owns the pill, and
+         * the fade rides the pill's opacity like everything else.
          */
         Image {
             id: artBg
@@ -324,6 +354,12 @@ PillSurface {
         anchors.topMargin: 19 * root.s
         spacing: 3 * root.s
 
+        /**
+         * Over the bleed the marquees carry no edge fades at all: the bands
+         * would strip the wallpaper tint backdrop, and a fade retuned to it
+         * still read as a coloured smear. Other backdrop modes keep the
+         * marquee's palette fade, tuned for those surfaces.
+         */
         Marquee {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -331,7 +367,7 @@ PillSurface {
             color: Theme.cream
             pixelSize: 21 * root.s
             weight: Font.DemiBold
-            fadeWidth: 20 * root.s
+            fadeWidth: root.bleedOn ? 0 : 20 * root.s
             active: root.shown
         }
 
@@ -341,7 +377,7 @@ PillSurface {
             text: root.artist
             color: Theme.dim
             pixelSize: 16 * root.s
-            fadeWidth: 16 * root.s
+            fadeWidth: root.bleedOn ? 0 : 16 * root.s
             active: root.shown
             visible: text.length > 0
         }

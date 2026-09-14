@@ -4,6 +4,7 @@
 - [Display & Hardware](#display-hardware)
   - [Display switcher](#display-switcher)
   - [Volume / brightness OSD](#volume-brightness-osd)
+  - [Battery OSD](#battery-osd)
   - [Bluetooth](#bluetooth)
   - [WiFi](#wifi)
   - [Input](#input)
@@ -22,6 +23,17 @@ on a short countdown, so you can back out before the layout sticks.
 Volume, brightness and mute changes pop an OSD above the pill instead of
 relying on the compositor's. Brightness goes through brightnessctl for the
 internal panel and ddcutil for external monitors.
+
+## Battery OSD
+
+The pill morphs open for power events on laptops: plugging in, unplugging,
+charging starting below a charge threshold, and every whole percent gained
+while charging. The flash reads like the other level faces — bolt glyph,
+charge meter, percentage — flame-lit while the cable is in and washed slate
+on battery. While the pack actually takes charge a warm shimmer sweeps the
+meter, and the fill rides the live charge level, so a flash held open across
+a gain tick shows the bar move. In game mode the same read rides the inline
+chip on the game bar instead, like volume and brightness already do.
 
 ## Bluetooth
 
