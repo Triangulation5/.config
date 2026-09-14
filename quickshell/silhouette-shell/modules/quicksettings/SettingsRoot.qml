@@ -39,8 +39,6 @@ ShellRoot {
         shown = true;
     }
 
-    onShownChanged: if (shown) Qt.callLater(() => { if (panelLoader.item) panelLoader.item.reset(); })
-
     Variants {
         model: Quickshell.screens
 
@@ -91,7 +89,10 @@ ShellRoot {
                     onRequestClose: root.shown = false
                 }
 
-                onLoaded: if (item) Qt.callLater(item.focusSearch)
+                onLoaded: if (item) {
+                    item.reset();
+                    Qt.callLater(item.focusSearch);
+                }
             }
 
             /** Escape closes the whole panel from anywhere. */

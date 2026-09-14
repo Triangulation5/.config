@@ -168,13 +168,10 @@ Item {
 
     Rectangle {
         id: card
-        radius: 22 * root.s
+        radius: 24 * root.s
+        color: Theme.frameBg
         border.width: 1
         border.color: Theme.border
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.cardTop }
-            GradientStop { position: 1.0; color: Theme.cardBot }
-        }
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
@@ -185,6 +182,38 @@ Item {
 
         implicitWidth: 420 * root.s
         implicitHeight: 16 * root.s + headerCol.implicitHeight + 14 * root.s
+
+        /**
+         * Matte face: the inner surface sits inset 1px from the border ring,
+         * Tide-island style — the ring reads as a bevel and the face floats
+         * inside it instead of one flat fill.
+         */
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1 * root.s
+            radius: 23 * root.s
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Theme.cardTop }
+                GradientStop { position: 1.0; color: Theme.cardBot }
+            }
+        }
+
+        /**
+         * Open: scale in from the top edge (0.12 → 1, OutQuint), the same
+         * entrance Tide-island's control center uses. The loader rebuilds the
+         * panel per open, so the intro plays on every show.
+         */
+        transformOrigin: Item.Top
+        scale: 0.12
+        opacity: 0
+
+        ParallelAnimation {
+            id: intro
+            NumberAnimation { target: card; property: "scale"; from: 0.12; to: 1; duration: 400; easing.type: Easing.OutQuint }
+            NumberAnimation { target: card; property: "opacity"; from: 0; to: 1; duration: 220; easing.type: Easing.OutQuad }
+        }
+
+        Component.onCompleted: intro.restart()
 
         Column {
             id: headerCol
