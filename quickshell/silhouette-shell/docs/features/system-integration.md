@@ -33,6 +33,11 @@ play/pause seal (奏/休) with 前/次 skips, and a brush-stroke progress bar
 whose head doubles as Ame's dock. With two or more players running the source
 token opens a picker instead of guessing.
 
+The card's backdrop mode is chosen in Appearance. The "bleed" option reads
+the colour matugen pulled from the current wallpaper and lays it under the
+blurred album art, so the card agrees with whatever is on screen and never
+carries the static theme's own hues into someone's colours.
+
 ## Tray
 
 A custom tray. Items render as glyphs on a washi card, wheel scrolls the

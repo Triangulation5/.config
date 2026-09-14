@@ -123,7 +123,7 @@ Singleton {
             property string vizStyle: "bars"
             /** Spectrum capture framerate (the pill EQ is visually identical at 30). */
             property int vizFps: 30
-            /** Now-playing card backdrop: "bleed" blurred album art, "wash" the legacy warm tint, or "none" fully transparent. */
+            /** Now-playing card backdrop: "bleed" blurred album art over a wallpaper-derived tint, "wash" the legacy warm tint, or "none" fully transparent. */
             property string mediaStyle: "none"
             property bool gameMode: false
             property bool gamePrevDnd: false

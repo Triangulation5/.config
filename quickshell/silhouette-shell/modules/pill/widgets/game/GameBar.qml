@@ -27,13 +27,16 @@ Item {
     /** The pill's OSD, so volume/brightness feedback can ride the bar. */
     property var osd: null
 
-    /** True while the OSD is flashing the inline volume/brightness level chip. */
+    /** True while the OSD is flashing the inline chip: volume, brightness or battery. */
     readonly property bool levelFlash: root.osd.flashing
-        && (root.osd.kind === "volume" || root.osd.kind === "brightness")
-    /** The level the chip renders: brightness when that kind is flashing, else volume. */
-    readonly property real levelValue: root.osd.kind === "brightness" ? root.osd.brightness : root.osd.volume
+        && (root.osd.kind === "volume" || root.osd.kind === "brightness" || root.osd.kind === "battery")
+    /** The level the chip renders: brightness when that kind is flashing, the charge fraction on battery, else volume. */
+    readonly property real levelValue: root.osd.kind === "brightness" ? root.osd.brightness
+        : (root.osd.kind === "battery" ? Battery.frac : root.osd.volume)
     /** True while the chip shows the muted state (volume flash on a muted sink). */
     readonly property bool levelMuted: root.osd.kind === "volume" && root.osd.muted
+    /** True while the chip renders charge state instead of a level: flame glyph, lit meter while plugged. */
+    readonly property bool chipIsBattery: root.osd.kind === "battery"
 
     enabled: root.active
     opacity: root.active ? Math.pow(root.morph, 1.2) : 0
@@ -103,9 +106,12 @@ Item {
     }
 
     /**
-     * Volume/brightness feedback stays visible while gaming as a compact
-     * chip on the bar's right, since the full OSD face is parked behind
-     * game mode in the mode ladder. Notifications stay suppressed.
+     * Volume/brightness/battery feedback stays visible while gaming as a
+     * compact chip on the bar's right, since the full OSD face is parked
+     * behind game mode in the mode ladder. The battery kind renders the same
+     * power-source read the OSD face does — bolt glyph and flame-lit meter
+     * while the cable is in, washed slate on battery. Notifications stay
+     * suppressed.
      */
     Row {
         anchors.right: parent.right
@@ -122,8 +128,11 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 14 * root.s
             height: 14 * root.s
-            name: root.osd.kind === "brightness" ? "sun" : (root.levelMuted ? "speaker-off" : "speaker")
-            color: root.levelMuted ? Theme.dim : Theme.iconDim
+            name: root.chipIsBattery ? "bolt"
+                : (root.osd.kind === "brightness" ? "sun" : (root.levelMuted ? "speaker-off" : "speaker"))
+            color: root.chipIsBattery
+                ? (Battery.plugged ? Theme.flameGlow : Theme.faint)
+                : (root.levelMuted ? Theme.dim : Theme.iconDim)
             stroke: 1.7
         }
 
@@ -140,7 +149,9 @@ Item {
                 anchors.bottom: parent.bottom
                 width: parent.width * root.levelValue
                 radius: parent.radius
-                color: root.levelMuted ? Theme.vermDim : Theme.vermLit
+                color: root.chipIsBattery
+                    ? (Battery.plugged ? Theme.vermLit : Theme.vermDim)
+                    : (root.levelMuted ? Theme.vermDim : Theme.vermLit)
                 Behavior on width { NumberAnimation { duration: Motion.fast } }
             }
         }
@@ -148,7 +159,9 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: Math.round(root.levelValue * 100) + "%"
-            color: root.levelMuted ? Theme.dim : Theme.cream
+            color: root.chipIsBattery
+                ? (Battery.plugged ? Theme.flameGlow : Theme.dim)
+                : (root.levelMuted ? Theme.dim : Theme.cream)
             font.family: Theme.font
             font.pixelSize: 10.5 * root.s
             font.weight: Font.DemiBold

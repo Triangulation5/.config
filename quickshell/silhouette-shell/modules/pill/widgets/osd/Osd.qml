@@ -84,6 +84,17 @@ Item {
     readonly property real brightness: Backlight.brightness
     property bool recordStarted: false
 
+    /**
+     * Last battery tick the OSD showed, so the percentage-gain flash fires
+     * once per whole percent instead of on every UPower repaint of the
+     * fractional value. Seeded from the live value at build and re-baselined
+     * on UPower's first real reading (a 0 seed means the device wasn't ready
+     * yet, and 0 → 85 at login is a baseline, not a gain). Updated even when
+     * a gain is swallowed (unfocused monitor, suppressed pill), so a stale
+     * tick can't burst-flash a backlog the moment the gate opens.
+     */
+    property int lastShownPct: Battery.pct
+
     /** Flame gradient shared by the brightness and battery level fills. */
     readonly property Gradient flameGradient: Gradient {
         orientation: Gradient.Horizontal
@@ -181,6 +192,17 @@ Item {
         }
         if (which === "track" && flashing && (kind === "volume" || kind === "brightness"))
             return false;
+        /**
+         * A running battery flash owns the pill against further battery
+         * events: the plug edge and the charging edge land together on one
+         * cable-in (re-preempting would restart the morph mid-flight), and
+         * a pct-gain tick must not reset the charging sweep mid-loop — it
+         * only extends the hold.
+         */
+        if (which === "battery" && flashing && kind === "battery") {
+            hideTimer.restart();
+            return true;
+        }
         if (which === "track")
             holdExtends = 0;
         /**
@@ -311,6 +333,22 @@ Item {
             if (Battery.charging)
                 root.flash("battery");
         }
+        /**
+         * And on every whole percent gained while the cable is in — the
+         * percentage-gain flash. UPower repaints the fractional value far
+         * more often than the number moves, so the latched `lastShownPct`
+         * keeps each flash to one step; `charging` gates it to real gains
+         * (plugged and full, pct sits pinned at 100 and must not strobe),
+         * and a 0 latch is a baseline, not a charge from empty.
+         */
+        function onPctChanged() {
+            var pct = Battery.pct;
+            var gained = Battery.plugged && Battery.charging
+                && root.lastShownPct > 0 && pct > root.lastShownPct;
+            root.lastShownPct = pct;
+            if (gained)
+                root.flash("battery");
+        }
     }
 
     Connections {
@@ -410,7 +448,10 @@ Item {
         pctText: Battery.pct + "%"
         pctColor: Battery.plugged ? Theme.flameGlow : Theme.dim
         fill: Battery.frac
+        fillGradient: Battery.plugged ? root.flameGradient : null
         fillColor: Battery.plugged ? Theme.vermLit : Theme.vermDim
+        /** The charging sweep rides the meter while the pack actually takes charge. */
+        shimmerOn: Battery.charging
     }
 
     OsdWorkspace {
