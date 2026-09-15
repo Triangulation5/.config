@@ -1,7 +1,0 @@
-module qs.modules.quicksettings
-
-SettingsRoot 1.0 SettingsRoot.qml
-SettingsPanel 1.0 SettingsPanel.qml
-QsSearch 1.0 QsSearch.qml
-QsRow 1.0 QsRow.qml
-Scrubber 1.0 Scrubber.qml
