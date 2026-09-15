@@ -10,10 +10,9 @@ import qs.components.layout
 /**
  * 速 QUICK SETTINGS index: the category hub — a short list of surfaces grouped
  * into Shell and Control, each row carrying its kanji, name and caption, and
- * morphing the pill into that category's sub-surface. The searchable control
- * center (quicksettings/SettingsPanel.qml) is the primary settings window that
- * opens from the pill's cog over IPC; this index stays as the category browser
- * inside the pill.
+ * morphing the pill into that category's sub-surface. This is the shell's
+ * settings menu: it opens from the pill's cog over IPC (`qs ipc call pill
+ * settings`) and browses every category's surface in the pill.
  */
 SettingsSurface {
     id: root

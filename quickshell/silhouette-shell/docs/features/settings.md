@@ -2,7 +2,6 @@
 
 <!--toc:start-->
 - [Settings](#settings)
-  - [Settings window (control center)](#settings-window-control-center)
   - [Quick settings index](#quick-settings-index)
   - [Appearance](#appearance)
   - [Keybinds](#keybinds)
@@ -11,36 +10,9 @@
   - [Persistent configuration](#persistent-configuration)
 <!--toc:end-->
 
-## Settings window (control center)
-
-The searchable control center is its own window — a separate layer-shell
-surface, completely decoupled from the pill: no morph, no surface host, no
-shared mode ladder. Open it with `qs ipc call settings toggle` (or
-`show`/`hide`; an empty monitor resolves to the focused one). The window
-centers a card over a dim backdrop: one flat list of every shell flag with a
-search bar over the top. Typing filters the whole index live — label, caption
-and alias terms, multi-token, so "warm" finds Night light and "12" finds the
-clock format — and with an empty query the rows browse grouped under section
-captions (Look, Manual palette, Pill, Behaviour, Media, Night light, Idle &
-lock, Recording, Weather & files).
-
-Every editor binds straight to Flags: toggles flip, segmented rows cycle,
-numeric rows scrub through −/+ steppers bounded by the registry, and text
-rows open an inline field on Return. Arrows move the focus, left/right
-adjust, Return edits, `/` focuses the search field and Escape closes. The
-panel builds lazily on first open and is torn down on hide, so an unused
-window costs nothing.
-
-The registry itself is `utils/quicksettings/registry.js`: every setting is
-described once (key, type, bounds, group, search terms) and the panel is a
-generic renderer over it, so adding a flag to the window is a one-object edit.
-It is pure QML/JS — no C++ — and lives in its own `modules/quicksettings/`
-module: rip it out by deleting the folder and the single `SettingsRoot` line
-in shell.qml.
-
 ## Quick settings index
 
-The pill's settings menu (the cog) stays the category hub, rebranded Quick
+The pill's settings menu (the cog) is the category hub, rebranded Quick
 Settings (速). It keeps the original group-and-morph browsing: rows for
 Appearance, Look, Display, Input, Animation, Keybinds, Workspaces, Idle/Lock
 and Updates, arrow keys moving the glowing seam and Return opening the
