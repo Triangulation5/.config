@@ -78,7 +78,7 @@ Group {
 
     FieldRow {
         surface: look; id: vimKeysRow
-        label: "Vim keys"; caption: "hjkl navigation. Disables arrow keys."; icon: "keyboard"
+        label: "Vim keys"; caption: "Disables arrow keys, hjkl navigation."; icon: "keyboard"
         LinkToggle {
             s: look.s
             on: Flags.vimKeys
