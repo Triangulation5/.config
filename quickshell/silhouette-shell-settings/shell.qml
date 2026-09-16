@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import qs.components
 import qs.modules.sidebar
@@ -17,7 +18,7 @@ import qs.modules.content
  * Launch: `qs -p ~/.config/quickshell/silhouette-shell-settings` — which opens
  * the window, because running this config *is* how the standalone app is
  * launched. To drive a running instance instead:
- * `qs -c silhouette-shell-settings ipc call settings hide` (show / hide /
+ * `qs -c silhouette-shell-settings ipc call settings hide` (open / hide /
  * toggle). `SUPER+comma` no longer targets this config: the shell hosts a copy of
  * the app and the bind talks to the shell's `settings` target, which is always
  * alive. `qs ipc call` reaches a running instance only — it never starts one.
@@ -33,6 +34,65 @@ ShellRoot {
      */
     property bool shown: true
 
+    /**
+     * Whether the dialog is drawn on the workspace you are looking at.
+     *
+     * Hyprland decides where a window lives, not the app, so `shown` on its own
+     * can lie: a dialog left open while you moved elsewhere is still `shown`
+     * while being invisible, and the toggle would then flip the flag for a window
+     * nobody can see — read as the key doing nothing, and needing a second press.
+     * The dialog's own toplevel answers it, matched on the title the window rule
+     * matches on too. That title is what identifies the window from out here —
+     * Quickshell's own toplevels carry no pid — which is why this copy's title is
+     * not the shell one's (see `title` below).
+     *
+     * No toplevel yet reads as `true`: it is on its way, and a window maps on the
+     * focused workspace.
+     */
+    readonly property bool onFocusedWorkspace: {
+        var focused = Hyprland.focusedWorkspace;
+        if (!focused)
+            return true;
+        var toplevels = Hyprland.toplevels.values;
+        for (var i = 0; i < toplevels.length; i++) {
+            if (toplevels[i] && toplevels[i].title === window.title)
+                return !!toplevels[i].workspace && toplevels[i].workspace.name === focused.name;
+        }
+        return true;
+    }
+
+    /**
+     * Bring the dialog to the workspace you are on, keeping what it was showing:
+     * hiding and showing again re-maps the window, and the map lands where the
+     * focus is. A hidden window is still a live item tree, so nothing inside is
+     * torn down by the hide — the rail keeps the page it was on and the search
+     * keeps its text.
+     */
+    function summon(): void {
+        root.shown = false;
+        Qt.callLater(function () { root.shown = true; });
+    }
+
+    /** Open it where you are, or bring it here if it was left elsewhere. */
+    function open(): void {
+        if (!root.shown)
+            root.shown = true;
+        else if (!root.onFocusedWorkspace)
+            root.summon();
+    }
+
+    function hide(): void {
+        root.shown = false;
+    }
+
+    /** Open if closed or out of sight, close if it is right in front of you. */
+    function toggle(): void {
+        if (root.shown && root.onFocusedWorkspace)
+            root.hide();
+        else
+            root.open();
+    }
+
     FloatingWindow {
         id: window
 
@@ -40,21 +100,32 @@ ShellRoot {
         // This window is a dialog, not a tile, and the compositor is what decides
         // that: a toplevel can ask for nothing. `~/.config/hypr/modules/window-rules.lua`
         // carries a `settings-dialog` rule matching this class and title, which
-        // floats it, sizes it and centres it. The size is repeated there because a
-        // floating toplevel otherwise keeps whatever size the layout gave it — the
+        // floats it, sizes it and centres it — deliberately *not* pinned, since a
+        // pinned dialog is drawn over every workspace you switch to. Hyprland maps
+        // a window on whichever workspace is focused when it maps, so opening it
+        // always lands it in front of you, and a dialog left open while you moved
+        // elsewhere is what `open` handles. The size is repeated in the rule because
+        // a floating toplevel otherwise keeps whatever size the layout gave it — the
         // two numbers below are what that rule writes, and what the layout is
         // designed around.
         implicitWidth: 900
         implicitHeight: 560
         color: "transparent"
-        title: "Silhouette Settings"
+        // Deliberately not the shell copy's title: the title is how a copy finds
+        // its own window in the compositor's toplevel list (see
+        // onFocusedWorkspace), and the two copies are otherwise windows of the
+        // same class with the same name. The window rule in
+        // `~/.config/hypr/modules/window-rules.lua` matches
+        // "Silhouette Settings.*" for this reason — Hyprland anchors rule regexes,
+        // so the suffixed title needs that wildcard to keep its shape.
+        title: "Silhouette Settings (standalone)"
 
         Panel {
             anchors.fill: parent
             open: root.shown
             focus: true
 
-            Keys.onEscapePressed: root.shown = false
+            Keys.onEscapePressed: root.hide()
 
             RowLayout {
                 anchors.fill: parent
@@ -103,11 +174,17 @@ ShellRoot {
     /**
      * IPC surface. `toggle` is deliberately zero-arg: keybinds exec it bare and
      * quickshell's IPC rejects calls with fewer arguments than declared.
+     *
+     * Opening is `open`, not `show`: `qs ipc` has a `show` subcommand of its own
+     * and swallows the word — `ipc call settings show` prints the target list
+     * rather than reaching here — so the call that opens the dialog has to be
+     * named something else. `hide` and `toggle` are unaffected and do reach the
+     * app, which is what the keybind runs.
      */
     IpcHandler {
         target: "settings"
-        function show(): void { root.shown = true; }
-        function hide(): void { root.shown = false; }
-        function toggle(): void { root.shown = !root.shown; }
+        function open(): void { root.open(); }
+        function hide(): void { root.hide(); }
+        function toggle(): void { root.toggle(); }
     }
 }

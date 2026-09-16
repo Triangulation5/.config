@@ -35,7 +35,9 @@ QtObject {
             { key: "musicViz", type: "toggle", label: "Music visualizer",
               caption: "Spectrum in the rest pill while a player is open", reset: true },
             { key: "vizStyle", type: "segmented", label: "Style",
-              options: ["bars", "centered"], names: ["Bars", "Center"], reset: "bars" },
+              caption: "Bars, mirrored bars, or the flowing string",
+              options: ["bars", "centered", "string"],
+              names: ["Bars", "Center", "String"], reset: "bars" },
             { key: "vizFps", type: "slider", label: "Framerate", min: 15, max: 120, step: 15, unit: "fps",
               caption: "Capture rate; the pill EQ is visually identical at 30", reset: 60 }
         ]}

@@ -12,6 +12,7 @@ singleton Look 1.0 Look.qml
 singleton Motion 1.0 Motion.qml
 singleton Notifications 1.0 Notifications.qml
 singleton Pages 1.0 Pages.qml
+singleton PillShape 1.0 PillShape.qml
 singleton System 1.0 System.qml
 singleton Updates 1.0 Updates.qml
 singleton Workspaces 1.0 Workspaces.qml

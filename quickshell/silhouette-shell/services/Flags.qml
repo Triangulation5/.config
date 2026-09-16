@@ -59,6 +59,55 @@ Singleton {
     property alias nightLightTemp: adapter.nightLightTemp
     property alias nightLightOnMin: adapter.nightLightOnMin
     property alias nightLightOffMin: adapter.nightLightOffMin
+    // pill geometry and lifecycle: one flag per tunable size the pill ships with
+    property alias pillRestW: adapter.pillRestW
+    property alias pillRestH: adapter.pillRestH
+    property alias pillRestCorner: adapter.pillRestCorner
+    property alias pillNotchCorner: adapter.pillNotchCorner
+    property alias pillHoverPad: adapter.pillHoverPad
+    property alias pillHoverH: adapter.pillHoverH
+    property alias pillMixerH: adapter.pillMixerH
+    property alias pillLauncherW: adapter.pillLauncherW
+    property alias pillLauncherH: adapter.pillLauncherH
+    property alias pillClipboardW: adapter.pillClipboardW
+    property alias pillClipboardH: adapter.pillClipboardH
+    property alias pillPowerW: adapter.pillPowerW
+    property alias pillPowerH: adapter.pillPowerH
+    property alias pillBatteryW: adapter.pillBatteryW
+    property alias pillMediaH: adapter.pillMediaH
+    property alias pillCallW: adapter.pillCallW
+    property alias pillCallH: adapter.pillCallH
+    property alias pillTimerW: adapter.pillTimerW
+    property alias pillTimerH: adapter.pillTimerH
+    property alias pillWallpaperW: adapter.pillWallpaperW
+    property alias pillWallpaperH: adapter.pillWallpaperH
+    property alias pillSettingsW: adapter.pillSettingsW
+    property alias pillKeybindsW: adapter.pillKeybindsW
+    property alias pillWorkspacesW: adapter.pillWorkspacesW
+    property alias pillStashW: adapter.pillStashW
+    property alias pillSpaceappsW: adapter.pillSpaceappsW
+    property alias pillSysmonW: adapter.pillSysmonW
+    property alias pillAppearanceW: adapter.pillAppearanceW
+    property alias pillUpdatesW: adapter.pillUpdatesW
+    property alias pillDisplayW: adapter.pillDisplayW
+    property alias pillInputW: adapter.pillInputW
+    property alias pillLookW: adapter.pillLookW
+    property alias pillIdlelockW: adapter.pillIdlelockW
+    property alias pillAnimationW: adapter.pillAnimationW
+    property alias pillRecorderW: adapter.pillRecorderW
+    property alias pillFontpickerW: adapter.pillFontpickerW
+    property alias pillWeatherW: adapter.pillWeatherW
+    property alias pillPolkitW: adapter.pillPolkitW
+    property alias pillOpenCorner: adapter.pillOpenCorner
+    property alias pillToastW: adapter.pillToastW
+    property alias pillQuickChooseW: adapter.pillQuickChooseW
+    property alias pillQuickChooseH: adapter.pillQuickChooseH
+    property alias pillQuickCountW: adapter.pillQuickCountW
+    property alias pillQuickCountH: adapter.pillQuickCountH
+    property alias pillDragOverW: adapter.pillDragOverW
+    property alias pillDragOverH: adapter.pillDragOverH
+    property alias pillGameH: adapter.pillGameH
+    property alias pillSurfaceIdleTimeout: adapter.pillSurfaceIdleTimeout
 
     FileView {
         id: file
@@ -133,6 +182,59 @@ Singleton {
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
             property int nightLightOffMin: 420
+            /*
+             * Pill geometry and lifecycle. Each is the shipped size in logical
+             * pixels, multiplied by uiScale where the pill draws it, so the app's
+             * sliders change the surface itself rather than a global zoom.
+             */
+            property real pillRestW: 160
+            property real pillRestH: 38
+            property real pillRestCorner: 28
+            property real pillNotchCorner: 18
+            property real pillHoverPad: 20
+            property real pillHoverH: 172
+            property real pillMixerH: 214
+            property real pillLauncherW: 360
+            property real pillLauncherH: 332
+            property real pillClipboardW: 360
+            property real pillClipboardH: 332
+            property real pillPowerW: 330
+            property real pillPowerH: 150
+            property real pillBatteryW: 316
+            property real pillMediaH: 150
+            property real pillCallW: 380
+            property real pillCallH: 150
+            property real pillTimerW: 340
+            property real pillTimerH: 460
+            property real pillWallpaperW: 720
+            property real pillWallpaperH: 172
+            property real pillSettingsW: 392
+            property real pillKeybindsW: 460
+            property real pillWorkspacesW: 392
+            property real pillStashW: 392
+            property real pillSpaceappsW: 392
+            property real pillSysmonW: 392
+            property real pillAppearanceW: 392
+            property real pillUpdatesW: 360
+            property real pillDisplayW: 392
+            property real pillInputW: 392
+            property real pillLookW: 392
+            property real pillIdlelockW: 392
+            property real pillAnimationW: 392
+            property real pillRecorderW: 384
+            property real pillFontpickerW: 360
+            property real pillWeatherW: 400
+            property real pillPolkitW: 440
+            property real pillOpenCorner: 22
+            property real pillToastW: 342
+            property real pillQuickChooseW: 344
+            property real pillQuickChooseH: 76
+            property real pillQuickCountW: 150
+            property real pillQuickCountH: 64
+            property real pillDragOverW: 300
+            property real pillDragOverH: 126
+            property real pillGameH: 34
+            property int pillSurfaceIdleTimeout: 12
         }
     }
 }

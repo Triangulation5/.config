@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Pipewire
 
 /**
  * Live audio spectrum service for the rest-pill visualizer and the lock
@@ -36,7 +37,8 @@ Singleton {
      * period: when the pill briefly leaves rest (hovering for the workspace
      * dots, a quick surface open) the capture stays warm so the bars resume
      * instantly instead of paying a ~2s respawn; only once the grace expires
-     * while the pill is still away does the capture actually go down.
+     * while the pill is still away does the capture actually go down. Mirror
+     * of the string visualizer's expandKill policy.
      */
     property bool pillCaptureWanted: false
 
@@ -56,11 +58,63 @@ Singleton {
     }
 
     /**
+     * True while something is actually feeding the graph: a stream node that is
+     * not one of our own captures. A monitor capture holds the sink in its
+     * running state for as long as it lives, and an output that never powers
+     * down whistles - audible as a ringing from the speakers long after the
+     * music stopped. So the captures below are gated on this and nothing else is:
+     * a player opens its stream before its first sample, so the capture is up by
+     * the time sound arrives, and it goes down again once the last client leaves.
+     */
+    readonly property bool clientsPlaying: {
+        void Pipewire.nodes.values;
+        var nodes = Pipewire.nodes.values;
+        for (var i = 0; i < nodes.length; i++) {
+            var n = nodes[i];
+            /**
+             * Captures are streams too, our own included - matching them would
+             * keep every capture alive on its own existence. `cava` is what
+             * every run of it calls itself, ours and any the user starts.
+             */
+            if (n && n.isStream && n.name !== "cava")
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * The captures' gate: follows `clientsPlaying` through a grace period, so a
+     * track change or a quiet passage between songs doesn't tear the capture
+     * down and pay a respawn for nothing. Once the grace expires silent the
+     * capture goes and the device is free to sleep; the next stream brings it
+     * back before its first sample reaches the sink.
+     */
+    property bool playbackWanted: false
+
+    onClientsPlayingChanged: {
+        if (clientsPlaying) {
+            playbackGrace.stop();
+            playbackWanted = true;
+        } else {
+            playbackGrace.restart();
+        }
+    }
+
+    Timer {
+        id: playbackGrace
+        interval: 4000
+        onTriggered: root.playbackWanted = false
+    }
+
+    /**
      * The pill pipeline only answers to the pill visualizer flag and the
      * graced capture gate; the lock's forced capture is a separate process
-     * below.
+     * below. The string style never needs this capture: FastMusicLine runs
+     * its own 10-segment cava, so keeping the bars capture alive too would
+     * run two cava processes for one visible visualizer.
      */
     readonly property bool wanted: Flags.musicViz && available && root.pillCaptureWanted
+        && Flags.vizStyle !== "string" && root.playbackWanted
 
     /**
      * Lock-glow capture: its own cava run (12 bars, ascii range 100), matching
@@ -141,7 +195,7 @@ Singleton {
     }
 
     onEnabledChanged: {
-        lockProc.running = enabled && available
+        lockProc.running = enabled && available && root.playbackWanted
 
         if (!enabled) {
             lockLevels = Array(lockBars).fill(0)
@@ -151,12 +205,12 @@ Singleton {
 
     onAvailableChanged: {
         cavaProc.running = wanted
-        lockProc.running = enabled && available
+        lockProc.running = enabled && available && root.playbackWanted
     }
 
     Component.onCompleted: {
         cavaProc.running = wanted
-        lockProc.running = enabled && available
+        lockProc.running = enabled && available && root.playbackWanted
     }
 
     /**

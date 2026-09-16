@@ -41,7 +41,8 @@ QtObject {
         ControlCenter,
         LockScreen,
         System,
-        Updates
+        Updates,
+        PillShape
     ]
 
     /**
