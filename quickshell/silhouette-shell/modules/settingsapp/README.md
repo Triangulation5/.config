@@ -32,11 +32,14 @@ The standalone copy runs the same way it always did, under its own config name:
 qs -p ~/.config/quickshell/silhouette-shell-settings
 ```
 
-`SUPER+comma` in the shell's `binds.lua` currently runs the *standalone* IPC call
-(`qs -c silhouette-shell-settings ipc call settings toggle`); point it at
-`silhouette-shell` to open the shell-hosted window instead. Both answer to the
-same `settings` target — `show`, `hide`, `toggle` — and neither needs a second
-instance.
+`SUPER+comma` in the shell's `binds.lua` runs the call above — the shell is always
+alive, so the bind always lands. That matters more than it looks: **`qs ipc call`
+reaches a running instance only, it never starts one**, so a bind aimed at a
+standalone config does nothing until something else has launched that config. The
+standalone copy answers to the same three functions (`show`, `hide`, `toggle`) on
+the `settings` target under its own config name — `qs -c
+silhouette-shell-settings ipc call settings hide` — but there has to be an
+instance behind it.
 
 `Escape` closes the window. `RICELIN_HYPR_DIR` overrides where the Hyprland
 config is looked for (see `services/Paths.qml`).

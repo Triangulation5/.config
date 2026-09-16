@@ -14,13 +14,24 @@ import qs.modules.content
  * reads and writes the shell's flags.json through the Store singleton, which the
  * running shell watches, so changes apply live: no reload, no IPC round trip.
  *
- * Launch: `qs -p ~/.config/quickshell/silhouette-shell-settings` — or bind:
- * `qs -c silhouette-shell-settings ipc call settings toggle`.
+ * Launch: `qs -p ~/.config/quickshell/silhouette-shell-settings` — which opens
+ * the window, because running this config *is* how the standalone app is
+ * launched. To drive a running instance instead:
+ * `qs -c silhouette-shell-settings ipc call settings hide` (show / hide /
+ * toggle). `SUPER+comma` no longer targets this config: the shell hosts a copy of
+ * the app and the bind talks to the shell's `settings` target, which is always
+ * alive. `qs ipc call` reaches a running instance only — it never starts one.
  */
 ShellRoot {
     id: root
 
-    property bool shown: false
+    /**
+     * Whether the dialog is open. Starts open here and closed in the shell's copy
+     * (`modules/settingsapp/SettingsApp.qml`): running this config is the launch,
+     * so the window should appear rather than wait for an IPC call nobody made,
+     * while the shell decides for itself when its dialog is shown.
+     */
+    property bool shown: true
 
     FloatingWindow {
         id: window

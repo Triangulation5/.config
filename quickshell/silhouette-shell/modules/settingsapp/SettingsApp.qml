@@ -22,9 +22,13 @@ import qs.modules.settingsapp.modules.content
  * and the file it writes are the same.
  *
  * The untouched standalone app is still at `~/.config/quickshell/silhouette-shell-settings`
- * (`qs -p …`); this tree is the copy being folded into the shell.
+ * (`qs -p …`), and its window starts open, because running that config is the
+ * launch. Here it starts closed and the shell decides — a settings dialog is not
+ * something a session should boot with.
  *
- * Show it: `qs -c silhouette-shell ipc call settings toggle`.
+ * Show it: `qs -c silhouette-shell ipc call settings toggle` (which is what
+ * `SUPER+comma` runs). The call has to reach this process, and `qs ipc call`
+ * reaches a running instance only — it never starts one.
  */
 Item {
     id: root
