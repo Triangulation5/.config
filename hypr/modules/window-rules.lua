@@ -14,11 +14,10 @@ hl.window_rule({
 -- is not 900x560). Quickshell's app id is the class; the title naming the window
 -- keeps the rule off any future Quickshell window.
 --
--- The `.*` widens the title to the shell-hosted app and the standalone copy, which
--- appends "(standalone)" so the two can tell each other's window apart. Hyprland
--- anchors rule regexes, so a plain "Silhouette Settings" would miss the suffixed
--- title - measured: the standalone's window came up floating=false size=[560, 672]
--- until this wildcard was added.
+-- The title is matched exactly. Hyprland anchors rule regexes, so this catches the
+-- dialog and nothing else. It read "Silhouette Settings.*" while a standalone copy of
+-- the app existed, which appended "(standalone)" to its title so the two could tell
+-- each other's window apart; that copy is gone, and the wildcard with it.
 --
 -- Deliberately not pinned. Pinning draws the dialog on every workspace, which is
 -- a dialog that will not go away: it stacks over whatever you switch to. The
@@ -29,7 +28,7 @@ hl.window_rule({
     name  = "settings-dialog",
     match = {
         class = "org.quickshell",
-        title = "Silhouette Settings.*",
+        title = "Silhouette Settings",
     },
 
     float  = true,

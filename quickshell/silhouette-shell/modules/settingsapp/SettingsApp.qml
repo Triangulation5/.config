@@ -22,10 +22,8 @@ import qs.modules.settingsapp.modules.content
  * a second root. Nothing else changed — the window, the chrome, the IPC surface
  * and the file it writes are the same.
  *
- * The untouched standalone app is still at `~/.config/quickshell/silhouette-shell-settings`
- * (`qs -p …`), and its window starts open, because running that config is the
- * launch. Here it starts closed and the shell decides — a settings dialog is not
- * something a session should boot with.
+ * The window starts closed and the shell decides when it opens: a settings dialog
+ * is not something a session should boot with.
  *
  * Show it: `qs -c silhouette-shell ipc call settings toggle` (which is what
  * `SUPER+comma` runs). The call has to reach this process, and `qs ipc call`
@@ -45,9 +43,9 @@ Item {
      * while being invisible, and the toggle would then flip the flag for a window
      * nobody can see — read as the key doing nothing, and needing a second press.
      * The dialog's own toplevel answers it, matched on the title the window rule
-     * matches on too. That title is what identifies the window from out here —
-     * Quickshell's own toplevels carry no pid, and the standalone copy of the app
-     * differs by title for exactly this reason (see `title` below).
+ * matches on too. That title is what identifies the window from out here —
+ * Quickshell's own toplevels carry no pid, so the title is the only handle on them
+ * (see `title` below).
      *
      * No toplevel yet reads as `true`: it is on its way, and a window maps on the
      * focused workspace.
