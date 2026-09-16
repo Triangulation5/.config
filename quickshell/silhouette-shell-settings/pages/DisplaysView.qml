@@ -5,15 +5,20 @@ import qs.services
 import qs.components
 
 /**
- * The Displays page body: one card per monitor, each with a resolution, a
- * refresh rate, a scale and a position. The rows are built here rather than
- * declared as data, because their options come from `hyprctl` — a page that had
- * to name them would have to name every monitor anyone might plug in.
+ * The Displays page body: the arrangement of every output at the top, then one
+ * portrait and one card of controls per monitor. The rows are built here rather
+ * than declared as data, because their options come from `hyprctl` — a page that
+ * had to name them would have to name every monitor anyone might plug in.
  *
  * The rows still go through the same editors and the same `Sources` door as
  * every other page: a built row carries its own `get`/`set` closures, which
- * Sources prefers over a named source. That is what keeps this page from
- * needing a control of its own.
+ * Sources prefers over a named source. That is what keeps this page from needing a
+ * control of its own.
+ *
+ * The map and the cards are wired to each other through `selected`: clicking a
+ * tile marks that output and scrolls to its settings, which is the whole point of
+ * a peek — with two panels plugged in, "which one am I editing" has to be
+ * answerable without reading output names.
  *
  * A change is applied as soon as it is picked. Every mode offered comes from the
  * monitor's `availableModes`, so an unsupported mode cannot be asked for; the
@@ -26,21 +31,96 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 22
 
+    /** The output the user picked in the map or on a portrait, or "". */
+    property string selected: ""
+
+    /** What the arrangement card says under the map. */
+    readonly property string layoutCaption: {
+        var n = Monitors.monitors.length;
+        if (n === 0)
+            return "hyprctl reports no connected outputs.";
+        if (n === 1)
+            return "One output connected, drawn where the compositor has it. A second one appears here beside or above it once it is plugged in.";
+        return n + " outputs, drawn where the compositor has them. Click one to open its settings.";
+    }
+
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 10
+
+        SectionLabel {
+            Layout.fillWidth: true
+            text: "Arrangement"
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            color: Theme.card
+            radius: Theme.radiusCard
+            implicitHeight: arrangement.implicitHeight + 36
+
+            ColumnLayout {
+                id: arrangement
+                anchors.fill: parent
+                anchors.margins: 18
+                spacing: 14
+
+                DisplayMap {
+                    id: map
+                    Layout.fillWidth: true
+                    mons: Monitors.monitors
+                    mainName: Monitors.mainName
+                    selName: root.selected
+                    onPicked: function (name) { root.pick(name) }
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.layoutCaption
+                    color: Theme.textSecondary
+                    font.pixelSize: Theme.fontSizeSmall
+                    wrapMode: Text.WordWrap
+                }
+            }
+        }
+    }
+
     Repeater {
+        id: cardRepeater
+
         model: Monitors.monitors
 
-        delegate: SettingGroup {
+        delegate: ColumnLayout {
+            id: block
+
             required property var modelData
 
+            readonly property string monName: modelData.name
+
             Layout.fillWidth: true
-            group: root.groupFor(modelData)
+            spacing: 10
+
+            DisplayHeader {
+                Layout.fillWidth: true
+                mon: root.live(block.monName, block.modelData)
+                main: block.monName === Monitors.mainName
+                sel: root.selected === block.monName
+                onPicked: root.pick(block.monName)
+            }
+
+            // No `card` heading: the portrait above already names this monitor,
+            // and the card's own label would say the same thing twice.
+            SettingGroup {
+                Layout.fillWidth: true
+                group: root.groupFor(block.modelData)
+            }
         }
     }
 
     Text {
         Layout.fillWidth: true
         visible: Monitors.monitors.length === 0
-        text: "hyprctl reports no monitors."
+        text: "Nothing to configure until an output is connected."
         color: Theme.textSecondary
         font.pixelSize: Theme.fontSizeSmall
     }
@@ -51,13 +131,48 @@ ColumnLayout {
         return mon === null ? fallback : mon;
     }
 
+    /**
+     * Show the monitor `name` names: mark it and scroll its card into view. The
+     * scroll target is the block item, measured against the flickable's content
+     * item rather than the view, because the view is scrolled by definition.
+     */
+    function pick(name) {
+        root.selected = name;
+        var block = root.blockFor(name);
+        var flick = root.flickable();
+        if (block === null || flick === null)
+            return;
+        var y = block.mapToItem(flick.contentItem, 0, 0).y;
+        flick.contentY = Math.max(0, Math.min(flick.contentHeight - flick.height, y - 24));
+    }
+
+    /** The delegate showing the monitor `name` names, or null. */
+    function blockFor(name) {
+        for (var i = 0; i < cardRepeater.count; i++) {
+            var item = cardRepeater.itemAt(i);
+            if (item && item.monName === name)
+                return item;
+        }
+        return null;
+    }
+
+    /**
+     * The scroll view this page sits in, found by walking up to the first item
+     * that can scroll — or null when the page is previewed on its own, where a
+     * pick has nothing to scroll.
+     */
+    function flickable() {
+        var p = root.parent;
+        while (p && p.contentY === undefined)
+            p = p.parent;
+        return p ? p : null;
+    }
+
     /** The `{ card, rows }` group one monitor renders as. */
     function groupFor(mon) {
         var live = root.live(mon.name, mon);
         var resolutions = Monitors.resolutionsFor(live);
-        var resIndex = Monitors.resolutionIndex(live);
         var rates = Monitors.ratesFor(live);
-        var rateIndex = Math.max(0, rates.indexOf(live.refresh));
 
         var resOptions = [];
         var resNames = [];
@@ -81,7 +196,7 @@ ColumnLayout {
         }
 
         return {
-            card: mon.name + "   " + live.width + "\u00D7" + live.height + " @ " + live.refresh + "Hz   \u00B7   " + live.scale + "\u00D7",
+            card: "",
             rows: [
                 {
                     type: "segmented", label: "Resolution", caption: "From the modes Hyprland reports",

@@ -62,6 +62,9 @@ components/                qs.components — chrome and layout primitives
   SettingGroup.qml           one card: heading + a row per entry
   SettingRow.qml             the row skeleton every editor is built on
   SettingResetButton.qml     the floating "Reset to Defaults"
+  DisplayShape.qml           one output drawn as the hardware it is
+  DisplayMap.qml             the arrangement peek: every output to scale, in place
+  DisplayHeader.qml          a monitor's portrait above its card
   rows/                    qs.components.rows — one editor per row type
     SettingRowEditor.qml       dispatcher: row.type → editor
     SettingToggle.qml … SettingText.qml
@@ -81,6 +84,12 @@ cannot be written as row descriptors — Displays (one card per monitor), Worksp
 pending list) — declare `view: Qt.resolvedUrl("…View.qml")` and own their body.
 Their rows still go through the same door: a row built at runtime carries `get` and
 `set` closures, which `Sources` prefers over a named source.
+
+Displays also shows *what* it is configuring, which the other pages do not have to:
+`DisplayMap` draws the arrangement and each monitor gets a `DisplayHeader` portrait
+above its card. Both are built out of one component, `DisplayShape`, which is a pure
+view of a live monitor — the same piece of hardware at two sizes, so the map tile
+and the portrait cannot disagree.
 
 ## The rail
 
@@ -155,6 +164,13 @@ of cards (see `DisplaysView.qml`, `WorkspacesView.qml`, `UpdatesView.qml`). Rows
 built in a body still go through the row editors: give a row `get`/`set` closures
 and `Sources` uses them ahead of a named source.
 
+A body that has something to *show* as well as set keeps the two apart: the
+picture is a view component of its own (`DisplayShape`, `DisplayMap`,
+`DisplayHeader`) that reads a model object and writes nothing, and the controls
+stay the same row descriptors as everywhere else. The page's only job is the
+wiring between them — a click on a map tile sets the page's `selected`, and that
+is what marks the matching portrait and scrolls to it.
+
 **A row.** Drop a descriptor into a group's `rows`:
 
 ```qml
@@ -191,6 +207,15 @@ byte-identical files: `fields.js` (a `name = value` field), `deco.js`
 setcursor line), `anim.js` (the animations table, leaf speeds, a curve's
 control points), `monitors.js` (parse `hyprctl monitors -j`, rewrite a monitor
 block). Keep them in sync with `silhouette-shell/utils/lua/`.
+
+`monitors.js` has grown two things the shell's copy does not have, both for the
+Displays page: `parseWorkspaces` + `monitorOfWorkspace` (which output a workspace
+is on — how "main" is answered when the config does not say, and one reason the
+copy drifts from the shell's) and the `make`/`model`/`focused` fields it now keeps
+from `hyprctl monitors -j` for a monitor's portrait. Its workspace parser reads the
+number from `id` when the report has one and from `name` when it does not: current
+Hyprland names a numbered workspace `"1"` with no numeric field, and a parser that
+only looked for `id` silently empties the list.
 
 `utils/keybinds/` holds `keychord.js` (the shell's captured-key mapping, for the
 create form's key capture) and `spacebinds.js`, which is this app's addition: it
@@ -301,8 +326,18 @@ surface reads a file or a contract that this config does not have.
   `scripts/display-apply.sh` with a 12-second watchdog and a confirm step. Here a
   change writes the monitor block and reloads; the watchdog is not ported, which
   is why every mode offered comes from `availableModes` and an unsupported one
-  cannot be asked for. The monitor map, the main-monitor swap and the xrandr
-  primary flag are not ported either.
+  cannot be asked for. The arrangement is *read* only — clicking a tile jumps to
+  that monitor's settings, but there is no drag-to-place, so a position is typed
+  into the Position row. The main-monitor swap and the xrandr primary flag are not
+  ported; main is shown, not settable (see below).
+- **Main is read, and from three places.** Hyprland has no main-monitor setting,
+  so `Monitors.mainName` answers in this order: the output a workspace_rule *loop*
+  hands workspace 1 to in `monitors.lua` (what the shell reads, and what its own
+  main-swap rewrites); failing that, the output `hyprctl` says workspace 1 is on
+  now; failing that, the output holding the cursor. The middle step is not
+  decoration — this config declares its workspaces as individual rules with
+  `monitor = ""`, so the first answer is empty here and the shell's own Display
+  surface marks no main at all.
 - **Installing asks twice.** The upgrade is the only control here that escalates
   through pkexec and changes the machine rather than a config file, so it is behind
   a confirm step, and a failed or cancelled run is reported per command rather than
@@ -355,6 +390,13 @@ the slot's backdrop, and the slot's identity is what the reveal scrolls to.
 `Store.set` updates the mirrored document and debounces a write to disk (120 ms,
 so slider drags coalesce). `Store.keys` lists every mirrored flag; the shell's
 internal bookkeeping keys are deliberately absent from the index.
+
+On Displays, the arrangement map and the portraits are wired both ways: clicking a
+tile (or a portrait's screen) marks that output and scrolls to its card, and the
+marked tile wears the accent. The pick writes the scroll *through* the flickable
+found by walking up from the page, so the page keeps working if it is ever
+previewed outside a scroll view — and a pick for an output that is not on the page
+(the last frame after unplugging one) does nothing instead of scrolling to nowhere.
 
 Search matches on word starts and splits camelCase names, so "city" finds the
 weather row without matching "Pill opa-city", and "gaps in" finds `gapsIn`.
