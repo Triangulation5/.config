@@ -28,8 +28,12 @@ hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
 hl.bind(mainMod .. " + I",         hl.dsp.exec_cmd(quickshell .. " keybinds"))
 hl.bind(mainMod .. " + SHIFT + I", hl.dsp.exec_cmd(quickshell .. " settings"))
 
--- Silhouette settings panel (standalone settings app)
-local settingsPanel = "qs -c silhouette-shell-settings ipc call settings toggle"
+-- Silhouette settings window. The app is hosted by the shell now
+-- (quickshell/silhouette-shell/modules/settingsapp), so its `settings` target
+-- lives on the shell's IPC — `qs ipc call` only ever reaches a running instance,
+-- it never starts one, so a bind aimed at a standalone config does nothing until
+-- something else has launched it.
+local settingsPanel = "qs -c silhouette-shell ipc call settings toggle"
 hl.bind(mainMod .. " + comma",      hl.dsp.exec_cmd(settingsPanel))
 hl.bind(mainMod .. " + A",         hl.dsp.exec_cmd(quickshell .. " media"))
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd(quickshell .. " timer"))

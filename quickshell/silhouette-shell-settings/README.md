@@ -22,12 +22,18 @@ It edits the same state the shell does:
 qs -p ~/.config/quickshell/silhouette-shell-settings
 ```
 
-Bound to `SUPER+comma` in the shell's `binds.lua`, which runs the IPC call
-instead of launching a second instance:
+Which opens the window: running this config *is* the launch. To drive an instance
+that is already up instead:
 
 ```bash
-qs -c silhouette-shell-settings ipc call settings toggle
+qs -c silhouette-shell-settings ipc call settings hide   # show / hide / toggle
 ```
+
+`SUPER+comma` does **not** run any of these any more. The bind points at the
+shell's `settings` target (`qs -c silhouette-shell ipc call settings toggle`),
+because the shell hosts a copy of this app and is always alive — and because
+`qs ipc call` reaches a running instance only, it never starts one, so a bind
+aimed at a config nobody launched is a bind that does nothing.
 
 `Escape` closes the window. `RICELIN_HYPR_DIR` overrides where the Hyprland
 config is looked for (see `services/Paths.qml`).
