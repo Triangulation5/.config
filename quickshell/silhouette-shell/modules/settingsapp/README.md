@@ -6,9 +6,9 @@ shell** now — `modules/settingsapp/`, declared in its own `qmldir` and
 instantiated by the shell's `shell.qml` — so the window that edits the flags and
 the process that reads them are one instance instead of two watching the same
 file. Its entry point is `SettingsApp.qml` (an `Item`, not a `ShellRoot`: there is
-one root per process and it belongs to the shell). The standalone config it grew
-up as is still at `~/.config/quickshell/silhouette-shell-settings`, kept as the
-backup and still runnable on its own.
+one root per process and it belongs to the shell). The standalone config it grew up
+as is gone: it was the same tree a second time, so keeping it meant two copies to
+change and a window that could be launched with nothing listening behind it.
 
 It edits the same state the shell does:
 
@@ -26,20 +26,12 @@ Hosted by the shell — the live route, and the one the module's IPC target serv
 qs -c silhouette-shell ipc call settings toggle
 ```
 
-The standalone copy runs the same way it always did, under its own config name:
-
-```bash
-qs -p ~/.config/quickshell/silhouette-shell-settings
-```
-
 `SUPER+comma` in the shell's `binds.lua` runs the call above — the shell is always
 alive, so the bind always lands. That matters more than it looks: **`qs ipc call`
-reaches a running instance only, it never starts one**, so a bind aimed at a
-standalone config does nothing until something else has launched that config. The
-standalone copy answers to the same three functions (`open`, `hide`, `toggle`) on
-the `settings` target under its own config name — `qs -c
-silhouette-shell-settings ipc call settings hide` — but there has to be an
-instance behind it.
+reaches a running instance only, it never starts one**, so a bind aimed at a config
+that is not running does nothing at all. It is also why the app lives inside the
+shell rather than beside it: there is no way to launch this window into a state
+where nothing is listening for it.
 
 Opening the dialog is `open` and not `show` because **`qs ipc` has a `show`
 subcommand of its own and swallows the word**: `ipc call settings show` prints the
@@ -364,12 +356,14 @@ the dialog it was built as. Both were measured against the running compositor: w
 the rule `floating=true size=[900, 560] at=[190, 96]` (centred in the usable area, i.e.
 below the pill), and with `size` removed `floating=true size=[1258, 672]`.
 
-The `.*` in the title is for the standalone copy, which titles its window
-`Silhouette Settings (standalone)`: the title is how a copy finds its *own* window in
-the compositor's toplevel list, and Quickshell's toplevels carry no pid, so the two
-copies would otherwise be indistinguishable. Hyprland anchors rule regexes — a plain
-`Silhouette Settings` misses the suffixed title, measured: that window came up
-`floating=false size=[560, 672]` until the wildcard was added.
+The title is what identifies the window from out here: Quickshell's toplevels carry no
+pid, so the app finds its own window in the compositor's list by title, and the rule
+matches on the same string — exactly, since Hyprland anchors rule regexes. It read
+`Silhouette Settings.*` while there was also a standalone copy of the app, which
+appended `(standalone)` to its title so the two could tell each other's window apart;
+that copy is gone, and the wildcard with it. Measured with the exact title: the dialog
+comes up `floating=true size=[900, 560] at=[190, 96]`, the same numbers the wildcard
+produced.
 
 `pin = true` is deliberately absent. It is what this rule used to carry, and it
 bought the wrong thing: a pinned dialog is drawn on *every* workspace, so it stacked
