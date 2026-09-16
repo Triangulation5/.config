@@ -74,6 +74,8 @@ Singleton {
         JsonAdapter {
             id: dataAdapter
             // == mirrored from the shell's Flags.qml - keep in sync ==
+            // The defaults below are the shipped values; Pages' row `reset`
+            // fields mirror them for the "Reset to Defaults" button.
             property bool dnd: false
             property bool keepAwake: false
             property bool time12h: true

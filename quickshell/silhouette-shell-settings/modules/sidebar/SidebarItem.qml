@@ -1,26 +1,35 @@
 import QtQuick
 import QtQuick.Layouts
-import "../config"
+import qs.config
 
+/**
+ * One nav row of the rail: the page's icon glyph in a tinted circle beside its
+ * name, over a highlight that fills when the page is the open one and lifts on
+ * hover. It is a dumb row — the rail owns the selection and the page index, this
+ * only reports a click.
+ *
+ * The circle is a tint of the live accent rather than a fixed green, so the rail
+ * follows the palette the way every other surface does.
+ */
 Item {
     id: root
 
     property string label: ""
     property string icon: "\u25CF"
     property bool selected: false
+
     signal clicked()
 
     implicitHeight: 45
 
     Rectangle {
-        id: bg
         anchors.fill: parent
         anchors.leftMargin: 10
         anchors.rightMargin: 10
         radius: Theme.radiusRow
         color: root.selected
             ? Theme.selected
-            : (mouseArea.containsMouse ? Theme.hover : "transparent")
+            : (mouse.containsMouse ? Theme.hover : "transparent")
 
         Behavior on color { ColorAnimation { duration: Theme.animNormal } }
 
@@ -34,8 +43,8 @@ Item {
                 width: 26
                 height: 26
                 radius: 13
-                color: root.selected ? Qt.rgba(0.616, 0.8, 0.604, 0.35)
-                                      : Qt.rgba(0.616, 0.8, 0.604, 0.15)
+                color: root.selected ? Qt.alpha(Theme.accent, 0.32)
+                                     : Qt.alpha(Theme.accent, 0.14)
                 Behavior on color { ColorAnimation { duration: Theme.animNormal } }
 
                 Text {
@@ -57,7 +66,7 @@ Item {
     }
 
     MouseArea {
-        id: mouseArea
+        id: mouse
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor

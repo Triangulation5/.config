@@ -1,0 +1,6 @@
+module qs.modules.sidebar
+
+Sidebar 1.0 Sidebar.qml
+SidebarHit 1.0 SidebarHit.qml
+SidebarItem 1.0 SidebarItem.qml
+SidebarSearch 1.0 SidebarSearch.qml

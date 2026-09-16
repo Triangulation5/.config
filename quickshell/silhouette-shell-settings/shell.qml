@@ -2,17 +2,17 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
-
-import "./modules"
-import "./config"
+import qs.components
+import qs.modules.sidebar
+import qs.modules.content
 
 /**
- * Silhouette Settings — a standalone dark, macOS-System-Settings-inspired
- * control panel for the shell. A FloatingWindow (a real compositor-managed
- * floating window, not a panel/overlay) hosting the sidebar + content
- * layout; every control reads and writes the shell's flags.json through the
- * Store singleton, which the running shell watches, so changes apply live.
+ * Silhouette Settings entry point — a pure composition root, like the shell's
+ * own `shell.qml`. A FloatingWindow (a compositor-managed floating window, not a
+ * panel or an overlay) hosting the chrome over the rail and the content column;
+ * the rail owns the selection and the content area follows it. Every control
+ * reads and writes the shell's flags.json through the Store singleton, which the
+ * running shell watches, so changes apply live: no reload, no IPC round trip.
  *
  * Launch: `qs -p ~/.config/quickshell/silhouette-shell-settings` — or bind:
  * `qs -c silhouette-shell-settings ipc call settings toggle`.
@@ -24,78 +24,74 @@ ShellRoot {
 
     FloatingWindow {
         id: window
+
         visible: root.shown
+        // This window is a dialog, not a tile, and the compositor is what decides
+        // that: a toplevel can ask for nothing. `~/.config/hypr/modules/window-rules.lua`
+        // carries a `settings-dialog` rule matching this class and title, which
+        // floats it, sizes it and centres it. The size is repeated there because a
+        // floating toplevel otherwise keeps whatever size the layout gave it — the
+        // two numbers below are what that rule writes, and what the layout is
+        // designed around.
         implicitWidth: 900
         implicitHeight: 560
         color: "transparent"
         title: "Silhouette Settings"
 
-        Item {
-            id: panel
+        Panel {
             anchors.fill: parent
+            open: root.shown
+            focus: true
 
-            scale: 0.98
-            opacity: 0
+            Keys.onEscapePressed: root.shown = false
 
-            Component.onCompleted: {
-                scale = 1
-                opacity = 1
-            }
+            RowLayout {
+                anchors.fill: parent
+                spacing: 0
 
-            Behavior on scale { NumberAnimation { duration: Theme.animWindow; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: Theme.animWindow } }
+                Sidebar {
+                    id: sidebar
+                    Layout.preferredWidth: 260
+                    Layout.fillHeight: true
 
-            // Fill + clip live on their own rectangle, separate from the
-            // border, so the border's stroke never interacts with the
-            // content clip mask.
-            Rectangle {
-                id: background
-                x: 0
-                y: 0
-                width: Math.floor(parent.width)
-                height: Math.floor(parent.height)
-                radius: Theme.radiusWindow
-                color: Theme.window
-                antialiasing: true
-                clip: true
-
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: 0
-
-                    Sidebar {
-                        id: sidebar
-                        Layout.preferredWidth: 260
-                        Layout.fillHeight: true
+                    // A page row opens the page; a hit opens the page *and*
+                    // names the setting to show. Both go through the rail's own
+                    // selection rather than assigning to the content area's
+                    // bound `pageIndex`, which would break that binding for
+                    // good. Opening a page by name deliberately clears the
+                    // target, so a ring can never outlive the search that made
+                    // it.
+                    onPageSelected: function(pageIndex) {
+                        sidebar.currentIndex = pageIndex;
+                        content.targetKey = "";
                     }
+                    onRowRequested: function(pageIndex, rowKey) {
+                        sidebar.currentIndex = pageIndex;
+                        content.targetKey = rowKey;
+                    }
+                }
 
-                    ContentArea {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        pageIndex: sidebar.currentIndex
+                ContentArea {
+                    id: content
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    // The rail owns the selection: the chevrons ask it to move
+                    // rather than assigning the index themselves, which would
+                    // break this binding for good.
+                    pageIndex: sidebar.currentIndex
+                    onNavigate: function(step) {
+                        sidebar.currentIndex += step;
+                        content.targetKey = "";
                     }
                 }
             }
-
-            // Unclipped, drawn on top: a crisp, uniform 1px outline with no
-            // seam artifacts from the content clip beneath it.
-            Rectangle {
-                anchors.fill: background
-                radius: Theme.radiusWindow
-                color: "transparent"
-                border.width: 1
-                border.color: Theme.border
-                antialiasing: true
-            }
-
-            focus: true
-            Keys.onEscapePressed: root.shown = false
         }
     }
 
     /**
-     * IPC surface. `toggle` is deliberately zero-arg: keybinds exec it bare
-     * and quickshell's IPC rejects calls with fewer arguments than declared.
+     * IPC surface. `toggle` is deliberately zero-arg: keybinds exec it bare and
+     * quickshell's IPC rejects calls with fewer arguments than declared.
      */
     IpcHandler {
         target: "settings"
