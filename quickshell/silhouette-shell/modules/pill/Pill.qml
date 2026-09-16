@@ -222,55 +222,55 @@ Item {
     readonly property bool quickChoosing: quickHere && ScreenRec.quickChoosing && !surfaceOpen
     readonly property bool quickCounting: quickHere && ScreenRec.counting && !recorderOpen
 
-    readonly property real restW: 160 * s
-    readonly property real restH: 38 * s
-    readonly property real hoverPad: 20 * s
+    readonly property real restW: Flags.pillRestW * s
+    readonly property real restH: Flags.pillRestH * s
+    readonly property real hoverPad: Flags.pillHoverPad * s
     readonly property real hoverW: hoverFace.hoverRow.implicitWidth + 3 * hoverPad
-    readonly property real hoverH: 172 * s
-    readonly property real mixerH: 214 * s
-    readonly property real launcherW: 360 * s
-    readonly property real launcherH: 332 * s
-    readonly property real clipboardW: 360 * s
-    readonly property real clipboardH: 332 * s
-    readonly property real wallpaperW: 720 * s
-    readonly property real wallpaperH: 172 * s
-    readonly property real powerW: 330 * s
-    readonly property real powerH: 150 * s
+    readonly property real hoverH: Flags.pillHoverH * s
+    readonly property real mixerH: Flags.pillMixerH * s
+    readonly property real launcherW: Flags.pillLauncherW * s
+    readonly property real launcherH: Flags.pillLauncherH * s
+    readonly property real clipboardW: Flags.pillClipboardW * s
+    readonly property real clipboardH: Flags.pillClipboardH * s
+    readonly property real wallpaperW: Flags.pillWallpaperW * s
+    readonly property real wallpaperH: Flags.pillWallpaperH * s
+    readonly property real powerW: Flags.pillPowerW * s
+    readonly property real powerH: Flags.pillPowerH * s
     readonly property real mediaW: (Players.pickable.length > 1 ? 460 : 390) * s
-    readonly property real mediaH: 150 * s
-    readonly property real callW: 380 * s
-    readonly property real callH: 150 * s
-    readonly property real batteryW: 316 * s
-    readonly property real settingsW: 392 * s
-    readonly property real keybindsW: 460 * s
-    readonly property real workspacesW: 392 * s
-    readonly property real stashW: 392 * s
-    readonly property real spaceappsW: 392 * s
-    readonly property real recorderW: 384 * s
-    readonly property real sysmonW: 392 * s
-    readonly property real appearanceW: 392 * s
-    readonly property real updatesW: 360 * s
-    readonly property real displayW: 392 * s
-    readonly property real inputW: 392 * s
-    readonly property real lookW: 392 * s
-    readonly property real idlelockW: 392 * s
-    readonly property real animationW: 392 * s
-    readonly property real fontpickerW: 360 * s
-    readonly property real weatherW: 400 * s
-    readonly property real timerW: 340 * s
-    readonly property real polkitW: 440 * s
-    readonly property real timerH: 460 * s
-    readonly property real toastW: 342 * s
-    readonly property real quickChooseW: 344 * s
-    readonly property real quickChooseH: 76 * s
-    readonly property real quickCountW: 150 * s
-    readonly property real quickCountH: 64 * s
-    readonly property real dragOverW: 300 * s
-    readonly property real dragOverH: 126 * s
-    readonly property real gameH: 34 * s
+    readonly property real mediaH: Flags.pillMediaH * s
+    readonly property real callW: Flags.pillCallW * s
+    readonly property real callH: Flags.pillCallH * s
+    readonly property real batteryW: Flags.pillBatteryW * s
+    readonly property real settingsW: Flags.pillSettingsW * s
+    readonly property real keybindsW: Flags.pillKeybindsW * s
+    readonly property real workspacesW: Flags.pillWorkspacesW * s
+    readonly property real stashW: Flags.pillStashW * s
+    readonly property real spaceappsW: Flags.pillSpaceappsW * s
+    readonly property real recorderW: Flags.pillRecorderW * s
+    readonly property real sysmonW: Flags.pillSysmonW * s
+    readonly property real appearanceW: Flags.pillAppearanceW * s
+    readonly property real updatesW: Flags.pillUpdatesW * s
+    readonly property real displayW: Flags.pillDisplayW * s
+    readonly property real inputW: Flags.pillInputW * s
+    readonly property real lookW: Flags.pillLookW * s
+    readonly property real idlelockW: Flags.pillIdlelockW * s
+    readonly property real animationW: Flags.pillAnimationW * s
+    readonly property real fontpickerW: Flags.pillFontpickerW * s
+    readonly property real weatherW: Flags.pillWeatherW * s
+    readonly property real timerW: Flags.pillTimerW * s
+    readonly property real polkitW: Flags.pillPolkitW * s
+    readonly property real timerH: Flags.pillTimerH * s
+    readonly property real toastW: Flags.pillToastW * s
+    readonly property real quickChooseW: Flags.pillQuickChooseW * s
+    readonly property real quickChooseH: Flags.pillQuickChooseH * s
+    readonly property real quickCountW: Flags.pillQuickCountW * s
+    readonly property real quickCountH: Flags.pillQuickCountH * s
+    readonly property real dragOverW: Flags.pillDragOverW * s
+    readonly property real dragOverH: Flags.pillDragOverH * s
+    readonly property real gameH: Flags.pillGameH * s
     readonly property real gameW: barWindow ? barWindow.width : 1920
-    readonly property real restCorner: (Flags.notchStyle ? 18 : 28) * s
-    readonly property real openCorner: 22 * s
+    readonly property real restCorner: (Flags.notchStyle ? Flags.pillNotchCorner : Flags.pillRestCorner) * s
+    readonly property real openCorner: Flags.pillOpenCorner * s
 
     /**
      * Latch-once lazy load with idle-timeout cleanup. Every surface sleeps in
@@ -313,8 +313,11 @@ Item {
         return v !== undefined && v > 0 ? v : fallback;
     }
 
-    /** Seconds a surface stays loaded after last use before being reclaimed. */
-    property int surfaceIdleTimeout: 12
+    /**
+     * Seconds an unopened surface keeps its items before they are freed
+     * (Flags.pillSurfaceIdleTimeout, adjustable in the settings app).
+     */
+    property int surfaceIdleTimeout: Flags.pillSurfaceIdleTimeout
 
     /** Timestamp of last open per surface name. */
     property var _surfaceLastOpened: ({})
@@ -1196,9 +1199,12 @@ Item {
 
                 /**
                  * Audio leaving the speakers flips the left slot into the live
-                 * waveform. The slot takes the visualizer's explicit size rather
-                 * than reading it back implicitly, so the row layout stays stable
-                 * as the bars appear and disappear.
+                 * waveform. The slot takes the visualizer's explicit size, not its
+                 * implicit one: MusicBars is a Row whose implicitWidth collapses to
+                 * zero in string mode (FastMusicLine is a transparent Rectangle),
+                 * which would park the string on a point and let it overlap the
+                 * clock. The explicit width keeps the slot stable for both the
+                 * bars and the string renderer.
                  *
                  * The slot keeps a constant footprint (while the normal row is
                  * showing) so the row layout never re-runs as the bars appear
@@ -1228,6 +1234,9 @@ Item {
                     s: pill.s
 
                     centeredVisualizer: Flags.vizStyle === "centered"
+                    stringVisualizer: Flags.vizStyle === "string"
+                    live: Flags.musicViz
+                    resting: pill.mode === "rest"
 
                     opacity: restKanji.vizShown ? 1 : 0
                     scale: restKanji.vizShown ? 1 : 0.7

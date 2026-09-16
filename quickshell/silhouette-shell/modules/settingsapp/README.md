@@ -36,10 +36,15 @@ qs -p ~/.config/quickshell/silhouette-shell-settings
 alive, so the bind always lands. That matters more than it looks: **`qs ipc call`
 reaches a running instance only, it never starts one**, so a bind aimed at a
 standalone config does nothing until something else has launched that config. The
-standalone copy answers to the same three functions (`show`, `hide`, `toggle`) on
+standalone copy answers to the same three functions (`open`, `hide`, `toggle`) on
 the `settings` target under its own config name — `qs -c
 silhouette-shell-settings ipc call settings hide` — but there has to be an
 instance behind it.
+
+Opening the dialog is `open` and not `show` because **`qs ipc` has a `show`
+subcommand of its own and swallows the word**: `ipc call settings show` prints the
+target list instead of reaching the app. `hide` and `toggle` are unaffected —
+`toggle` is what the keybind runs.
 
 `Escape` closes the window. `RICELIN_HYPR_DIR` overrides where the Hyprland
 config is looked for (see `services/Paths.qml`).
@@ -104,10 +109,16 @@ Their rows still go through the same door: a row built at runtime carries `get` 
 `set` closures, which `Sources` prefers over a named source.
 
 Displays also shows *what* it is configuring, which the other pages do not have to:
-`DisplayMap` draws the arrangement and each monitor gets a `DisplayHeader` portrait
-above its card. Both are built out of one component, `DisplayShape`, which is a pure
+`DisplayMap` draws the arrangement and each monitor gets a `DisplayHeader`portrait above its card. Both are built out of one component, `DisplayShape`, which is a pure
 view of a live monitor — the same piece of hardware at two sizes, so the map tile
 and the portrait cannot disagree.
+
+A page's rows are built a frame's worth at a time: the content area walks the open
+page's flattened rows into `SettingGroup.visibleRows`, and the three view pages load
+through `asynchronous: true` loaders, so a switch delegates over a few frames instead
+of stalling on one. Measured, the worst hitch on a page change went from 55ms (215ms
+on the first build) to under ~20ms (87ms on the first build).
+
 
 ## The rail
 
@@ -260,12 +271,13 @@ content rather than the surface.
 
 That being the case, the dialog shape is the config's to decide, and
 `~/.config/hypr/modules/window-rules.lua` has a `settings-dialog` rule that matches
-this window (Quickshell's app id plus this title) and makes it float, 900x560, centred:
+this window (Quickshell's app id plus this title) and makes it float, 900x560 and
+centred:
 
 ```lua
 hl.window_rule({
     name  = "settings-dialog",
-    match = { class = "org.quickshell", title = "Silhouette Settings" },
+    match = { class = "org.quickshell", title = "Silhouette Settings.*" },
     float  = true,
     size   = { 900, 560 },
     center = true,
@@ -279,6 +291,32 @@ floated without a size keeps the size it had, so the rule needs `size` to give t
 the dialog it was built as. Both were measured against the running compositor: with
 the rule `floating=true size=[900, 560] at=[190, 96]` (centred in the usable area, i.e.
 below the pill), and with `size` removed `floating=true size=[1258, 672]`.
+
+The `.*` in the title is for the standalone copy, which titles its window
+`Silhouette Settings (standalone)`: the title is how a copy finds its *own* window in
+the compositor's toplevel list, and Quickshell's toplevels carry no pid, so the two
+copies would otherwise be indistinguishable. Hyprland anchors rule regexes — a plain
+`Silhouette Settings` misses the suffixed title, measured: that window came up
+`floating=false size=[560, 672]` until the wildcard was added.
+
+`pin = true` is deliberately absent. It is what this rule used to carry, and it
+bought the wrong thing: a pinned dialog is drawn on *every* workspace, so it stacked
+over whatever you switched to and would not go away. A dialog belongs to the
+workspace it was opened on, like any other window.
+
+The key stays honest without it because of how the dialog is summoned. Hyprland maps
+a window on whichever workspace is focused when it maps, so opening the dialog always
+lands it in front of you — measured: closed while on workspace 2, opened from
+workspace 4, and it comes up on workspace 4. That leaves the one case of a dialog
+left open and then walked away from, where `shown` is still true while nothing is on
+screen. `show` and `toggle` therefore ask the compositor where the dialog's own
+toplevel is — matched on the same title this rule matches on — and if it is not on
+the focused workspace they hide and show again, which re-maps it where you are.
+Measured: open on workspace 2, walk to 4, one press and the dialog is standing on 4,
+where it used to take two (the first closing the invisible one). The re-map is not a
+blink: sampled every 7ms right through a summon, the window never once disappears
+from the compositor's client list — it moves, and with its item tree intact, so the
+rail comes back on the page you left it on.
 
 Both halves of that are load-bearing. A surface that rounds its own corners cannot
 line up with the compositor's cut: a 24px arc against a 12px cut leaves a crescent of
@@ -352,6 +390,15 @@ surface reads a file or a contract that this config does not have.
   Motion page offers the style, the master switch and the speed — which is
   branch-aware: it reads the active style's leaves, and writes the speed to every
   leaf.
+- **Visualizer styles, including the string.** `vizStyle` picks the pill's bars, the
+  mirrored bars or `FastMusicLine`'s string, so the row offers all three. The string
+  runs its own cava and the shell stands the bars pipeline down when it is picked,
+  rather than running two captures for one visible visualizer.
+- **The pill's box is flags now.** Rest width, height and corner, the notch corner,
+  hover padding, and the size of every surface (`pillLauncherW`, `pillMixerH`, …) were
+  readonly constants in `Pill.qml`; they are flags the shell reads with the same
+  defaults, which is what makes the Pill shape page (48 of them, six cards) a plain
+  page of sliders.
 - **Displays apply directly.** The shell routes a mode change through
   `scripts/display-apply.sh` with a 12-second watchdog and a confirm step. Here a
   change writes the monitor block and reloads; the watchdog is not ported, which

@@ -22,9 +22,18 @@ import qs.components
  *
  * `targetKey` is the other half of a search: the rail's hit sets it to the row
  * it found, and this scrolls that row into view and lets the card ring it. The
- * reveal is retried briefly rather than done once, because the row belongs to a
- * delegate that is built *because* the page just changed — the first frames
- * after a switch have no such item to measure.
+ * reveal is retried rather than done once, because the row belongs to a delegate
+ * that is built *because* the page just changed — the first frames after a
+ * switch have no such item to measure — and because `builtRows` may not have
+ * reached it yet.
+ *
+ * Pages are built lazily in two senses. What is not open does not exist: a card
+ * is only created for the open page (the rail's own model is data, not items),
+ * and a page's body component is only loaded when that page is shown. And what
+ * is being opened is built a frame's worth at a time rather than all at once:
+ * see `rowBuilder`. Building the whole page in one go is what used to make a
+ * switch snap — 17 rows measured 55ms on this machine, about three dropped
+ * frames — while nothing here is built ahead of being looked at.
  */
 Item {
     id: root
@@ -33,6 +42,22 @@ Item {
 
     /** The flag key or config field of the row to show, or "" for no target. */
     property string targetKey: ""
+
+    /**
+     * The open page's cards, or none when the page renders a body of its own
+     * (`view`). The array itself is the rail's data, so it costs nothing to
+     * hold; the items per card are what `builtRows` gates.
+     */
+    readonly property var pageGroups: (root.pageView === null && root.page) ? root.page.groups : []
+
+    /** Every row of the open page, flattened — what the builder walks. */
+    readonly property var pageRows: (root.pageView === null && root.page) ? Pages.pageRows(root.page) : []
+
+    /** First row of each card within the page, for `visibleRows` below. */
+    property var groupOffsets: []
+
+    /** How many of the open page's rows exist so far. See rowBuilder. */
+    property int builtRows: 0
 
     /** Reveal attempts left before the timer gives up on a key that is not here. */
     property int revealTries: 0
@@ -61,7 +86,8 @@ Item {
 
     /**
      * Scroll the target row into view. Returns false while the page's delegates
-     * are not there yet, which is what makes the retry timer worth having.
+     * are not there yet — the page may be mid-build — which is what makes the
+     * retry timer worth having.
      */
     function revealRow() {
         for (var g = 0; g < groupRepeater.count; g++) {
@@ -78,7 +104,30 @@ Item {
     }
 
     onTargetKeyChanged: if (root.targetKey.length > 0) root.scheduleReveal()
-    onPageIndexChanged: if (root.targetKey.length > 0) root.scheduleReveal()
+    onPageIndexChanged: {
+        root.startPage();
+        if (root.targetKey.length > 0)
+            root.scheduleReveal();
+    }
+
+    Component.onCompleted: root.startPage()
+
+    /**
+     * Open a page from empty: record where each card's rows begin and let the
+     * builder fill them in. Resetting `builtRows` is what empties the previous
+     * page — a page that is not open holds no items, which is the lazy half of
+     * this file.
+     */
+    function startPage() {
+        var offsets = [];
+        var running = 0;
+        for (var g = 0; g < root.pageGroups.length; g++) {
+            offsets.push(running);
+            running += root.pageGroups[g].rows.length;
+        }
+        root.groupOffsets = offsets;
+        root.builtRows = 0;
+    }
 
     function scheduleReveal() {
         root.revealTries = 0;
@@ -124,19 +173,37 @@ Item {
 
                 Repeater {
                     id: groupRepeater
-                    model: root.pageView === null && root.page ? root.page.groups : []
+                    model: root.pageGroups
 
                     delegate: SettingGroup {
                         required property var modelData
+                        required property int index
                         group: modelData
                         targetKey: root.targetKey
+
+                        /**
+                         * How many of this card's rows have been built. The
+                         * subtraction is read on `builtRows`, so the binding
+                         * follows the builder; `groupOffsets` is a property
+                         * rather than a call because a binding cannot see
+                         * through a function.
+                         */
+                        visibleRows: Math.max(0, Math.min(modelData.rows.length,
+                                                          root.builtRows - root.groupOffsets[index]))
                     }
                 }
 
+                /**
+                 * A page whose body is a component of its own (Displays: one
+                 * card per monitor). Loaded when the page is shown and dropped
+                 * when it is left, and loaded asynchronously so the component
+                 * is compiled off the UI thread rather than during the switch.
+                 */
                 Loader {
                     Layout.fillWidth: true
                     visible: root.pageView !== null
                     source: root.pageView !== null ? root.pageView : ""
+                    asynchronous: true
                 }
 
                 // What a source had to say about the last write ("Hyprland
@@ -159,16 +226,36 @@ Item {
     }
 
     /**
-     * A page switch lands the delegates a frame or two later, so the reveal is
-     * attempted on a short timer and given up on rather than left running: a key
-     * that is on no page of this build (a row that was renamed, say) must not
-     * keep a timer alive for the session.
+     * The builder. A page's rows are added a frame's worth at a time instead of
+     * in one pass: each pass adds rows until 6ms have gone, so cheap rows land
+     * together (most pages are done in two or three frames) and an expensive one
+     * cannot blow the frame budget on its own. Nothing is built for a page that
+     * is not open, and the pass stops on its own once the page is full.
+     */
+    Timer {
+        id: rowBuilder
+        interval: 1
+        repeat: true
+        running: root.builtRows < root.pageRows.length
+        onTriggered: {
+            var deadline = Date.now() + 6;
+            while (root.builtRows < root.pageRows.length && Date.now() < deadline)
+                root.builtRows += 1;
+        }
+    }
+
+    /**
+     * A page switch lands the delegates over a few frames while the builder
+     * fills the page, so the reveal is attempted on a short timer and given up
+     * on rather than left running: a key that is on no page of this build (a row
+     * that was renamed, say) must not keep a timer alive for the session. The
+     * window covers a full page's build, the slowest of which is ~150ms.
      */
     Timer {
         id: revealTimer
-        interval: 60
+        interval: 40
         onTriggered: {
-            if (root.revealRow() || ++root.revealTries > 5)
+            if (root.revealRow() || ++root.revealTries > 15)
                 root.revealTries = 0;
             else
                 revealTimer.restart();

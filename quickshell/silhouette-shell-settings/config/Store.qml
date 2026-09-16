@@ -122,6 +122,55 @@ Singleton {
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
             property int nightLightOffMin: 420
+            // -- pill geometry and lifecycle, mirrored from Flags.qml --
+            property real pillRestW: 160
+            property real pillRestH: 38
+            property real pillRestCorner: 28
+            property real pillNotchCorner: 18
+            property real pillHoverPad: 20
+            property real pillHoverH: 172
+            property real pillMixerH: 214
+            property real pillLauncherW: 360
+            property real pillLauncherH: 332
+            property real pillClipboardW: 360
+            property real pillClipboardH: 332
+            property real pillPowerW: 330
+            property real pillPowerH: 150
+            property real pillBatteryW: 316
+            property real pillMediaH: 150
+            property real pillCallW: 380
+            property real pillCallH: 150
+            property real pillTimerW: 340
+            property real pillTimerH: 460
+            property real pillWallpaperW: 720
+            property real pillWallpaperH: 172
+            property real pillSettingsW: 392
+            property real pillKeybindsW: 460
+            property real pillWorkspacesW: 392
+            property real pillStashW: 392
+            property real pillSpaceappsW: 392
+            property real pillSysmonW: 392
+            property real pillAppearanceW: 392
+            property real pillUpdatesW: 360
+            property real pillDisplayW: 392
+            property real pillInputW: 392
+            property real pillLookW: 392
+            property real pillIdlelockW: 392
+            property real pillAnimationW: 392
+            property real pillRecorderW: 384
+            property real pillFontpickerW: 360
+            property real pillWeatherW: 400
+            property real pillPolkitW: 440
+            property real pillOpenCorner: 22
+            property real pillToastW: 342
+            property real pillQuickChooseW: 344
+            property real pillQuickChooseH: 76
+            property real pillQuickCountW: 150
+            property real pillQuickCountH: 64
+            property real pillDragOverW: 300
+            property real pillDragOverH: 126
+            property real pillGameH: 34
+            property int pillSurfaceIdleTimeout: 12
         }
     }
 
@@ -151,7 +200,17 @@ Singleton {
         "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockDotsMode",
         "weatherCity", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "gameMode", "gamePrevDnd", "gamePrevViz", "gamePrevAwake",
-        "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin"
+        "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
+        "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
+        "pillHoverH", "pillMixerH", "pillLauncherW", "pillLauncherH", "pillClipboardW",
+        "pillClipboardH", "pillPowerW", "pillPowerH", "pillBatteryW", "pillMediaH",
+        "pillCallW", "pillCallH", "pillTimerW", "pillTimerH", "pillWallpaperW",
+        "pillWallpaperH", "pillSettingsW", "pillKeybindsW", "pillWorkspacesW", "pillStashW",
+        "pillSpaceappsW", "pillSysmonW", "pillAppearanceW", "pillUpdatesW", "pillDisplayW",
+        "pillInputW", "pillLookW", "pillIdlelockW", "pillAnimationW", "pillRecorderW",
+        "pillFontpickerW", "pillWeatherW", "pillPolkitW", "pillOpenCorner", "pillToastW",
+        "pillQuickChooseW", "pillQuickChooseH", "pillQuickCountW", "pillQuickCountH",
+        "pillDragOverW", "pillDragOverH", "pillGameH", "pillSurfaceIdleTimeout"
     ]
 
     Timer {
