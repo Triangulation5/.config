@@ -1,12 +1,14 @@
 # Silhouette Settings
 
 The shell's settings window: a dark, macOS-System-Settings-inspired control panel
-with a rail of pages and one card per group of settings.
-
-This tree is the **standalone config**, kept as the backup while the app is folded
-into the shell. The copy that keeps changing is
-`silhouette-shell/modules/settingsapp/`; everything below still describes a config
-you run on its own, with `qs -p ~/.config/quickshell/silhouette-shell-settings`.
+with a rail of pages and one card per group of settings. It is a **module of the
+shell** now — `modules/settingsapp/`, declared in its own `qmldir` and
+instantiated by the shell's `shell.qml` — so the window that edits the flags and
+the process that reads them are one instance instead of two watching the same
+file. Its entry point is `SettingsApp.qml` (an `Item`, not a `ShellRoot`: there is
+one root per process and it belongs to the shell). The standalone config it grew
+up as is still at `~/.config/quickshell/silhouette-shell-settings`, kept as the
+backup and still runnable on its own.
 
 It edits the same state the shell does:
 
@@ -18,16 +20,23 @@ It edits the same state the shell does:
 
 ## Running
 
+Hosted by the shell — the live route, and the one the module's IPC target serves:
+
+```bash
+qs -c silhouette-shell ipc call settings toggle
+```
+
+The standalone copy runs the same way it always did, under its own config name:
+
 ```bash
 qs -p ~/.config/quickshell/silhouette-shell-settings
 ```
 
-Bound to `SUPER+comma` in the shell's `binds.lua`, which runs the IPC call
-instead of launching a second instance:
-
-```bash
-qs -c silhouette-shell-settings ipc call settings toggle
-```
+`SUPER+comma` in the shell's `binds.lua` currently runs the *standalone* IPC call
+(`qs -c silhouette-shell-settings ipc call settings toggle`); point it at
+`silhouette-shell` to open the shell-hosted window instead. Both answer to the
+same `settings` target — `show`, `hide`, `toggle` — and neither needs a second
+instance.
 
 `Escape` closes the window. `RICELIN_HYPR_DIR` overrides where the Hyprland
 config is looked for (see `services/Paths.qml`).

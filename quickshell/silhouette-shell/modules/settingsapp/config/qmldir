@@ -1,0 +1,5 @@
+module qs.modules.settingsapp.config
+
+singleton Sources 1.0 Sources.qml
+singleton Store 1.0 Store.qml
+singleton Theme 1.0 Theme.qml
