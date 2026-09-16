@@ -26,6 +26,12 @@ import qs.modules.settingsapp.modules.sidebar
  * here would have made that worse. The search field stays fixed above it, since
  * scrolling the field you are typing into away from the cursor is its own kind
  * of broken.
+ *
+ * Above both sits the app's own mark: the icon this window wears in a launcher
+ * (`assets/silhouette-settings.svg`, the same file the desktop entry points at),
+ * drawn from the asset rather than baked in like the pill's glyphs, because an
+ * app icon is a file other programs have to be able to read. It is the only
+ * thing in the rail that is the app rather than a page.
  */
 Rectangle {
     id: root
@@ -48,6 +54,33 @@ Rectangle {
         anchors.topMargin: 20
         anchors.bottomMargin: 20
         spacing: 6
+
+        RowLayout {
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.fillWidth: true
+            spacing: 9
+
+            Image {
+                Layout.alignment: Qt.AlignVCenter
+                source: Qt.resolvedUrl("../../assets/silhouette-settings.svg")
+                sourceSize.width: 22
+                sourceSize.height: 22
+                smooth: true
+            }
+
+            Text {
+                Layout.alignment: Qt.AlignVCenter
+                Layout.fillWidth: true
+                text: "Silhouette Settings"
+                color: Theme.text
+                font.pixelSize: Theme.fontSizeNormal
+                font.bold: true
+                elide: Text.ElideRight
+            }
+        }
+
+        Item { Layout.preferredHeight: 4 }
 
         SidebarSearch {
             id: search

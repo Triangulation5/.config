@@ -61,12 +61,19 @@ Canvas {
         shadowColor: Qt.rgba(0, 0, 0, 0.16)
     }
 
+    /**
+     * One bead's timeline, as a whole. The phase boundaries below are fractions
+     * of this, exactly as the AOSP reference divides its 350ms — so scaling the
+     * two animations scales the bead without moving a single phase.
+     */
+    readonly property int beadMs: Math.max(80, Flags.lockBeadMs)
+
     NumberAnimation {
         id: flourishAnim
         target: dot
         property: "t"
         to: 1
-        duration: 350
+        duration: dot.beadMs
         easing.type: Easing.Linear
     }
 
@@ -75,8 +82,8 @@ Canvas {
         target: dot
         property: "dt"
         to: 1
-        /** Full pin_dot_delete_avd timeline (100ms for the last bead). */
-        duration: 350
+        /** Full pin_dot_delete_avd timeline (a shorter one for the last bead). */
+        duration: dot.beadMs
         easing.type: Easing.Linear
         onFinished: dot.deleteDone()
     }
@@ -88,7 +95,7 @@ Canvas {
              * in 100ms instead of the full AVD. Captured here at delete start
              * so a keystroke landing mid-fade can't retarget the running
              * animation. */
-            deleteAnim.duration = dot.last ? 100 : 350;
+            deleteAnim.duration = dot.last ? Math.round(dot.beadMs * 100 / 350) : dot.beadMs;
             deleteAnim.restart();
         }
     }

@@ -59,9 +59,9 @@ Variants {
          * Normal mode keeps a subtle screen corner rounding
          * instead of removing the corners entirely.
          */
-        readonly property real notchCornerSize: 12
-        readonly property real normalCornerSize: 8
-        readonly property real hiddenCornerSize: 0
+        readonly property real notchCornerSize: Flags.cornerNotchRadius
+        readonly property real normalCornerSize: Flags.cornerNormalRadius
+        readonly property real hiddenCornerSize: Flags.cornerGameRadius
 
         /**
          * Shared state.
@@ -113,14 +113,14 @@ Variants {
         /**
          * Animation tuning.
          */
-        readonly property int morphDuration: 1500
+        readonly property int morphDuration: Flags.cornerMorphMs
 
         /**
          * Inner bezel shadow only.
          */
-        readonly property bool innerShadow: true
+        readonly property bool innerShadow: Flags.cornerShadowSize > 0
         readonly property color innerShadowColor: Qt.rgba(0, 0, 0, 0.28)
-        readonly property real innerShadowSize: 8
+        readonly property real innerShadowSize: Flags.cornerShadowSize
 
         Repeater {
             model: [

@@ -81,9 +81,8 @@ QtObject {
             { key: "pillDragOverH", type: "slider", label: "Drop overlay height", min: 80, max: 220, step: 2, unit: "px", reset: 126 },
             { key: "pillGameH", type: "slider", label: "Game-mode bar height", min: 20, max: 60, step: 1, unit: "px", reset: 34 },
         ] },
-        { card: "Lifecycle", rows: [
-            { key: "pillSurfaceIdleTimeout", type: "slider", label: "Surface idle timeout", min: 0, max: 60, step: 1, unit: "s",
-              caption: "Seconds an unopened surface keeps its items before they are freed", reset: 12 },
-        ] }
+        // The lifecycle timers moved to the Timers page, next to the shell's other
+        // durations. This page is sizes, and a timeout among forty-eight of them is
+        // the one row nobody finds.
     ]
 }

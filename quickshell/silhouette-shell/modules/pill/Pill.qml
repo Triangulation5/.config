@@ -372,7 +372,7 @@ Item {
 
     Timer {
         id: idleCleanupTimer
-        interval: 10000
+        interval: Math.max(1, Flags.pillCleanupSec) * 1000
         repeat: true
         running: pill._surfaceCleanupReady
         onTriggered: pill._cleanupIdleSurfaces()
@@ -1133,7 +1133,7 @@ Item {
 
     Timer {
         id: graceTimer
-        interval: 300
+        interval: Math.max(0, Flags.pillHoverGraceMs)
         onTriggered: {
             if (pill.morphCloseness < 0.95) {
                 graceTimer.restart();

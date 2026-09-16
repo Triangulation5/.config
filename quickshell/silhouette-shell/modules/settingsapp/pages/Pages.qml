@@ -42,7 +42,10 @@ QtObject {
         LockScreen,
         System,
         Updates,
-        PillShape
+        PillShape,
+        Backups,
+        Corners,
+        Timers
     ]
 
     /**
