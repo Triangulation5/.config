@@ -8,10 +8,12 @@ import "../utils/lua/monitors.js" as Mon
 import "../utils/lua/insert.js" as Insert
 
 /**
- * The displays, from two sides: `hyprctl monitors -j` for what is actually
- * connected and running, and `~/.config/hypr/modules/monitors.lua` for what the
- * layout is declared as. The live read is the source of truth for the controls;
- * the file is what a change is persisted into, followed by a reload.
+ * The displays, from three sides: `hyprctl monitors -j` for what is actually
+ * connected and running, `hyprctl workspaces -j` for where the workspaces are
+ * (which is how "main" is answered when the config does not say — see mainName),
+ * and `~/.config/hypr/modules/monitors.lua` for what the layout is declared as.
+ * The live read is the source of truth for the controls; the file is what a change
+ * is persisted into, followed by a reload.
  *
  * A change is a mode string (`WxH@Hz`, always one Hyprland reports as available,
  * so an unsupported mode can never be asked for), a position (`XxY`) and a
@@ -39,12 +41,57 @@ Singleton {
     /** The scales the scale row offers. */
     readonly property var scales: [1.0, 1.25, 1.5, 2.0]
 
+    /** `hyprctl workspaces -j`, slimmed to `{ id, monitor }`. */
+    property var workspaces: []
+
+    /**
+     * The output that counts as main, in the order the answers get weaker:
+     *
+     *   1. the one `monitors.lua` hands workspace 1 to in a workspace_rule loop —
+     *      a config that says it out loud;
+     *   2. the output workspace 1 is on right now, which is what a config written
+     *      as individual rules with `monitor = ""` leaves unsaid (this one);
+     *   3. the output holding the cursor, so a single-monitor session still marks
+     *      the only monitor it has.
+     *
+     * Hyprland has no main-monitor setting of its own, so this is a reading of the
+     * config and the session rather than a value from either.
+     */
+    readonly property string mainName: {
+        var declared = Mon.mainFromLua(root.text);
+        if (declared.length > 0)
+            return declared;
+        var onOne = Mon.monitorOfWorkspace(root.workspaces, 1);
+        return onOne.length > 0 ? onOne : root.focusedName;
+    }
+
+    /** The output holding the cursor, or the only one connected. */
+    readonly property string focusedName: {
+        for (var i = 0; i < root.monitors.length; i++)
+            if (root.monitors[i].focused)
+                return root.monitors[i].name;
+        return root.monitors.length > 0 ? root.monitors[0].name : "";
+    }
+
     /** One monitor by output name, or null. */
     function byName(name) {
         for (var i = 0; i < root.monitors.length; i++)
             if (root.monitors[i].name === name)
                 return root.monitors[i];
         return null;
+    }
+
+    /**
+     * The monitor's identity as one line: make and model when the backend reports
+     * them, else its raw description, else "". Hyprland's `description` repeats
+     * the make and model with a serial hash appended, which is why the two fields
+     * are preferred and the description is only a fallback.
+     */
+    function identity(mon) {
+        if (!mon)
+            return "";
+        var pair = (mon.make + " " + mon.model).trim();
+        return pair.length > 0 ? pair : mon.description.trim();
     }
 
     /**
@@ -132,10 +179,12 @@ Singleton {
                           position, mon.scale);
     }
 
-    /** Re-read the live monitor list. */
+    /** Re-read the live monitor list and where the workspaces are. */
     function refresh() {
         if (!live.running)
             live.running = true;
+        if (!workspaceRead.running)
+            workspaceRead.running = true;
     }
 
     FileView {
@@ -161,6 +210,14 @@ Singleton {
         command: ["hyprctl", "monitors", "-j"]
         stdout: StdioCollector {
             onStreamFinished: root.monitors = Mon.parse(this.text)
+        }
+    }
+
+    Process {
+        id: workspaceRead
+        command: ["hyprctl", "workspaces", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: root.workspaces = Mon.parseWorkspaces(this.text)
         }
     }
 

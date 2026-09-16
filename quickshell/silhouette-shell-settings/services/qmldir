@@ -1,6 +1,7 @@
 module qs.services
 
 singleton Deco 1.0 Deco.qml
+singleton Dyn 1.0 Dyn.qml
 singleton Hypr 1.0 Hypr.qml
 singleton Input 1.0 Input.qml
 singleton Monitors 1.0 Monitors.qml
