@@ -12,6 +12,11 @@ import qs.modules.settingsapp.config
  *
  * At either end the chevron dims and stops responding, rather than clamping
  * silently against a wall with no feedback.
+ *
+ * `caption` is the page's own one-liner, printed beside the name. It takes what
+ * is left of the row and elides there instead of wrapping, so a long one cannot
+ * make the header taller and shift every card below it — and the filler item
+ * steps aside when there is one, so it gets the whole remainder.
  */
 RowLayout {
     id: root
@@ -19,6 +24,7 @@ RowLayout {
     property int index: 0
     property int count: 0
     property string title: ""
+    property string caption: ""
 
     signal step(int dir)
 
@@ -70,5 +76,15 @@ RowLayout {
         Layout.leftMargin: 10
     }
 
-    Item { Layout.fillWidth: true }
+    Text {
+        visible: root.caption.length > 0
+        text: root.caption
+        color: Theme.textSecondary
+        font.pixelSize: Theme.fontSizeSection
+        elide: Text.ElideRight
+        Layout.fillWidth: true
+        Layout.leftMargin: 12
+    }
+
+    Item { Layout.fillWidth: root.caption.length === 0 }
 }

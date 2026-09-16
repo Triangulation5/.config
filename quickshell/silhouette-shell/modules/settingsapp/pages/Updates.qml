@@ -12,6 +12,7 @@ QtObject {
     readonly property string icon: "\u21BB"
 
     /** Search words: a view page has no row labels for the rail to find. */
+    readonly property string caption: "Package upgrades for the machine"
     readonly property string keywords: "update upgrade package packages dnf system security reboot"
 
     /** A component, resolved relative to this file. */

@@ -9,8 +9,14 @@ Icon=silhouette-settings
 Terminal=false
 Categories=Settings;DesktopSettings;Qt;
 Keywords=settings;silhouette;shell;hyprland;quickshell;backup;
-# Quickshell's own app id: how the compositor reports this window, and how the
-# settings-dialog window rule in modules/window-rules.lua finds it.
+# The file name *is* the app id, and that is the point of it: Quickshell's
+# toplevels report themselves as `org.quickshell` (a constant in the compositor
+# library, not something a config can set), and everything that puts an icon
+# beside a window looks the app id up as a desktop entry id. The pill's window
+# list does exactly that — `DesktopEntries` entry id, then its `Icon`, then the
+# icon theme — so without this name the dialog wears whatever generic the lookup
+# falls back to. Same for the window rule in modules/window-rules.lua, which
+# matches on this class and the title below.
 StartupWMClass=org.quickshell
 # The dialog is a toplevel the always-running shell already owns, so this entry
 # shows, focuses and hides one window rather than starting a process. It is not

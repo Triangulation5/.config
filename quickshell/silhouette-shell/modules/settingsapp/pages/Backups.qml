@@ -12,6 +12,7 @@ import QtQuick
 QtObject {
     readonly property string name: "Backups"
     readonly property string icon: "\u2913"
+    readonly property string caption: "Snapshot the shell's own config"
 
     /** Search words: a view page has no row labels for the rail to find. */
     readonly property string keywords: "backup backups restore snapshot save archive rollback recover copy state flags"

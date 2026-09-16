@@ -18,6 +18,18 @@ Row {
     spacing: 8 * s
 
     /**
+     * The desktop-entry list the icon lookup below scans, held in a *binding*.
+     *
+     * Quickshell fills `DesktopEntries.applications` only once something binds to
+     * it, and a read inside a function is not a binding — so `iconFor` used to
+     * scan an empty list and hand every chip the last-resort icon, which is a
+     * generic glyph for any window class that is not also an icon-theme name.
+     * Held here it loads once for the whole row, and the lookup below can find
+     * an entry (the settings dialog's `org.quickshell`, say) before falling back.
+     */
+    readonly property var desktopEntries: DesktopEntries.applications.values
+
+    /**
      * Resolve the workspace number to restore into: the active workspace of the
      * monitor this pill lives on, so a window reappears on the screen the user
      * clicked, falling back to the focused workspace.
@@ -91,13 +103,16 @@ Row {
      * Resolve an icon path for a toplevel by matching its window class to a
      * desktop entry id (the class often differs from the icon-theme name), with
      * a direct icon-theme lookup as fallback.
+     *
+     * The scan reads `desktopEntries` above rather than the model itself, because
+     * what the model needs is a binding, not a reader.
      */
     function iconFor(t) {
         var cls = (t && t.lastIpcObject && t.lastIpcObject.class) ? t.lastIpcObject.class
             : (t && t.wayland && t.wayland.appId ? t.wayland.appId : "");
         if (!cls)
             return "";
-        var apps = DesktopEntries.applications.values;
+        var apps = root.desktopEntries;
         for (var i = 0; i < apps.length; i++) {
             var e = apps[i];
             if (e && e.id && e.id.toLowerCase() === cls.toLowerCase() && e.icon)

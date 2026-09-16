@@ -52,22 +52,36 @@ config is looked for (see `services/Paths.qml`).
 The window has an icon of its own — `assets/silhouette-settings.svg`: a cog in the
 shell's accent with the shell's own pill cut out of its middle, one solid
 silhouette so it still reads at 16px. It is worn in the rail above the search
-field, and named by `assets/silhouette-settings.desktop` for a dock or a launcher
-to read. Two copies make that real, since a Wayland toplevel carries no
-icon of its own and the icon theme is what supplies one (`-D` creates the parent
-directories):
+field, and it is what a dock, a taskbar or the pill's own window list draws for the
+dialog. Both files have to be installed for that to show, since a Wayland toplevel
+carries no icon of its own and the icon theme is what supplies one (`-D` creates
+the parent directories):
 
 ```bash
 cd ~/.config/quickshell/silhouette-shell/modules/settingsapp/assets
-install -Dm644 silhouette-settings.svg     ~/.local/share/icons/hicolor/scalable/apps/silhouette-settings.svg
-install -Dm644 silhouette-settings.desktop ~/.local/share/applications/silhouette-settings.desktop
+install -Dm644 silhouette-settings.svg ~/.local/share/icons/hicolor/scalable/apps/silhouette-settings.svg
+install -Dm644 org.quickshell.desktop  ~/.local/share/applications/org.quickshell.desktop
 ```
+
+**The entry is named for the app id, and that name is the point of it.** Quickshell
+reports its toplevels as `org.quickshell` — a constant in the library, not something
+a config can set — and everything that puts an icon beside a window resolves that id
+as a *desktop entry id*. `MinimizedTray` does it in two steps: the entry whose id
+equals the window class, then that entry's `Icon` from the icon theme. (That scan
+reads a bound copy of the entry list — Quickshell fills `DesktopEntries.applications`
+only once something binds to it, and a read from inside the function would have seen
+an empty list and fallen back for every window.) A file named
+`silhouette-settings.desktop` is never found by that lookup, so the icon falls back
+to `application-x-executable`, the generic that reads as "no icon here" — which is
+exactly what the dialog used to wear. Launchers match on the entry's `Name` instead,
+so nothing is lost by naming the file for the id: it still lists as *Silhouette
+Settings*, with this icon beside it.
 
 The entry's `Exec` is the IPC call the keybind runs
 (`qs -c silhouette-shell ipc call settings toggle`), so it opens the dialog the
-shell already hosts rather than starting a second one, and its
-`StartupWMClass=org.quickshell` is how the compositor matches the window the entry
-belongs to.
+shell already hosts rather than starting a second one. Its `StartupWMClass` and the
+window rule in `modules/window-rules.lua` both say the same thing about the class,
+for the matchers that read those rather than the entry id.
 
 ## Layout
 
@@ -96,15 +110,18 @@ utils/keybinds/            keychord.js (key capture) and spacebinds.js, this app
                            special-workspace bind editor
 pages/                     qs.pages — what is configurable
   Pages.qml                  the index: pages, search, row flattening
-  BarIsland.qml … Timers.qml  one singleton per page (Look, Input, Displays,
-                             Corners, Timers, …)
+  Appearance.qml … Backups.qml  one singleton per page, in rail order
+                             (Appearance, Look, Pill shape, Corners, Motion,
+                             Timers, Bar & Island, … see Pages.qml)
   DisplaysView.qml            the displays body (rows built at runtime)
   WorkspacesView.qml          the spaces body (list, apps, create form)
   UpdatesView.qml             the updates body (status, pending, results)
   Backups.qml / BackupsView.qml  the backups page and its body (status, archives)
 assets/                    the app's own icon, and the entry that points at it
-  silhouette-settings.svg      the cog with the pill cut out of it (rail, dock)
-  silhouette-settings.desktop  the launcher entry (Exec: the settings IPC call)
+  silhouette-settings.svg      the cog with the pill cut out of it (rail, dock,
+                               and the name the entry's Icon= gives)
+  org.quickshell.desktop       the launcher/window entry — named for the app id,
+                               which is how a window list finds its icon
 components/                qs.components — chrome and layout primitives
   Panel.qml                  the window surface (square, opaque) + open tween
   SectionLabel.qml           a faint heading inside a card
@@ -141,10 +158,26 @@ view of a live monitor — the same piece of hardware at two sizes, so the map t
 and the portrait cannot disagree.
 
 A page's rows are built a frame's worth at a time: the content area walks the open
-page's flattened rows into `SettingGroup.visibleRows`, and the three view pages load
+page's flattened rows into `SettingGroup.visibleRows`, and the view pages load
 through `asynchronous: true` loaders, so a switch delegates over a few frames instead
 of stalling on one. Measured, the worst hitch on a page change went from 55ms (215ms
-on the first build) to under ~20ms (87ms on the first build).
+on the first build) to under ~20ms (87ms on the first build). The budget per pass is
+9ms — the larger half of a frame at 60Hz, since a pass runs about once per frame —
+which is what it takes for the biggest page here (Pill shape, 47 rows) to settle in
+about a quarter of a second instead of longer.
+
+**What a card is handed has to describe the page that is open *now*.** The builder
+counts rows into `builtRows`, and each card is told how many of them are its own by
+subtracting its offset within the page. Those offsets were once *recorded* when the
+page changed, and the page-change handler runs before the binding that fills
+`pageGroups` has re-evaluated — so the offsets a card received were the outgoing
+page's. Every card past the end of that shorter array read `undefined`, `Math.max`
+made the sum NaN, and the `int` property truncated it to 0: a section that came up
+empty and stayed empty until you left the page and came back. The offsets are
+derived from `pageGroups` now, so they cannot lag the page they describe, and the
+card's own row count is derived the same way. A sweep of all 18 pages, checking
+every card of every page once it had settled, went from 43 failures in 44 checks to
+none.
 
 
 ## The rail
@@ -154,6 +187,18 @@ page itself when its name or `keywords` match, and `hits` — the rows of that p
 that match the whole query. So the rail lists pages, and under a matching page the
 settings inside it, which is what makes "search a setting" mean opening the setting
 rather than the page it lives on.
+
+Every page carries a `caption` too: one line printed beside its name in the content
+header, saying what the page is for in the words someone would go looking for. It is
+shown, not searched — `keywords` is the searched half, and the pages that cannot be
+found by their rows (the four with a `view`, which have no row labels for the rail
+to match on) carry both.
+
+The rail's order is the subject order `Pages.qml` describes: what the shell is drawn
+as, then the bar, then the input and outputs it is attached to, then the session and
+its upkeep. Pages used to be appended as they were written, which is why the newest
+ones — Pill shape, Backups, Corners, Timers — sat at the end beside nothing they
+belong with.
 
 A page row emits `pageSelected(index)`; a hit emits `rowRequested(index, rowKey)`.
 Both go to the host, which moves the rail's own `currentIndex` — see the navigation

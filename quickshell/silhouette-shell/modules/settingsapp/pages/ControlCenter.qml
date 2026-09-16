@@ -12,6 +12,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Control Center"
     readonly property string icon: "\u2699"
+    readonly property string caption: "Night light and keep-awake"
+    readonly property string keywords: "night light warmth sunset temperature schedule keep awake inhibit idle caffeine"
 
     readonly property var groups: [
         { card: "Night light", rows: [

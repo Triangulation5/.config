@@ -8,6 +8,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Launcher"
     readonly property string icon: "\u25A4"
+    readonly property string caption: "Keyboard navigation in the pill's menus"
+    readonly property string keywords: "vim keys hjkl navigation launcher menus arrows keyboard"
 
     readonly property var groups: [
         { card: "Navigation", rows: [

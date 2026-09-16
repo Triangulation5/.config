@@ -8,6 +8,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Notifications"
     readonly property string icon: "\u25C8"
+    readonly property string caption: "The session-wide silencer"
+    readonly property string keywords: "do not disturb dnd silence silent mute popup notification alert"
 
     readonly property var groups: [
         { card: "Notifications", rows: [
