@@ -48,6 +48,12 @@ latest config, relaunches the shell and raises a toast naming what landed.
 
 ## Shell tuning
 
+Pages sit in the rail in subject order — how the shell is drawn, then the bar, then
+the input and outputs, then the session and its upkeep — and each one prints a
+caption under its name saying what it is for. Pages that cannot be found by their
+rows, because they build their body at runtime, are searchable by a keyword list
+instead.
+
 The settings window reaches past the flags into the shell's own constants and the
 compositor's files the pill's surfaces never touched. `Corners` (the screen-corner
 radii, bezel shadow and collapse time), `Timers` (the pill's eviction sweep and
@@ -72,7 +78,11 @@ do not snapshot anything.
 The settings window has an icon of its own — a cog in the shell's accent with the
 shell's own pill cut out of its middle,
 `modules/settingsapp/assets/silhouette-settings.svg` — worn in its rail and named
-by a desktop entry, so a dock or a launcher draws it like any other app.
+by a desktop entry, so a dock, a taskbar or the pill's own window list draws it like
+any other app. The entry is `assets/org.quickshell.desktop`, because Quickshell's
+windows report that class and a window list finds an icon by looking the class up as
+a desktop-entry id; both files live in `modules/settingsapp/assets` and the install
+line is in its README.
 
 ## Persistent configuration
 

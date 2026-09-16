@@ -34,6 +34,11 @@ import qs.modules.settingsapp.components
  * see `rowBuilder`. Building the whole page in one go is what used to make a
  * switch snap — 17 rows measured 55ms on this machine, about three dropped
  * frames — while nothing here is built ahead of being looked at.
+ *
+ * The other half of that is `groupOffsets`: what a card is handed has to describe
+ * the page that is open *now*, or the card can be handed a row count of zero and
+ * sit empty. It is derived from `pageGroups` rather than recorded when the page
+ * changes, which is what keeps the two in step — see the property itself.
  */
 Item {
     id: root
@@ -53,8 +58,28 @@ Item {
     /** Every row of the open page, flattened — what the builder walks. */
     readonly property var pageRows: (root.pageView === null && root.page) ? Pages.pageRows(root.page) : []
 
-    /** First row of each card within the page, for `visibleRows` below. */
-    property var groupOffsets: []
+    /**
+     * First row of each card within the open page, for `visibleRows` below.
+     *
+     * Derived, not recorded. This was once a plain property written when the page
+     * changed, which left it a page behind: the page-change handler reads
+     * `pageGroups` before the binding that fills it has re-evaluated, so the
+     * offsets it recorded were the *outgoing* page's. A card whose index was past
+     * the end of that shorter array read `undefined`, `Math.max` made the sum NaN,
+     * and the `int` truncated it to 0 — the card came up empty until you left the
+     * page and came back. Read as a binding it is computed from `pageGroups` in the
+     * same pass that fills it, so it cannot lag the page it describes.
+     */
+    readonly property var groupOffsets: {
+        var out = [];
+        var start = 0;
+        var groups = root.pageGroups;
+        for (var i = 0; i < groups.length; i++) {
+            out.push(start);
+            start += groups[i].rows.length;
+        }
+        return out;
+    }
 
     /** How many of the open page's rows exist so far. See rowBuilder. */
     property int builtRows: 0
@@ -71,6 +96,8 @@ Item {
 
     readonly property var page: Pages.pages[pageIndex]
     readonly property string pageTitle: root.page ? root.page.name : ""
+    /** The page's one-liner for the header. Empty if it declares none. */
+    readonly property string pageCaption: (root.page && root.page.caption) ? root.page.caption : ""
     /** The page's own body component, when it has one instead of groups. */
     readonly property var pageView: root.page && root.page.view ? root.page.view : null
 
@@ -113,19 +140,13 @@ Item {
     Component.onCompleted: root.startPage()
 
     /**
-     * Open a page from empty: record where each card's rows begin and let the
-     * builder fill them in. Resetting `builtRows` is what empties the previous
-     * page — a page that is not open holds no items, which is the lazy half of
-     * this file.
+     * Empty the content area so the builder can fill the page that is opening.
+     *
+     * A page that is not open holds no rows, which is the lazy half of this file.
+     * The offsets need no handling here: they follow `pageGroups` on their own
+     * (see `groupOffsets`), so this only has to drop the count to zero.
      */
     function startPage() {
-        var offsets = [];
-        var running = 0;
-        for (var g = 0; g < root.pageGroups.length; g++) {
-            offsets.push(running);
-            running += root.pageGroups[g].rows.length;
-        }
-        root.groupOffsets = offsets;
         root.builtRows = 0;
     }
 
@@ -149,6 +170,7 @@ Item {
 
         PageNav {
             title: root.pageTitle
+            caption: root.pageCaption
             index: root.pageIndex
             count: Pages.pages.length
             onStep: function(dir) { root.go(dir) }
@@ -182,14 +204,18 @@ Item {
                         targetKey: root.targetKey
 
                         /**
-                         * How many of this card's rows have been built. The
-                         * subtraction is read on `builtRows`, so the binding
-                         * follows the builder; `groupOffsets` is a property
-                         * rather than a call because a binding cannot see
-                         * through a function.
+                         * How many of this card's rows have been built. Both
+                         * reads are properties rather than calls, so both are
+                         * tracked: the card follows the builder, and follows the
+                         * page when it changes. A card left over from the page
+                         * that just left has no offset here and shows nothing.
                          */
-                        visibleRows: Math.max(0, Math.min(modelData.rows.length,
-                                                          root.builtRows - root.groupOffsets[index]))
+                        visibleRows: {
+                            var start = root.groupOffsets[index];
+                            if (start === undefined)
+                                return 0;
+                            return Math.max(0, Math.min(modelData.rows.length, root.builtRows - start));
+                        }
                     }
                 }
 
@@ -227,10 +253,16 @@ Item {
 
     /**
      * The builder. A page's rows are added a frame's worth at a time instead of
-     * in one pass: each pass adds rows until 6ms have gone, so cheap rows land
-     * together (most pages are done in two or three frames) and an expensive one
-     * cannot blow the frame budget on its own. Nothing is built for a page that
-     * is not open, and the pass stops on its own once the page is full.
+     * in one pass: each pass adds rows until its budget has gone, so cheap rows
+     * land together (most pages are done in two or three frames) and an expensive
+     * one cannot blow the frame budget on its own.
+     *
+     * The budget is the larger half of a frame at 60Hz, and a pass runs about
+     * once per frame, so the frame the builder is in stays inside the budget. It
+     * used to be 6ms, which left the biggest page (Pill shape, 47 rows) still
+     * filling after a quarter of a second — long enough to read as a page that
+     * never finished. Nothing is built for a page that is not open, and the pass
+     * stops on its own once the page is full.
      */
     Timer {
         id: rowBuilder
@@ -238,7 +270,7 @@ Item {
         repeat: true
         running: root.builtRows < root.pageRows.length
         onTriggered: {
-            var deadline = Date.now() + 6;
+            var deadline = Date.now() + 9;
             while (root.builtRows < root.pageRows.length && Date.now() < deadline)
                 root.builtRows += 1;
         }

@@ -8,6 +8,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Clock & Date"
     readonly property string icon: "\u25D4"
+    readonly property string caption: "How the clock reads, where the weather looks"
+    readonly property string keywords: "clock time date 12 24 hour seconds weather city glance glyphs"
 
     readonly property var groups: [
         { card: "Clock", rows: [

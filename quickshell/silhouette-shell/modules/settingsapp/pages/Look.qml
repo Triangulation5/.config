@@ -13,6 +13,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Look"
     readonly property string icon: "\u25A3"
+    readonly property string caption: "Gaps, rounding, borders, blur, shadow"
+    readonly property string keywords: "gaps rounding radius border blur shadow opacity animation decorations window decoration"
 
     readonly property var groups: [
         { card: "Window", rows: [

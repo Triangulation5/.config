@@ -15,6 +15,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Corners"
     readonly property string icon: "\u25E2"
+    readonly property string caption: "Screen rounding and the bezel shadow"
+    readonly property string keywords: "corner corners rounding radius screen edge bezel shadow notch game squircle display"
 
     readonly property var groups: [
         { card: "Screen corners", rows: [

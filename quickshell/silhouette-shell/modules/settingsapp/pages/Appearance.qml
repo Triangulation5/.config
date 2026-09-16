@@ -13,6 +13,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Appearance"
     readonly property string icon: "\u25D0"
+    readonly property string caption: "Palette, font, scale, wallpapers"
+    readonly property string keywords: "theme colour color palette wallpaper font scale ui tint backdrop media"
 
     readonly property var groups: [
         { card: "Palette", rows: [

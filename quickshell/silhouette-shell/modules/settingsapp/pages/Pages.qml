@@ -8,11 +8,17 @@ import QtQuick
  * array in rail order; everything else — the rail, its search, the content
  * column, Reset — reads this index rather than keeping a list of its own.
  *
- * A page is `{ name, icon, groups }` (plus an optional `view`, for the one page
- * whose controls are not rows — see below), a group is `{ card, rows }` and a
- * row is the flat descriptor its editor reads: the field it edits, its label
- * and caption, and the fields of that editor's type. Where a row's value lives
- * (a shell flag, a Hyprland config field) is the row's `source`; see Sources.
+ * A page is `{ name, icon, caption, groups }` (plus an optional `keywords` and
+ * an optional `view`, for the pages whose controls are not rows — see below), a
+ * group is `{ card, rows }` and a row is the flat descriptor its editor reads:
+ * the field it edits, its label and caption, and the fields of that editor's
+ * type. Where a row's value lives (a shell flag, a Hyprland config field) is the
+ * row's `source`; see Sources.
+ *
+ * `caption` is the line the content header prints under the page's name: what
+ * the page is for, in the words someone would use looking for it. It is shown,
+ * not searched — `keywords` is the searched half, for the pages (mostly the ones
+ * with a `view`) that have no row labels for the rail to match on.
  *
  * Adding a page is a new singleton in this directory, one line in qmldir and
  * one entry in `pages`; nothing else in the app changes.
@@ -22,30 +28,39 @@ QtObject {
 
     /**
      * Every page, in rail order. The array position *is* the page index the host
-     * navigates by, so append rather than reshuffle if you want to keep muscle
-     * memory. Pages are addressed by index everywhere: an element read out of a
-     * `var` array is handed back through a JS copy, so comparing two pages by
-     * identity (`indexOf`) silently fails.
+     * navigates by, so this order is the rail's order and nothing else. Pages are
+     * addressed by index everywhere: an element read out of a `var` array is
+     * handed back through a JS copy, so comparing two pages by identity
+     * (`indexOf`) silently fails.
+     *
+     * The order runs from what the shell looks like to what the machine does:
+     * how it is drawn (Appearance, Look, Pill shape, Corners, Motion, Timers),
+     * then the bar itself (Bar & Island, Clock & Date, Notifications, Control
+     * Center, Launcher), then the input and outputs it is attached to (Input,
+     * Displays, Workspaces), then the session and its upkeep (Lock Screen,
+     * System, Updates, Backups). Pages used to be appended as they were written,
+     * which left the newer ones — Pill shape, Backups, Corners, Timers — in a
+     * pile at the end, unrelated to anything next to them.
      */
     readonly property var pages: [
-        BarIsland,
-        ClockDate,
         Appearance,
         Look,
+        PillShape,
+        Corners,
         Motion,
+        Timers,
+        BarIsland,
+        ClockDate,
+        Notifications,
+        ControlCenter,
+        Launcher,
         Input,
         Displays,
         Workspaces,
-        Launcher,
-        Notifications,
-        ControlCenter,
         LockScreen,
         System,
         Updates,
-        PillShape,
-        Backups,
-        Corners,
-        Timers
+        Backups
     ]
 
     /**

@@ -14,6 +14,8 @@ import QtQuick
 QtObject {
     readonly property string name: "Lock Screen"
     readonly property string icon: "\u25A1"
+    readonly property string caption: "Idle timeouts, password field, backdrop"
+    readonly property string keywords: "lock idle dim dpms suspend timeout password avatar backdrop blur bead animation screen"
 
     readonly property var groups: [
         { card: "Idle", rows: [
