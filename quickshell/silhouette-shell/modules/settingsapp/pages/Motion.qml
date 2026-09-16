@@ -12,6 +12,12 @@ import QtQuick
  * The config's animation style gates whole branches of curve and leaf
  * definitions, so switching it changes more than one field; that is the file's
  * design, not something to paper over here.
+ *
+ * The Shell card is the other half of the same subject, and the two speeds are
+ * deliberately separate: the compositor's speed multiplies the leaves in the
+ * config, the shell's multiplies the durations `services/Motion.qml` hands to
+ * every surface the pill morphs into. One is the desktop, one is the pill, and
+ * wanting them equal is not the same as making them one control.
  */
 QtObject {
     readonly property string name: "Motion"
@@ -29,7 +35,11 @@ QtObject {
         ]},
         { card: "Shell", rows: [
             { key: "reduceMotion", type: "toggle", label: "Reduce motion",
-              caption: "Trim the shell's own animation budget", reset: false }
+              caption: "Trim the shell's own animation budget", reset: false },
+            { key: "motionSpeed", type: "slider", label: "Speed",
+              min: 0.5, max: 2, step: 0.05, unit: "\u00D7",
+              caption: "Scales every duration the shell's own motion hands out; the "
+                  + "compositor's speed is the row above", reset: 1.0 }
         ]},
         { card: "Visualizer", rows: [
             { key: "musicViz", type: "toggle", label: "Music visualizer",

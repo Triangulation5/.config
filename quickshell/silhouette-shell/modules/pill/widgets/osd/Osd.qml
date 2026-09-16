@@ -282,7 +282,7 @@ Item {
      */
     Timer {
         id: hideTimer
-        interval: 1800
+        interval: Math.max(200, Flags.osdHoldMs)
         onTriggered: {
             if (root.kind === "track" && !trackFace.coverReady && root.liveArt.length > 0 && root.holdExtends < 5) {
                 root.holdExtends++;

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Silhouette Settings.
+
+  A cog in the shell's accent (#d8647e), with the shell's own shape cut out of
+  the middle of it: the pill the whole rice is one of, as negative space. That is
+  the difference from a cog with a pill around it — this way the silhouette is
+  one solid object, which is what an app icon has to be to read at 16px in a
+  dock, and the hole still says which shell it belongs to.
+
+  The backdrop is the panel's ink (#100d0d) — what this window's cards and the
+  pill's are painted — so the icon and the window agree, and the cut-out is that
+  colour showing through rather than a second dark tone pretending to be a hole.
+  Deliberately no filters or masks: a flat silhouette, a gradient and eight
+  rotated teeth render the same everywhere, including in the Qt SVG plugin that
+  draws this in the app's own rail.
+
+  Also the icon `silhouette-settings.desktop` points at, for a dock or a
+  launcher — see the settings app README for the two install lines.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Silhouette Settings">
+  <title>Silhouette Settings</title>
+
+  <defs>
+    <!-- A breath of depth: the accent lit from above, flat in the lower half. -->
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e37b91"/>
+      <stop offset="0.55" stop-color="#d8647e"/>
+      <stop offset="1" stop-color="#c9566f"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="3" y="3" width="122" height="122" rx="29" fill="#100d0d"/>
+  <rect x="3.5" y="3.5" width="121" height="121" rx="28.5" fill="none" stroke="#d8647e" stroke-opacity="0.18"/>
+
+  <!-- The cog. Eight capsule teeth, drawn once at the top of the wheel and
+       rotated about its centre; their inner ends sit well inside the body so the
+       whole thing is one silhouette with no seam at a small size. -->
+  <g fill="url(#accent)">
+    <circle cx="64" cy="64" r="30"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(0 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(45 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(90 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(135 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(180 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(225 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(270 64 64)"/>
+    <rect x="59" y="24" width="10" height="18" rx="5" transform="rotate(315 64 64)"/>
+  </g>
+
+  <!-- The pill, cut out of the middle: the shell's one surface, in the one place
+       that makes the cog read as this shell's settings rather than any settings. -->
+  <rect x="48" y="57" width="32" height="14" rx="7" fill="#100d0d"/>
+</svg>

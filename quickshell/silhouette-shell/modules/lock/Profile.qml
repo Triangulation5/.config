@@ -62,7 +62,7 @@ Item {
         printErrors: false
     }
 
-    readonly property real avatarSize: 120 * s
+    readonly property real avatarSize: Flags.lockAvatarSize * s
 
     width: avatarSize
     height: avatarSize + 14 * s + nameText.implicitHeight

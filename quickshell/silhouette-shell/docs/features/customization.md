@@ -39,13 +39,17 @@ best example: a custom drawn signal icon instead of a generic asset.
 
 Animation durations and easings come from a shared motion module, so every
 surface moves with the same feel. A reduce-motion switch and game mode both
-cut the animation budget when you want less of it.
+cut the animation budget when you want less of it, and because that module is the
+only place a duration is handed out, one slider in the settings window's Motion
+page speeds the whole shell up or down.
 
 ## Rounded screen corners
 
 A decoration layer draws rounded corners over the screen edges. The rounding
 follows the pill state: game mode removes it, notch mode increases it, and
-dynamic island mode uses partial rounding.
+dynamic island mode uses partial rounding. Each of those radii, the bezel shadow
+inside them and how long the collapse takes are settings — the Corners page —
+rather than constants in the layer.
 
 ## Game mode
 

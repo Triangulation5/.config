@@ -49,6 +49,26 @@ target list instead of reaching the app. `hide` and `toggle` are unaffected —
 `Escape` closes the window. `RICELIN_HYPR_DIR` overrides where the Hyprland
 config is looked for (see `services/Paths.qml`).
 
+The window has an icon of its own — `assets/silhouette-settings.svg`: a cog in the
+shell's accent with the shell's own pill cut out of its middle, one solid
+silhouette so it still reads at 16px. It is worn in the rail above the search
+field, and named by `assets/silhouette-settings.desktop` for a dock or a launcher
+to read. Two copies make that real, since a Wayland toplevel carries no
+icon of its own and the icon theme is what supplies one (`-D` creates the parent
+directories):
+
+```bash
+cd ~/.config/quickshell/silhouette-shell/modules/settingsapp/assets
+install -Dm644 silhouette-settings.svg     ~/.local/share/icons/hicolor/scalable/apps/silhouette-settings.svg
+install -Dm644 silhouette-settings.desktop ~/.local/share/applications/silhouette-settings.desktop
+```
+
+The entry's `Exec` is the IPC call the keybind runs
+(`qs -c silhouette-shell ipc call settings toggle`), so it opens the dialog the
+shell already hosts rather than starting a second one, and its
+`StartupWMClass=org.quickshell` is how the compositor matches the window the entry
+belongs to.
+
 ## Layout
 
 A `qmldir` per directory, one type per file, `qs.*` imports, and a composition
@@ -70,15 +90,21 @@ services/                  qs.services — one file per config document
   Spaces.qml                 spaces.lua (the user's special workspaces) and the
                              binds.lua pair that toggles each one
   Updates.qml                the config's own updater script, check and apply
+  Backups.qml                the shell's *own* config: snapshot, list, restore, delete
 utils/lua/                 the Lua field read/write helpers (see "Lua helpers")
 utils/keybinds/            keychord.js (key capture) and spacebinds.js, this app's
                            special-workspace bind editor
 pages/                     qs.pages — what is configurable
   Pages.qml                  the index: pages, search, row flattening
-  BarIsland.qml … Updates.qml  one singleton per page (Look, Input, Displays, …)
+  BarIsland.qml … Timers.qml  one singleton per page (Look, Input, Displays,
+                             Corners, Timers, …)
   DisplaysView.qml            the displays body (rows built at runtime)
   WorkspacesView.qml          the spaces body (list, apps, create form)
   UpdatesView.qml             the updates body (status, pending, results)
+  Backups.qml / BackupsView.qml  the backups page and its body (status, archives)
+assets/                    the app's own icon, and the entry that points at it
+  silhouette-settings.svg      the cog with the pill cut out of it (rail, dock)
+  silhouette-settings.desktop  the launcher entry (Exec: the settings IPC call)
 components/                qs.components — chrome and layout primitives
   Panel.qml                  the window surface (square, opaque) + open tween
   SectionLabel.qml           a faint heading inside a card
@@ -101,10 +127,11 @@ Dependencies point one way: `services` (files) ← `config` (row→value) ←
 Nothing in `components/` names a page; nothing in `pages/` names a control;
 **services never import `qs.config`** — that is what keeps the app loadable.
 
-A page is either data (`groups`) or a `view`: the three pages whose controls
+A page is either data (`groups`) or a `view`: the four pages whose controls
 cannot be written as row descriptors — Displays (one card per monitor), Workspaces
-(a list that carries its own create/remove state) and Updates (a status and a
-pending list) — declare `view: Qt.resolvedUrl("…View.qml")` and own their body.
+(a list that carries its own create/remove state), Updates (a status and a pending
+list) and Backups (the saved archives, and two actions per archive) — declare
+`view: Qt.resolvedUrl("…View.qml")` and own their body.
 Their rows still go through the same door: a row built at runtime carries `get` and
 `set` closures, which `Sources` prefers over a named source.
 
@@ -355,6 +382,70 @@ Two tokens are worth knowing: `knob` is the ink that sits on a solid accent fill
 (the toggle knob, a lit chip's label), and `border` is a hairline meant to be
 barely seen. Neither is a text colour; use `text`/`textSecondary` for that.
 
+## What the shell keeps as a constant
+
+Every flag the shell has was already a row. What was *not* — until this pass —
+were the shell's own constants: the numbers and durations living inside the
+components that use them, which look like code until the first person wants a
+squarer screen. They are flags now, so the settings app reaches them, and the
+affected components read them the way they read every other flag:
+
+| what | where it was | flag(s) | page |
+| --- | --- | --- | --- |
+| Screen-corner radii, bezel shadow, collapse time | `modules/screencorner/ScreenCornerRoot.qml` | `cornerNotchRadius`, `cornerNormalRadius`, `cornerGameRadius`, `cornerShadowSize`, `cornerMorphMs` | Corners |
+| Every shell animation duration | one multiplier in `services/Motion.qml` | `motionSpeed` | Motion |
+| Pill eviction sweep, hover grace | `modules/pill/Pill.qml` timers | `pillCleanupSec`, `pillHoverGraceMs` | Timers |
+| OSD hold | `widgets/osd/Osd.qml` | `osdHoldMs` | Timers |
+| Notification popup life | `services/Notifs.qml` | `notifMs`, `notifLowMs` | Timers |
+| Lock field and avatar, blur spread, bead timeline | `modules/lock/*` | `lockPillW`, `lockPillH`, `lockAvatarSize`, `lockBlurSpread`, `lockBeadMs` | Lock Screen |
+
+The motion one is worth a sentence: **one flag scales the whole shell**, because
+`services/Motion.qml` is the single place durations are handed out — every
+surface reads `Motion.morph`, `Motion.fast` and friends rather than a literal.
+That is the shape to aim for with the rest of the list: a flag is cheap where
+something already funnels, and expensive where thirty call sites each hold a
+number (`notifMs` had two).
+
+## Backups
+
+The one page that records rather than edits. A backup is the shell's **own**
+config: the tree this app is a module of (`~/.config/quickshell/silhouette-shell`)
+and the state the shell keeps beside the flags — `flags.json`, the calendar's
+`events.json`, the chosen wallpaper's path. It is deliberately not the Hyprland
+config the rest of the app writes: those files belong to the compositor, and the
+pages that edit them already own them.
+
+One archive per backup, `silhouette-YYYY-MM-DDTHH-MM-SS.tar.gz` under
+`~/.local/state/ricelin/backups/`. The work is a script — `utils/backup.py`, in
+the shell tree because that tree is what it copies — and it answers the way
+`ricelin-update.py` does: one JSON object per run, `create` / `list` / `restore` /
+`remove`, with `status` and, on a refusal, `error`. `Backups.qml` runs it and reads
+that and nothing else. Every path is overrideable (`RICELIN_SHELL_DIR`,
+`XDG_STATE_HOME`, `RICELIN_BACKUP_DIR`, or `--shell --state --dir`), which is what
+let the page be driven end to end against a scratch tree.
+
+Three things about it are load-bearing:
+
+- **A restore cannot leave the backup directory.** Only a bare file name of an
+  archive this script wrote is accepted, and every member is checked before
+  anything is extracted: an absolute path, a `..`, a symlink, or any member that
+  is not the shell tree or one of the state files refuses the whole archive,
+  which is then left alone.
+- **A restore rolls back; it does not mirror.** Files the archive holds are
+  overwritten, files it is missing are added back, and a file that arrived after
+  the backup was taken is kept — restoring an old snapshot cannot take a newer
+  file with it.
+- **Nothing restarts.** The shell watches both halves of what a restore writes,
+  so the QML hot-reloads and `flags.json` is re-read as the write lands (see
+  Store). A page that killed the process it was drawn in, in order to "apply" the
+  restore, would be a page that vanished mid-restore.
+
+Restore and delete are both two-step, and the question is asked in the row it is
+about: that row's buttons become the question and a cancel, and every other row
+stops responding while one is asking — the same shape the Updates page uses for
+the one control that changes the machine. A run that was refused says why in the
+status card rather than staying silent.
+
 ## Parity with the shell's settings
 
 Every flag the shell exposes is here, plus the Hyprland settings the shell's own
@@ -419,6 +510,12 @@ surface reads a file or a contract that this config does not have.
   through pkexec and changes the machine rather than a config file, so it is behind
   a confirm step, and a failed or cancelled run is reported per command rather than
   silently retried.
+- **Backups are this app's only.** Every other page here mirrors something the
+  shell's own surfaces can reach; recording the shell's own tree and state, and
+  putting an archive back, is not a surface the shell has at all. It is the shape
+  of a settings app rather than a settings surface — you reach for it when
+  something is already wrong — and it is the reason this page has a body of its
+  own instead of rows.
 - **Not built:** the keybind editor and the submap manager. (`spacebinds.js` covers
   the one keybind this app has to write; a full editor is the shell's surface, with
   the shell's `utils/keybinds/binds.js` behind it — which resolves combos through a
@@ -489,3 +586,16 @@ Reset walks the open page's rows and writes each `reset` back through its source
 A refused write is never silent: the services put a line ("Hyprland reload
 failed", "Could not find … in …") in their `note`, and the content area prints it
 under the cards.
+
+A field a file does not carry yet is inserted into its block rather than refused
+(`insert.js`), by the services that expect that (`Input`) and reported in their
+note line. The rest refuse — `Deco`'s rule is "refuse a field the file does not
+have" — because for their targets a missing field means the config was
+trimmed by hand.
+
+On Backups the list is re-read after every run instead of being patched in
+memory, one tick later (a refresh refuses while a run is in flight): the directory
+is the truth, and an archive can also be added or removed by hand. The two
+processes are `list` and a single `run` whose command is built from its verb and
+target, so the page cannot leave a run behind by navigating away — the run is the
+service's, not the view's.

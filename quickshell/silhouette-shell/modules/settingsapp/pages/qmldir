@@ -1,9 +1,11 @@
 module qs.modules.settingsapp.pages
 
 singleton Appearance 1.0 Appearance.qml
+singleton Backups 1.0 Backups.qml
 singleton BarIsland 1.0 BarIsland.qml
 singleton ClockDate 1.0 ClockDate.qml
 singleton ControlCenter 1.0 ControlCenter.qml
+singleton Corners 1.0 Corners.qml
 singleton Displays 1.0 Displays.qml
 singleton Input 1.0 Input.qml
 singleton Launcher 1.0 Launcher.qml
@@ -14,5 +16,6 @@ singleton Notifications 1.0 Notifications.qml
 singleton Pages 1.0 Pages.qml
 singleton PillShape 1.0 PillShape.qml
 singleton System 1.0 System.qml
+singleton Timers 1.0 Timers.qml
 singleton Updates 1.0 Updates.qml
 singleton Workspaces 1.0 Workspaces.qml

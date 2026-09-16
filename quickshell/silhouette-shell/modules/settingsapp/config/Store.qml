@@ -171,6 +171,23 @@ Singleton {
             property real pillDragOverH: 126
             property real pillGameH: 34
             property int pillSurfaceIdleTimeout: 12
+            // -- the shell's own timing, geometry and motion, mirrored from Flags.qml --
+            property real cornerNotchRadius: 12
+            property real cornerNormalRadius: 8
+            property real cornerGameRadius: 0
+            property int cornerMorphMs: 1500
+            property real cornerShadowSize: 8
+            property real motionSpeed: 1.0
+            property int pillCleanupSec: 10
+            property int pillHoverGraceMs: 300
+            property int osdHoldMs: 1800
+            property int notifMs: 6000
+            property int notifLowMs: 4000
+            property real lockPillW: 176
+            property real lockPillH: 42
+            property real lockAvatarSize: 120
+            property int lockBeadMs: 350
+            property real lockBlurSpread: 2.4
         }
     }
 
@@ -210,7 +227,11 @@ Singleton {
         "pillInputW", "pillLookW", "pillIdlelockW", "pillAnimationW", "pillRecorderW",
         "pillFontpickerW", "pillWeatherW", "pillPolkitW", "pillOpenCorner", "pillToastW",
         "pillQuickChooseW", "pillQuickChooseH", "pillQuickCountW", "pillQuickCountH",
-        "pillDragOverW", "pillDragOverH", "pillGameH", "pillSurfaceIdleTimeout"
+        "pillDragOverW", "pillDragOverH", "pillGameH", "pillSurfaceIdleTimeout",
+        "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius",
+        "cornerMorphMs", "cornerShadowSize", "motionSpeed",
+        "pillCleanupSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",
+        "lockPillW", "lockPillH", "lockAvatarSize", "lockBeadMs", "lockBlurSpread"
     ]
 
     Timer {

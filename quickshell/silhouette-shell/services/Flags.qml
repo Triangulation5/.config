@@ -108,6 +108,29 @@ Singleton {
     property alias pillDragOverH: adapter.pillDragOverH
     property alias pillGameH: adapter.pillGameH
     property alias pillSurfaceIdleTimeout: adapter.pillSurfaceIdleTimeout
+    /*
+     * The shell's own timings, sizes and motion — constants that used to be
+     * minutes-of-thought baked into the components that use them (the corner
+     * overlay's radii, the lock surface's box, every duration Motion hands out).
+     * Same reason the pill's geometry is flags: what the settings app cannot
+     * reach is not a setting, it is a rebuild.
+     */
+    property alias cornerNotchRadius: adapter.cornerNotchRadius
+    property alias cornerNormalRadius: adapter.cornerNormalRadius
+    property alias cornerGameRadius: adapter.cornerGameRadius
+    property alias cornerMorphMs: adapter.cornerMorphMs
+    property alias cornerShadowSize: adapter.cornerShadowSize
+    property alias motionSpeed: adapter.motionSpeed
+    property alias pillCleanupSec: adapter.pillCleanupSec
+    property alias pillHoverGraceMs: adapter.pillHoverGraceMs
+    property alias osdHoldMs: adapter.osdHoldMs
+    property alias notifMs: adapter.notifMs
+    property alias notifLowMs: adapter.notifLowMs
+    property alias lockPillW: adapter.lockPillW
+    property alias lockPillH: adapter.lockPillH
+    property alias lockAvatarSize: adapter.lockAvatarSize
+    property alias lockBeadMs: adapter.lockBeadMs
+    property alias lockBlurSpread: adapter.lockBlurSpread
 
     FileView {
         id: file
@@ -235,6 +258,33 @@ Singleton {
             property real pillDragOverH: 126
             property real pillGameH: 34
             property int pillSurfaceIdleTimeout: 12
+            /** Screen-corner overlay: the radius each mode rounds the display to. */
+            property real cornerNotchRadius: 12
+            property real cornerNormalRadius: 8
+            property real cornerGameRadius: 0
+            /** How long the corners take to collapse in and out of game mode. */
+            property int cornerMorphMs: 1500
+            /** The inner bezel shadow the corner overlay paints, in px (0 = none). */
+            property real cornerShadowSize: 8
+            /** Multiplier on every duration the shell's own motion hands out. */
+            property real motionSpeed: 1.0
+            /** How often the pill sweeps for surfaces to evict, in seconds. */
+            property int pillCleanupSec: 10
+            /** Grace before the pill collapses after the pointer leaves it. */
+            property int pillHoverGraceMs: 300
+            /** How long a volume, brightness or track overlay stays up. */
+            property int osdHoldMs: 1800
+            /** How long a notification popup stays, by urgency. */
+            property int notifMs: 6000
+            property int notifLowMs: 4000
+            /** The lock screen's password pill and avatar, in logical px. */
+            property real lockPillW: 176
+            property real lockPillH: 42
+            property real lockAvatarSize: 120
+            /** One password bead's flourish/delete animation. */
+            property int lockBeadMs: 350
+            /** Blur spread of the lock screen's wallpaper backdrop. */
+            property real lockBlurSpread: 2.4
         }
     }
 }

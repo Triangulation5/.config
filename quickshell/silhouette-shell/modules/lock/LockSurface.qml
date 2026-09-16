@@ -39,7 +39,7 @@ Item {
     onActiveChanged: if (!active)
         closeAnim.restart()
 
-    readonly property real spread: 2.4
+    readonly property real spread: Flags.lockBlurSpread
 
     readonly property string shotSource: {
         if (surface.screenName.length === 0)
@@ -117,8 +117,8 @@ Item {
             color: "white"
             antialiasing: !Flags.gameMode
 
-            readonly property real pillW: 176 * surface.s
-            readonly property real pillH: 41.8 * surface.s
+            readonly property real pillW: Flags.lockPillW * surface.s
+            readonly property real pillH: Flags.lockPillH * surface.s
             readonly property real pillY: (Flags.notchStyle ? 0 : 8 * Flags.topGap) * surface.s
 
             readonly property real gameFlat: Flags.gameMode ? 1 : 0

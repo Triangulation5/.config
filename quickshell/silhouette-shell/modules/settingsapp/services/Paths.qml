@@ -28,6 +28,12 @@ import Quickshell
  *
  * And one file outside the config tree, because it is a script rather than a
  * config: scripts/ricelin-update.py, the updater the Updates page drives.
+ *
+ * The second half of this file is the app's other subject: the shell's *own*
+ * files. The Backups page records and puts back the shell tree and the state it
+ * keeps beside the flags, so their paths live here too — one place for "where
+ * this app's files are", whether the file belongs to the compositor or to the
+ * shell.
  */
 QtObject {
     /**
@@ -60,4 +66,30 @@ QtObject {
      * the distribution's packages, not this rice (see Updates).
      */
     readonly property string updater: scripts + "/ricelin-update.py"
+
+    /**
+     * The shell's own tree — the config this app is a module of, and the first
+     * thing a backup holds. `RICELIN_SHELL_DIR` overrides it, the same way
+     * `RICELIN_HYPR_DIR` overrides the compositor's config.
+     */
+    readonly property string shell: Quickshell.env("RICELIN_SHELL_DIR") || (Quickshell.env("HOME") + "/.config/quickshell/silhouette-shell")
+
+    /**
+     * The shell's user state (`~/.local/state/ricelin`): the flags every page
+     * edits, the calendar events, the chosen wallpaper's path. A backup takes
+     * the files in here that exist; nothing else in the directory is the
+     * shell's, which is why the page lists them by name rather than archiving
+     * the directory (see Backups).
+     */
+    readonly property string state: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin"
+    readonly property string flags: state + "/flags.json"
+
+    /** Where the Backups page's archives live, one timestamped tarball each. */
+    readonly property string backups: state + "/backups"
+    /**
+     * The backup script (utils/backup.py) the Backups page runs. It takes the
+     * verb (`create`, `list`, `restore`, `remove`) and prints one JSON object;
+     * it lives in the shell tree because that tree is what it copies.
+     */
+    readonly property string backupScript: shell + "/utils/backup.py"
 }

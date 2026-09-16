@@ -7,10 +7,14 @@ import qs.services
  * Shared motion language. One singleton owns the animation durations, easing
  * types, and the morph bezier curve every surface morph rides, all scaled by the
  * reduce-motion flag; notch style swaps in a quicker, Apple-inspired profile.
+ *
+ * It is also the single place the shell's animation speed can be turned: every
+ * duration below is `something * mult`, so the settings app's speed flag scales
+ * the whole shell from here instead of from thirty call sites.
  */
 
 Singleton {
-    readonly property real mult: Flags.reduceMotion ? 0.45 : 1
+    readonly property real mult: (Flags.reduceMotion ? 0.45 : 1) * Math.max(0.1, Flags.motionSpeed)
 
     /**
      * Liquid physical motion is enabled automatically for notch style.

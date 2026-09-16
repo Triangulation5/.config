@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Silhouette Settings
+GenericName=Shell Settings
+Comment=Look, input, displays and backups for the Silhouette shell
+Exec=qs -c silhouette-shell ipc call settings toggle
+Icon=silhouette-settings
+Terminal=false
+Categories=Settings;DesktopSettings;Qt;
+Keywords=settings;silhouette;shell;hyprland;quickshell;backup;
+# Quickshell's own app id: how the compositor reports this window, and how the
+# settings-dialog window rule in modules/window-rules.lua finds it.
+StartupWMClass=org.quickshell
+# The dialog is a toplevel the always-running shell already owns, so this entry
+# shows, focuses and hides one window rather than starting a process. It is not
+# `SingleMainWindow` for that reason: there is nothing here to launch twice.
