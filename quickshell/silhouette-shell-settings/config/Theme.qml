@@ -1,6 +1,13 @@
 pragma Singleton
+
 import QtQuick
 
+/**
+ * The panel's palette, radii, type and motion — the app's own theme, not the
+ * shell's. These are the values the panel was designed around, so keep them
+ * together: a component that needs a colour takes it from here rather than
+ * inventing one.
+ */
 QtObject {
     // Palette
     readonly property color window: "#090909"
@@ -17,8 +24,8 @@ QtObject {
     readonly property color knob: "#101010"
     readonly property color navButton: "#161616"
 
-    // Radii
-    readonly property int radiusWindow: 24
+    // Radii. There is no window radius: the compositor cuts this window's corners
+    // (see Panel), so a token here would only be a second opinion.
     readonly property int radiusCard: 14
     readonly property int radiusRow: 10
 

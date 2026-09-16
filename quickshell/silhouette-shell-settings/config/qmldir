@@ -1,4 +1,5 @@
-module config
-singleton Theme 1.0 Theme.qml
+module qs.config
+
+singleton Sources 1.0 Sources.qml
 singleton Store 1.0 Store.qml
-singleton Pages 1.0 Pages.qml
+singleton Theme 1.0 Theme.qml

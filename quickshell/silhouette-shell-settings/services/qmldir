@@ -1,0 +1,9 @@
+module qs.services
+
+singleton Deco 1.0 Deco.qml
+singleton Hypr 1.0 Hypr.qml
+singleton Input 1.0 Input.qml
+singleton Monitors 1.0 Monitors.qml
+singleton Paths 1.0 Paths.qml
+singleton Spaces 1.0 Spaces.qml
+singleton Updates 1.0 Updates.qml
