@@ -1,0 +1,7 @@
+module qs.modules.settingsapp.components.rows
+
+SettingRowEditor 1.0 SettingRowEditor.qml
+SettingSeg 1.0 SettingSeg.qml
+SettingSlider 1.0 SettingSlider.qml
+SettingText 1.0 SettingText.qml
+SettingToggle 1.0 SettingToggle.qml

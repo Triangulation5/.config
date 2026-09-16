@@ -1,0 +1,4 @@
+module qs.modules.settingsapp.modules.content
+
+ContentArea 1.0 ContentArea.qml
+PageNav 1.0 PageNav.qml

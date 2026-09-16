@@ -1,8 +1,14 @@
 # Silhouette Settings
 
-The shell's standalone settings window: a dark, macOS-System-Settings-inspired
-control panel with a rail of pages and one card per group of settings. It edits
-the same state the shell does:
+The shell's settings window: a dark, macOS-System-Settings-inspired control panel
+with a rail of pages and one card per group of settings.
+
+This tree is the **standalone config**, kept as the backup while the app is folded
+into the shell. The copy that keeps changing is
+`silhouette-shell/modules/settingsapp/`; everything below still describes a config
+you run on its own, with `qs -p ~/.config/quickshell/silhouette-shell-settings`.
+
+It edits the same state the shell does:
 
 - the shell's own flags in `~/.local/state/ricelin/flags.json`, which the running
   shell watches, so an edit applies live — no reload, no IPC round trip;
@@ -278,10 +284,22 @@ is unfocused, and nothing the app can set from inside.
 
 ## The theme
 
-`config/Theme.qml` is the panel's own palette — the dark red-black surfaces and
-the green accent it was designed around — not the shell's. It is deliberately not
-dynamic: the settings window keeps one look whatever the wallpaper does, so a
-control panel is never the thing you cannot read because of your palette.
+`config/Theme.qml` is the panel's own palette — the dark surfaces and the row
+metrics it was designed around — with two tokens taken from the pill, because a
+settings window that highlights in a different colour from the thing it
+configures reads as a different app: `accent` (the pill's `#d8647e` on the static
+palette, the generated `Dyn.primary` otherwise) and `window`/`sidebar`, the
+backdrop the rail and the cards sit on.
+
+On the static palette that backdrop is **black**, and deliberately so: it is what
+the pill actually paints. The shell assigns its static surfaces the string
+`"rgba(37,37,48,1.00)"`, which Qt's colour parser cannot read, so `Theme.cardTop`
+keeps its black default and the pill, its cards, its tiles and its capsules all
+come out black. Matching the pill means matching the pixels, so `window` is
+`#000000` until those strings are repaired; the note on the token itself says so,
+where the next person will look. On dynamic or manual the pill paints the
+generated palette — valid hex, so it lands — and this window follows it token for
+token. The cards stay the app's own `#100d0d` either way.
 
 Two tokens are worth knowing: `knob` is the ink that sits on a solid accent fill
 (the toggle knob, a lit chip's label), and `border` is a hairline meant to be

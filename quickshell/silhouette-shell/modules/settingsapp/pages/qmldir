@@ -1,0 +1,17 @@
+module qs.modules.settingsapp.pages
+
+singleton Appearance 1.0 Appearance.qml
+singleton BarIsland 1.0 BarIsland.qml
+singleton ClockDate 1.0 ClockDate.qml
+singleton ControlCenter 1.0 ControlCenter.qml
+singleton Displays 1.0 Displays.qml
+singleton Input 1.0 Input.qml
+singleton Launcher 1.0 Launcher.qml
+singleton LockScreen 1.0 LockScreen.qml
+singleton Look 1.0 Look.qml
+singleton Motion 1.0 Motion.qml
+singleton Notifications 1.0 Notifications.qml
+singleton Pages 1.0 Pages.qml
+singleton System 1.0 System.qml
+singleton Updates 1.0 Updates.qml
+singleton Workspaces 1.0 Workspaces.qml
