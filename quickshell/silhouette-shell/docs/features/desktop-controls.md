@@ -13,7 +13,9 @@
 A search field over a ranked application list. Results are ranked by fuzzy
 match and how often you launch them, so the entries you actually use float to
 the top. The usage data is shared with the standalone launcher window. Picking
-an entry executes it directly.
+an entry runs it through the launch guard: an app that dies within the first
+seconds raises a critical toast with its exit code and stderr, and Copy puts
+the whole thing on the clipboard.
 
 The same picker backs the AppImage installer, the stash and space-app add
 flows, so every search in the shell behaves the same way.
