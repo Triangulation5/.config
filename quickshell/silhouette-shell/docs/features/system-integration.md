@@ -41,6 +41,20 @@ the colour matugen pulled from the current wallpaper and lays it under the
 blurred album art, so the card agrees with whatever is on screen and never
 carries the static theme's own hues into someone's colours.
 
+While a track with art is loaded, the rest pill wears a soft ambient aura:
+the cover decoded tiny, saturated and blurred, stretched just past the pill
+so its dominant colour bleeds into the desktop around it, and the same cover
+colour casts the pill's shadow. Both follow the card's backdrop mode — at its
+intended strength on "bleed", a whisper on "wash", off on "none" — and dim
+while paused. ImageMagick averages the cover for the shadow tint, so it costs
+nothing when the aura is off.
+
+Appearance layers three settings on top, in the shell's surface and the
+settings app alike: an Ambient aura switch, an Aura strength that scales the
+mode's own base (50–150%), and an Aura shadow switch for the tint. The
+backdrop mode still wins — with the backdrop on None the aura stays off
+however those three read.
+
 ## Tray
 
 A custom tray. Items render as glyphs on a washi card, wheel scrolls the

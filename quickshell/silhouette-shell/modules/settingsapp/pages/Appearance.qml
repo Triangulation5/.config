@@ -36,7 +36,14 @@ QtObject {
         { card: "Media backdrop", rows: [
             { key: "mediaStyle", type: "segmented", label: "Now-playing backdrop",
               caption: "Blurred album-art bleed, the warm wash, or fully transparent",
-              options: ["bleed", "wash", "none"], names: ["Bleed", "Wash", "None"], reset: "bleed" }
+              options: ["bleed", "wash", "none"], names: ["Bleed", "Wash", "None"], reset: "bleed" },
+            { key: "auraOn", type: "toggle", label: "Ambient aura",
+              caption: "Cover colour bleeds around the rest pill. Runs at the backdrop's own strength, and stays off while the backdrop is None",
+              reset: true },
+            { key: "auraStrength", type: "slider", label: "Aura strength", min: 0, max: 2, step: 0.05,
+              displayScale: 100, unit: "%", reset: 1.0 },
+            { key: "auraShadow", type: "toggle", label: "Aura shadow",
+              caption: "Darkens the pill's shadow with the cover's dominant colour", reset: true }
         ]},
         { card: "Wallpaper", rows: [
             { key: "wallpaperDir", type: "text", label: "Folder", placeholder: "~/Pictures",

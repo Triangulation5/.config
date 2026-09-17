@@ -95,6 +95,9 @@ SettingsSurface {
         { item: vizStyleRow, kind: "seg", vals: ["bars", "centered", "string"], get: function () { return Flags.vizStyle; }, set: function (v) { Flags.vizStyle = v; } },
         { item: vizFpsRow, kind: "seg", vals: [15, 30, 60, 120], get: function () { return Flags.vizFps; }, set: function (v) { Flags.vizFps = v; } },
         { item: mediaBgRow, kind: "seg", vals: ["bleed", "wash", "none"], get: function () { return Flags.mediaStyle; }, set: function (v) { Flags.mediaStyle = v; } },
+        { item: auraRow, kind: "toggle", get: function () { return Flags.auraOn; }, set: function (v) { Flags.auraOn = v; } },
+        { item: auraStrengthRow, kind: "seg", vals: [0.5, 0.75, 1.0, 1.5], get: function () { return Flags.auraStrength; }, set: function (v) { Flags.auraStrength = v; } },
+        { item: auraShadowRow, kind: "toggle", get: function () { return Flags.auraShadow; }, set: function (v) { Flags.auraShadow = v; } },
         { item: notchRow, kind: "toggle", get: function () { return Flags.notchStyle; }, set: function (v) { Flags.notchStyle = v; } },
         { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
@@ -209,6 +212,57 @@ SettingsSurface {
             ]
             value: Flags.mediaStyle
             onPicked: (v) => Flags.mediaStyle = v
+        }
+    }
+
+    /**
+     * Ambient aura: the cover's colour bled around the rest pill and cast into
+     * its shadow. Gated on the media backdrop above - a "None" backdrop turns
+     * the aura off however the switch reads - so the strength segment only
+     * governs how far the colour reaches, not whether it runs.
+     */
+    SettingsRow {
+        id: auraRow
+        surface: root
+        name: "Ambient aura"
+        icon: "sparkles"
+
+        LinkToggle {
+            s: root.s
+            on: Flags.auraOn
+            onToggled: Flags.auraOn = !Flags.auraOn
+        }
+    }
+
+    SettingsRow {
+        id: auraStrengthRow
+        surface: root
+        name: "Aura strength"
+        icon: "sun"
+
+        SettingsSeg {
+            s: root.s
+            options: [
+                { label: "50%", value: 0.5 },
+                { label: "75%", value: 0.75 },
+                { label: "100%", value: 1.0 },
+                { label: "150%", value: 1.5 }
+            ]
+            value: Flags.auraStrength
+            onPicked: (v) => Flags.auraStrength = v
+        }
+    }
+
+    SettingsRow {
+        id: auraShadowRow
+        surface: root
+        name: "Aura shadow"
+        icon: "moon"
+
+        LinkToggle {
+            s: root.s
+            on: Flags.auraShadow
+            onToggled: Flags.auraShadow = !Flags.auraShadow
         }
     }
 
