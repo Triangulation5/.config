@@ -13,8 +13,11 @@
 
 A notification service wraps the system NotificationServer into grouped live
 and history lists with unread counts. Popups render as washi toasts anchored
-to the pill, and clicking a toast raises the source app's window. The control
-center shows the history with dismiss and activate actions.
+to the pill, and clicking a toast raises the source app's window. Dragging a
+toast up, left or right drags the pill into the mask wall: it dissolves at
+the edge it leaves through and springs back on a short pull, or flings out
+past half its width (0.6 of its height going up) or on a quick flick. The
+control center shows the history with dismiss and activate actions.
 
 ## Clipboard
 
