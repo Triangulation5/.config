@@ -894,6 +894,124 @@ Item {
         }
 
         /**
+         * Ambient aura: the now-playing cover decoded tiny, saturated and
+         * blurred, stretched just past the pill so its dominant colour bleeds
+         * into the desktop around the rest pill, and its colour also tints the
+         * body's shadow. Rest-only, and only while a track with art is loaded;
+         * the blur layer exists only while the aura is visible, so it costs
+         * nothing hidden or while another mode owns the pill. Sits behind the
+         * body and ears, so an unmoved pill is untouched by it.
+         *
+         * Follows the media backdrop mode: `bleed` runs it at its intended
+         * strength, `wash` keeps it much fainter, and `none` turns the ambient
+         * aura off entirely (the shadow stays plain black). Appearance layers
+         * its own switches on top — the aura can be turned off outright, its
+         * strength scaled against whatever the mode's base is, and the shadow
+         * tint dropped while the aura itself stays.
+         */
+        Item {
+            id: aura
+            anchors.fill: parent
+            anchors.margins: -auraPad
+            z: -1
+
+            readonly property real auraPad: 22 * pill.s
+            readonly property bool bleedMode: Flags.mediaStyle === "bleed"
+            readonly property bool washMode: Flags.mediaStyle === "wash"
+            /** The switch on, a backdrop mode and art: the aura may run at all. */
+            readonly property bool enabled: Flags.auraOn && Flags.mediaStyle !== "none"
+                && Players.has && Players.artUrl.length > 0
+            /** Enabled *and* at rest: the aura is drawn and the shadow tinted. */
+            readonly property bool active: enabled && pill.mode === "rest"
+
+            /** Peak opacity: the mode's base (full on bleed, a whisper on wash) scaled by the user's strength. */
+            readonly property real strength: (bleedMode ? 0.32 : (washMode ? 0.18 : 0)) * Flags.auraStrength
+
+            /** Dominant cover colour from ImageMagick, empty until it lands (or with none / no art). */
+            property string artHex: ""
+            readonly property color artColor: artHex.length > 0 ? artHex : "#000000"
+            /**
+             * The tint the body shadow borrows: the cover colour pulled most of
+             * the way to black so the shadow reads as a dark cast of the art.
+             * Plain black whenever the aura is off, so an unmoved or non-rest
+             * pill keeps its original shadow.
+             */
+            readonly property color shadowTint: (active && Flags.auraShadow && artHex.length > 0)
+                ? Theme.mix("#000000", artColor, bleedMode ? 0.5 : (washMode ? 0.3 : 0))
+                : "#000000"
+
+            opacity: active ? strength * (Players.playing ? 1 : 0.55) : 0
+            visible: opacity > 0.01
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Motion.morph
+                    easing.type: Motion.easeMorph
+                    easing.bezierCurve: Motion.morphCurve
+                }
+            }
+
+            /**
+             * Dominant cover colour for the shadow tint. ImageMagick is already
+             * a shell dependency (wallpaper and clipboard thumbs), and a 1x1
+             * resize gives the cover's average, which reads as its dominant
+             * tone. Skipped entirely on `none` or with no art, so no process
+             * spawns for a feature that is off.
+             */
+            function refreshArtColor() {
+                if (!enabled) {
+                    artColorProc.running = false;
+                    aura.artHex = "";
+                    return;
+                }
+                artColorProc.running = false;
+                artColorProc.command = ["sh", "-c",
+                    "magick \"$1\" -resize 1x1 -format '%[hex:p{0,0}]' info:",
+                    "sh", Players.artUrl];
+                artColorProc.running = true;
+            }
+            /** Keyed to `enabled`, not `active`, so hover/rest hops don't respawn magick. */
+            onEnabledChanged: refreshArtColor()
+            Component.onCompleted: refreshArtColor()
+
+            Process {
+                id: artColorProc
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        var hex = String(this.text || "").trim();
+                        aura.artHex = /^[0-9a-fA-F]{6}$/.test(hex) ? ("#" + hex.toLowerCase()) : "";
+                    }
+                }
+            }
+
+            Image {
+                anchors.fill: parent
+                source: Players.artUrl
+                onSourceChanged: aura.refreshArtColor()
+                sourceSize: Qt.size(32, 32)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                retainWhileLoading: true
+                cache: String(source).indexOf("file:") !== 0
+                visible: status === Image.Ready
+
+                /**
+                 * Layer up for as long as the aura can show at all, not just
+                 * while it is on screen. Tearing the blur down and rebuilding it
+                 * every time the pill changed face — a workspace OSD flashing,
+                 * a hover, a toast — is what made the pill flash as it morphed.
+                 */
+                layer.enabled: aura.enabled
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 64
+                    blur: 1.0
+                    /** The heavy blur averages toward a flat colour field; a little saturation keeps it from reading as grey. */
+                    saturation: 0.6
+                }
+            }
+        }
+
+        /**
          * Left notch ear border.
          */
         RoundCorner {
@@ -1008,9 +1126,17 @@ Item {
                  * an iOS Dynamic Island-style glow (softer, wider, dropping
                  * further) so the bar reads as floating over the screen; the
                  * rounded-pill look keeps its original subtle shadow.
+                 *
+                 * Its colour follows the ambient aura: while a cover is playing
+                 * the shadow takes a dark cast of the art's dominant colour
+                 * (stronger on `bleed`, faint on `wash`), and plain black while
+                 * the aura is off.
                  */
-                shadowColor: Qt.rgba(0, 0, 0,
+                shadowColor: Qt.rgba(aura.shadowTint.r, aura.shadowTint.g, aura.shadowTint.b,
                     Theme.shadowOpacity + 0.25 * pill.notchProgress)
+                Behavior on shadowColor {
+                    ColorAnimation { duration: Motion.morph; easing.type: Motion.easeStandard }
+                }
                 shadowBlur: 0.7 + 0.4 * pill.notchProgress
                 shadowVerticalOffset: (3 + 2 * pill.notchProgress) * pill.s
             }

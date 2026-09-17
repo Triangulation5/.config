@@ -51,6 +51,9 @@ Singleton {
     property alias vizStyle: adapter.vizStyle
     property alias vizFps: adapter.vizFps
     property alias mediaStyle: adapter.mediaStyle
+    property alias auraOn: adapter.auraOn
+    property alias auraStrength: adapter.auraStrength
+    property alias auraShadow: adapter.auraShadow
     property alias gameMode: adapter.gameMode
     property alias gamePrevDnd: adapter.gamePrevDnd
     property alias gamePrevViz: adapter.gamePrevViz
@@ -197,6 +200,12 @@ Singleton {
             property int vizFps: 60
             /** Now-playing card backdrop: "bleed" blurred album art over a wallpaper-derived tint, "wash" the legacy warm tint, or "none" fully transparent. */
             property string mediaStyle: "bleed"
+            /** Rest-pill ambient aura: the cover's colour bled around the pill. Off on mediaStyle "none" whatever this says. */
+            property bool auraOn: true
+            /** Multiplier on the backdrop mode's base aura opacity (bleed 0.32, wash 0.18). */
+            property real auraStrength: 1.0
+            /** Whether the cover's dominant colour also darkens the pill's shadow. */
+            property bool auraShadow: true
             property bool gameMode: false
             property bool gamePrevDnd: false
             property bool gamePrevViz: true

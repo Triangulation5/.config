@@ -114,6 +114,9 @@ Singleton {
             property string vizStyle: "bars"
             property int vizFps: 60
             property string mediaStyle: "bleed"
+            property bool auraOn: true
+            property real auraStrength: 1.0
+            property bool auraShadow: true
             property bool gameMode: false
             property bool gamePrevDnd: false
             property bool gamePrevViz: true
@@ -216,6 +219,7 @@ Singleton {
         "recordCursor", "recordMic", "recordDesktop", "recordClearedBefore",
         "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockDotsMode",
         "weatherCity", "musicViz", "vizStyle", "vizFps", "mediaStyle",
+        "auraOn", "auraStrength", "auraShadow",
         "gameMode", "gamePrevDnd", "gamePrevViz", "gamePrevAwake",
         "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
         "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
