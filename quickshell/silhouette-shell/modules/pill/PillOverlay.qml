@@ -408,6 +408,15 @@ Variants {
                 id: slot
                 readonly property real pad: 56 * overlay.s
                 readonly property bool swiping: pill.swipeX !== 0 || pill.swipeY !== 0
+                /**
+                 * Mask only while the toast face owns the pill. Every other
+                 * face moves the slot: a workspace OSD, a surface or a hover
+                 * morphs and resizes the pill under the mask, and compositing a
+                 * mask whose geometry is being re-cut on the same frame is what
+                 * made the pill flash and tear when a workspace was switched
+                 * mid-swipe.
+                 */
+                readonly property bool masked: swiping && pill.mode === "toast"
                 anchors.top: parent.top
                 anchors.topMargin: (pill.mode === "game" ? 0 : overlay.topGap) - pad
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -421,31 +430,10 @@ Variants {
                         easing.bezierCurve: Motion.morphCurve
                     }
                 }
-                layer.enabled: swiping
+                layer.enabled: masked
                 layer.effect: MultiEffect {
                     maskEnabled: true
                     maskSource: wall
-                }
-                Item {
-                    id: wall
-                    width: slot.width
-                    height: slot.height
-                    visible: false
-                    layer.enabled: true
-                    Rectangle {
-                        id: wallRect
-                        anchors.fill: parent
-                        readonly property bool sideways: pill.swipeX !== 0
-                        readonly property bool leftward: pill.swipeX < 0
-                        readonly property real edge: slot.pad / (sideways ? slot.width : slot.height)
-                        gradient: Gradient {
-                            orientation: wallRect.sideways ? Gradient.Horizontal : Gradient.Vertical
-                            GradientStop { position: 0.0; color: wallRect.sideways && !wallRect.leftward ? "white" : "transparent" }
-                            GradientStop { position: wallRect.edge; color: "white" }
-                            GradientStop { position: 1 - wallRect.edge; color: "white" }
-                            GradientStop { position: 1.0; color: wallRect.sideways && wallRect.leftward ? "white" : "transparent" }
-                        }
-                    }
                 }
 
                 Pill {
@@ -491,6 +479,42 @@ Variants {
 
                     onRequestSurface: (name) => host.toggleSurface(overlay.modelData.name, name)
                     onRequestClose: host.close()
+                }
+            }
+
+            /**
+             * Soft-edged mask the swipe dissolve reads: transparent across the
+             * slot's padding, white over the pill's resting footprint.
+             *
+             * A sibling of the slot, never a child. A mask source inside the
+             * item it masks is rendered into the very layer it feeds, so the
+             * mask came out of a texture that was mid-composite. Its own layer
+             * is up for as long as the toast face is, so the texture is already
+             * sized and drawn before a drag starts rather than appearing on the
+             * drag's first frame.
+             */
+            Item {
+                id: wall
+                x: slot.x
+                y: slot.y
+                width: slot.width
+                height: slot.height
+                visible: false
+                layer.enabled: pill.mode === "toast"
+
+                Rectangle {
+                    id: wallRect
+                    anchors.fill: parent
+                    readonly property bool sideways: pill.swipeX !== 0
+                    readonly property bool leftward: pill.swipeX < 0
+                    readonly property real edge: slot.pad / (sideways ? slot.width : slot.height)
+                    gradient: Gradient {
+                        orientation: wallRect.sideways ? Gradient.Horizontal : Gradient.Vertical
+                        GradientStop { position: 0.0; color: wallRect.sideways && !wallRect.leftward ? "white" : "transparent" }
+                        GradientStop { position: wallRect.edge; color: "white" }
+                        GradientStop { position: 1 - wallRect.edge; color: "white" }
+                        GradientStop { position: 1.0; color: wallRect.sideways && wallRect.leftward ? "white" : "transparent" }
+                    }
                 }
             }
         }
