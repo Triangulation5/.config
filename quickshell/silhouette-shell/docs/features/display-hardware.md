@@ -41,6 +41,17 @@ Managed through bluetoothctl. The link surface discovers devices, pairs and
 connects to them, and keeps the state synced with NetworkManager so the
 bluetooth and wifi views agree.
 
+The Bluetooth drill-in splits into a CONNECTED block over the nearby list.
+Connected controllers, mice and headsets show their charge as a full-width
+battery thread with the percent; USB-dongle peripherals join them tagged USB
+and read-only. Percentages come from UPower via the Peripherals singleton,
+since BlueZ only publishes Battery1 with its Experimental flag on: a UPower
+device whose path carries a MAC is matched to its Bluetooth row, and the
+BlueZ battery is kept as a fallback. The Bluetooth row on the link surface
+lights up while something is connected and shows the lowest peripheral
+percent once any device drops to 20%, and each device that low raises one
+notification.
+
 ## WiFi
 
 NetworkManager under the hood. The link surface lists networks, connects and

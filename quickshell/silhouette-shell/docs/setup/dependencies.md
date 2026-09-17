@@ -15,6 +15,8 @@ Missing pieces degrade the related feature, not the whole shell.
 - Hyprland
 - NetworkManager (`nmcli`) for wifi and hotspot
 - BlueZ (`bluetoothctl`) for bluetooth
+- upower for peripheral battery, the bluetooth surface reads it through
+  Quickshell
 - cliphist for clipboard history
 - wl-clipboard for clipboard copy
 - libnotify (`notify-send`) for the shell's notifications, including the

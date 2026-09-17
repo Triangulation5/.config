@@ -1,5 +1,6 @@
 module qs.modules.controlcenter
 
+BtConnectedRow 1.0 BtConnectedRow.qml
 BtDeviceRow 1.0 BtDeviceRow.qml
 CredRow 1.0 CredRow.qml
 Ember 1.0 Ember.qml

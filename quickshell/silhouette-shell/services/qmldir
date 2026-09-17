@@ -15,6 +15,7 @@ singleton GameMode       1.0 GameMode.qml
 singleton Motion          1.0 Motion.qml
 singleton NightLight      1.0 NightLight.qml
 singleton Notifs          1.0 Notifs.qml
+singleton Peripherals     1.0 Peripherals.qml
 singleton Players         1.0 Players.qml
 singleton Polkit          1.0 Polkit.qml
 RecEngine 1.0 RecEngine.qml

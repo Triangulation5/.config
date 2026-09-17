@@ -89,7 +89,9 @@ PillSurface {
     readonly property var btConnected: btDevices.filter(function(d) { return d && d.connected })
     readonly property bool btOn: btAdapter ? btAdapter.enabled === true : false
     readonly property var btPrimary: btConnected.length > 0 ? btConnected[0] : null
-    readonly property int btBattery: batteryLevel(btPrimary)
+    /** UPower entry matched to the primary device by MAC; BlueZ battery is the fallback. */
+    readonly property var btPeripheral: btPrimary ? (Peripherals.byMac[String(btPrimary.address || "").toUpperCase()] || null) : null
+    readonly property int btBattery: btPeripheral ? Peripherals.pct(btPeripheral) : batteryLevel(btPrimary)
 
     readonly property string btSubText: !btOn ? "Off"
         : (btPrimary
@@ -369,6 +371,18 @@ PillSurface {
                     s: root.s
                     kind: "battery"
                     level: Math.max(0, root.btBattery) / 100
+                }
+
+                /** Lowest peripheral percent, shown once any device drops to the low mark. */
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: Peripherals.lowestPct >= 0 && Peripherals.lowestPct <= Peripherals.lowAt
+                    text: Peripherals.lowestPct + "%"
+                    color: Theme.vermLit
+                    font.family: Theme.font
+                    font.pixelSize: 10.5 * root.s
+                    font.weight: Font.DemiBold
+                    font.features: { "tnum": 1 }
                 }
 
                 LinkToggle {
