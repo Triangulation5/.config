@@ -9,7 +9,7 @@ import "../../utils/launcher/fuzzy.js" as Fuzzy
  * Launcher window root. Shows the launcher on the target monitor with a
  * full-screen overlay, backed by the fuzzy-ranked desktop entries and a persisted
  * usage map (launcher-usage.json) so frequent apps rise to the top; launching an
- * entry executes it and closes.
+ * entry runs it through the surface's crash guard and closes.
  */
 
 ShellRoot {
@@ -60,7 +60,11 @@ ShellRoot {
                 /** Fire-and-forget: the FileView write is async, so launch never blocks on disk. */
                 usageStore.setText(JSON.stringify(root.usage));
             }
-            entry.execute();
+            /** Reuse the surface's guard launch so both launchers fail loudly the same way. */
+            if (launcherLoader.item && launcherLoader.item.launchApp)
+                launcherLoader.item.launchApp(entry);
+            else
+                entry.execute();
         }
         root.shown = false;
     }

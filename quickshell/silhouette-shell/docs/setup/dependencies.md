@@ -17,6 +17,8 @@ Missing pieces degrade the related feature, not the whole shell.
 - BlueZ (`bluetoothctl`) for bluetooth
 - cliphist for clipboard history
 - wl-clipboard for clipboard copy
+- libnotify (`notify-send`) for the shell's notifications, including the
+  launcher's failed-start guard
 - cava for the audio visualizers
 - gpu-screen-recorder for recording (full feature set: window/region picks,
   cursor capture, hardware encoding). Without it the shell falls back to
