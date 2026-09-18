@@ -1686,7 +1686,12 @@ Item {
     PillSurfaceLoader {
         id: ldMedia; name: "media"; asynchronous: true; host: pill
         sourceUrl: "widgets/media/Media.qml"
-        surfaceProps: { "shown": () => pill.mediaOpen }
+        /**
+         * `compact` is the whole difference between this surface and the hover
+         * bud: the full surface wears the smaller transport plus the scrubable
+         * playback brush, the bud never sets it and keeps the large seals.
+         */
+        surfaceProps: { "shown": () => pill.mediaOpen, "compact": () => true }
     }
 
     /** Synchronous: an incoming call must appear on the ringing frame, not a build late. */
