@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import Quickshell
 import qs.modules.settingsapp.config
 import qs.modules.settingsapp.pages
 import qs.modules.settingsapp.components
@@ -96,8 +97,6 @@ Item {
 
     readonly property var page: Pages.pages[pageIndex]
     readonly property string pageTitle: root.page ? root.page.name : ""
-    /** The page's one-liner for the header. Empty if it declares none. */
-    readonly property string pageCaption: (root.page && root.page.caption) ? root.page.caption : ""
     /** The page's own body component, when it has one instead of groups. */
     readonly property var pageView: root.page && root.page.view ? root.page.view : null
 
@@ -170,7 +169,6 @@ Item {
 
         PageNav {
             title: root.pageTitle
-            caption: root.pageCaption
             index: root.pageIndex
             count: Pages.pages.length
             onStep: function(dir) { root.go(dir) }
@@ -292,6 +290,31 @@ Item {
             else
                 revealTimer.restart();
         }
+    }
+
+    /**
+     * The window's hint layer, and the only tooltip in this app: the shell's own
+     * bubble, shown for whichever row's caption is hovered (see Hint, HintLayer
+     * and SettingRow). It is a `Loader` because nothing of it should exist until
+     * a row with a caption is actually hovered — the captions used to be printed
+     * on every row of every page instead, which cost a second line per option,
+     * and the alternative to the loader (one tooltip per row) would cost an item
+     * per option whether or not anyone hovered it. `source` rather than an
+     * inline component, so the bubble's own file is compiled when it is first
+     * wanted, the way the pill builds its surfaces.
+     *
+     * Above the cards and the reset button, because it is a layer and not a
+     * participant: the bubble for a row in the first card has to draw over the
+     * second one, which a tooltip parented to the row itself could never do.
+     */
+    Loader {
+        id: hintLayer
+
+        anchors.fill: parent
+        z: 60
+        active: Hint.used
+        asynchronous: true
+        source: Qt.resolvedUrl("../../components/HintLayer.qml")
     }
 
     // Pinned to the bottom-right of the content area on every page, independent

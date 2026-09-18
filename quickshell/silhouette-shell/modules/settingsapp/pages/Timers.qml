@@ -17,7 +17,6 @@ import QtQuick
 QtObject {
     readonly property string name: "Timers"
     readonly property string icon: "\u25F4"
-    readonly property string caption: "How long the shell waits"
     readonly property string keywords: "timers timeout timeouts duration durations wait delay grace sweep hold popup idle lazy eviction expires surface"
 
     readonly property var groups: [

@@ -13,10 +13,11 @@ import qs.modules.settingsapp.config
  * At either end the chevron dims and stops responding, rather than clamping
  * silently against a wall with no feedback.
  *
- * `caption` is the page's own one-liner, printed beside the name. It takes what
- * is left of the row and elides there instead of wrapping, so a long one cannot
- * make the header taller and shift every card below it — and the filler item
- * steps aside when there is one, so it gets the whole remainder.
+ * The name is the whole header. Every page used to print a one-liner beside it
+ * saying what the page was for, which the rail's own rows then repeated row by
+ * row: by the time you had opened a page you had already read what it holds, so
+ * the line was a second summary of the thing already on screen, taking the width
+ * the title could have used. The row now ends after the name.
  */
 RowLayout {
     id: root
@@ -24,7 +25,6 @@ RowLayout {
     property int index: 0
     property int count: 0
     property string title: ""
-    property string caption: ""
 
     signal step(int dir)
 
@@ -34,7 +34,7 @@ RowLayout {
     Repeater {
         model: [{ glyph: "\u2039", dir: -1 }, { glyph: "\u203A", dir: 1 }]
 
-        delegate: Rectangle {
+        delegate: Item {
             id: chevron
 
             required property var modelData
@@ -42,20 +42,27 @@ RowLayout {
             readonly property bool atEnd: (chevron.modelData.dir < 0 && root.index <= 0)
                 || (chevron.modelData.dir > 0 && root.index >= root.count - 1)
 
+            /**
+             * Ink only. Both chevrons used to be 28px cards like every other
+             * button in the window, which put two grey tiles in the header of a
+             * page whose body is cards and read as two more things to click
+             * rather than as the way out of the page — and the card was drawn
+             * whether or not the step existed, so an enabled chevron and a dead
+             * one looked identical. The glyph itself carries the affordance now:
+             * dim at the ends of the list, brighter under the pointer.
+             */
+            readonly property color ink: chevron.atEnd ? Theme.faint
+                : (mouse.containsMouse ? Theme.text : Theme.textSecondary)
+
             width: 28
             height: 28
-            radius: 8
-            color: mouse.containsMouse && !chevron.atEnd ? Theme.hover : Theme.navButton
-            border.width: 1
-            border.color: chevron.atEnd ? Theme.border : Theme.border
-
-            Behavior on color { ColorAnimation { duration: Theme.animNormal } }
 
             Text {
                 anchors.centerIn: parent
                 text: chevron.modelData.glyph
-                color: chevron.atEnd ? Theme.textSecondary : Theme.textSecondary
+                color: chevron.ink
                 font.pixelSize: 15
+                Behavior on color { ColorAnimation { duration: Theme.animNormal } }
             }
 
             MouseArea {
@@ -74,17 +81,7 @@ RowLayout {
         font.pixelSize: Theme.fontSizeTitle
         font.bold: true
         Layout.leftMargin: 10
-    }
-
-    Text {
-        visible: root.caption.length > 0
-        text: root.caption
-        color: Theme.textSecondary
-        font.pixelSize: Theme.fontSizeSection
-        elide: Text.ElideRight
         Layout.fillWidth: true
-        Layout.leftMargin: 12
+        elide: Text.ElideRight
     }
-
-    Item { Layout.fillWidth: root.caption.length === 0 }
 }

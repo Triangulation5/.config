@@ -17,7 +17,6 @@ QtObject {
      * row labels for the rail to find — without these, searching for the
      * settings this page exists for would come up empty.
      */
-    readonly property string caption: "Monitor resolution, scale and arrangement"
     readonly property string keywords: "resolution refresh rate scale scaling monitor position output mode hz arrangement layout main"
 
     /** A component, resolved relative to this file. */

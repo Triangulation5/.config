@@ -22,7 +22,6 @@ import QtQuick
 QtObject {
     readonly property string name: "Motion"
     readonly property string icon: "\u2248"
-    readonly property string caption: "Animation style, speed and visualizer"
     readonly property string keywords: "animation animations speed easing curve bezier style liquid pill macos visualizer cava bars string spectrum motion"
 
     readonly property var groups: [

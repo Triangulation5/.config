@@ -8,17 +8,18 @@ import QtQuick
  * array in rail order; everything else — the rail, its search, the content
  * column, Reset — reads this index rather than keeping a list of its own.
  *
- * A page is `{ name, icon, caption, groups }` (plus an optional `keywords` and
- * an optional `view`, for the pages whose controls are not rows — see below), a
+ * A page is `{ name, icon, groups }` (plus an optional `keywords` and an
+ * optional `view`, for the pages whose controls are not rows — see below), a
  * group is `{ card, rows }` and a row is the flat descriptor its editor reads:
  * the field it edits, its label and caption, and the fields of that editor's
  * type. Where a row's value lives (a shell flag, a Hyprland config field) is the
  * row's `source`; see Sources.
  *
- * `caption` is the line the content header prints under the page's name: what
- * the page is for, in the words someone would use looking for it. It is shown,
- * not searched — `keywords` is the searched half, for the pages (mostly the ones
- * with a `view`) that have no row labels for the rail to match on.
+ * A page carries no summary line of its own. It used to: a `caption` the content
+ * header printed beside the page's name, which the rows underneath then said
+ * again one by one. The header now prints the name alone. `keywords` is the
+ * searched extra, for the pages (mostly the ones with a `view`) that have no row
+ * labels for the rail to match on.
  *
  * Adding a page is a new singleton in this directory, one line in qmldir and
  * one entry in `pages`; nothing else in the app changes.

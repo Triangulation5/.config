@@ -14,7 +14,6 @@ import qs.modules.settingsapp.config
 QtObject {
     readonly property string name: "Bar & Island"
     readonly property string icon: "\u25AD"
-    readonly property string caption: "The pill's shape, the notch look, game mode"
     readonly property string keywords: "pill bar island notch game mode pointer hover collapse island"
 
     readonly property var groups: [
