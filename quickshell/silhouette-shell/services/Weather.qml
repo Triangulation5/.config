@@ -17,6 +17,14 @@ import Quickshell.Io
  * is guarded: a partial body or network blip leaves the last good values in place
  * and `ready` simply stays false until the first clean fetch lands.
  *
+ * Nothing touches the network until `needed` is set (the first time any weather
+ * UI is actually demanded), and the last good forecast plus the resolved
+ * coordinates are cached to disk (read synchronously with `blockLoading`). So the
+ * first open paints the previous session's conditions — and the whole glance,
+ * hourly strip and 4-day panel with them — from cache in the first frame, and the
+ * fresh fetch lands about a second later in the background. A cold first run has
+ * no cache to show and behaves as before, just starting its fetch one hover later.
+ *
  * Conditions render as on-brand kanji rather than icons — 晴 clear, 曇 cloud,
  * 雨 rain, 雪 snow, 霧 fog, 雷 thunder, 月 a clear night — keyed off the WMO weather
  * code via `glyphFor`, with `labelFor` giving the short english word.
@@ -53,6 +61,25 @@ Singleton {
     property real lat: 0
     property real lon: 0
     property bool located: false
+
+    /**
+     * Set the first time any weather UI is demanded (the glance panel or the
+     * detail surface opening). Until then nothing touches the network: whatever
+     * the disk cache holds is what renders, and the refresh timer stays quiet.
+     * This is what makes the glance instant while keeping the shell's startup
+     * free of a weather round-trip it may never be asked to show.
+     */
+    property bool needed: false
+
+    /** First weather demand arms the network path: coordinates if we lack them, else a forecast. */
+    onNeededChanged: {
+        if (!root.needed)
+            return;
+        if (root.located)
+            root.fetchWeather();
+        else
+            root.locate();
+    }
 
     /**
      * Maps a WMO weather code to its on-brand kanji. Clear skies show 月 at night
@@ -97,6 +124,51 @@ Singleton {
         locCache.setText(JSON.stringify({ city: root.city, lat: root.lat, lon: root.lon }));
     }
 
+    /**
+     * Persist the last good forecast. The whole glance snapshot goes to disk,
+     * not just the current conditions: the panel's 4-day strip and the detail
+     * surface's hourly row read the same cache, so they paint from the first
+     * frame too instead of popping in when the live fetch lands. Today's
+     * sunrise/sunset travel with it for the same reason.
+     */
+    function writeWeather() {
+        weatherCache.setText(JSON.stringify({
+            tempNow: root.tempNow,
+            codeNow: root.codeNow,
+            humidity: root.humidity,
+            isDay: root.isDay,
+            sunrise: root.sunrise,
+            sunset: root.sunset,
+            hourly: root.hourly,
+            daily: root.daily,
+            ts: Date.now()
+        }));
+    }
+
+    /**
+     * Applies the cached forecast synchronously (blockLoading) at instantiation.
+     * No network is touched; an in-flight fetch overwrites these within ~1s if
+     * `needed` is already set, and the cache is simply what the first open
+     * shows. `ready` flips true here, which is the point: a warm cache makes the
+     * glance render immediately rather than blank-then-fill.
+     */
+    function loadWeatherCache() {
+        try {
+            var c = JSON.parse(weatherCache.text());
+            if (!c || typeof c.codeNow !== "number")
+                return;
+            root.tempNow = c.tempNow || 0;
+            root.codeNow = c.codeNow;
+            root.humidity = c.humidity || 0;
+            root.isDay = c.isDay !== false;
+            root.sunrise = typeof c.sunrise === "string" ? c.sunrise : "";
+            root.sunset = typeof c.sunset === "string" ? c.sunset : "";
+            root.hourly = Array.isArray(c.hourly) ? c.hourly : [];
+            root.daily = Array.isArray(c.daily) ? c.daily : [];
+            root.ready = true;
+        } catch (e) {}
+    }
+
     /** Shared landing point for every geolocation source (IP lookups and the city geocoder). */
     function applyLoc(city, lat, lon) {
         root.city = city || "";
@@ -108,7 +180,7 @@ Singleton {
     }
 
     function fetchWeather() {
-        if (!located || wxProc.running)
+        if (!root.needed || !located || wxProc.running)
             return;
         wxProc.running = true;
     }
@@ -128,17 +200,32 @@ Singleton {
     }
 
     /**
-     * Startup bootstrap: try the cached coordinates first, else locate fresh.
-     * Kept synchronous in Component.onCompleted (not the FileView's async
-     * onLoaded/onLoadFailed signals) so a missing cache file can never stall
-     * the chain — a missing cache is the common first-run case, and the async
-     * signals do not reliably fire for a file that is simply not there.
+     * Last good forecast, also read synchronously (blockLoading) so the cached
+     * snapshot is in the properties before the first frame is built.
+     */
+    FileView {
+        id: weatherCache
+        path: root.cacheDir + "/weather-cache.json"
+        blockLoading: true
+        printErrors: false
+    }
+
+    /**
+     * Startup bootstrap: paint from the cached snapshots first, then wait to be
+     * needed. Coordinates and forecast are read synchronously rather than via
+     * the FileView's async onLoaded/onLoadFailed signals, because a missing
+     * cache file is the common first-run case and those signals do not reliably
+     * fire for a file that is simply not there. No network is started here: the
+     * fetch chain is armed by `needed` (first hover / surface open), and if that
+     * happens before this runs, the tail below starts it right away.
      */
     Component.onCompleted: {
         /** Moon phase is computed locally, so it is right even before or
          *  without any forecast — the offline fallback for the phase row. */
         root.moonPhase = root.moonPhaseFor(new Date());
         root.moonAge = root.moonAgeFor(new Date());
+
+        root.loadWeatherCache();
 
         try {
             var c = JSON.parse(locCache.text());
@@ -147,11 +234,15 @@ Singleton {
                 root.lat = c.lat;
                 root.lon = c.lon;
                 root.located = true;
-                root.fetchWeather();
-                return;
             }
         } catch (e) {}
-        root.locate();
+
+        if (!root.needed)
+            return;
+        if (root.located)
+            root.fetchWeather();
+        else
+            root.locate();
     }
 
     /**
@@ -248,7 +339,7 @@ Singleton {
 
     /** Resolve coordinates: geocode the manual city override, else walk the IP chain. */
     function locate() {
-        if (locProc.running || geoProc.running || root.locIdx >= 0)
+        if (!root.needed || locProc.running || geoProc.running || root.locIdx >= 0)
             return;
         if (Flags.weatherCity && Flags.weatherCity.trim().length > 0)
             geoProc.running = true;
@@ -355,6 +446,7 @@ Singleton {
                     root.hourly = rows;
                     root.daily = days;
                     root.ready = true;
+                    root.writeWeather();
                 } catch (e) {}
             }
         }
@@ -389,17 +481,20 @@ Singleton {
     }
 
     /**
-     * One repeating tick whose cadence depends on state: while never located
-     * it retries every 30s so a transient geolocation failure (offline boot,
-     * blacklisted geocoder) heals in seconds instead of leaving the panel
-     * dark for a full refresh cycle; once located it drops to refreshing the
-     * forecast every 20 minutes.
+     * One repeating tick whose cadence depends on state: while never located it
+     * retries every 30s so a transient geolocation failure (offline boot,
+     * blacklisted geocoder) heals in seconds instead of leaving the panel dark
+     * for a full refresh cycle; once located it drops to refreshing the forecast
+     * every 20 minutes. Before the first demand the cadence is the slow one and
+     * each tick returns immediately, so an unused weather service costs nothing.
      */
     Timer {
-        interval: root.located ? 1200000 : 30000
+        interval: root.needed && !root.located ? 30000 : 1200000
         running: true
         repeat: true
         onTriggered: {
+            if (!root.needed)
+                return;
             if (!root.located)
                 root.locate();
             else
