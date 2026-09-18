@@ -2,7 +2,7 @@
 
 pkill qs
 
-qs -p ~/.config/quickshell/silhouette-shell/ & disown
+bash ~/.config/hypr/scripts/launch.sh & disown
 
 # Old monolithic pill
 # qs -p ~/.config/quickshell/monolithic-shell/pill/shell.qml & disown
