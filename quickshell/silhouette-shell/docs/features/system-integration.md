@@ -36,11 +36,12 @@ Now playing comes from the Players singleton over MPRIS. One card serves both
 views, and `compact` is the whole difference between them. The media bud in the
 hover face leaves it off: album art, title, artist and the large play/pause
 seal (奏/休) with 前/次 skips. The full surface (SUPER+A) sets it and wears the
-same card smaller — a compact transport with a `0:42 / 3:45` readout beside it
-— over a brush-stroke progress bar along the bottom, whose painted head doubles
-as Ame's dock. That stroke is the scrub bar: press it and the track seeks, hold
-it and the pointer carries the head. A player that cannot seek, or a live
-stream with no end, keeps the stroke as a readout instead.
+same card smaller: a compact transport at the card's bottom-left, above it the
+brush-stroke progress bar, and on top of that bar the `0:42 / 3:45` readout. The
+stroke's painted head doubles as Ame's dock. That stroke is the scrub bar: press
+it and the track seeks, hold it and the pointer carries the head. A player that
+cannot seek, or
+a live stream with no end, keeps the stroke as a readout instead.
 
 The card's backdrop mode is chosen in Appearance. The "bleed" option reads
 the colour matugen pulled from the current wallpaper and lays it under the
