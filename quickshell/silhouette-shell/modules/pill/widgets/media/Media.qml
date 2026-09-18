@@ -21,12 +21,14 @@ import qs.components.icons
  *
  * Two layouts live here, chosen by `compact`. The **hover bud** leaves it
  * false and keeps the large seal transport it has always worn. The
- * **dedicated surface** (SUPER+A) sets it and wears the smaller transport
- * plus the playback brush along the bottom: a hairline that wobbles once and
- * settles, filled to the playback point and capped with the rounded painted
- * head, and this card's scrub bar — press it and the track seeks, hold it and
- * the pointer carries the head, exactly like a level bar. A player that
- * cannot seek keeps the stroke as a readout.
+ * **dedicated surface** (SUPER+A) sets it and wears the smaller transport at
+ * the card's bottom-left, with the playback brush spanning the line above it and
+ * the time readout on top of that bar: a hairline that wobbles once and settles,
+ * filled to the playback point and capped with the rounded painted head, and
+ * this card's scrub bar —
+ * press it and the track seeks, hold it and the pointer carries the head,
+ * exactly like a level bar. A player that cannot seek keeps the stroke as a
+ * readout.
  */
 PillSurface {
     id: root
@@ -460,15 +462,16 @@ PillSurface {
 
     Row {
         id: transport
-        // The dedicated surface starts its (smaller) transport under the
-        // title/artist column; the hover bud keeps the right-anchored row and
-        // the nudge tuned to the bigger controls.
+        // The dedicated surface puts its (smaller) transport at the card's
+        // bottom-left, under the title/artist column, with the brush line above
+        // it; the hover bud keeps the right-anchored row and the nudge tuned to
+        // the bigger controls.
         anchors.right: root.compact ? undefined : parent.right
         anchors.rightMargin: root.compact ? 0 : root.edgePad
         anchors.left: root.compact ? parent.left : undefined
         anchors.leftMargin: root.compact ? root.textX : 0
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: (root.compact ? 34 : 24) * root.s
+        anchors.bottomMargin: (root.compact ? 12 : 24) * root.s
         spacing: 16 * root.s * root.tScale
         opacity: root.picking ? 0 : 1
         enabled: !root.picking
@@ -481,23 +484,6 @@ PillSurface {
          */
         transform: Translate {
             x: root.compact ? 0 : -116 * root.s
-        }
-
-        /**
-         * Time readout, dedicated surface only: the transport row reads
-         * `0:42 / 3:45  前 奏 次`. Tabular figures so the row cannot jitter as
-         * the seconds tick, and "Live" for a stream, which has no end to show.
-         */
-        Text {
-            visible: root.compact
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.live ? "Live"
-                            : root.fmt(root.dragging ? root.dragFrac * root.lengthSec : root.positionSec)
-                              + " / " + root.fmt(root.lengthSec)
-            color: Theme.dim
-            font.family: Theme.font
-            font.pixelSize: 12.5 * root.s
-            font.features: { "tnum": 1 }
         }
 
         KanjiSkip {
@@ -662,10 +648,11 @@ PillSurface {
 
         anchors.left: parent.left
         anchors.leftMargin: root.textX
+        // Runs the full column width: the readout sits above it, not at its end.
         anchors.right: parent.right
         anchors.rightMargin: root.edgePad
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 10 * root.s
+        anchors.bottomMargin: 40 * root.s
         height: 18 * root.s
 
         readonly property real inset: 3 * root.s
@@ -769,5 +756,32 @@ PillSurface {
                 root.dragging = false;
             }
         }
+    }
+
+    /**
+     * The brush line's time readout, dedicated surface only, sitting on top of
+     * the stroke and left-aligned with its start: `0:42 / 3:45`. Tabular figures
+     * so the ticking seconds cannot jitter it, and "Live" for a stream, which
+     * has no end to show. It is anchored to the stroke's top edge rather than to
+     * a shared line, so the bar keeps the full column width to itself and the
+     * pair still reads as one block without a wrapper between them.
+     */
+    Text {
+        id: readout
+
+        visible: root.compact
+
+        anchors.left: parent.left
+        anchors.leftMargin: root.textX
+        anchors.bottom: stroke.top
+        anchors.bottomMargin: 1 * root.s
+
+        text: root.live ? "Live"
+                        : root.fmt(root.dragging ? root.dragFrac * root.lengthSec : root.positionSec)
+                          + " / " + root.fmt(root.lengthSec)
+        color: Theme.dim
+        font.family: Theme.font
+        font.pixelSize: 12.5 * root.s
+        font.features: { "tnum": 1 }
     }
 }
