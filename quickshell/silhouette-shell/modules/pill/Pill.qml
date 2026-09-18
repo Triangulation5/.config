@@ -290,10 +290,10 @@ Item {
     /**
      * Latch-once lazy load with idle-timeout cleanup. Every surface sleeps in
      * an inactive Loader until first opened; the size and ame thunks below
-     * resolve items through here. After a surface has been idle (not opened)
-     * for `surfaceIdleTimeout` seconds its Loader is deactivated so the
-     * component tree is destroyed, freeing RAM and GPU resources until the
-     * next open reactivates it.
+     * resolve items through here. After a surface has been closed for its tier
+     * of the memory saver's tail (see `unloadIdleMs`) its Loader is deactivated
+     * so the component tree is destroyed, freeing RAM and GPU resources until
+     * the next open reactivates it.
      *
      * Heavy surfaces opt into asynchronous creation (`asynchronous: true` on
      * their loader), so their first open builds in frame gaps and this returns
@@ -339,12 +339,65 @@ Item {
     }
 
     /**
-     * Seconds an unopened surface keeps its items before they are freed
-     * (Flags.pillSurfaceIdleTimeout, adjustable in the settings app).
+     * Memory saver: how long a closed surface keeps its object tree alive before
+     * the sweep frees it. The tail is counted from the moment the surface closes
+     * (see `closedAt` below), not from when it was last opened, so a surface you
+     * stared at for a minute is reclaimed at the same point as one you flicked
+     * past.
+     *
+     * `unloadS` is the base tail in seconds, floored at 10 s: the two heaviest
+     * surfaces (wallpaper, mixer) go at exactly the base and everything else
+     * gets one double-length reset, so a quick re-toggle of a frequent flier is
+     * still instant. With memory saver off the base is effectively infinite —
+     * every closed surface stays resident for the rest of the session.
+     *
+     * Both are flags (Timers page). silhouette's own docs/development/memory.md
+     * names keybinds, wallpaper, link, timer and weather as the priciest
+     * first-touchers; only the two giants are on the short tier here, so adding
+     * any of the others to the base tier below is a one-line change.
      */
-    property int surfaceIdleTimeout: Flags.pillSurfaceIdleTimeout
+    readonly property real unloadS: (Flags.memorySaver ? Math.max(10, Flags.pillSurfaceIdleTimeout) : 1e12)
 
-    /** Timestamp of last open per surface name. */
+    /** Tail (ms) before a closed surface is freed, keyed by surface name. */
+    readonly property var unloadIdleMs: ({
+        // heaviest, evict first
+        wallpaper:   unloadS * 1000,
+        mixer:       unloadS * 1000,
+        // thirsty frequent fliers: one generous reset, then reclaim
+        clipboard:   unloadS * 2 * 1000,
+        media:       unloadS * 2 * 1000,
+        recorder:    unloadS * 2 * 1000,
+        calendar:    unloadS * 2 * 1000,
+        // everything else: a double-length reset for quick re-toggles
+        default:     unloadS * 2 * 1000
+    })
+
+    /**
+     * Every surface that has stopped being open, name → the epoch ms it closed.
+     * Reopening a surface drops its entry, which is exactly the "reset the clock
+     * and wait again" of the tail; the sweep below frees each entry once its own
+     * tier has elapsed.
+     */
+    property var closedAt: ({})
+
+    /** Start (or restart) the tail countdown for a surface that just closed. */
+    function scheduleUnload(name) {
+        if (name && name.length)
+            pill.closedAt[name] = Date.now();
+    }
+
+    /** Tail (ms) for `name`, falling back to the default tier. */
+    function unloadTail(name) {
+        var t = pill.unloadIdleMs[name];
+        return t !== undefined ? t : pill.unloadIdleMs["default"];
+    }
+
+    /**
+     * Timestamp of last open per surface name. It no longer drives eviction —
+     * `closedAt` does — but it still times the hover media bud's reclaim below,
+     * and it is the fallback for a loader that was activated only to be measured
+     * (a size thunk read it) and so never closed.
+     */
     property var _surfaceLastOpened: ({})
 
     /** Surface name → loader map, self-registered by each PillSurfaceLoader. */
@@ -363,20 +416,26 @@ Item {
 
     function _cleanupIdleSurfaces() {
         var now = Date.now();
-        var timeout = pill.surfaceIdleTimeout * 1000;
         var ld;
         for (var name in pill._surfaceLoaders) {
             ld = pill._surfaceLoaders[name];
             if (!ld || !ld.active)
                 continue;
             /** Never evict the surface currently open on the pill. */
-            if (name === pill.surface)
+            if (name === pill.surface) {
+                delete pill.closedAt[name];
                 continue;
+            }
             /** Never evict a running timer — it must persist in the background. */
             if (name === "timer" && ld.item && ld.item.timerState === "running")
                 continue;
-            var last = pill._surfaceLastOpened[name] || 0;
-            if (now - last >= timeout)
+            /**
+             * The tail runs from the close. A loader with no close stamp was
+             * activated only to be measured and never opened, so it falls back
+             * to when it was last touched.
+             */
+            var since = pill.closedAt[name] !== undefined ? pill.closedAt[name] : (pill._surfaceLastOpened[name] || 0);
+            if (now - since >= pill.unloadTail(name))
                 ld.active = false;
         }
         /**
@@ -391,8 +450,52 @@ Item {
          * toggle. The visible bud is never touched: this only fires when the
          * pill is out of hover mode.
          */
-        if (pill.hasMedia && !pill.mediaBudIdle && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= timeout)
+        if (pill.hasMedia && !pill.mediaBudIdle && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= pill.unloadS * 1000)
             pill.mediaBudIdle = true;
+    }
+
+    /**
+     * Drop every closed surface right now, regardless of how much of its tail is
+     * left: the memory saver's manual door (`qs ipc call pill unloadAll`), and the
+     * one that matters with the saver off, where the sweep above never fires and
+     * a closed surface would otherwise stay resident until restart.
+     *
+     * It is that same sweep applied with no waiting — same exclusions, so the
+     * surface on screen is never touched and a running timer keeps its object
+     * tree, since it has to survive in the background. Reopening anything dropped
+     * rebuilds it from its loader, exactly as the timed sweep already does.
+     *
+     * One exclusion the timed sweep does not have: a pending polkit prompt. Its
+     * surface can sit loaded but off-screen while the conversation is still open,
+     * and it only reopens when the agent pokes the pill again — so an instant drop
+     * here could strand an authentication that is still in flight. Waiting out a
+     * tail at least gave it its window; a manual clear is not allowed to lose it.
+     */
+    function unloadClosedSurfaces() {
+        for (var name in pill._surfaceLoaders) {
+            var ld = pill._surfaceLoaders[name];
+            if (!ld || !ld.active)
+                continue;
+            if (name === pill.surface)
+                continue;
+            if (name === "timer" && ld.item && ld.item.timerState === "running")
+                continue;
+            if (name === "polkit" && Polkit.pending)
+                continue;
+            ld.active = false;
+            delete pill.closedAt[name];
+        }
+    }
+
+    /**
+     * The memory saver's out-of-band trigger: `Surfaces.unloadClosed()` (behind
+     * the `unloadAll` IPC) fires on every pill at once, so one command clears
+     * every monitor's closed surfaces without PillRoot having to walk its
+     * per-monitor overlays.
+     */
+    Connections {
+        target: Surfaces
+        function onUnloadClosedRequested() { pill.unloadClosedSurfaces() }
     }
 
     Timer {
@@ -622,6 +725,12 @@ Item {
         } else {
             pill.closingSurface = null;
         }
+        /**
+         * Start the memory saver's tail for whatever stopped being open — both
+         * a plain close and a direct surface-to-surface swap.
+         */
+        if (pill.prevSurface.length > 0 && pill.prevSurface !== pill.surface)
+            pill.scheduleUnload(pill.prevSurface);
         pill.prevSurface = pill.surface;
     }
 

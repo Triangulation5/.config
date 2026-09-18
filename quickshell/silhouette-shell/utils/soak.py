@@ -7,8 +7,8 @@ Measures the running shell's RSS (VmRSS / RssAnon) across a workload:
   restart   optionally restart the shell first (pkill + relaunch, exactly what
             hypr/scripts/reload.sh does) — never while the session is locked
   stress    open + close every pill surface once, sampling RSS at each step
-  reclaim   hold still past the 12s idle reclaimer + 10s cleaner tick and
-            confirm closed surfaces actually return memory
+  reclaim   hold still past the longest memory-saver tail + 10s cleaner tick
+            and confirm closed surfaces actually return memory
   quiet     idle soak with a least-squares trend (MB/min) to catch slow leaks
 
 It is deliberately safe around the lock: it refuses to restart while the lock
@@ -290,8 +290,8 @@ def run_soak(args):
 
     # -- phase 3: reclaim check -------------------------------------------
     log(bold("\n== reclaim =="))
-    log(dim(f"  holding {args.reclaim}s idle so the 12s reclaimer + 10s cleaner "
-            "tick can destroy closed surfaces"))
+    log(dim(f"  holding {args.reclaim}s idle so the longest memory-saver tail + "
+            "10s cleaner tick can destroy closed surfaces"))
     before = mem_kb(pid)[0]
     _, rc_rows = measure(pid, args.reclaim, "reclaim", every=1.0)
     after = mem_kb(pid)[0]
@@ -349,8 +349,9 @@ def main():
                     help="seconds to sample the open peak (default 1.5)")
     ap.add_argument("--hold", type=float, default=4.0,
                     help="seconds to wait after closing (default 4)")
-    ap.add_argument("--reclaim", type=float, default=26.0,
-                    help="idle seconds to wait for the reclaimer (default 26)")
+    ap.add_argument("--reclaim", type=float, default=40.0,
+                    help="idle seconds to wait for the reclaimer (default 40: the "
+                         "longest memory-saver tail — 2x the Timers page base — plus a sweep)")
     ap.add_argument("--quiet", type=float, default=20.0,
                     help="quiet soak length, seconds (default 20)")
     ap.add_argument("--surfaces", default=" ".join(DEFAULT_SURFACES),

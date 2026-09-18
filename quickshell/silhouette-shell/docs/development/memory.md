@@ -4,8 +4,9 @@ The shell's resident-memory goal is to stay under 200 MB at rest. That is a
 real target, not a hope: the deferred-surface refactor alone (commit
 `c7b2fd6`) took the full shell from ~220 MB to ~185 MB and PillRoot from
 ~213 MB to ~175 MB by compiling surfaces only on first open and reclaiming
-them after 12 s idle. But memory is not something you tune once — every new
-surface, widget or image adds resident cost, so the budget needs a readout
+them after a memory-saver tail (12 s at the base, double for everything but
+the two heaviest surfaces). But memory is not something you tune once — every
+new surface, widget or image adds resident cost, so the budget needs a readout
 and a routine. `utils/soak.py` is that routine.
 
 ## How memory is spent
@@ -23,8 +24,17 @@ A few structural facts that shape where the bytes go:
 - **Surfaces are lazy, and reclaimed.** `PillSurfaceLoader` compiles each
   surface on first open (the single largest chunk of the pill's startup
   memory stays unallocated until then) and `Pill.qml`'s idle cleaner
-  destroys surfaces after 12 s closed. Images are mostly `sourceSize`-capped
-  and the big grabs use `cache: false`.
+  destroys surfaces once their memory-saver tier has passed since they closed
+  (12 s at the base, double for everything but the heaviest). Images are
+  mostly `sourceSize`-capped and the big grabs use `cache: false`.
+- **The reclaim has a manual door.** `qs ipc call pill unloadAll` — and the
+  **Unload closed surfaces** button on the Timers page, which calls the same
+  function in-process — drops every closed surface on every monitor at once
+  instead of waiting out the tier, via `Surfaces.unloadClosed()` → each
+  `Pill.unloadClosedSurfaces()`. It is the only reclaim available with the memory
+  saver switched off, where the sweep never fires and a closed surface would
+  otherwise sit resident until a restart. The surface on screen, a running timer
+  and a pending polkit prompt are exempt.
 - **Lock keeps sharp layers alive.** The lock's `deskOverlay` (a full-res
   sharp grab feeding a masked `MultiEffect`) stays resident for the whole
   lock session even when the mask hides 100% of it.
@@ -86,12 +96,13 @@ high-water behavior, not a leak.
 Consequences: **under 200 MB is real at boot and in steady normal use, but
 not after a session where everything has been opened once** — a long-lived
 shell sits at ~240–250 MB "at rest" while a freshly booted one is ~170. The
-release valves are a restart, or cutting what the first touch allocates.
+release valves are a restart, `qs ipc call pill unloadAll` to drop every closed
+surface on the spot, or cutting what the first touch allocates.
 The most expensive first-touchers are the big async surfaces: keybinds,
 wallpaper, link, timer and weather.
 
 Caveats: RSS undercounts real pressure when textures live on an iGPU —
-watch `free -h` / cgroup pressure too, not just `ps`. And the 12 s idle
+watch `free -h` / cgroup pressure too, not just `ps`. And the memory-saver
 reclaim only returns RAM after a surface is *closed*, so a session that
 opens everything once still peaks before reclaim can kick in. All numbers
 scale with monitor count and grow while locked.

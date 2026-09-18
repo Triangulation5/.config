@@ -288,6 +288,17 @@ ShellRoot {
         }
         function peek(mon: string): void { root.peek(mon); }
         function hide(): void { root.close(); }
+        /**
+         * Memory saver's manual door: drop every closed surface on every monitor
+         * right now, without waiting out its tier tail. This is the lever that
+         * matters with the saver switched off, where the sweep never fires and
+         * closed surfaces would otherwise sit resident until a restart. The
+         * surface on screen, a running timer and a pending polkit prompt are
+         * untouched (see Pill.unloadClosedSurfaces); reopening anything dropped
+         * rebuilds it. Takes no monitor argument because the drops are
+         * per-surface, not per-screen.
+         */
+        function unloadAll(): void { Surfaces.unloadClosed(); }
         function page(mon: string, name: string): void { root.toggleSurface(mon, name); }
         function mute(mon: string): void {
             var src = Pipewire.defaultAudioSource;
