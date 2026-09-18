@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Decode cage for the three scripts that shell out to ImageMagick — the bytes
+  they read are untrusted input: whatever someone put on the clipboard, and
+  whatever file happens to sit in ~/Pictures.
+
+  Each of those scripts points MAGICK_CONFIGURE_PATH at this directory:
+
+    cliphist-thumbs.sh     decodes a clipboard entry and thumbnails it
+    wallpaper-thumbs.sh    thumbnails a wallpaper
+    wallpaper-search.sh    validates an image downloaded from the web
+
+  The distro's /etc/ImageMagick-7/policy.xml is the open default — every
+  directive in it is commented out, so it restricts nothing — and a
+  MAGICK_CONFIGURE_PATH that names a directory which does not exist restricts
+  nothing either. Before this file existed the scripts were pointing at a
+  directory that was never there, so a thumbnail pass ran ImageMagick wide
+  open: MSL, MVG, SVG, the PostScript family through a delegate, URL reads and
+  @ -indirect reads were all live on untrusted bytes.
+
+  What this permits is exactly what those scripts ask for and no more: they
+  read the raster formats the clipboard widget itself recognises (see the
+  extension case in cliphist-thumbs.sh) and the web formats the search script
+  accepts, and they write PNG. Nothing here is a vector format, so nothing here
+  can name a file to read or a command to run.
+
+  The resource ceilings are the vendor's own, sized for a thumbnail: a decode
+  bomb is cut off at 256MiB of heap, a 16KP edge, or 30 seconds, whichever it
+  hits first. Two of the suggested directives are deliberately left out — the
+  symlink rule (a symlinked wallpaper is a normal thing to have, and it would
+  stop those thumbnails dead) and the thread limit (these are 256px resizes).
+
+  Checked against ImageMagick 7.1.2-27: a PNG/JPEG/GIF/WEBP/BMP thumbnail of
+  each format renders identically with and without this file, while MSL, MVG,
+  SVG, PostScript, HTTP and @-indirect reads all fail with it in place.
+-->
+<policymap>
+  <!-- No delegate process, ever: this is what the PostScript/PDF family needs. -->
+  <policy domain="delegate" rights="none" pattern="*"/>
+  <!-- No image filters (caches, masks and other file-reading filters). -->
+  <policy domain="filter" rights="none" pattern="*"/>
+
+  <!-- Deny every coder, then re-allow the raster set the scripts handle:
+       desktop screenshots and photos (PNG/JPEG), clipboard copies that arrive
+       as BMP or an animated GIF, and the WEBP the wallpaper search downloads.
+       Written out, PNG is the only format anything here produces. -->
+  <policy domain="coder" rights="none" pattern="*"/>
+  <policy domain="coder" rights="read|write" pattern="{PNG,JPEG,JPG,GIF,WEBP,BMP}"/>
+
+  <!-- Untrusted bytes may not name other files ("@path"), the streams, or
+       anything under /etc. -->
+  <policy domain="path" rights="none" pattern="@*"/>
+  <policy domain="path" rights="none" pattern="-"/>
+  <policy domain="path" rights="none" pattern="/etc/*"/>
+
+  <!-- Ceilings: heap, address space, pixel cache, disk, edge length, frames
+       and wall-clock, so a malformed file cannot eat the session. -->
+  <policy domain="resource" name="memory" value="256MiB"/>
+  <policy domain="resource" name="map" value="512MiB"/>
+  <policy domain="resource" name="area" value="64MP"/>
+  <policy domain="resource" name="disk" value="1GiB"/>
+  <policy domain="resource" name="width" value="16KP"/>
+  <policy domain="resource" name="height" value="16KP"/>
+  <policy domain="resource" name="list-length" value="8"/>
+  <policy domain="resource" name="time" value="30"/>
+
+  <!-- Zero-fill buffers, overwrite them once before freeing, and cap a single
+       allocation. -->
+  <policy domain="system" name="memory-map" value="anonymous"/>
+  <policy domain="system" name="shred" value="1"/>
+  <policy domain="system" name="max-memory-request" value="256MiB"/>
+
+  <!-- SVG is not on the allowlist above; this also refuses the entity
+       substitution that SVG parsing is dangerous for. -->
+  <policy domain="system" name="svg" rights="none" pattern="substitute-entities"/>
+</policymap>
