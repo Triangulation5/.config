@@ -1,7 +1,7 @@
 -- https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/
 hl.config({
     general = {
-        layout = "master" -- "master", "scrolling", "dwindle", "monocle"
+        layout = "scrolling" -- "master", "scrolling", "dwindle", "monocle"
     },
 
     dwindle = {
