@@ -69,11 +69,18 @@ Item {
         }
     }
 
+    /**
+     * The glow's own height is what sets how high the flame can reach: the
+     * shader paints upward from this item's bottom edge and clamps at its top,
+     * so 0.72 left the tallest band fading out around two-thirds of the screen.
+     * 0.94 carries the full-level flame to just under the top edge while the
+     * clock and profile above it stay clear of the brightest part of the fade.
+     */
     GlowField {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: parent.height * 0.72
+        height: parent.height * 0.94
     }
 
     Content {
