@@ -27,6 +27,38 @@ strip reads as depth. Arrow keys and wheel move focus, Enter applies the pick
 through wallpaper.sh, and holding Enter deletes it. The strip stays open so
 you can keep trying picks.
 
+Which directory is one resolved folder, shared by the strip, the thumbnail
+builder, the shuffle bag and the search downloader: the Folder field in
+settings if it is set, otherwise an existing collection in one of the usual
+spots (~/Pictures/rice-wallpapers, ~/Pictures/Wallpapers, …), otherwise
+~/Pictures. Picks land in whatever it resolves to, so they join the bag.
+
+Typing while the strip is open searches the web first — Bing's image search,
+your personal GitHub wallpaper repo with the `gh:` prefix, and moewalls for
+motion. Every word of a query has to match something in the filename, in any
+order; when that finds nothing the words are tried individually, so a longer
+query can't narrow the strip to nothing. A bare `gh:` lists the whole repo.
+Nothing is cached anywhere — every search is a live request, so a wallpaper you
+just pushed shows up on the next one. DuckDuckGo images is the script's second
+attempt when Bing answers nothing.
+
+Wallhaven is the second source: type `wh:` and a tag to ask it directly, or let
+an empty web result hand the same query over once (image endpoints refuse heavy
+use, and an empty strip is a poor answer when a wallpaper API is sitting right
+there). One hop only, in either direction. Its tag search ANDs its terms, which
+is why a plain three-word query used to come back empty — when that happens the
+same words are asked again as alternatives (`|` is OR to wallhaven), so long
+natural-language queries return something instead of nothing. Only for plain
+word lists: `@user`, `#tag`, `id:` and quoted syntax are left alone.
+
+Every wallhaven-bound request — API pages, thumbnails and full picks — shares
+one rolling rate budget with a cooling-off latch on any 429/403, so browsing
+can't trip its Cloudflare rule the way a per-tile hotlink burst did. Searches
+never wait in that queue: if the budget is spent they answer immediately and the
+result falls back to the web, while thumbnails trickle in around the tile you
+are looking at. The script's sort buckets (latest, top, random, favorites) are
+available to a future sort control.
+
 Dynamic colors come from a snapshot of the current wallpaper, which is what
 the dynamic theme mode feeds on.
 

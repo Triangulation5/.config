@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Wallpaper bridge: keeps a warm in-memory snapshot of ~/Pictures so
+ * Wallpaper bridge: keeps a warm in-memory snapshot of the wallpaper folder so
  * the wallpaper strip opens instantly without shelling out on demand. A
  * refresh first runs the thumbnail script (generating missing 512px previews
  * and pruning ones whose source is gone), then re-lists the directory
@@ -14,6 +14,14 @@ import Quickshell.Io
  * arriving while the pipeline runs sets `pending` and replays once the state
  * lands. Applying routes through wallpaper.sh so the picker shares the exact
  * transition, palette and state path with the random keybind.
+ *
+ * The folder resolves through one chain, first hit wins: an explicit
+ * `wallpaperDir` from the settings app, then the dir wallpaper.sh resolved and
+ * wrote to the ricelin-wallpaper-dir state file on its last run, then
+ * ~/Pictures for a first boot before wallpaper.sh has ever run. The state file
+ * is watched, so the strip follows a folder change the moment it lands, and
+ * autodetect (which only lives in wallpaper.sh) is re-run on every refresh so
+ * a shell restart can never leave the strip on a stale folder.
  *
  * Entries are plain objects: { path, name, mtime, thumb } where path is the
  * absolute source file, mtime its modification time in epoch seconds and
@@ -27,18 +35,56 @@ Singleton {
     property string current: ""
     property bool pending: false
 
-    readonly property string wpDir: Quickshell.env("HOME") + "/Pictures/"
+    property string resolvedDir: ""
+    readonly property string wpDir: Flags.wallpaperDir.length > 0 ? Flags.wallpaperDir
+        : (resolvedDir.length > 0 ? resolvedDir : Quickshell.env("HOME") + "/Pictures")
     readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ricelin-wp-thumbs/"
     readonly property string thumbScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-thumbs.sh"
     readonly property string setScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper.sh"
     readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper"
+    readonly property string dirStateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper-dir"
+
+    /**
+     * A folder picked in the settings app re-lists the strip in place: the
+     * binding on wpDir changes, and this re-runs the pipeline against it. The
+     * resolve hop settles on the second pass (resolvedDir stops changing), so
+     * this cannot loop.
+     */
+    onWpDirChanged: refresh()
+
+    FileView {
+        id: dirFile
+        path: root.dirStateFile
+        blockLoading: true
+        watchChanges: true
+        printErrors: false
+        onLoaded: root.resolvedDir = dirFile.text().trim()
+        onFileChanged: reload()
+        onLoadFailed: root.resolvedDir = ""
+    }
 
     function refresh() {
-        if (thumbProc.running || listProc.running || stateProc.running) {
+        if (resolveProc.running || thumbProc.running || listProc.running || stateProc.running) {
             pending = true;
             return;
         }
-        thumbProc.running = true;
+        /**
+         * Re-resolve the folder first whenever autodetect is in play: it only
+         * runs inside wallpaper.sh, so without this hop a shell restart would
+         * leave the strip on the state file from the last session. An explicit
+         * folder skips it entirely and swaps straight away.
+         */
+        if (Flags.wallpaperDir.length > 0) {
+            thumbProc.running = true;
+            return;
+        }
+        resolveProc.command = ["bash", root.setScript, "resolve"];
+        resolveProc.running = true;
+    }
+
+    Process {
+        id: resolveProc
+        onExited: thumbProc.running = true
     }
 
     /**
