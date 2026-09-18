@@ -58,7 +58,8 @@ QtObject {
         ]},
         { card: "Wallpaper", rows: [
             { key: "wallpaperDir", type: "text", label: "Folder", placeholder: "~/Pictures",
-              caption: "Folder the picker reads (empty = ~/Pictures)", reset: "" }
+              caption: "Folder the picker reads and downloads land in. Empty autodetects ~/Pictures/rice-wallpapers or ~/Pictures/Wallpapers, else ~/Pictures",
+              reset: "" }
         ]}
     ]
 }
