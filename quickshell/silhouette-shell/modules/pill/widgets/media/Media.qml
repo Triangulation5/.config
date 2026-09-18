@@ -16,11 +16,17 @@ import qs.components.icons
  * or "none" — fully transparent, the pill body reading through like every
  * other surface. The album art
  * itself always sits in a rounded tile on the left. Right of the cover:
- * title, artist, a dim source/time line, the play/pause seal (奏/休) flanked
- * by 前/次 skips. Playback runs as a brush stroke along the bottom, its
- * painted head the dock for the pill's soul bead. All now-playing data
- * comes from [[Players]]; when two or more players run, the source token
- * glows into a bubble that opens a picker.
+ * title, artist, the play/pause seal (奏/休) flanked by 前/次 skips. All
+ * now-playing data comes from [[Players]].
+ *
+ * Two layouts live here, chosen by `compact`. The **hover bud** leaves it
+ * false and keeps the large seal transport it has always worn. The
+ * **dedicated surface** (SUPER+A) sets it and wears the smaller transport
+ * plus the playback brush along the bottom: a hairline that wobbles once and
+ * settles, filled to the playback point and capped with the rounded painted
+ * head, and this card's scrub bar — press it and the track seeks, hold it and
+ * the pointer carries the head, exactly like a level bar. A player that
+ * cannot seek keeps the stroke as a readout.
  */
 PillSurface {
     id: root
@@ -34,6 +40,65 @@ PillSurface {
     readonly property string serviceLabel: Players.serviceLabel
 
     /**
+     * Playback position for the brush, and the scrub state around it. `frac` is
+     * what the stroke draws: the pointer's own fraction while held, otherwise
+     * the player's. `commitSec` is a seek that has been sent but not yet
+     * echoed back — without it the head would snap back to the 2Hz poll's
+     * stale position for up to half a second after every release.
+     */
+    readonly property real lengthSec: Players.lengthSec
+    readonly property real positionSec: hasPlayer ? player.position : 0
+    readonly property real playFrac: lengthSec > 0 ? Math.max(0, Math.min(1, positionSec / lengthSec)) : 0
+    property real dragFrac: 0
+    property bool dragging: false
+    property real commitSec: -1
+    readonly property real frac: dragging ? dragFrac
+                                        : (commitSec >= 0 ? Math.max(0, Math.min(1, commitSec / Math.max(1, lengthSec)))
+                                                         : playFrac)
+    onPositionSecChanged: if (commitSec >= 0 && Math.abs(positionSec - commitSec) <= 1.5) commitSec = -1
+
+    /**
+     * Whether the stroke can actually move the track. MPRIS makes seeking
+     * optional, and a live stream has no length to seek within, so an
+     * unseekable player keeps the brush as a readout instead of a control.
+     */
+    readonly property bool canScrub: hasPlayer && player.canSeek && player.positionSupported
+                                     && lengthSec > 0 && !live
+
+    /** Transport scale: the dedicated surface's smaller seals. */
+    readonly property real tScale: compact ? 0.72 : 1
+
+    /**
+     * Where the bead docks on the dedicated surface: the painted head of the
+     * brush stroke, mirroring how the battery card docks at its charge head.
+     * `mapToItem` is not reactive, so the void reads are what re-evaluate it
+     * across the morph, the drag and every position tick.
+     */
+    readonly property point seamHead: {
+        void root.width;
+        void root.height;
+        void root.compact;
+        void root.frac;
+        void stroke.width;
+        void stroke.drawF;
+        return stroke.mapToItem(root, stroke.headX, stroke.headY);
+    }
+
+    /** Off on the hover bud, whose bead keeps the rest position it has always had. */
+    ameForm: root.compact ? "seam" : "off"
+    amePoint: seamHead
+
+    /** `m:ss` for the readout, matching the lock screen's time line. */
+    function fmt(sec) {
+        if (!(sec > 0))
+            return "0:00";
+        var t = Math.floor(sec);
+        var m = Math.floor(t / 60);
+        var ss = t % 60;
+        return m + ":" + (ss < 10 ? "0" + ss : ss);
+    }
+
+    /**
      * True while the card is actually on screen. Drives the marquees and the
      * 2Hz position poll so neither runs while the card is invisible. The host
      * supplies it: the full media surface passes its open state, and the hover
@@ -41,6 +106,14 @@ PillSurface {
      * open: true even at rest, so `open` alone can't gate it). Defaults off.
      */
     property bool shown: false
+
+    /**
+     * The dedicated surface's layout: a smaller transport and the scrubable
+     * playback brush. The host sets it for the full media surface
+     * (`surfaceProps` in Pill.qml); the hover bud never does, so the big
+     * transport stays exactly what that bud has always shown.
+     */
+    property bool compact: false
 
     /**
      * Art only decodes while this monitor's surface is open, keyed on the track
@@ -147,11 +220,13 @@ PillSurface {
         property bool can: false
         property string kanjiText: ""
         property string icon: ""
+        /** Shrinks the glyph for the dedicated surface's smaller transport. */
+        property real sizeScale: 1
         signal activated()
 
         anchors.verticalCenter: parent.verticalCenter
-        implicitWidth: Flags.showGlyphs ? kanjiLabel.implicitWidth : 18 * root.s
-        implicitHeight: Flags.showGlyphs ? kanjiLabel.implicitHeight : 18 * root.s
+        implicitWidth: Flags.showGlyphs ? kanjiLabel.implicitWidth : 18 * root.s * skip.sizeScale
+        implicitHeight: Flags.showGlyphs ? kanjiLabel.implicitHeight : 18 * root.s * skip.sizeScale
         opacity: skip.can ? 1 : 0.4
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
@@ -161,7 +236,7 @@ PillSurface {
             anchors.centerIn: parent
             text: skip.kanjiText
             font.family: Theme.fontJp
-            font.pixelSize: 16 * root.s
+            font.pixelSize: 16 * root.s * skip.sizeScale
             /** White like the seal so the transport reads at a glance; unavailability dims via the skip opacity. */
             color: "#ffffff"
         }
@@ -169,8 +244,8 @@ PillSurface {
         GlyphIcon {
             visible: !Flags.showGlyphs
             anchors.centerIn: parent
-            width: 17 * root.s
-            height: 17 * root.s
+            width: 17 * root.s * skip.sizeScale
+            height: 17 * root.s * skip.sizeScale
             name: skip.icon
             /** White like the seal so the transport reads at a glance; unavailability dims via the skip opacity. */
             color: "#ffffff"
@@ -385,11 +460,16 @@ PillSurface {
 
     Row {
         id: transport
-        anchors.right: parent.right
-        anchors.rightMargin: root.edgePad
+        // The dedicated surface starts its (smaller) transport under the
+        // title/artist column; the hover bud keeps the right-anchored row and
+        // the nudge tuned to the bigger controls.
+        anchors.right: root.compact ? undefined : parent.right
+        anchors.rightMargin: root.compact ? 0 : root.edgePad
+        anchors.left: root.compact ? parent.left : undefined
+        anchors.leftMargin: root.compact ? root.textX : 0
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 24 * root.s
-        spacing: 16 * root.s
+        anchors.bottomMargin: (root.compact ? 34 : 24) * root.s
+        spacing: 16 * root.s * root.tScale
         opacity: root.picking ? 0 : 1
         enabled: !root.picking
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
@@ -400,12 +480,31 @@ PillSurface {
          * row's left edge stays clear of the cover art next to it.
          */
         transform: Translate {
-            x: -116 * root.s
+            x: root.compact ? 0 : -116 * root.s
+        }
+
+        /**
+         * Time readout, dedicated surface only: the transport row reads
+         * `0:42 / 3:45  前 奏 次`. Tabular figures so the row cannot jitter as
+         * the seconds tick, and "Live" for a stream, which has no end to show.
+         */
+        Text {
+            visible: root.compact
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.live ? "Live"
+                            : root.fmt(root.dragging ? root.dragFrac * root.lengthSec : root.positionSec)
+                              + " / " + root.fmt(root.lengthSec)
+            color: Theme.dim
+            font.family: Theme.font
+            font.pixelSize: 12.5 * root.s
+            font.features: { "tnum": 1 }
         }
 
         KanjiSkip {
             kanjiText: "前"
             icon: "prev"
+
+            sizeScale: root.tScale
 
             can: root.hasPlayer &&
                  root.player.canGoPrevious
@@ -421,10 +520,10 @@ PillSurface {
 
             anchors.verticalCenter: parent.verticalCenter
 
-            width: 36 * root.s
-            height: 36 * root.s
+            width: 36 * root.s * root.tScale
+            height: 36 * root.s * root.tScale
 
-            radius: 9 * root.s
+            radius: 9 * root.s * root.tScale
 
             rotation: -1.5
             scale: 1 + 0.08 * root.sealPulse
@@ -489,7 +588,7 @@ PillSurface {
                 color: "#ffffff"
 
                 font.family: Theme.fontJp
-                font.pixelSize: 19 * root.s
+                font.pixelSize: 19 * root.s * root.tScale
                 font.weight: Font.Bold
             }
 
@@ -498,8 +597,8 @@ PillSurface {
 
                 anchors.centerIn: parent
 
-                width: 18 * root.s
-                height: 18 * root.s
+                width: 18 * root.s * root.tScale
+                height: 18 * root.s * root.tScale
 
                 name: root.playing
                       ? "pause"
@@ -532,12 +631,142 @@ PillSurface {
             kanjiText: "次"
             icon: "next"
 
+            sizeScale: root.tScale
+
             can: root.hasPlayer &&
                  root.player.canGoNext
 
             onActivated: {
                 if (root.player)
                     root.player.next()
+            }
+        }
+    }
+
+    /**
+     * The playback brush, drawn only on the dedicated surface (`compact`): the
+     * card's scrub bar. The hairline wobbles once off the left edge and settles
+     * as it runs to the right; the played part is filled to the point with the
+     * stroke widening into the rounded painted head at the end.
+     *
+     * The head is what the pointer drags. `drawF` chases `frac` with a linear
+     * animation only when the change is small — playback ticking forward — so a
+     * seek (or a track change) snaps the head instead of sliding it across the
+     * card; `lastFrac` is what tells the two apart, latched a turn later because
+     * the Behavior is evaluated before the new target lands.
+     */
+    Canvas {
+        id: stroke
+
+        visible: root.compact
+
+        anchors.left: parent.left
+        anchors.leftMargin: root.textX
+        anchors.right: parent.right
+        anchors.rightMargin: root.edgePad
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 10 * root.s
+        height: 18 * root.s
+
+        readonly property real inset: 3 * root.s
+        readonly property real usable: Math.max(1, width - 2 * inset)
+        property real targetF: root.frac
+        property real lastFrac: 0
+        property real drawF: targetF
+        readonly property real headX: inset + drawF * usable
+        readonly property real headY: waveY(drawF)
+
+        Behavior on drawF {
+            enabled: Math.abs(root.frac - stroke.lastFrac) < 0.02
+            NumberAnimation { duration: Motion.standard; easing.type: Easing.Linear }
+        }
+        onTargetFChanged: Qt.callLater(() => { stroke.lastFrac = root.frac; })
+
+        onDrawFChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        onVisibleChanged: if (visible) requestPaint()
+
+        /** The stroke's own line: a decaying wobble so the bar is not a ruler. */
+        function waveY(u) {
+            return height / 2 - 2.6 * Math.sin(3 * Math.PI * u) * Math.exp(-2.5 * u) * root.s;
+        }
+
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.reset();
+            if (width <= 0 || height <= 0)
+                return;
+
+            const n = 48;
+            ctx.strokeStyle = Theme.border;
+            ctx.lineWidth = 2.5 * root.s;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(inset, waveY(0));
+            for (let i = 1; i <= n; i++)
+                ctx.lineTo(inset + (i / n) * usable, waveY(i / n));
+            ctx.stroke();
+
+            if (drawF <= 0.002)
+                return;
+
+            const hTail = 2.5 * root.s;
+            const hHead = 1.75 * root.s;
+            const m = Math.max(2, Math.ceil(n * drawF));
+            ctx.fillStyle = Theme.verm;
+            ctx.beginPath();
+            ctx.arc(inset, waveY(0), hTail, Math.PI / 2, 3 * Math.PI / 2);
+            for (let i = 0; i <= m; i++) {
+                const u = (i / m) * drawF;
+                ctx.lineTo(inset + u * usable, waveY(u) - (hTail + (hHead - hTail) * (i / m)));
+            }
+            ctx.arc(headX, headY, hHead, -Math.PI / 2, Math.PI / 2);
+            for (let i = m; i >= 0; i--) {
+                const u = (i / m) * drawF;
+                ctx.lineTo(inset + u * usable, waveY(u) + (hTail + (hHead - hTail) * (i / m)));
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        /**
+         * The level-bar gesture: press anywhere and the head jumps there, hold
+         * and it follows the pointer, release and the track seeks. `preventStealing`
+         * is the guard that keeps a container from taking the drag away mid-gesture
+         * (the settings sliders need it for their ScrollView; it costs nothing here
+         * and makes the bar behave the same wherever it is used).
+         */
+        MouseArea {
+            anchors.fill: parent
+            // Wider and taller to grab, but only downwards: the extra room above
+            // would reach into the transport's own hit areas and, being drawn
+            // after them, would swallow the bottom of the play seal.
+            anchors.leftMargin: -8 * root.s
+            anchors.rightMargin: -8 * root.s
+            anchors.bottomMargin: -6 * root.s
+            enabled: root.canScrub
+            cursorShape: Qt.PointingHandCursor
+            preventStealing: true
+
+            /** Pointer x to a fraction of the stroke's own span. */
+            function fracAt(mx) {
+                return Math.max(0, Math.min(1, (mx - 8 * root.s - stroke.inset) / stroke.usable));
+            }
+
+            onPressed: mouse => {
+                root.dragFrac = fracAt(mouse.x);
+                root.dragging = true;
+            }
+            onPositionChanged: mouse => { if (pressed) root.dragFrac = fracAt(mouse.x); }
+            onCanceled: root.dragging = false
+            onReleased: {
+                if (root.player && root.canScrub) {
+                    root.commitSec = root.dragFrac * root.lengthSec;
+                    root.player.position = root.commitSec;
+                }
+                root.dragging = false;
             }
         }
     }
