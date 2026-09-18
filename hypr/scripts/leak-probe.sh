@@ -9,10 +9,12 @@
 #   QS_INTERVAL   sample period, seconds (default 2)
 #   QS_DURATION   quiet-mode length, seconds (default 60)
 #   QS_CYCLES     open/close cycles per surface (default 2)
-#   QS_HOLD       seconds to wait after each close (default 20 — must exceed
-#                 the 12s surface idle timeout plus a 10s cleaner tick, so the
+#   QS_HOLD       seconds to wait after each close (default 40 — must exceed
+#                 the longest memory-saver tail plus a 10s cleaner tick, so the
 #                 reclaimer actually destroys the component before the next
-#                 open re-creates it)
+#                 open re-creates it). Most surfaces get 2x the Timers page's
+#                 base tail (24s at the 12s default) and the two heaviest get
+#                 1x, so the wait has to clear the doubled tier, not the base.
 #   QS_SURFACES   space-separated surface names to cycle (default the heavy,
 #                 asynchronously-built ones)
 #   QS_SHELL_PATH path the shell runs from (default ~/.config/quickshell/
@@ -28,13 +30,14 @@ MODE="${1:-stress}"
 INTERVAL="${QS_INTERVAL:-2}"
 DURATION="${QS_DURATION:-60}"
 CYCLES="${QS_CYCLES:-2}"
-HOLD="${QS_HOLD:-20}"
+HOLD="${QS_HOLD:-40}"
 SHELL_PATH="${QS_SHELL_PATH:-$HOME/.config/quickshell/silhouette-shell/}"
+QS_NAME="$(basename "${SHELL_PATH%/}")"
 SURFACES="${QS_SURFACES:-calendar launcher clipboard wallpaper settings sysmon}"
 
 LOG="$(dirname "$0")/leak-probe.log"
-QS_PID="$(pgrep -f 'qs -p .*silhouette-shell' | head -1)"
-[ -n "$QS_PID" ] || { echo "no running shell (qs -p ...) found" >&2; exit 1; }
+QS_PID="$(pgrep -f "qs -p .*${QS_NAME}" | head -1)"
+[ -n "$QS_PID" ] || { echo "no running $QS_NAME instance (qs -p ...) found" >&2; exit 1; }
 
 : > "$LOG"
 
@@ -55,8 +58,8 @@ trap 'kill $SAMPLER 2>/dev/null' EXIT
 echo "# leak-probe pid=$QS_PID mode=$MODE started $(date +%F\ %T)"
 echo "# log: $LOG"
 
-open()  { qs -p "$SHELL_PATH" ipc call pill "$1" "" >/dev/null 2>&1; }
-close() { qs -p "$SHELL_PATH" ipc call pill hide >/dev/null 2>&1; }
+open()  { qs -c "$QS_NAME" ipc call pill "$1" "" >/dev/null 2>&1; }
+close() { qs -c "$QS_NAME" ipc call pill hide >/dev/null 2>&1; }
 
 if [ "$MODE" = "quiet" ]; then
     echo "# quiet: sampling $DURATION s idle"
@@ -99,4 +102,4 @@ awk '
         }
     }' "$LOG"
 
-echo "# pid now: $(pgrep -f 'qs -p .*silhouette-shell' | head -1)"
+echo "# pid now: $(pgrep -f "qs -p .*${QS_NAME}" | head -1)"
