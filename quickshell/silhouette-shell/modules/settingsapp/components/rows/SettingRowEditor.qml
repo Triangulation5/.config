@@ -30,7 +30,8 @@ Loader {
         toggle: toggleEditor,
         slider: sliderEditor,
         segmented: segmentedEditor,
-        text: textEditor
+        text: textEditor,
+        action: actionEditor
     })
 
     sourceComponent: root.row === null ? null
@@ -58,6 +59,12 @@ Loader {
         id: textEditor
 
         SettingText { row: root.row }
+    }
+
+    Component {
+        id: actionEditor
+
+        SettingAction { row: root.row }
     }
 
     /** Unknown `type`: keep the row's name visible and say what is missing. */

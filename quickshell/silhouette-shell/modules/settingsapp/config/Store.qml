@@ -173,6 +173,7 @@ Singleton {
             property real pillDragOverW: 300
             property real pillDragOverH: 126
             property real pillGameH: 34
+            property bool memorySaver: true
             property int pillSurfaceIdleTimeout: 12
             // -- the shell's own timing, geometry and motion, mirrored from Flags.qml --
             property real cornerNotchRadius: 12
@@ -231,7 +232,7 @@ Singleton {
         "pillInputW", "pillLookW", "pillIdlelockW", "pillAnimationW", "pillRecorderW",
         "pillFontpickerW", "pillWeatherW", "pillPolkitW", "pillOpenCorner", "pillToastW",
         "pillQuickChooseW", "pillQuickChooseH", "pillQuickCountW", "pillQuickCountH",
-        "pillDragOverW", "pillDragOverH", "pillGameH", "pillSurfaceIdleTimeout",
+        "pillDragOverW", "pillDragOverH", "pillGameH", "memorySaver", "pillSurfaceIdleTimeout",
         "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius",
         "cornerMorphMs", "cornerShadowSize", "motionSpeed",
         "pillCleanupSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",

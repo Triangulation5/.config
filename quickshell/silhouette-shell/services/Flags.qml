@@ -110,6 +110,7 @@ Singleton {
     property alias pillDragOverW: adapter.pillDragOverW
     property alias pillDragOverH: adapter.pillDragOverH
     property alias pillGameH: adapter.pillGameH
+    property alias memorySaver: adapter.memorySaver
     property alias pillSurfaceIdleTimeout: adapter.pillSurfaceIdleTimeout
     /*
      * The shell's own timings, sizes and motion — constants that used to be
@@ -157,7 +158,14 @@ Singleton {
             property bool clockSeconds: false
             property bool showGlyphs: false
             property string paletteMode: "static"
-            /** Empty means fall back to ~/Pictures. Lives in user state so an in-app update never clobbers a custom folder. */
+            /**
+             * Folder the wallpaper strip reads and picks land in. Empty means
+             * autodetect: an existing collection in ~/Pictures/rice-wallpapers,
+             * ~/Pictures/Wallpapers, ~/Pictures/wallpapers, ~/Wallpapers or
+             * ~/wallpapers wins, else ~/Pictures (see wallpaper.sh for the
+             * chain). Lives in user state so an in-app update never clobbers a
+             * custom folder.
+             */
             property string wallpaperDir: ""
             property real uiScale: 1.1
             property bool reduceMotion: false
@@ -266,6 +274,20 @@ Singleton {
             property real pillDragOverW: 300
             property real pillDragOverH: 126
             property real pillGameH: 34
+            /**
+             * Memory saver: free a closed surface's object tree once its own
+             * idle tier has passed (see the tier table in Pill.qml). Off holds
+             * every closed surface resident for the rest of the session, so
+             * reopening one is instant at the cost of the memory it keeps.
+             */
+            property bool memorySaver: true
+            /**
+             * Base tail in seconds for a closed surface. The two heaviest
+             * surfaces (wallpaper, mixer) are reclaimed at exactly this; every
+             * other surface gets double, so a quick re-toggle stays instant.
+             * Floored at 10 s by Pill.qml, and only consulted while memory
+             * saver is on.
+             */
             property int pillSurfaceIdleTimeout: 12
             /** Screen-corner overlay: the radius each mode rounds the display to. */
             property real cornerNotchRadius: 12

@@ -252,12 +252,14 @@ compositor or another surface changes the value.
 | `key` / `field` | the flag name, or the source's field name |
 | `source` | `flags` (default), `deco`, `input`, or omitted with `get`/`set` |
 | `label` / `caption` | the row's name, and the caption its hover hint shows (never a line of its own) |
-| `type` | `toggle`, `slider`, `segmented` or `text` |
+| `type` | `toggle`, `slider`, `segmented`, `text` or `action` |
 | `min` / `max` / `step` | slider bounds (step 0 = continuous) |
 | `unit` / `displayScale` | value formatting; `displayScale: 100` turns 0.7 into `70 %`. An empty `unit` is meaningful: bare fractions |
 | `format` | `"time"` renders a minutes-of-day value as `HH:MM` |
 | `options` / `names` | segmented values and their labels (equal lengths) |
 | `reset` | the shipped default Reset writes back |
+| `button` / `done` | an `action` row's button text, and the word it flips to for a moment after a press |
+| `action` | the function an `action` row's button runs |
 
 ## Adding things
 
@@ -302,6 +304,11 @@ function commit(value) { Sources.write(root.row, value) }
 then add it to `SettingRowEditor.qml`'s `editors` map and to
 `components/rows/qmldir`. An unknown `type` is not silent: the dispatcher renders
 the row's name with "No editor for row type …" and logs it.
+
+An `action` row is the exception to that shape: it edits no value, so it reads
+no source and has no `commit`. Its button runs `row.action()`, which the page
+supplies as a closure — the one kind of row whose subject is the running shell
+rather than a file (`SettingAction`, used by the Timers page's unload button).
 
 **A source.** Add an entry to `Sources.handlers` and the service behind it.
 
