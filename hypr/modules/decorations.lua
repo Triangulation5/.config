@@ -1,16 +1,16 @@
 -- https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in  = 5,
-        gaps_out = 10,
-        border_size = 1,
+        gaps_in  = 6,
+        gaps_out = 12,
+        border_size = 2,
 
         col = {
             active_border   = { colors = { "rgba(205, 205, 205, 0.15)" } },
             inactive_border = "rgba(205, 205, 205, 0.08)",
         },
 
-        resize_on_border = false,
+        resize_on_border = true,
         -- https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
         allow_tearing = false,
     },
@@ -19,20 +19,20 @@ hl.config({
         rounding       = 12,
         rounding_power = 4,
 
-        active_opacity   = 1.0,
-        inactive_opacity = 0.95,
+        active_opacity   = 1.00,
+        inactive_opacity = 1.00,
 
         shadow = {
             enabled      = true,
-            range        = 20,
+            range        = 12,
             render_power = 3,
             color        = 0xee121212,
         },
 
         blur = {
             enabled   = true,
-            size      = 6,
-            passes    = 2, -- 3 for frosted glass
+            size      = 8,
+            passes    = 3, -- 3 for frosted glass
             vibrancy  = 0.17,
             new_optimizations = true,
         },
