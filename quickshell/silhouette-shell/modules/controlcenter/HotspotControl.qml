@@ -11,8 +11,20 @@ import Quickshell.Io
  * (WifiHotspot) renders this state and emits toggle/edit signals back in.
  *
  * The `Singleton` root is used only as a non-visual object container (same as
- * ScreenRec) — there is no `pragma Singleton`, so each wifi surface gets its
- * own independent control.
+ * ScreenRec): it is the only Quickshell type that is not an Item yet still
+ * carries a default property, which is what lets the Process children sit
+ * inside it. There is no `pragma Singleton`, so each wifi surface gets its own
+ * independent control. A plain QtObject root cannot be used here — its lack of
+ * a default property makes every child a hard "Cannot assign to non-existent
+ * default property" error.
+ *
+ * The cost of that root is one benign warning at first instantiation:
+ * Quickshell treats a Singleton-rooted type as a module singleton and logs
+ * "Tried to register singleton HotspotControl ... which is not the root
+ * component of its file". Declaring it `singleton` in the module qmldir would
+ * silence that warning and change behavior — the state (hotspot name,
+ * password, inline-edit draft) would become process-wide and leak between
+ * monitors' control centers.
  */
 Singleton {
     id: ctl

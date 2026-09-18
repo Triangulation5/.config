@@ -351,9 +351,16 @@ PillSurface {
                 property int value: 0
                 property real step: 1
 
+                /**
+                 * The label lines up with the value cluster beside it. It anchors
+                 * to the sibling Row holding that cluster rather than to the
+                 * value Text itself: `vText` is nested inside that Row, so a
+                 * baseline anchor to it points at a cousin, which Qt refuses
+                 * (the label then sat at the top of the row).
+                 */
                 Text {
                     anchors.left: parent.left
-                    anchors.baseline: vText.baseline
+                    anchors.verticalCenter: spinRow.verticalCenter
                     text: row.label
                     color: Theme.faint
                     font.family: Theme.font
@@ -364,6 +371,7 @@ PillSurface {
                 }
 
                 Row {
+                    id: spinRow
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6 * root.s

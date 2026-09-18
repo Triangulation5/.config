@@ -253,18 +253,30 @@ Item {
 
                     onRequestClose: host.mediaBudIdle = true
                 }
-            }
 
-            /** Keyboard ring around the focused hover-face media bud. */
-            Rectangle {
-                anchors.fill: hoverMedia
-                anchors.margins: -3 * host.s
-                visible: host.faceFocus >= 0 && host.faceFocus < host.faceCount
-                    && host.faceTargets[host.faceFocus] === "media"
-                radius: 14 * host.s
-                color: "transparent"
-                border.width: 1.5
-                border.color: Qt.alpha(Theme.vermLit, 0.65)
+                /**
+                 * Keyboard ring around the focused media bud. It is declared
+                 * inside the Loader rather than beside it because the Loader is
+                 * a child of `statusRow`: an overlay summed by anchors cannot be
+                 * a positioner's child at all — the Row refuses `fill` (and any
+                 * other horizontal anchor) and stops positioning its children,
+                 * which it reports the first time this ring is shown. Anchored to
+                 * the Loader instead, the ring covers exactly the rect the old
+                 * `anchors.fill: hoverMedia` asked for, and it rides the bud's own
+                 * entrance morph, being one step further inside the same opacity
+                 * and scale.
+                 */
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: -3 * host.s
+                    z: 1
+                    visible: host.faceFocus >= 0 && host.faceFocus < host.faceCount
+                        && host.faceTargets[host.faceFocus] === "media"
+                    radius: 14 * host.s
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: Qt.alpha(Theme.vermLit, 0.65)
+                }
             }
 
             /**

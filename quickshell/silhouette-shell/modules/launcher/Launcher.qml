@@ -465,7 +465,9 @@ PillSurface {
             s: root.s
             entry: root.results[index]
             selected: root.selectedIndex === index
-            editing: { var e = root.results[index]; return e && e.id && e.id.indexOf("ricelin-") === 0 && root.editIndex === index; }
+            /** Coerced to a real bool: a missing entry would otherwise leave the
+             *  expression undefined, which QML logs as an invalid assignment. */
+            editing: { var e = root.results[index]; return !!(e && e.id && e.id.indexOf("ricelin-") === 0 && root.editIndex === index); }
         }
     }
 

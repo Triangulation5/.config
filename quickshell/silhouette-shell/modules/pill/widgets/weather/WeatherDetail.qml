@@ -507,33 +507,52 @@ PillSurface {
                 opacity: root.sMoon
                 transform: Translate { y: 12 * root.s * (1 - root.sMoon) }
 
-                MoonIcon {
+                Row {
+                    id: moonLead
                     anchors.verticalCenter: parent.verticalCenter
-                    s: root.s
-                    age: Weather.moonAge
-                }
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1 * root.s
-                    Text {
-                        text: "Moon"
-                        color: Theme.faint
-                        font.family: Theme.font
-                        font.pixelSize: 10.5 * root.s
-                        font.weight: Font.Medium
-                        font.capitalization: Font.AllUppercase
-                        font.letterSpacing: 0.8 * root.s
+                    spacing: 9 * root.s
+
+                    MoonIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        s: root.s
+                        age: Weather.moonAge
                     }
-                    Text {
-                        text: Weather.moonPhase
-                        color: Theme.cream
-                        font.family: Theme.font
-                        font.pixelSize: 16 * root.s
-                        font.weight: Font.DemiBold
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1 * root.s
+                        Text {
+                            text: "Moon"
+                            color: Theme.faint
+                            font.family: Theme.font
+                            font.pixelSize: 10.5 * root.s
+                            font.weight: Font.Medium
+                            font.capitalization: Font.AllUppercase
+                            font.letterSpacing: 0.8 * root.s
+                        }
+                        Text {
+                            text: Weather.moonPhase
+                            color: Theme.cream
+                            font.family: Theme.font
+                            font.pixelSize: 16 * root.s
+                            font.weight: Font.DemiBold
+                        }
                     }
                 }
+
+                /**
+                 * Spacer that pushes the hint to the trailing edge: a Row
+                 * refuses horizontal anchors on its children (Qt disables the
+                 * positioning of the offending child and warns), so the slack
+                 * is absorbed by a plain item instead of by anchoring the
+                 * hint right.
+                 */
+                Item {
+                    width: Math.max(0, parent.width - (moonLead.width + moonHint.width + 2 * parent.spacing))
+                    height: 1
+                }
+
                 Text {
-                    anchors.right: parent.right
+                    id: moonHint
                     anchors.verticalCenter: parent.verticalCenter
                     /** "46% lit · age 13.2d" style hint, still purely local. */
                     text: Weather.moonAge >= 0 ? Math.round(100 * (1 - Math.cos(Math.PI * 2 * Weather.moonAge)) / 2) + "% lit" : ""

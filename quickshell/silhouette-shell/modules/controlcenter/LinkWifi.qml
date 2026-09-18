@@ -291,14 +291,20 @@ LinkDrillIn {
             root.hidePassword();
     }
 
+    /**
+     * The hotspot control is reached by its id: `hs` is the id of the
+     * HotspotControl object and the wifi surface publishes no `hs` property, so
+     * `root.hs` was undefined and both handlers threw as soon as a network was
+     * activated or deactivated from this surface.
+     */
     function onActivated() {
         root.refresh();
-        root.hs.refresh();
+        hs.refresh();
     }
 
     function onDeactivated() {
         root.connectFailed = false;
-        root.hs.edit = "";
+        hs.edit = "";
         root.hidePassword();
     }
 

@@ -108,7 +108,7 @@ PillSurface {
     Row {
         id: wave
         anchors.left: parent.left
-        anchors.leftMargin: root.avatarOuter.right + 26 * root.s
+        anchors.leftMargin: avatarOuter.right + 26 * root.s
         anchors.top: parent.top
         anchors.topMargin: 36 * root.s
         spacing: 4 * root.s
@@ -169,7 +169,7 @@ PillSurface {
 
     Column {
         anchors.left: parent.left
-        anchors.leftMargin: root.avatarOuter.width + 46 * root.s
+        anchors.leftMargin: avatarOuter.width + 46 * root.s
         anchors.right: parent.right
         anchors.rightMargin: root.controlW + 60 * root.s
         anchors.verticalCenter: parent.verticalCenter
