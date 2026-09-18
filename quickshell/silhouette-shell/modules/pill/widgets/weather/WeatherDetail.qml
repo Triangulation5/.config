@@ -31,6 +31,14 @@ PillSurface {
     implicitWidth: contentColumn.implicitWidth
     implicitHeight: contentColumn.implicitHeight
 
+    /**
+     * Arms the deferred Weather service: it touches no network until a weather
+     * face is actually opened, so this surface opening paints the cached
+     * forecast in its first frame and the live fetch lands a second later.
+     */
+    onActiveChanged: if (active) Weather.needed = true
+    Component.onCompleted: if (active) Weather.needed = true
+
     /** Curtain reveal: how far the content has spilled down from the top, 0 → full on open. */
     readonly property real curtain: Math.pow(root.morphCloseness, 0.8)
 

@@ -294,8 +294,22 @@ PillSurface {
         }
     }
 
-    onActiveChanged: if (active) applyFocusTarget()
-    Component.onCompleted: if (active) applyFocusTarget()
+    /**
+     * The open hook also arms the deferred Weather service: this surface is the
+     * first thing that can show weather, so opening it is what sets `needed`.
+     * Until then the service touches no network at all (no geolocation, no
+     * forecast), so a session that never opens the calendar or the detail face
+     * never pays for one; once armed, the glance and its 4-day strip paint from
+     * the disk cache in the same frame and the live fetch lands a moment later.
+     */
+    onActiveChanged: if (active) {
+        Weather.needed = true;
+        applyFocusTarget();
+    }
+    Component.onCompleted: if (active) {
+        Weather.needed = true;
+        applyFocusTarget();
+    }
 
     WeatherPanel {
         id: weatherPanel

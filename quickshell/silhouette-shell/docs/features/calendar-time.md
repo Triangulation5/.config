@@ -25,3 +25,10 @@ cached, so a restart never re-hits the network for coordinates. By default it
 uses a keyless IP lookup, or you can override the city in settings and it
 geocodes that name instead. The forecast refreshes every 20 minutes and
 drives both the current condition in the hover glance and a 24-hour strip.
+
+The service defers all of its network work until weather is actually asked
+for: nothing (not even the IP lookup) happens until the calendar or the
+detail face is opened. The last good forecast is cached to disk along with
+the coordinates and read back synchronously, so a first open paints the
+conditions, the hourly strip and the 4-day panel from cache in the same frame
+and the fresh fetch lands about a second later.
