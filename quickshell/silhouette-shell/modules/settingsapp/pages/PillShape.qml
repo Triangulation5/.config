@@ -20,7 +20,6 @@ import QtQuick
 QtObject {
     readonly property string name: "Pill shape"
     readonly property string icon: "\u25A2"
-    readonly property string caption: "How big each pill surface is drawn"
     readonly property string keywords: "pill shape size sizes width height geometry box surface launcher mixer osd toast panel picker popover scale"
 
     readonly property var groups: [

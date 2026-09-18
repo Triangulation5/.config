@@ -3,8 +3,10 @@ module qs.modules.settingsapp.components
 DisplayHeader 1.0 DisplayHeader.qml
 DisplayMap 1.0 DisplayMap.qml
 DisplayShape 1.0 DisplayShape.qml
+HintLayer 1.0 HintLayer.qml
 Panel 1.0 Panel.qml
 SectionLabel 1.0 SectionLabel.qml
 SettingGroup 1.0 SettingGroup.qml
 SettingResetButton 1.0 SettingResetButton.qml
 SettingRow 1.0 SettingRow.qml
+singleton Hint 1.0 Hint.qml

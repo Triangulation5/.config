@@ -14,7 +14,6 @@ import qs.modules.settingsapp.services
 QtObject {
     readonly property string name: "Input"
     readonly property string icon: "\u2328"
-    readonly property string caption: "Pointer, keyboard, layout, cursor"
     readonly property string keywords: "mouse pointer sensitivity acceleration accel profile keyboard layout repeat rate delay numlock cursor theme size touchpad scrolling"
 
     readonly property var groups: [

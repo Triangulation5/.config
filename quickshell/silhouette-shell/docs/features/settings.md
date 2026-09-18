@@ -49,10 +49,22 @@ latest config, relaunches the shell and raises a toast naming what landed.
 ## Shell tuning
 
 Pages sit in the rail in subject order — how the shell is drawn, then the bar, then
-the input and outputs, then the session and its upkeep — and each one prints a
-caption under its name saying what it is for. Pages that cannot be found by their
-rows, because they build their body at runtime, are searchable by a keyword list
-instead.
+the input and outputs, then the session and its upkeep — and the header above an
+open page prints its name alone: the page's own rows say what it holds, so there is
+no summary line to write or keep in sync. Pages that cannot be found by their rows,
+because they build their body at runtime, are searchable by a keyword list instead.
+The rail itself starts at its search field, with no title of its own above it — the
+window's name is already what a dock, a taskbar or the pill's window list prints. A
+row's caption is not printed under its label either: it is shown in the shell's own
+tooltip bubble while that row is hovered (the same washi card the pill's chips and
+tray slots wear), built on the first hover and shared by every row after it, so a
+page never pays a second line per option for text only some of them need.
+
+The rail keeps the open page's row in view and rolls to it when it is not: the
+chevrons walk the pages without touching the list, so page eleven can open with the
+rail still showing page one. The roll is the pill calendar's wheel — a short OutBack
+with overshoot, landing the row mid-list rather than against an edge — and a row
+already in view is left alone, so clicking a page never moves the rail under you.
 
 The settings window reaches past the flags into the shell's own constants and the
 compositor's files the pill's surfaces never touched. `Corners` (the screen-corner
@@ -77,9 +89,9 @@ do not snapshot anything.
 
 The settings window has an icon of its own — a cog in the shell's accent with the
 shell's own pill cut out of its middle,
-`modules/settingsapp/assets/silhouette-settings.svg` — worn in its rail and named
-by a desktop entry, so a dock, a taskbar or the pill's own window list draws it like
-any other app. The entry is `assets/org.quickshell.desktop`, because Quickshell's
+`modules/settingsapp/assets/silhouette-settings.svg` — not drawn inside the window
+itself, but named by a desktop entry, so a dock, a taskbar or the pill's own window
+list draws it like any other app. The entry is `assets/org.quickshell.desktop`, because Quickshell's
 windows report that class and a window list finds an icon by looking the class up as
 a desktop-entry id; both files live in `modules/settingsapp/assets` and the install
 line is in its README.

@@ -27,11 +27,19 @@ import qs.modules.settingsapp.modules.sidebar
  * scrolling the field you are typing into away from the cursor is its own kind
  * of broken.
  *
- * Above both sits the app's own mark: the icon this window wears in a launcher
- * (`assets/silhouette-settings.svg`, the same file the desktop entry points at),
- * drawn from the asset rather than baked in like the pill's glyphs, because an
- * app icon is a file other programs have to be able to read. It is the only
- * thing in the rail that is the app rather than a page.
+ * The rail starts at its search field. A name header used to sit above it,
+ * beside the icon this window wears in a launcher; both are gone. The name is
+ * already what a dock, a taskbar and the pill's own window list print for this
+ * dialog, and inside the window the rail's height is worth more to the pages:
+ * a title that repeats the window's own identity costs a row of the list every
+ * time the rail is open. The icon asset (`assets/silhouette-settings.svg`) stays
+ * where it is — a desktop entry still points at it — but nothing in the window
+ * draws it any more.
+ *
+ * The rail keeps the open page's row in view, and rolls to it when it is not:
+ * the chevrons walk the pages without ever touching this list, so page eleven
+ * can open with the rail still showing page one. The roll is the calendar's
+ * wheel, borrowed — see `rollToCurrent`.
  */
 Rectangle {
     id: root
@@ -41,11 +49,75 @@ Rectangle {
     /** The live search query, following the field below. */
     property string query: search.text
 
+    /**
+     * The roll's pace. Longer than the window's own fades (`Theme.animNormal`,
+     * 150): the pill's calendar rolls a week of days across in `Motion.fast *
+     * 1.3`, and this is that gesture over a list of thirteen pages — long enough
+     * to read as a wheel settling onto a page, short enough that a jump is never
+     * something you wait on.
+     */
+    readonly property int rollMs: 300
+
     /** A rail row asking for the page at `pageIndex`, scrolled to `rowKey`. */
     signal pageSelected(int pageIndex)
     signal rowRequested(int pageIndex, string rowKey)
 
     readonly property var entries: Pages.navEntries(query)
+
+    /**
+     * The nav row of the open page, or null while the live query filters it out.
+     *
+     * The page index is compared here rather than read off the row's own
+     * `current` — the same comparison, but made when it is asked for. A row's
+     * `current` is a binding, and a `currentIndex` change is delivered to this
+     * file's change handler *before* that binding has been re-evaluated, so the
+     * scan would find the page the rail is leaving and roll back to it.
+     */
+    function selectedEntry() {
+        for (var i = 0; i < navRepeater.count; i++) {
+            var entry = navRepeater.itemAt(i);
+            if (entry && entry.modelData.index === root.currentIndex)
+                return entry;
+        }
+        return null;
+    }
+
+    /**
+     * Bring the open page's row into view — the wheel's spin.
+     *
+     * A row that is already in view is left where it is: nothing should move for
+     * a click you just made, and that is the common case. A row that is *not* in
+     * view is rolled to the middle of the list rather than jammed against the
+     * edge, so the pages either side of it come with it — the way the calendar's
+     * wheel lands on today with the days around it. Nothing is rolled when the
+     * query filters the open page out: `selectedEntry` finds no row, and the
+     * rail has nothing to focus.
+     */
+    function rollToCurrent() {
+        var entry = root.selectedEntry();
+        var flick = list.contentItem;
+        if (!entry || !flick)
+            return;
+        var y = entry.mapToItem(navColumn, 0, 0).y;
+        var view = flick.height;
+        /** A viewport with no height has not been laid out yet: there is no view
+          * to roll into, and `Math.min` against a zero-height view would report
+          * the end of the list as the only place the row could be seen. */
+        if (view <= 0)
+            return;
+        // Wholly in view, edge to edge, is the one case that moves nothing — a
+        // tolerance, not a comfort band: a row flush against either edge is
+        // *seen*, and rolling to a row that is already there is what a click on
+        // it would do to itself.
+        if (y >= flick.contentY - 1 && y + entry.height <= flick.contentY + view + 1)
+            return;
+        roll.to = Math.max(0, Math.min(flick.contentHeight - view, y + entry.height / 2 - view / 2));
+        roll.restart();
+    }
+
+    onCurrentIndexChanged: root.rollToCurrent()
+    onEntriesChanged: rollTick.restart()
+    Component.onCompleted: rollTick.restart()
 
     color: Theme.sidebar
 
@@ -54,33 +126,6 @@ Rectangle {
         anchors.topMargin: 20
         anchors.bottomMargin: 20
         spacing: 6
-
-        RowLayout {
-            Layout.leftMargin: 16
-            Layout.rightMargin: 16
-            Layout.fillWidth: true
-            spacing: 9
-
-            Image {
-                Layout.alignment: Qt.AlignVCenter
-                source: Qt.resolvedUrl("../../assets/silhouette-settings.svg")
-                sourceSize.width: 22
-                sourceSize.height: 22
-                smooth: true
-            }
-
-            Text {
-                Layout.alignment: Qt.AlignVCenter
-                Layout.fillWidth: true
-                text: "Silhouette Settings"
-                color: Theme.text
-                font.pixelSize: Theme.fontSizeNormal
-                font.bold: true
-                elide: Text.ElideRight
-            }
-        }
-
-        Item { Layout.preferredHeight: 4 }
 
         SidebarSearch {
             id: search
@@ -106,6 +151,8 @@ Rectangle {
             ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
+                id: navColumn
+
                 // The viewport's own width: a layout inside a scroll view is
                 // handed its implicit width, which would leave the rows as wide
                 // as their longest label and the highlight short of the edge.
@@ -113,12 +160,16 @@ Rectangle {
                 spacing: 2
 
                 Repeater {
+                    id: navRepeater
                     model: root.entries
 
                     delegate: ColumnLayout {
                         id: entry
 
                         required property var modelData
+
+                        /** This row is the open page's row. */
+                        readonly property bool current: entry.modelData.index === root.currentIndex
 
                         Layout.fillWidth: true
                         spacing: 0
@@ -131,7 +182,7 @@ Rectangle {
                             // the index, so a filtered rail still opens the page
                             // it shows rather than the row's position in the
                             // filter.
-                            selected: entry.modelData.index === root.currentIndex
+                            selected: entry.current
                             onClicked: root.pageSelected(entry.modelData.index)
                         }
 
@@ -165,6 +216,37 @@ Rectangle {
                 }
             }
         }
+    }
+
+    /**
+     * The spin itself: the calendar's opening sweep, borrowed. A short OutBack
+     * with overshoot, so the list carries a wheel's weight and settles onto the
+     * page rather than snapping to it — a roll past either end of the list is
+     * stopped by the flickable's own bounds.
+     *
+     * Animating `contentY` directly (rather than asking the flickable to flick)
+     * keeps the pace ours, and bypasses a drag the pointer may be in the middle
+     * of.
+     */
+    NumberAnimation {
+        id: roll
+        target: list.contentItem
+        property: "contentY"
+        duration: root.rollMs
+        easing.type: Easing.OutBack
+        easing.overshoot: 0.8
+    }
+
+    /**
+     * The roll is asked for a tick late wherever the rows may have just moved:
+     * a delegate rebuilt by a query, or by the window's first build, has no
+     * position until a layout pass has run over it, and measuring one before
+     * that reads a row sitting at y=0.
+     */
+    Timer {
+        id: rollTick
+        interval: 40
+        onTriggered: root.rollToCurrent()
     }
 
     // Divider between the rail and the content area.

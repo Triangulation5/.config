@@ -11,7 +11,6 @@ import QtQuick
 QtObject {
     readonly property string name: "System"
     readonly property string icon: "\u2B21"
-    readonly property string caption: "The screen recorder"
     readonly property string keywords: "recording recorder capture gpu-screen-recorder quality ffmpeg crf replay fps audio"
 
     readonly property var groups: [

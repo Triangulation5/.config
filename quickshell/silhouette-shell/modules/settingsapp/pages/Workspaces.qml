@@ -17,7 +17,6 @@ QtObject {
     readonly property string icon: "\u2B1A"
 
     /** Search words: the rows are runtime data, so there are no labels to find. */
-    readonly property string caption: "Special workspaces and the keys that reach them"
     readonly property string keywords: "special scratchpad stash private minimized workspace space apps routing"
 
     /** A component, resolved relative to this file. */

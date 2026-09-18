@@ -6,9 +6,12 @@ shell** now — `modules/settingsapp/`, declared in its own `qmldir` and
 instantiated by the shell's `shell.qml` — so the window that edits the flags and
 the process that reads them are one instance instead of two watching the same
 file. Its entry point is `SettingsApp.qml` (an `Item`, not a `ShellRoot`: there is
-one root per process and it belongs to the shell). The standalone config it grew up
-as is gone: it was the same tree a second time, so keeping it meant two copies to
-change and a window that could be launched with nothing listening behind it.
+one root per process and it belongs to the shell), which owns the lifecycle and
+the IPC; the window itself is `SettingsWindow.qml`, which the entry point builds
+when the dialog is first opened and destroys five seconds after it closes (see
+"The window itself"). The standalone config it grew up as is gone: it was the same
+tree a second time, so keeping it meant two copies to change and a window that
+could be launched with nothing listening behind it.
 
 It edits the same state the shell does:
 
@@ -43,9 +46,9 @@ config is looked for (see `services/Paths.qml`).
 
 The window has an icon of its own — `assets/silhouette-settings.svg`: a cog in the
 shell's accent with the shell's own pill cut out of its middle, one solid
-silhouette so it still reads at 16px. It is worn in the rail above the search
-field, and it is what a dock, a taskbar or the pill's own window list draws for the
-dialog. Both files have to be installed for that to show, since a Wayland toplevel
+silhouette so it still reads at 16px. Nothing inside the window draws it — the window
+carries neither the mark nor a wordmark of its own — but it is what a dock, a taskbar
+or the pill's own window list draws for the dialog. Both files have to be installed for that to show, since a Wayland toplevel
 carries no icon of its own and the icon theme is what supplies one (`-D` creates
 the parent directories):
 
@@ -81,7 +84,9 @@ A `qmldir` per directory, one type per file, `qs.*` imports, and a composition
 root that names modules rather than implementing them — the shell's conventions.
 
 ```
-shell.qml                  entry point: ShellRoot + FloatingWindow + Panel + IPC
+SettingsApp.qml            the controller: open/hide/toggle, the IPC target and the
+                           window's lifecycle (build on first open, tear down after close)
+SettingsWindow.qml         the window itself: FloatingWindow + Panel + rail + content
 config/                    qs.config — state and the row→value door
   Theme.qml                  the panel's palette, radii, type, motion
   Store.qml                  the shell's flags.json as a live, writable document
@@ -110,12 +115,15 @@ pages/                     qs.pages — what is configurable
   UpdatesView.qml             the updates body (status, pending, results)
   Backups.qml / BackupsView.qml  the backups page and its body (status, archives)
 assets/                    the app's own icon, and the entry that points at it
-  silhouette-settings.svg      the cog with the pill cut out of it (rail, dock,
-                               and the name the entry's Icon= gives)
+  silhouette-settings.svg      the cog with the pill cut out of it (dock, taskbar,
+                               window list, and the name the entry's Icon= gives)
   org.quickshell.desktop       the launcher/window entry — named for the app id,
                                which is how a window list finds its icon
 components/                qs.components — chrome and layout primitives
   Panel.qml                  the window surface (square, opaque) + open tween
+  Hint.qml                   the hover hint's state (a singleton: no items)
+  HintLayer.qml              the one bubble every row's caption is shown by:
+                             the shell's own Tooltip, worn by the hovered row
   SectionLabel.qml           a faint heading inside a card
   SettingGroup.qml           one card: heading + a row per entry
   SettingRow.qml             the row skeleton every editor is built on
@@ -155,7 +163,7 @@ through `asynchronous: true` loaders, so a switch delegates over a few frames in
 of stalling on one. Measured, the worst hitch on a page change went from 55ms (215ms
 on the first build) to under ~20ms (87ms on the first build). The budget per pass is
 9ms — the larger half of a frame at 60Hz, since a pass runs about once per frame —
-which is what it takes for the biggest page here (Pill shape, 47 rows) to settle in
+which is what it takes for the biggest page here (Pill shape, 45 rows) to settle in
 about a quarter of a second instead of longer.
 
 **What a card is handed has to describe the page that is open *now*.** The builder
@@ -180,11 +188,12 @@ that match the whole query. So the rail lists pages, and under a matching page t
 settings inside it, which is what makes "search a setting" mean opening the setting
 rather than the page it lives on.
 
-Every page carries a `caption` too: one line printed beside its name in the content
-header, saying what the page is for in the words someone would go looking for. It is
-shown, not searched — `keywords` is the searched half, and the pages that cannot be
-found by their rows (the four with a `view`, which have no row labels for the rail
-to match on) carry both.
+A page is its `name`, `icon` and either `groups` or a `view`, plus `keywords` for
+the pages that cannot be found by their rows (the four with a `view`, which have no
+row labels for the rail to match on). There is no summary line to write: the
+content header prints the open page's name and nothing beside it, because what the
+page holds is already on screen under it, row by row — and the rail's own header is
+gone too, so the search field is the top of the rail.
 
 The rail's order is the subject order `Pages.qml` describes: what the shell is drawn
 as, then the bar, then the input and outputs it is attached to, then the session and
@@ -204,6 +213,14 @@ is the one identifier that survives the copies the model hands out.
 The list scrolls (a `ScrollView`): at fourteen pages the tail of the rail used to be
 simply unreachable, and every page added from here would have made that worse. The
 search field stays fixed above it.
+
+The rail also keeps the open page's row in view, and rolls to it when it is not
+(`Sidebar.rollToCurrent`): the page can be moved from the content area's chevrons,
+which never touch this list, so page eleven can be open while the rail still shows
+page one. The roll is the pill calendar's wheel — a short OutBack with overshoot,
+targeting the middle of the list rather than the nearest edge — and a row that is
+already wholly in view is left exactly where it is, so a click never moves the rail
+out from under the pointer.
 
 Neither the rail nor the content column draws a scrollbar (`ScrollBar.vertical.policy:
 AlwaysOff`, the same for horizontal): Qt's default is a light grey slab drawn *over*
@@ -234,7 +251,7 @@ compositor or another surface changes the value.
 | --- | --- |
 | `key` / `field` | the flag name, or the source's field name |
 | `source` | `flags` (default), `deco`, `input`, or omitted with `get`/`set` |
-| `label` / `caption` | the two text lines of the row |
+| `label` / `caption` | the row's name, and the caption its hover hint shows (never a line of its own) |
 | `type` | `toggle`, `slider`, `segmented` or `text` |
 | `min` / `max` / `step` | slider bounds (step 0 = continuous) |
 | `unit` / `displayScale` | value formatting; `displayScale: 100` turns 0.7 into `70 %`. An empty `unit` is meaningful: bare fractions |
@@ -245,7 +262,7 @@ compositor or another surface changes the value.
 ## Adding things
 
 **A page.** Write `pages/Whatever.qml` (copy a neighbour: `pragma Singleton`, a
-`name`/`icon`, and `groups`), add one line to `pages/qmldir`, and one entry to
+`name`, an `icon`, and `groups`), add one line to `pages/qmldir`, and one entry to
 `pages/Pages.qml`'s `pages` array — in the position you want in the rail. The
 rail, its search, the content column and Reset all read that index.
 
@@ -327,11 +344,33 @@ entry inside the `input` block instead and say so in the note line.
 
 ## The window itself
 
-`shell.qml` hosts the app in a `FloatingWindow` — a compositor-managed window, not
-a layer surface — so the corner radius and the 1px edge are Hyprland's, from
+`SettingsWindow.qml` is a `FloatingWindow` — a compositor-managed window, not a
+layer surface — so the corner radius and the 1px edge are Hyprland's, from
 `decoration.rounding` (12 on this config) and `col.active_border`. `Panel` therefore
 paints a **square, opaque** surface out to the window's edges and animates the
 content rather than the surface.
+
+Nothing of it exists until the dialog is first opened. `SettingsApp.qml` keeps a
+bool (`built`) and a `Loader`: the first `open` flips it, which builds the whole
+window — the rail, its eighteen page singletons, the content column — and closing
+the dialog starts a five-second timer that flips it back, destroying the tree and
+returning the memory. That is not the same thing as hiding it: a hidden window is
+still a live item tree, and this one is the largest in the shell, so a dialog
+opened once at the start of a session used to stay resident for the whole of it.
+
+The loader is `asynchronous: true`, the way the pill builds its own heavy
+surfaces: the first open is the only one that pays for that tree, and it pays off
+the GUI thread instead of stalling every other surface while it compiles. The
+host wires the two directions the window cannot own — the `open` it should draw,
+and the `closeRequested` its Escape key raises — from `onItemChanged`.
+
+The five seconds are the point at which the two behaviours meet. Close the dialog
+and reopen it within them and nothing was ever torn down, so the rail is still on
+the page you left it on and the search still holds its text — the quick reopen
+keeps what you had. Past them the dialog is gone, and the next open builds a fresh
+one: first page, empty search. The window's own `Escape` does not close anything
+itself; it raises `closeRequested` and the host decides, which is what keeps one
+owner of the lifecycle.
 
 That being the case, the dialog shape is the config's to decide, and
 `~/.config/hypr/modules/window-rules.lua` has a `settings-dialog` rule that matches
@@ -527,7 +566,7 @@ surface reads a file or a contract that this config does not have.
 - **The pill's box is flags now.** Rest width, height and corner, the notch corner,
   hover padding, and the size of every surface (`pillLauncherW`, `pillMixerH`, …) were
   readonly constants in `Pill.qml`; they are flags the shell reads with the same
-  defaults, which is what makes the Pill shape page (48 of them, six cards) a plain
+  defaults, which is what makes the Pill shape page (45 of them, six cards) a plain
   page of sliders.
 - **Displays apply directly.** The shell routes a mode change through
   `scripts/display-apply.sh` with a 12-second watchdog and a confirm step. Here a

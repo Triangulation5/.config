@@ -54,6 +54,8 @@ QtObject {
     readonly property color card: "#100d0d"
     readonly property color text: "#d0d0d0"
     readonly property color textSecondary: "#888888"
+    /** Ink that is there but out of play — a chevron at the end of the page list. */
+    readonly property color faint: "#4d4d4d"
     readonly property color sliderTrack: "#2a2a2a"
     readonly property color border: Qt.rgba(1, 1, 1, 0.05)
     readonly property color hover: "#161616"
