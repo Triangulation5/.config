@@ -84,6 +84,29 @@ Item {
 
     Component.onCompleted: avatarImg.refresh()
 
+    /**
+     * Existence probe for the avatar candidates, walked in order on the load
+     * signals. The Image is never handed a path that is not there: an Image
+     * pointed at a missing file logs a QML warning of its own ("Cannot open:
+     * ..."), and having no avatar at all is the common case, so the probe is
+     * what keeps the lock-screen log quiet. `printErrors: false` silences the
+     * probe's own read failures, which are the expected outcome here.
+     *
+     * Only the load of the candidate currently being probed is honoured (a
+     * superseded read that lands late must not hand the Image the wrong file
+     * or skip a candidate), which is what the `reading` comparison is for.
+     */
+    FileView {
+        id: avatarProbe
+        printErrors: false
+
+        /** Plain filesystem path of the candidate being read right now. */
+        readonly property string reading: avatarImg.probedUrl.replace(/^file:\/\//, "")
+
+        onLoaded: if (String(path) === reading) avatarImg.source = avatarImg.probedUrl
+        onLoadFailed: if (String(path) === reading) Qt.callLater(avatarImg.probeNext)
+    }
+
     Rectangle {
         id: tile
 
@@ -116,18 +139,51 @@ Item {
             source: ""
             visible: status === Image.Ready
 
+            /** Index into `avatarSources` of the candidate being probed. */
             property int srcIndex: 0
+            /** `file://` URL of that candidate, or "" when the list ran out. */
+            property string probedUrl: ""
 
             function refresh() {
                 srcIndex = 0;
-                source = profile.avatarSources.length > 0 ? profile.avatarSources[0] : "";
+                probeCandidate();
             }
 
-            onStatusChanged: {
-                if (status === Image.Error && srcIndex < profile.avatarSources.length - 1) {
-                    srcIndex++;
-                    source = profile.avatarSources[srcIndex];
+            /**
+             * Hand the candidate at `srcIndex` to the probe; nothing reaches the
+             * Image until the probe has actually read it. The source is left
+             * alone (rather than cleared) so a re-probe cannot flash the fallback
+             * glyph over an avatar that is still valid; when the list runs out
+             * the source is dropped for real and the glyph takes over.
+             *
+             * A candidate that is already the probe's path — the ordinary
+             * re-lock case — is re-read with reload() rather than re-assigned,
+             * because assigning the same path again is a no-op and would leave
+             * the walk with no signal to answer. The step to the next candidate
+             * is deferred through Qt.callLater: jumping straight on from inside
+             * the failure signal starts the next read before Quickshell has torn
+             * the failed one down, which it logs about as a dropped operation.
+             */
+            function probeCandidate() {
+                var list = profile.avatarSources;
+                if (srcIndex >= list.length) {
+                    probedUrl = "";
+                    source = "";
+                    return;
                 }
+                probedUrl = String(list[srcIndex]);
+                var plain = probedUrl.replace(/^file:\/\//, "");
+                if (avatarProbe.path === plain)
+                    avatarProbe.reload();
+                else
+                    avatarProbe.path = plain;
+            }
+
+            /** The probe could not read this candidate: walk to the next one,
+             *  and leave the Image empty (falling back to the glyph) at the end. */
+            function probeNext() {
+                srcIndex++;
+                probeCandidate();
             }
 
             layer.enabled: true

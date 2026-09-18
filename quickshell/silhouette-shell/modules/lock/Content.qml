@@ -359,7 +359,7 @@ Item {
                     content.pw.text = text;
             }
 
-            Keys.onPressed: {
+            Keys.onPressed: (event) => {
                 if (content.passwordArmed)
                     idleTimer.restart();
                 /** A held Backspace clears the whole field at once after 2.5s

@@ -17,7 +17,10 @@ to the pill, and clicking a toast raises the source app's window. Dragging a
 toast up, left or right drags the pill into the mask wall: it dissolves at
 the edge it leaves through and springs back on a short pull, or flings out
 past half its width (0.6 of its height going up) or on a quick flick. The
-control center shows the history with dismiss and activate actions.
+control center shows the history with dismiss and activate actions. Notices the
+shell raises about its own work go out through `notify-send` as
+`SilhouetteShell` and come back through this same server, so they arrive as the
+same washi toast and stay in the inbox like any other app's.
 
 ## Clipboard
 
@@ -49,11 +52,12 @@ intended strength on "bleed", a whisper on "wash", off on "none" — and dim
 while paused. ImageMagick averages the cover for the shadow tint, so it costs
 nothing when the aura is off.
 
-Appearance layers three settings on top, in the shell's surface and the
-settings app alike: an Ambient aura switch, an Aura strength that scales the
-mode's own base (50–150%), and an Aura shadow switch for the tint. The
-backdrop mode still wins — with the backdrop on None the aura stays off
-however those three read.
+The settings window layers three controls on top of that, in an Ambient aura
+card of its own next to the backdrop it answers to: an Ambient aura switch, an
+Aura strength that scales the mode's own base, and an Aura shadow switch for
+the tint. The backdrop mode still wins — with the backdrop on None the aura
+stays off however those three read. None of the three is in the pill's Quick
+Settings; they are the shape of a backdrop, not a separate effect.
 
 ## Tray
 

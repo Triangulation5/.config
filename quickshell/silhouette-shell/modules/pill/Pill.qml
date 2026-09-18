@@ -303,7 +303,17 @@ Item {
      * thunks null-safe; never deref `ld.item` directly in a thunk.
      */
     function surfaceItem(ld, name) {
-        ld.activate();
+        /**
+         * Activation is kept out of the caller's binding evaluation. `activate()`
+         * instantiates the surface synchronously, and a surface built while a
+         * size/ame thunk is mid-read re-enters the very binding being evaluated —
+         * QML reports that as "binding loop detected for property targetSize" on
+         * every open. Deferred by one turn the write lands safely, and the frame
+         * in between is the one the async loaders already handle: the thunk
+         * returns its fallback and re-morphs the moment the item exists.
+         */
+        if (!ld.active)
+            Qt.callLater(ld.activate);
         if (name && name.length)
             _surfaceLastOpened[name] = Date.now();
         return ld.item;
@@ -1724,6 +1734,11 @@ Item {
      * fonts, wallpapers), which prints one machine-readable line per drop.
      * The pill morphs into a drop-zone face, streams the installer's output
      * live, then opens the launcher when an app landed.
+     *
+     * The face is transient — it drops back to rest a beat after the install —
+     * so the result is also announced as a SilhouetteShell notification, which
+     * the pill's toast face raises on the way out and the inbox keeps
+     * afterwards. Progress is the face's job; the outcome is the toast's.
      */
     property var installQueue: []
 
@@ -1759,9 +1774,18 @@ Item {
     property string installPct: ""
     property int installSeconds: 0
 
+    /**
+     * The installer's last words on the most recent file that failed. Kept
+     * apart from `installLine` because that one is restarted per file: on a run
+     * that fails and then lands something, the live line by the end belongs to
+     * the success, and the toast should explain the failure instead.
+     */
+    property string installFailLine: ""
+
     function runNextInstall() {
         if (pill.installQueue.length === 0) {
             pill.dragStage = pill.installedAny ? "done" : "fail";
+            pill.reportDrop();
             (pill.installedAny ? dropDoneTimer : dropBadTimer).restart();
             return;
         }
@@ -1772,6 +1796,63 @@ Item {
         pill.installPct = "";
         installProc.command = ["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/app-install.sh", "install", next];
         installProc.running = true;
+    }
+
+    /**
+     * Raise a shell notification. Every shell-originated toast goes through
+     * notify-send, which lands back on this process's own NotificationServer:
+     * the pill's toast face and the inbox are the same surface as for any other
+     * app's notification, so the drop needs no toast stack of its own.
+     */
+    function notifyDrop(summary, body, critical) {
+        var cmd = ["notify-send", "-a", "SilhouetteShell"];
+        if (critical)
+            cmd = cmd.concat(["-u", "critical"]);
+        cmd = cmd.concat([summary]);
+        if (body.length > 0)
+            cmd = cmd.concat([body]);
+        notifyProc.command = cmd;
+        notifyProc.running = true;
+    }
+
+    /**
+     * The one line of result text for the drop just finished, worded exactly
+     * like the drop face's "done" label so the toast that replaces the face
+     * reads as the same sentence. `installKind`/`installAction` describe the
+     * last file to land; a failed run says so instead of naming a file, and the
+     * installer's own last words (a pacman or flatpak error) become the body.
+     */
+    function reportDrop() {
+        var nothingLanded = !pill.installedAny;
+        var summary;
+        if (nothingLanded)
+            summary = "Install failed";
+        else if (pill.installFailed)
+            summary = "Installed, some failed";
+        else if (!pill.installedApp && pill.installKind === "wallpaper")
+            summary = "Wallpaper set";
+        else if (!pill.installedApp && pill.installKind === "font")
+            summary = "Font installed";
+        else if (pill.installAction === "updated")
+            summary = "Updated " + pill.dragName;
+        else if (pill.installAction === "reinstalled")
+            summary = "Reinstalled " + pill.dragName;
+        else
+            summary = "Installed " + pill.dragName;
+        /**
+         * The name is already in the summary when an app landed, so the body
+         * only earns its place on a failure (the installer's error) or when
+         * the summary names no file (a font, a wallpaper, a bad drop).
+         */
+        var body = (nothingLanded || pill.installFailed) ? pill.installFailLine : "";
+        if (body.length === 0 && !pill.installedApp)
+            body = pill.dragName;
+        pill.notifyDrop(summary, body, nothingLanded);
+    }
+
+    /** One-shot sender for drop results; the command is set per drop. */
+    Process {
+        id: notifyProc
     }
 
     /**
@@ -1809,6 +1890,8 @@ Item {
                     droppedFont.source = "file://" + parts[3];
             } else {
                 pill.installFailed = true;
+                if (pill.installLine.length > 0)
+                    pill.installFailLine = pill.installLine;
             }
             pill.runNextInstall();
         }
@@ -1855,7 +1938,9 @@ Item {
      * File drops land only on the resting pill; an open surface turns the pill
      * into a fullscreen modal that swallows the drag before it can start.
      * app-install.sh routes each drop by type (apps install, fonts land in the
-     * font dir, images become the wallpaper), anything else flashes a rejection.
+     * font dir, images become the wallpaper); anything else flashes a rejection
+     * on the face and reports it as a toast, since a drop that installed
+     * nothing has nothing to show for itself once the face is gone.
      */
     DropArea {
         anchors.fill: parent
@@ -1880,6 +1965,7 @@ Item {
                 pill.dragActive = true;
                 pill.dragStage = "bad";
                 pill.dragName = pill.dropLabel(drop.urls);
+                pill.notifyDrop("Can't install this", pill.dragName, false);
                 dropBadTimer.restart();
                 return;
             }
@@ -1888,6 +1974,7 @@ Item {
             pill.installedAny = false;
             pill.installedApp = false;
             pill.installFailed = false;
+            pill.installFailLine = "";
             pill.installKind = "app";
             pill.installAction = "new";
             pill.installSeconds = 0;

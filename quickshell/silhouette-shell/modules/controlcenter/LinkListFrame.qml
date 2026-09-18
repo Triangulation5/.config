@@ -62,12 +62,18 @@ Item {
     function ensureVisible(item) {
         if (!item)
             return;
-        var y = item.mapToItem(root.listFlick, 0, 0).y;
+        /**
+         * The Flickable is referred to by its id, not through `root`: an id is
+         * not a property of the item that owns it, so `root.listFlick` is
+         * undefined — mapToItem() then quietly maps to the scene and the scroll
+         * below throws on the missing height.
+         */
+        var y = item.mapToItem(listFlick, 0, 0).y;
         var h = item.height;
         if (y < 0)
-            root.listFlick.contentY += y;
-        else if (y + h > root.listFlick.height)
-            root.listFlick.contentY += y + h - root.listFlick.height;
+            listFlick.contentY += y;
+        else if (y + h > listFlick.height)
+            listFlick.contentY += y + h - listFlick.height;
     }
 
     WheelScroller {

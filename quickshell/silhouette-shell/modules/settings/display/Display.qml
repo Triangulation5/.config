@@ -473,10 +473,20 @@ SettingsSurface {
 
     Item { width: 1; height: 4 * root.s }
 
-    MouseArea {
-        anchors.fill: root
-        enabled: root.pendingOut.length > 0
-        z: 50
-        onClicked: {}
-    }
+    /**
+     * A monitor change in flight takes the whole surface out of input: with the
+     * reconfiguration still being written, a second click would queue another
+     * change against the state this one is replacing.
+     *
+     * That gate lives on the surface's own `enabled` rather than on a
+     * full-surface blocking MouseArea, which cannot be expressed here: a
+     * SettingsSurface reparents its declared children into the shared content
+     * column (the `content` alias), so an anchor to `root` from a child is
+     * refused, and a Column child sized by fill anchors is not laid out at all.
+     * The retired overlay was a zero-sized child that warned on every open and
+     * blocked nothing; disabling the subtree also cannot be bypassed by a
+     * second click landing in a row's own handler, since the click never
+     * reaches the row.
+     */
+    enabled: root.pendingOut.length === 0
 }

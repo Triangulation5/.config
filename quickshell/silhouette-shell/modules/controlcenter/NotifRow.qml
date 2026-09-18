@@ -91,7 +91,7 @@ Rectangle {
         Image {
             id: nrowImg
             anchors.fill: parent
-            anchors.margins: n.n.image ? 0 : 2 * s
+            anchors.margins: n.image ? 0 : 2 * s
             source: Notifs.iconFor(n)
             sourceSize.width: 40
             sourceSize.height: 40

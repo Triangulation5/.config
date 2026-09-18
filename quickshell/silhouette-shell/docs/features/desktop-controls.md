@@ -27,6 +27,19 @@ registers it with the launcher and marks it with a `ricelin-` id prefix so
 installed AppImages can be told apart from system entries. The same prefix
 lets the launcher offer uninstall and rename actions on those entries.
 
+Hovering the resting pill with a file grows a drop-zone face out of it:
+corner brackets, a glyph that walks from the download arrow through a spinner
+to a check, and the installer's own output streamed live underneath while it
+runs, with a running clock once a slow backend passes three seconds. The face
+is only the progress. The result is announced as a `SilhouetteShell`
+notification — the same toast the pill raises for any other app, and the inbox
+keeps it afterwards — which names what landed (or what failed, with the
+installer's error as the body) a beat after the face folds back to rest. An app
+install also opens the launcher over the toast so the new entry is right there.
+Fonts land in the font directory and are registered in the running shell;
+images become the wallpaper. A drop the installer cannot route says so on the
+face and in the toast.
+
 ## Power menu
 
 Centralized power controls: lock, idle lock, sleep, logout, restart and
