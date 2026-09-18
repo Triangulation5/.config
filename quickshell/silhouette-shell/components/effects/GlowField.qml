@@ -19,7 +19,12 @@ Item {
     readonly property bool live: Cava.lockActive
     property var levels: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    opacity: live ? 0.62 : 0
+    /**
+     * Peak alpha of the flame. Raised from 0.62 to 0.65 (+5% of the range) so
+     * the band reads a touch more present over a busy wallpaper without
+     * starting to tint the lock content sitting above it.
+     */
+    opacity: live ? 0.65 : 0
     visible: opacity > 0.004
 
     Behavior on opacity {
