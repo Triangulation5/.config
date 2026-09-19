@@ -22,7 +22,8 @@ sioyek/*.db
 connections.db
 rygel.conf
 QtProject.conf
-mpd/
+mpd/*
+!mpd/mpd.conf
 
 gnome-initial-setup-done
 .gsd-keyboard.settings-ported
