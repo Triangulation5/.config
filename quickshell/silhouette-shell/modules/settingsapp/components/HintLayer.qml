@@ -15,11 +15,17 @@ import qs.components.controls
  * hovered (`Hint.used`, which the content area's loader arms on) and reused for
  * every row after that.
  *
- * `Tooltip` anchors itself to its parent and centres on it, so the bubble hangs
- * off `host`: an item wearing the hovered row's rect. Moving the host moves the
- * bubble, which is how the nudge below keeps a wide caption from hanging out
- * over the rail — the one thing the pill's tooltips never have to think about,
- * since they float over a pill that is wider than any of their labels.
+ * The bubble sits above the pointer and centres on it, so it reads as belonging
+ * to the cursor rather than to the row it describes: a wide caption no longer
+ * hangs off a middle the pointer is nowhere near. That is why the host is a
+ * point and not the row's rect — `Tooltip` centres on its parent and hangs its
+ * pointer off the parent's edge, so a zero-sized host standing on the cursor is
+ * the whole of the placement.
+ *
+ * Two things the pill's tooltips never have to think about, because they float
+ * over a pill wider than any of their labels: the bubble slides inward near the
+ * layer's left and right edges until it fits, and it flips below the cursor on
+ * the rows near the top, where there is no room above.
  */
 Item {
     id: layer
@@ -29,42 +35,39 @@ Item {
     /** The bubble stays at least this far inside the layer's edges. */
     readonly property int edge: 6
 
-    /** The row the bubble belongs to; null while the pointer is elsewhere. */
-    readonly property Item row: Hint.anchor
-
-    /** The row's rect in this layer's coordinates, following the page's scroll. */
-    readonly property rect rowRect: {
-        if (layer.row === null)
-            return Qt.rect(0, 0, 0, 0);
-        const p = layer.row.mapToItem(layer, 0, 0);
-        return Qt.rect(p.x, p.y, layer.row.width, layer.row.height);
-    }
+    /**
+     * The pointer in this layer's coordinates. `Hint.pointer` is in scene
+     * coordinates — the rows that report it know nothing of this layer — so it
+     * is mapped here, and the bubble follows it as the pointer moves.
+     */
+    readonly property point here: layer.mapFromItem(null, Hint.pointer.x, Hint.pointer.y)
 
     /**
-     * The last rect the pointer was over, latched rather than bound: the bubble
-     * fades out over a beat *after* the pointer has gone, and by then `row` is
-     * already null — without this it would fade out in the layer's top-left
-     * corner instead of where the row it describes is.
+     * The room a bubble needs above the cursor. Sized off the bubble's own font
+     * (`Tooltip.em` — 1.5em of padding, a line of text, the 0.5em pointer and
+     * the 0.5em gap is four of them), and deliberately not off `tip.height`:
+     * `Tooltip` re-anchors itself on `placement`, so measuring it from the
+     * binding that sets `placement` is a binding loop.
      */
-    property rect shown: Qt.rect(0, 0, 0, 0)
-    onRowRectChanged: if (layer.row !== null) layer.shown = layer.rowRect
+    readonly property real room: 4 * tip.em
 
     Item {
         id: host
 
         /**
-         * The row's rect, slid horizontally so the bubble (which centres itself
-         * on this item) cannot leave the layer. The nudge only bites on a
-         * caption wider than the column it describes, and leaves the host on the
-         * row's own rect otherwise.
+         * The cursor's own point, slid horizontally so the bubble cannot leave
+         * the layer. `Tooltip` centres itself on this item's centre, so on a
+         * zero-width host at the cursor the bubble is centred on the cursor —
+         * no offset arithmetic belongs here. The clamp bites only on a caption
+         * wider than the room beside the cursor, and is expressed in the
+         * bubble's own terms (`tip.width`) because the host stands on the
+         * bubble's centre, not on its left edge.
          */
         x: Math.max(layer.edge + tip.width / 2,
-                    Math.min(layer.shown.x + layer.shown.width / 2,
-                             layer.width - layer.edge - tip.width / 2))
-           - layer.shown.width / 2
-        y: layer.shown.y
-        width: layer.shown.width
-        height: layer.shown.height
+                    Math.min(layer.here.x, layer.width - layer.edge - tip.width / 2))
+        y: layer.here.y
+        width: 0
+        height: 0
 
         Tooltip {
             id: tip
@@ -73,11 +76,8 @@ Item {
             title: Hint.text
             show: Hint.hovering
 
-            /**
-             * Above the row, or below it on the rows near the top of the page,
-             * where there is no room in the layer for a bubble of this height.
-             */
-            placement: layer.shown.y > tip.height + layer.edge ? "above" : "below"
+            /** Above the cursor, or below it where the layer has no room above. */
+            placement: layer.here.y > layer.edge + layer.room ? "above" : "below"
         }
     }
 }
