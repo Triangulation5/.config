@@ -11,13 +11,13 @@ that turns into whatever I need, and as little else as possible.**
 
 ## Why it looks like this
 
-I moved to Linux to get away from software I didn't ask for. This is the same
-instinct applied to a desktop: one pill bar instead of a stack of panels,
-widgets and applets, and surfaces that only exist while they are open.
-Quickshell compiles a surface the first time you open it and destroys it again
-once it has been closed for its idle tier, so nothing sits resident just
-because you looked at it once. The resting target is under 200 MB, measured
-rather than hoped, with `utils/soak.py` as the routine that keeps it honest.
+I moved to Linux to get away from bloat. This is the same instinct applied to a
+desktop: one pill bar instead of a stack of panels, widgets and applets, and
+surfaces that only exist while they are open. Quickshell compiles a surface the
+first time you open it and destroys it again once it has been closed for its
+idle tier, so nothing sits resident just because you looked at it once. The
+resting target is under 200 MB, measured rather than hoped, with
+`utils/soak.py` as the routine that keeps it honest.
 
 ## What's in the repo
 
