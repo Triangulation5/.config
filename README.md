@@ -77,7 +77,7 @@ lock screen.
 
 ![The pill at rest](screenshots/02-pill.png)
 
-![The pill as the app launcher, the calendar, and the connectivity centre](screenshots/03-surfaces.png)
+![The pill as the app launcher, the calendar and the connectivity centre, over the wallpaper picker, the system monitor and the mixer](screenshots/03-surfaces.png)
 
 ## Stack
 
