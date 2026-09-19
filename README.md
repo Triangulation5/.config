@@ -1,10 +1,14 @@
+<div align="center">
+
 # Silhouette
 
-My Hyprland desktop on Fedora 44, and the config behind it. One Quickshell bar
-that turns into whatever I need, and as little else as possible.
+**My Hyprland desktop on Fedora 44, and the config behind it. One Quickshell bar
+that turns into whatever I need, and as little else as possible.**
 
 <!-- Screenshot 1 (hero): drop screenshots/01-hero.png, then uncomment the line below. -->
 <!-- ![Silhouette desktop](screenshots/01-hero.png) -->
+
+<div/>
 
 ## Why it looks like this
 
@@ -24,12 +28,12 @@ This is my `~/.config`. The parts that matter:
 | ------------------------------ | ---------------------------------------------------------------------------------- |
 | `hypr/`                        | Hyprland config: binds, monitors, env, decoration, rules, and scripts.             |
 | `quickshell/silhouette-shell/` | Custom Quickshell shell with modules, services, and utilities.                     |
-| `nvim/`, `kitty`, `etc`        | Terminal setup: Kitty, btop, cava, fastfetch, yazi, nvim, tmux, MPD, ncmpcpp, zsh. |
+| `nvim/`, `kitty/`, `etc`       | Terminal setup: Kitty, btop, cava, fastfetch, yazi, nvim, tmux, MPD, ncmpcpp, zsh. |
 | `install.sh`                   | Installation script.                                                               |
 
 ## Where the code comes from
 
-Two things I would rather say plainly than let you find out later.
+Three things I would rather say plainly than let you find out later.
 
 **The shell is built on Ricelin.**
 [Ricelin](https://github.com/Gakuseei/Ricelin) by
@@ -40,6 +44,12 @@ too. What is in this repo is that base with a lot of local work on it: reworked
 modules, my own settings app and IPC surface, extra surfaces, a different
 palette, scripts pulled apart and rebuilt. Credit for the foundation goes to
 Gakuseei.
+
+**A few pieces come from Ukishima.**
+[Ukishima](https://github.com/amanhex/ukishima) by
+[amanhex](https://github.com/amanhex) is another Quickshell shell sitting on the
+same Ricelin base: the system monitor, the dynamic-palette singleton and the
+glyph icon renderer started as its versions of those.
 
 **Not everything here is hand-written.** Parts of the shell and the scripts
 were written with AI assistance, and several features take code or ideas from
@@ -74,19 +84,17 @@ lock screen.
 
 ## Stack
 
-| Component  | Configuration                                                     |
-| ---------- | ----------------------------------------------------------------- |
-| WM         | Hyprland, configured in Lua                                       |
-| Shell UI   | Quickshell, config in `quickshell/silhouette-shell`               |
-| Terminal   | kitty                                                             |
-| Shell      | zsh                                                               |
-| Editor     | Neovim, config in Lua                                             |
-| Files      | yazi, with flavors                                                |
-| Music      | mpd + ncmpcpp, cava for the bars                                  |
-| Monitoring | btop, fastfetch                                                   |
-| Font       | JetBrainsMono Nerd Font, FiraCode Nerd Font                       |
-| GTK        | Colloid-Grey-Dark, Papirus-Dark, Bibata-Modern-Ice cursor         |
-| Colors     | palette pulled from the wallpaper by `hypr/scripts/wallcolors.py` |
+- WM: Hyprland, configured in Lua
+- Shell UI: Quickshell, config in `quickshell/silhouette-shell`
+- Terminal: kitty
+- Shell: zsh
+- Editor: Neovim, config in Lua
+- Files: yazi, with flavors
+- Music: mpd + ncmpcpp, cava for the bars
+- Monitoring: btop, fastfetch
+- Font: JetBrainsMono Nerd Font, FiraCode Nerd Font
+- GTK: Colloid-Grey-Dark, Papirus-Dark, Bibata-Modern-Ice cursor
+- Colors: palette pulled from the wallpaper by `hypr/scripts/wallcolors.py`
 
 ## Colors and the wallpaper
 
@@ -146,40 +154,41 @@ session, from a display manager or a TTY.
 
 ## Keybinds
 
-| Key                       | Action |
-| ------------------------- | --- |
-| `Super + Return`          | terminal |
-| `Super + Space`           | app launcher |
-| `Super + N`               | connectivity and notifications |
-| `Super + V`               | clipboard history |
-| `Super + C`               | close window |
-| `Super + F`               | toggle floating |
-| `Super + E`               | file manager |
-| `Super + W`               | wallpaper picker |
-| `Super + B`               | shuffle wallpaper and retheme |
-| `Super + Shift + B`       | recorder |
-| `Super + A`               | media |
-| `Super + M`               | power menu |
-| `Super + T`               | system monitor |
-| `Super + Shift + I`       | settings |
-| `Super + comma`           | settings window |
-| `Super + I`               | keybind cheat sheet |
-| `Super + O`               | lock |
+| Key                       | Action                                       |
+| ------------------------- | -------------------------------------------- |
+| `Super + Return`          | terminal                                     |
+| `Super + Space`           | app launcher                                 |
+| `Super + N`               | connectivity and notifications               |
+| `Super + V`               | clipboard history                            |
+| `Super + C`               | close window                                 |
+| `Super + F`               | toggle floating                              |
+| `Super + E`               | file manager                                 |
+| `Super + W`               | wallpaper picker                             |
+| `Super + B`               | shuffle wallpaper and retheme                |
+| `Super + Shift + B`       | recorder                                     |
+| `Super + A`               | media                                        |
+| `Super + M`               | power menu                                   |
+| `Super + T`               | system monitor                               |
+| `Super + Shift + I`       | settings                                     |
+| `Super + comma`           | settings window                              |
+| `Super + I`               | keybind cheat sheet                          |
+| `Super + O`               | lock                                         |
 | `Print`                   | [rishot](https://github.com/Gakuseei/rishot) |
-| `Super + H/J/K/L`         | focus |
-| `Super + Shift + H/J/K/L` | move window |
-| `Super + 1..0`            | workspaces |
+| `Super + H/J/K/L`         | focus                                        |
+| `Super + Shift + H/J/K/L` | move window                                  |
+| `Super + 1..0`            | workspaces                                   |
 
-The full list is in `hypr/modules/binds.lua`, and on the pill behind `Super + I`.
+The full list is in `hypr/modules/binds.lua`, and on the pill behind `Super +
+I`.
 
 ## Notes
 
-Things that are wired to my machine or my habits and will look strange anywhere
-else:
+Of course these are my personal dotfiles and there are things that are wired to
+my machine or my habits and will look strange anywhere else:
 
 - `hypr/modules/monitors.lua` carries my panel's mode and scale. The installer
   writes a portable default instead and keeps mine as `.example`.
-- The wallpaper scripts expect an `~/Pictures` collection, `awww` as the
+- The wallpaper scripts expect a `~/Pictures` collection, `awww` as the
   daemon, and `jq` for the settings handoff.
 - The shell's state, cache and wallpaper files were renamed from `ricelin`
   paths to `silhouette` ones. `hypr/scripts/migrate-state.sh` carries an older
@@ -195,6 +204,9 @@ else:
 - [Ricelin](https://github.com/Gakuseei/Ricelin) by
   [Gakuseei](https://github.com/Gakuseei) — the shell base, the pill, and the
   original scripts this started from.
+- [Ukishima](https://github.com/amanhex/ukishima) by
+  [amanhex](https://github.com/amanhex) — the system monitor, the
+  dynamic-palette singleton and the glyph icon renderer.
 - [vague.nvim](https://github.com/vague-theme/vague.nvim) — the static palette
   is a port of it, from the terminal to the yazi flavor.
 - [Ambxst](https://github.com/Axenide/Ambxst) by
