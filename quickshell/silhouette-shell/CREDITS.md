@@ -17,14 +17,14 @@ surfaces, and scripts pulled apart and rebuilt. The design language (pill, washi
 material) is kept. The static theme is a port of vague.nvim, replacing the warm
 vermilion theme Ricelin shipped.
 
-Not all of it traces to Ricelin. A few parts came from
+Not all of it traces to Ricelin. One part came from
 [Ukishima](https://github.com/amanhex/ukishima) by
 [amanhex](https://github.com/amanhex), itself a Ricelin-derived Quickshell
-shell: the system-monitor service (`services/Sysmon.qml`), the dynamic-palette
-singleton (`services/Dyn.qml`) and the vector glyph renderer
-(`components/icons/GlyphIcon.qml`) started as its versions of those. Several
-other animation and control components descend from both projects, which share
-ancestry.
+shell: the system monitor's on-demand speed test, the Cloudflare ping, download
+and upload card in `modules/pill/surfaces/SysmonSurface.qml`, was inspired by
+its version of that. The two shells share a base, so plenty of animation and
+control components look alike across them without either having taken the
+other's.
 
 Not everything here is hand-written. Parts of the shell and the scripts were
 written with AI assistance, and several features take code or ideas from the
