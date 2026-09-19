@@ -780,6 +780,15 @@ download() {
     # rest are only first-boot fallbacks.
     wpdir=$(jq -r '.wallpaperDir // ""' "$flags" 2>/dev/null || echo "")
 
+    # The flag is stored exactly as it was typed into the settings field, whose
+    # own placeholder is `~/Pictures`. The shell does not expand a tilde that
+    # arrived in a variable, so it would be read as a relative path and the
+    # download would land somewhere nobody browses.
+    case "$wpdir" in
+        "~")   wpdir="$HOME" ;;
+        "~/"*) wpdir="$HOME/${wpdir#"~/"}" ;;
+    esac
+
     [ -n "$wpdir" ] ||
     wpdir=$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir" 2>/dev/null || true)
 

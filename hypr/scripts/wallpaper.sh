@@ -16,7 +16,16 @@ RESOLVED="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir"
 # ~/Pictures is also the fallback when nothing matches, so an install with no
 # collection still has a working strip. The answer is always written out,
 # because the QML side reads it back instead of re-implementing this chain.
+# The settings field stores what was typed into it, and its own placeholder is
+# `~/Pictures`, so a leading tilde has to be expanded here. A tilde that
+# arrived through a variable is never expanded by the shell: without this the
+# folder reads as a relative path, `find` comes back empty, the bag never
+# refills and the keybind sets nothing at all.
 WPDIR=$(jq -r '.wallpaperDir // ""' "$flags_file" 2>/dev/null || echo "")
+case "$WPDIR" in
+    "~")   WPDIR="$HOME" ;;
+    "~/"*) WPDIR="$HOME/${WPDIR#"~/"}" ;;
+esac
 if [ -z "$WPDIR" ]; then
     for cand in "$HOME/Pictures" "$HOME/Pictures/rice-wallpapers" "$HOME/Pictures/Wallpapers" "$HOME/Pictures/wallpapers" "$HOME/Wallpapers" "$HOME/wallpapers"; do
         [ -d "$cand" ] || continue

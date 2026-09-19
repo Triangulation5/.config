@@ -36,6 +36,12 @@ strip shows what was just downloaded rather than a subfolder picked on its
 behalf. A folder needs two images to count, so a lone screenshot does not take
 the strip over. Picks land in whatever it resolves to, so they join the bag.
 
+The field is stored exactly as typed, so `~/Pictures` is a perfectly good value:
+a leading `~` is expanded before anything treats it as a path, in the strip and
+in each script. The folder is then walked recursively, so pointing it at
+`~/Pictures` lists the subfolders it holds as well, such as
+`~/Pictures/rice-wallpapers`.
+
 Typing while the strip is open searches the web first — Bing's image search,
 your personal GitHub wallpaper repo with the `gh:` prefix, and moewalls for
 motion. Every word of a query has to match something in the filename, in any
