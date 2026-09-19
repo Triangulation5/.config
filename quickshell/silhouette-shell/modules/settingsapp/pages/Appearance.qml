@@ -16,6 +16,9 @@ import QtQuick
  * backdrop mode sets whether it can run at all, and these three only decide how
  * far it reaches and whether it tints the shadow. Sitting in the same card read
  * as four peers, and the mode's veto on all of them was invisible.
+ *
+ * The aura ships off: the backdrop is the effect, and the bleed around the pill
+ * is an addition someone opts into, not part of the default look.
  */
 QtObject {
     readonly property string name: "Appearance"
@@ -49,7 +52,7 @@ QtObject {
         // do anything, and its own capture says so.
         { card: "Ambient aura", rows: [
             { key: "auraOn", type: "toggle", label: "Ambient aura",
-              caption: "Cover colour bleeds around the rest pill", reset: true },
+              caption: "Cover colour bleeds around the rest pill. Off by default", reset: false },
             { key: "auraStrength", type: "slider", label: "Aura strength", min: 0, max: 2, step: 0.05,
               caption: "Scales the backdrop mode's own strength — full on Bleed, a whisper on Wash",
               displayScale: 100, unit: "%", reset: 1.0 },

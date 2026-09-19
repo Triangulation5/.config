@@ -114,7 +114,7 @@ Singleton {
             property string vizStyle: "bars"
             property int vizFps: 60
             property string mediaStyle: "bleed"
-            property bool auraOn: true
+            property bool auraOn: false
             property real auraStrength: 1.0
             property bool auraShadow: true
             property bool gameMode: false

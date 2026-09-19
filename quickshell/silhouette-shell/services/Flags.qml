@@ -212,8 +212,8 @@ Singleton {
             property int vizFps: 60
             /** Now-playing card backdrop: "bleed" blurred album art over a wallpaper-derived tint, "wash" the legacy warm tint, or "none" fully transparent. */
             property string mediaStyle: "bleed"
-            /** Rest-pill ambient aura: the cover's colour bled around the pill. Off on mediaStyle "none" whatever this says. */
-            property bool auraOn: true
+            /** Rest-pill ambient aura: the cover's colour bled around the pill. Off on mediaStyle "none" whatever this says, and off by default so a fresh install gets the bare pill until it is asked for. */
+            property bool auraOn: false
             /** Multiplier on the backdrop mode's base aura opacity (bleed 0.32, wash 0.18). */
             property real auraStrength: 1.0
             /** Whether the cover's dominant colour also darkens the pill's shadow. */
