@@ -69,8 +69,20 @@ Item {
      * flight while the two are still (within a couple of px of) coincident —
      * a wider window would crossfade a clock still sliding into place and
      * read as a shimmer at the settle.
+     *
+     * The window is 0.004 of the hop rather than the 0.03 it was, because the
+     * hop is where this stops being a detail. The rest and hover heights are
+     * 41.8px and 189.2px at the shipping uiScale, so 0.03 is 4.4px of travel -
+     * and the glide rides cubic-bezier(0.16, 1, 0.30, 1), whose last 4.4px of a
+     * 147px hop take *132ms* (8 frames at 60fps). Eight frames is not a swap,
+     * it is a long crossfade in which both clocks are drawn while the hover one
+     * is still visibly short of its landing spot: two clocks a few px apart,
+     * half-faded, which is what the close was reported as - the hover clock
+     * left behind rather than travelling home. 0.004 is 0.59px, a 76ms fade,
+     * so the overlap happens with the two already on top of each other and the
+     * same easing still keeps it a fade rather than a blink.
      */
-    readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.03)); return t * t * (3 - 2 * t); }
+    readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.004)); return t * t * (3 - 2 * t); }
 
     /**
      * The media bud, tray and calendar strip ride the pill's own rest→hover
@@ -142,6 +154,7 @@ Item {
             calendarStyle.onFaceOpened()
         }
     }
+
     Component.onCompleted: {
         if (live) {
             captureClockStart()
