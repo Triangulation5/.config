@@ -197,7 +197,8 @@ my machine or my habits and will look strange anywhere else:
 - The shell's state, cache and wallpaper files were renamed from `ricelin`
   paths to `silhouette` ones. `hypr/scripts/migrate-state.sh` carries an older
   tree over, and `launch.sh` runs it before the shell starts, so a restart is
-  the whole upgrade. See the troubleshooting page if a session comes up empty.
+  the whole upgrade. `quickshell/silhouette-shell/README.md` has the recovery if a
+  session comes up empty.
 - A few features expect tools that are installed on purpose rather than by
   default: `howdy` for face unlock, `gpu-screen-recorder` for hardware-encoded
   capture, `ddcutil` for external monitor brightness. Missing one degrades that
