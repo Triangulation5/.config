@@ -36,10 +36,15 @@ Item {
     z: 20
 
     anchors.horizontalCenter: parent.horizontalCenter
-    anchors.bottom: below ? undefined : parent.top
-    anchors.bottomMargin: below ? 0 : gap
-    anchors.top: below ? parent.bottom : undefined
-    anchors.topMargin: below ? gap : 0
+    /**
+     * Placed with `y` rather than with a vertical anchor: a bound `height` on an
+     * anchored item is what left this one collapsed — under the `above`
+     * placement the anchor machinery kept the height at a negative value, so the
+     * card drew as a sliver against its own pointer. `y` gives the same two
+     * positions the anchors did (`gap` below the parent, or a whole bubble plus
+     * `gap` above it) with the height left to its own binding.
+     */
+    y: below ? parent.height + gap : -height - gap
 
     visible: armed || opacity > 0.01
     opacity: armed ? 1 : 0
@@ -62,10 +67,18 @@ Item {
     CardFill {
         id: bubble
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: root.below ? undefined : parent.top
-        anchors.bottom: root.below ? parent.bottom : undefined
+        y: root.below ? root.pointerH : 0
         width: Math.max(titleText.implicitWidth, descText.implicitWidth) + 2.3 * root.em
-        height: column.implicitHeight + 1.5 * root.em
+        /**
+         * Sized from the two texts rather than from `column.implicitHeight`:
+         * the column is centred in this card, so reading its height here closed
+         * a loop through the card's own geometry — which Qt resolved by leaving
+         * `height` at a negative value for the `above` placement, where the card
+         * then drew as a sliver. The column's spacing is the 0.3em added below.
+         */
+        height: titleText.implicitHeight
+                + (descText.visible ? descText.implicitHeight + 0.3 * root.em : 0)
+                + 1.5 * root.em
         radius: 1.15 * root.em
         border.width: 1
         border.color: Theme.frameBorder
@@ -109,8 +122,7 @@ Item {
         width: 0.95 * root.em
         height: root.pointerH
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: root.below ? parent.top : undefined
-        anchors.bottom: root.below ? undefined : parent.bottom
+        y: root.below ? 0 : root.height - root.pointerH
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
