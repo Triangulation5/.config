@@ -38,7 +38,19 @@ ColumnLayout {
      * the pointer while it sat on the switch or the chips, never on the row.
      */
     data: HoverHandler {
-        onHoveredChanged: hovered ? Hint.enter(root, root.caption) : Hint.leave(root)
+        id: rowHover
+
+        /**
+         * The pointer in scene coordinates: the bubble centres on the cursor,
+         * and a row knows nothing of the hint layer that draws it.
+         */
+        function spot() {
+            return root.mapToItem(null, rowHover.point.position.x, rowHover.point.position.y);
+        }
+
+        onHoveredChanged: hovered ? Hint.enter(root, root.caption, spot()) : Hint.leave(root)
+        /** Reported on every move, so the bubble follows the cursor across the row. */
+        onPointChanged: if (hovered) Hint.move(root, spot())
     }
 
     /** The control beside the text block: a switch, chips, a value, a field. */

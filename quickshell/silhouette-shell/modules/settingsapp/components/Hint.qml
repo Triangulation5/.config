@@ -16,11 +16,11 @@ import QtQuick
  * is the text the rail's search matches a row by. It is now shown when the row
  * is hovered, by one bubble shared by the whole window instead of one per row.
  *
- * This singleton is the bus between the two halves: a row reports its hover and
- * its caption here (see SettingRow), and the content area's hint layer shows it
- * through the shell's own `Tooltip` (see HintLayer). Keeping that state off the
- * rows is what makes one bubble enough — and what keeps a page of forty-five
- * rows from paying for forty-five tooltips.
+ * This singleton is the bus between the two halves: a row reports its hover, its
+ * caption and the pointer's position here (see SettingRow), and the content
+ * area's hint layer shows it through the shell's own `Tooltip` (see HintLayer).
+ * Keeping that state off the rows is what makes one bubble enough — and what
+ * keeps a page of forty-five rows from paying for forty-five tooltips.
  */
 QtObject {
     id: hint
@@ -31,8 +31,16 @@ QtObject {
      */
     property string text: ""
 
-    /** The hovered row: its rect anchors the bubble. */
+    /** The hovered row, as the identity token `leave` checks an older signal against. */
     property var anchor: null
+
+    /**
+     * The pointer itself, in scene coordinates, so the bubble can centre on the
+     * cursor instead of on the row's middle. Like `text` it is left standing
+     * when the pointer leaves, which is what lets the bubble fade out where the
+     * cursor was rather than jumping to a corner.
+     */
+    property point pointer: Qt.point(0, 0)
 
     /** True while a row with a caption is hovered. */
     property bool hovering: false
@@ -45,14 +53,22 @@ QtObject {
      */
     property bool used: false
 
-    /** A row's pointer arrived. Rows without a caption are ignored. */
-    function enter(row, caption) {
+    /** A row's pointer arrived, at `spot` in scene coordinates. Rows without a caption are ignored. */
+    function enter(row, caption, spot) {
         if (!caption || caption.length === 0)
             return;
         hint.anchor = row;
         hint.text = caption;
+        hint.pointer = spot;
         hint.hovering = true;
         hint.used = true;
+    }
+
+    /** The pointer moved within the hovered row: the bubble rides the cursor. */
+    function move(row, spot) {
+        if (hint.anchor !== row)
+            return;
+        hint.pointer = spot;
     }
 
     /**
