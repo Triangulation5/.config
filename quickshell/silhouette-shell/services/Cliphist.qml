@@ -205,6 +205,17 @@ Singleton {
                     listRetry.restart();
                 } else {
                     root.listFailures = 0;
+                    /**
+                     * Retry exhausted. A machine that has never stored anything
+                     * has no cliphist db at all, and `list` exits 1 for that
+                     * instead of returning an empty list — a failure that never
+                     * heals, which left `loaded` false forever and the surface
+                     * showing a blank panel where its empty state belongs. Only
+                     * applied when there is no snapshot to protect: a history
+                     * that loaded once is never wiped by a bad read.
+                     */
+                    if (!root.loaded)
+                        root.applyList("");
                 }
                 return;
             }
