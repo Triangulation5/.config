@@ -10,6 +10,11 @@ import qs.components.layout
  * The host sets `show` from the control's own HoverHandler; the bubble arms
  * after a hover delay, fades in slowly and out fast.
  *
+ * Game mode squares the card off, the flattening the pill's own body takes (see
+ * Pill): the rounding is multiplied by a 0/1 factor that is animated over the
+ * morph beat rather than switched with the flag, because game mode's switch is a
+ * chip in the mixer and this bubble is the one on screen when it is flipped.
+ *
  * Non-interactive by design: no MouseArea or HoverHandler lives here, so it
  * never steals pointer events from the controls or the mixer's hover tracker.
  * It is `visible: false` whenever fully faded, for the same reason.
@@ -79,7 +84,23 @@ Item {
         height: titleText.implicitHeight
                 + (descText.visible ? descText.implicitHeight + 0.3 * root.em : 0)
                 + 1.5 * root.em
-        radius: 1.15 * root.em
+        /**
+         * Game mode squares the card off: full radius at rest, none while the
+         * flag is on, reached over the morph beat rather than on the frame the
+         * flag flips — the same 0/1 factor and curve the pill's body uses to
+         * flatten its own corners, so the two collapse together.
+         */
+        property real gameFlat: Flags.gameMode ? 1 : 0
+
+        Behavior on gameFlat {
+            NumberAnimation {
+                duration: Motion.morph
+                easing.type: Motion.easeMorph
+                easing.bezierCurve: Motion.morphCurve
+            }
+        }
+
+        radius: 1.15 * root.em * (1 - gameFlat)
         border.width: 1
         border.color: Theme.frameBorder
 
