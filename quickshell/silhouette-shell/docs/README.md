@@ -67,8 +67,8 @@ features take code or ideas from other Quickshell projects. See
 This shell is built on [Ricelin](https://github.com/Gakuseei/Ricelin) by
 [Gakuseei](https://github.com/Gakuseei). The pill concept, the original shell
 base and the custom scripts this config started from are theirs, so all credit
-for the base code goes to the original author. The system monitor, the
-dynamic-palette singleton and the glyph icon renderer come from
+for the base code goes to the original author. The system monitor's ping and
+network speed test takes its cue from
 [Ukishima](https://github.com/amanhex/ukishima) by
 [amanhex](https://github.com/amanhex), another shell on the same base. The
 static theme ports
