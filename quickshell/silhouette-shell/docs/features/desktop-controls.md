@@ -23,7 +23,7 @@ flows, so every search in the shell behaves the same way.
 ## AppImage installer
 
 Drag an AppImage onto the pill to install it. The shell moves it into place,
-registers it with the launcher and marks it with a `ricelin-` id prefix so
+registers it with the launcher and marks it with a `silhouette-` id prefix so
 installed AppImages can be told apart from system entries. The same prefix
 lets the launcher offer uninstall and rename actions on those entries.
 

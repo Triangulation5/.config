@@ -34,7 +34,7 @@ the "No authentication agent found" failure that pkexec hit before.
    PillRoot morphs the pill into the authorize face, and PAM prompts from
    the helper are relayed to it.
 5. Submitting writes the password (or CANCEL) to
-   `$XDG_RUNTIME_DIR/ricelin-polkit/response` — a user-only file the agent
+   `$XDG_RUNTIME_DIR/silhouette-polkit/response` — a user-only file the agent
    reads and deletes within milliseconds, forwarding it to the helper.
 6. On success the helper itself calls `AuthenticationAgentResponse2` on
    polkitd, then prints SUCCESS; the agent replies to the held

@@ -41,7 +41,7 @@ import time
 HOME = os.path.expanduser("~")
 SHELL_PATH = os.environ.get("SHELL_PATH", os.path.join(HOME, ".config/quickshell/silhouette-shell/"))
 IPC = os.environ.get("QS_IPC", "qs -c silhouette-shell ipc call").split()
-LOG_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local/state")), "ricelin")
+LOG_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local/state")), "silhouette")
 
 # Surfaces whose open has real side effects or needs external state — excluded
 # from the default cycle. Recorder/updates/polkit/call need live conditions.

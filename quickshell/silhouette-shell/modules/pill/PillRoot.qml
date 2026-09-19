@@ -95,7 +95,7 @@ ShellRoot {
     Process {
         id: updatedToast
         command: ["sh", "-c",
-            "m=\"${XDG_STATE_HOME:-$HOME/.local/state}/ricelin/updated\"; [ -f \"$m\" ] || exit 0; "
+            "m=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/updated\"; [ -f \"$m\" ] || exit 0; "
             + "b=$(cat \"$m\"); rm -f \"$m\"; "
             + "gdbus call --session --dest org.freedesktop.Notifications "
             + "--object-path /org/freedesktop/Notifications "

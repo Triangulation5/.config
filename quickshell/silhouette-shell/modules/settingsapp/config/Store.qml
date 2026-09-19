@@ -6,7 +6,7 @@ import Quickshell.Io
 
 /**
  * The settings app's view of the shell's flags: read/write of the shell's
- * own state file (~/.local/state/ricelin/flags.json) - the same file the
+ * own state file (~/.local/state/silhouette/flags.json) - the same file the
  * shell's Flags service watches (watchChanges + onFileChanged: reload), so
  * a change here is picked up by the live shell instantly: no reload, no
  * IPC. The JsonAdapter mirrors the shell's schema exactly - every property
@@ -59,7 +59,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/flags.json"
+        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/flags.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

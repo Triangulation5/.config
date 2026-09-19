@@ -7,22 +7,22 @@ A backup is the two things this shell owns:
 
   ~/.config/quickshell/silhouette-shell   the shell itself: every surface, the
                                           settings app and these helpers
-  ~/.local/state/ricelin/flags.json       the flags every page edits
-  ~/.local/state/ricelin/events.json      the calendar events service holds
-  ~/.local/state/ricelin-wallpaper        the chosen wallpaper's path
+  ~/.local/state/silhouette/flags.json       the flags every page edits
+  ~/.local/state/silhouette/events.json      the calendar events service holds
+  ~/.local/state/silhouette-wallpaper        the chosen wallpaper's path
 
 It is deliberately *not* a backup of the Hyprland config the shell is built
 around: those files live in `~/.config/hypr`, this script is not their owner, and
 the settings app already writes each of them through its own service.
 
-Archives land in `~/.local/state/ricelin/backups/`, one timestamped tarball each,
+Archives land in `~/.local/state/silhouette/backups/`, one timestamped tarball each,
 named `silhouette-YYYY-MM-DDTHH-MM-SS.tar.gz` so the directory sorts
 oldest-first. Inside, the members are fixed names — `silhouette-shell/`,
-`flags.json`, `events.json`, `ricelin-wallpaper` — and not the paths they came
+`flags.json`, `events.json`, `silhouette-wallpaper` — and not the paths they came
 from, so an archive restores into whatever those paths are on the machine
 reading it.
 
-Contract: one JSON object on stdout per run, the shape `scripts/ricelin-update.py`
+Contract: one JSON object on stdout per run, the shape `scripts/silhouette-update.py`
 already answers with (`status`, and `error` when it is not "ok").
 
   backup.py create         -> { status, name, path, bytes, files, created }
@@ -36,9 +36,9 @@ is missing, but never deletes a file that arrived after the backup was taken —
 restoring an old snapshot cannot take a newer file with it.
 
 Env knobs, each also a flag so an audit can run against a scratch tree:
-  RICELIN_SHELL_DIR    the shell tree       (--shell)
-  RICELIN_BACKUP_DIR   where archives land  (--dir)
-  RICELIN_STATE_DIR    the shell's state    (--state)
+  SILHOUETTE_SHELL_DIR    the shell tree       (--shell)
+  SILHOUETTE_BACKUP_DIR   where archives land  (--dir)
+  SILHOUETTE_STATE_DIR    the shell's state    (--state)
 """
 
 import argparse
@@ -59,8 +59,11 @@ HOME = os.path.expanduser("~")
 SHELL_MEMBER = "silhouette-shell"
 FLAG_MEMBER = "flags.json"
 EVENT_MEMBER = "events.json"
-WALLPAPER_MEMBER = "ricelin-wallpaper"
-STATE_MEMBERS = (FLAG_MEMBER, EVENT_MEMBER, WALLPAPER_MEMBER)
+WALLPAPER_MEMBER = "silhouette-wallpaper"
+# What the wallpaper member was called before the paths were renamed.
+# `inside()` has to accept it so archives written back then still restore.
+LEGACY_WALLPAPER_MEMBER = "ricelin-wallpaper"
+STATE_MEMBERS = (FLAG_MEMBER, EVENT_MEMBER, WALLPAPER_MEMBER, LEGACY_WALLPAPER_MEMBER)
 
 PREFIX = "silhouette-"
 SUFFIX = ".tar.gz"
@@ -85,9 +88,9 @@ def error(message):
 
 
 def state_dir():
-    return os.environ.get("RICELIN_STATE_DIR") or os.path.join(
+    return os.environ.get("SILHOUETTE_STATE_DIR") or os.path.join(
         os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local", "state"),
-        "ricelin",
+        "silhouette",
     )
 
 
@@ -95,10 +98,10 @@ def defaults():
     """Where the shell and its state are, unless the caller says otherwise."""
     state = state_dir()
     return {
-        "shell": os.environ.get("RICELIN_SHELL_DIR")
+        "shell": os.environ.get("SILHOUETTE_SHELL_DIR")
         or os.path.join(HOME, ".config", "quickshell", "silhouette-shell"),
         "state": state,
-        "dir": os.environ.get("RICELIN_BACKUP_DIR")
+        "dir": os.environ.get("SILHOUETTE_BACKUP_DIR")
         or os.path.join(state, "backups"),
     }
 
@@ -108,7 +111,7 @@ def state_files(state):
 
     The state is not quite one directory — the flags and the calendar's events
     sit in the state directory itself, and the chosen wallpaper's path beside it
-    in `ricelin-wallpaper` — so the two halves of this mapping are kept together
+    in `silhouette-wallpaper` — so the two halves of this mapping are kept together
     here rather than assumed at each end.
     """
     beside = os.path.dirname(state)
@@ -242,7 +245,7 @@ def copy_over(source, target):
 
 def restore(args, archive, name):
     """Put an archive's contents back where the shell reads them from."""
-    staging = tempfile.mkdtemp(prefix="ricelin-restore-")
+    staging = tempfile.mkdtemp(prefix="silhouette-restore-")
     try:
         with tarfile.open(archive) as tar:
             strange = [entry.name for entry in tar.getmembers() if not inside(entry)]
@@ -259,6 +262,10 @@ def restore(args, archive, name):
         flags = False
         for member, target in state_files(os.path.abspath(args.state)):
             source = os.path.join(staging, member)
+            if not os.path.isfile(source) and member == WALLPAPER_MEMBER:
+                # An archive from before the rename spells this member
+                # `ricelin-wallpaper`; it still restores.
+                source = os.path.join(staging, LEGACY_WALLPAPER_MEMBER)
             if not os.path.isfile(source):
                 continue
             os.makedirs(os.path.dirname(target), exist_ok=True)

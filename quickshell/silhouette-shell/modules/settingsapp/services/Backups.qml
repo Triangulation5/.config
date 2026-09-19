@@ -9,13 +9,13 @@ import qs.modules.settingsapp.services
  * The shell's own config as a thing you can snapshot and put back: the tree in
  * `~/.config/quickshell/silhouette-shell` and the state it keeps beside the flags
  * (`flags.json`, the calendar's `events.json`, the chosen wallpaper), recorded
- * together in a timestamped tarball under `~/.local/state/ricelin/backups`.
+ * together in a timestamped tarball under `~/.local/state/silhouette/backups`.
  *
  * The work is a script (`utils/backup.py`, named by Paths) rather than QML: a
  * tree copy, a directory read and an extraction are all things QML has no
  * primitive for, and the command line that did them inline would be a parser of
  * its own. It is also the shape this app already drives — the Updates page runs
- * `ricelin-update.py` and reads one JSON object back — so the two pages are the
+ * `silhouette-update.py` and reads one JSON object back — so the two pages are the
  * same kind of thing: a script that owns the hard part, and a service that reads
  * its `status` and keeps the result.
  *

@@ -6,7 +6,7 @@ import Quickshell.Io
 
 /**
  * The shell's generated palette, read from the file the shell's own Dyn service
- * watches: `${XDG_CACHE_HOME:-$HOME/.cache}/ricelin/colors.json`, which
+ * watches: `${XDG_CACHE_HOME:-$HOME/.cache}/silhouette/colors.json`, which
  * `wallcolors.py` rewrites on every wallpaper change and on every manual hue. The
  * app reads the file rather than asking the shell for the colours because the two
  * are separate Quickshell instances — the file is the only thing they share.
@@ -29,7 +29,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ricelin/colors.json"
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/silhouette/colors.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

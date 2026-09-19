@@ -2,24 +2,23 @@
 
 set -euo pipefail
 
-flags_file="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin/flags.json"
-RESOLVED="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin-wallpaper-dir"
+flags_file="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
+RESOLVED="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir"
 
 # One folder resolution shared by every wallpaper front end (this script, the
 # thumbnail builder and the strip through the resolved-dir state file), first
-# hit wins: an explicit `wallpaperDir` from the settings app, then an existing
-# collection in the usual spots when it is blank, then ~/Pictures. The rice
-# collection comes first because that is where this shell's own picks have
-# always landed, so a first run adopts it instead of scattering downloads
-# beside Camera and Screenshots. Autodetect is deliberately hard to trip: two
-# or more images make a collection, a single stray picture does not, so one
-# incidental screenshot never hijacks the folder. ~/Pictures is the fallback
-# when nothing matches, so an install with no collection still has a working
-# strip. The answer is always written out, because the QML side reads it back
-# instead of re-implementing this chain.
+# hit wins: an explicit `wallpaperDir` from the settings app, then ~/Pictures,
+# then a collection in the usual spots when neither is set. ~/Pictures leads
+# because that is where a wallpaper actually lands, so the strip shows what was
+# just downloaded rather than a subfolder picked on its behalf. Autodetect is
+# deliberately hard to trip: two or more images make a collection, a single
+# stray picture does not, so one incidental screenshot never hijacks the folder.
+# ~/Pictures is also the fallback when nothing matches, so an install with no
+# collection still has a working strip. The answer is always written out,
+# because the QML side reads it back instead of re-implementing this chain.
 WPDIR=$(jq -r '.wallpaperDir // ""' "$flags_file" 2>/dev/null || echo "")
 if [ -z "$WPDIR" ]; then
-    for cand in "$HOME/Pictures/rice-wallpapers" "$HOME/Pictures/Wallpapers" "$HOME/Pictures/wallpapers" "$HOME/Wallpapers" "$HOME/wallpapers"; do
+    for cand in "$HOME/Pictures" "$HOME/Pictures/rice-wallpapers" "$HOME/Pictures/Wallpapers" "$HOME/Pictures/wallpapers" "$HOME/Wallpapers" "$HOME/wallpapers"; do
         [ -d "$cand" ] || continue
         n=$(find "$cand" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.png' \) | awk 'NR<=2' | wc -l)
         if [ "$n" -ge 2 ]; then
@@ -39,8 +38,8 @@ if [ "${1:-}" = "resolve" ]; then
     exit 0
 fi
 
-STATE="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin-wallpaper"
-BAG="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin-wallpaper-bag"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper"
+BAG="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-bag"
 
 ensure_daemon() {
     awww query >/dev/null 2>&1 && return 0

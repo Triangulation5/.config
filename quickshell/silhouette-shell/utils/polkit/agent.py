@@ -6,7 +6,7 @@ authentication agent, so when any app needs admin rights the prompt lands on
 the pill instead of a system dialog. The agent relays the request to the shell
 with `qs ipc call polkit prompt ...`; the shell morphs the pill into an
 authorize face, and the answer comes back through a file in
-`$XDG_RUNTIME_DIR/ricelin-polkit/response` (the password, or the literal
+`$XDG_RUNTIME_DIR/silhouette-polkit/response` (the password, or the literal
 CANCEL).
 
 How the password reaches polkitd (polkit >= 125): it never crosses D-Bus. The
@@ -39,10 +39,10 @@ import dbus.service
 from gi.repository import GLib
 
 RUNTIME = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
-BASE = os.path.join(RUNTIME, "ricelin-polkit")
+BASE = os.path.join(RUNTIME, "silhouette-polkit")
 RESP_FILE = os.path.join(BASE, "response")
 
-AGENT_PATH = "/org/ricelin/PolkitAgent"
+AGENT_PATH = "/org/silhouette/PolkitAgent"
 AUTHORITY_NAME = "org.freedesktop.PolicyKit1"
 AUTHORITY_PATH = "/org/freedesktop/PolicyKit1/Authority"
 IFACE = "org.freedesktop.PolicyKit1.AuthenticationAgent"

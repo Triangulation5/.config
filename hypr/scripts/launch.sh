@@ -33,6 +33,15 @@ if [ ! -f "$shell_dir/shell.qml" ]; then
     exit 1
 fi
 
+# Carry any state written under the old `ricelin` names over to the `silhouette`
+# ones, once. Idempotent, so running it on every launch is the point rather than
+# a waste: the session that follows the rename is the one that needs it. Failure
+# is not fatal - the shell comes up with defaults instead of old settings.
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+if [ -f "$scripts_dir/migrate-state.sh" ]; then
+    sh "$scripts_dir/migrate-state.sh" || true
+fi
+
 # `qs` first, not `quickshell`: pkill/pgrep patterns elsewhere (reload.sh's
 # `pkill qs`, leak-probe.sh) match the executable name, which the kernel takes
 # from the path actually exec'd. Both names point at the same binary here.

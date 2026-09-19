@@ -27,7 +27,7 @@ ShellRoot {
      */
     FileView {
         id: usageStore
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/launcher-usage.json"
+        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/launcher-usage.json"
         atomicWrites: true
         printErrors: false
         onLoaded: parseUsage(usageStore.text())

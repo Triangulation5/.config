@@ -27,7 +27,7 @@ import Quickshell
  *                    on this config — see Spaces.
  *
  * And one file outside the config tree, because it is a script rather than a
- * config: scripts/ricelin-update.py, the updater the Updates page drives.
+ * config: scripts/silhouette-update.py, the updater the Updates page drives.
  *
  * The second half of this file is the app's other subject: the shell's *own*
  * files. The Backups page records and puts back the shell tree and the state it
@@ -37,11 +37,11 @@ import Quickshell
  */
 QtObject {
     /**
-     * The Hyprland config tree. `RICELIN_HYPR_DIR` overrides it for a config
+     * The Hyprland config tree. `SILHOUETTE_HYPR_DIR` overrides it for a config
      * that lives outside `~/.config/hypr` — and for an audit run that must not
      * touch the real one.
      */
-    readonly property string hypr: Quickshell.env("RICELIN_HYPR_DIR") || (Quickshell.env("HOME") + "/.config/hypr")
+    readonly property string hypr: Quickshell.env("SILHOUETTE_HYPR_DIR") || (Quickshell.env("HOME") + "/.config/hypr")
     readonly property string modules: hypr + "/modules"
 
     /** Gaps, rounding, border, blur, shadow, opacity and the animations table. */
@@ -65,23 +65,23 @@ QtObject {
      * `apply` or `apply-minimal` — and prints one JSON object; what it updates is
      * the distribution's packages, not this rice (see Updates).
      */
-    readonly property string updater: scripts + "/ricelin-update.py"
+    readonly property string updater: scripts + "/silhouette-update.py"
 
     /**
      * The shell's own tree — the config this app is a module of, and the first
-     * thing a backup holds. `RICELIN_SHELL_DIR` overrides it, the same way
-     * `RICELIN_HYPR_DIR` overrides the compositor's config.
+     * thing a backup holds. `SILHOUETTE_SHELL_DIR` overrides it, the same way
+     * `SILHOUETTE_HYPR_DIR` overrides the compositor's config.
      */
-    readonly property string shell: Quickshell.env("RICELIN_SHELL_DIR") || (Quickshell.env("HOME") + "/.config/quickshell/silhouette-shell")
+    readonly property string shell: Quickshell.env("SILHOUETTE_SHELL_DIR") || (Quickshell.env("HOME") + "/.config/quickshell/silhouette-shell")
 
     /**
-     * The shell's user state (`~/.local/state/ricelin`): the flags every page
+     * The shell's user state (`~/.local/state/silhouette`): the flags every page
      * edits, the calendar events, the chosen wallpaper's path. A backup takes
      * the files in here that exist; nothing else in the directory is the
      * shell's, which is why the page lists them by name rather than archiving
      * the directory (see Backups).
      */
-    readonly property string state: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin"
+    readonly property string state: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette"
     readonly property string flags: state + "/flags.json"
 
     /** Where the Backups page's archives live, one timestamped tarball each. */

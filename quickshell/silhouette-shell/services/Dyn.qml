@@ -35,7 +35,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ricelin/colors.json"
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/silhouette/colors.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
