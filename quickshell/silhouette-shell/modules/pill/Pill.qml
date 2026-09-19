@@ -133,13 +133,15 @@ Item {
     readonly property bool hasMedia: Players.has
 
     /**
-     * True once the idle cleaner has reclaimed the hover media bud: the bud's
-     * Loader drops it so an idle iGPU isn't paying for a full Media widget
-     * (player lookups, cover art) nobody can see. A plain flag, never a write
-     * to the Loader's own `active` — assigning that would destroy its
-     * `active: hasMedia` binding outright and the bud could never return.
-     * Cleared when the media source changes and when hover mode begins, so the
-     * bud rebuilds exactly when it is about to be looked at.
+     * True once the bud has been closed from the media surface: the card then
+     * stops claiming hover space until a new source plays or hover mode begins.
+     * A plain flag, never a write to the Loader's own `active` — assigning that
+     * would destroy its `active: hasMedia` binding outright and the bud could
+     * never return.
+     *
+     * This is not an idle reclaim. The cleaner used to set it too, and no longer
+     * does: the bud feeds the hover row's implicitWidth, so rebuilding it on the
+     * next hover re-cut the row mid-morph. See the note in `_cleanupIdleSurfaces`.
      */
     property bool mediaBudIdle: false
 
@@ -439,19 +441,22 @@ Item {
                 ld.active = false;
         }
         /**
-         * The hover media bud stays loaded while a media source exists (playing
-         * or paused), even with the pill at rest and the bud off-screen. Reclaim
-         * it once it has been out of hover mode for the idle timeout so an idle
-         * iGPU isn't paying for a full Media widget (player lookups, cover art)
-         * that nobody can see.
-         * The media timestamp is only stamped by the full media surface, never
-         * by the bud itself, so a bud that is only ever seen on hover is simply
-         * reclaimed sooner — harmless, since it rebuilds on the next media
-         * toggle. The visible bud is never touched: this only fires when the
-         * pill is out of hover mode.
+         * The hover media bud stays loaded for as long as a media source exists
+         * (playing or paused), even at rest with the bud off-screen. It is the
+         * one thing this sweep deliberately leaves alone, because reclaiming it
+         * costs more than the widget it frees.
+         *
+         * The bud is a child of hoverRow, and the pill's hover width is derived
+         * from that row's implicitWidth (`hoverW` above), so dropping the bud
+         * moves the hover target and re-lays out the row. Rebuilt on the next
+         * hover - the Loader is asynchronous, so the build lands a few frames
+         * into the morph - that shows up as the pill re-targeting its width and
+         * the row re-cutting itself underneath the clock's flight, which is the
+         * "clock comes in from the wrong place" hitch, and it lands on the
+         * first hover after an idle spell every time and never again until the
+         * next one. A Media widget kept for as long as something is loaded, and
+         * only while something is loaded, is the cheaper side of that.
          */
-        if (pill.hasMedia && !pill.mediaBudIdle && pill.mode !== "hover" && now - (pill._surfaceLastOpened["media"] || 0) >= pill.unloadS * 1000)
-            pill.mediaBudIdle = true;
     }
 
     /**
