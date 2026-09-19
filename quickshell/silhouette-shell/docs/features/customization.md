@@ -29,9 +29,12 @@ you can keep trying picks.
 
 Which directory is one resolved folder, shared by the strip, the thumbnail
 builder, the shuffle bag and the search downloader: the Folder field in
-settings if it is set, otherwise an existing collection in one of the usual
-spots (~/Pictures/rice-wallpapers, ~/Pictures/Wallpapers, …), otherwise
-~/Pictures. Picks land in whatever it resolves to, so they join the bag.
+settings if it is set, otherwise ~/Pictures, otherwise an existing collection
+in one of the usual spots (~/Pictures/rice-wallpapers, ~/Pictures/Wallpapers,
+…). ~/Pictures leads because that is where a wallpaper actually lands, so the
+strip shows what was just downloaded rather than a subfolder picked on its
+behalf. A folder needs two images to count, so a lone screenshot does not take
+the strip over. Picks land in whatever it resolves to, so they join the bag.
 
 Typing while the strip is open searches the web first — Bing's image search,
 your personal GitHub wallpaper repo with the `gh:` prefix, and moewalls for
