@@ -89,6 +89,26 @@ Item {
     readonly property real trayMorph: { var t = Math.max(0, Math.min(1, (clockHop - 0.64) / 0.36)); return 1 - Math.pow(1 - t, 2.2); }
 
     /**
+     * Zero for every part of the face the moment anything other than the hover
+     * face and the rest pill owns the pill: an open surface, the OSD, a toast,
+     * the quick-record chooser, game mode. The exit for those is a quick fade
+     * of the *container*, and a fade still shows what is inside it - the clock,
+     * the dates, the tray and the minimized row were all still at full strength
+     * underneath, so opening a surface read as the hover face flashing over the
+     * surface arriving in its place. The media bud has carried this guard on its
+     * own (`* (host.surfaceOpen ? 0 : 1)`) since the same flash showed up there
+     * as a second copy of the now-playing card; this is that guard for the rest
+     * of the face.
+     *
+     * The rest<->hover pair is deliberately left out: the face has to stay up
+     * through that collapse so the clock can fly back into the rest clock, and
+     * the close path is unaffected either way, because by then the surface is
+     * already gone (`surfaceOpen` false, mode back to hover or rest) and
+     * faceArrive crossfades the whole face against the dissolving surface.
+     */
+    readonly property real faceHush: (host.mode === "hover" || host.mode === "rest") ? 1 : 0
+
+    /**
      * The rest clock's centre, captured once the moment hover mode begins
      * (while the pill is still at rest geometry) so the flight is a clean
      * straight line instead of chasing a live mapToItem mid-morph — the old
@@ -195,7 +215,7 @@ Item {
 
             spacing: 12 * host.s
 
-            opacity: face.mediaMorph
+            opacity: face.mediaMorph * face.faceHush
 
             transform: Translate {
                 x: 56 * host.s * (1 - face.mediaMorph)
@@ -209,14 +229,15 @@ Item {
                 x: -72 * host.s * (1 - face.mediaMorph)
 
                 /**
-                 * Drops the bud the instant any surface opens, before the
-                 * hover face's own fade finishes, so the incoming surface
-                 * never fades in over a second copy of the now-playing card.
-                 * The close path is handled by faceArrive's crossfade above,
-                 * which holds the whole hover face (bud included) until the
-                 * closing surface has dissolved.
+                 * The bud rides the face's shared hush (faceHush) rather than a
+                 * guard of its own: it drops the instant a surface opens,
+                 * before the hover face's own fade finishes, so the incoming
+                 * surface never fades in over a second copy of the now-playing
+                 * card. The close path is handled by faceArrive's crossfade
+                 * above, which holds the whole hover face (bud included) until
+                 * the closing surface has dissolved.
                  */
-                opacity: face.mediaMorph * (host.surfaceOpen ? 0 : 1)
+                opacity: face.mediaMorph * face.faceHush
                 scale: 0.78 + 0.22 * face.mediaMorph
 
                 /**
@@ -291,7 +312,7 @@ Item {
                 s: host.s
 
                 visible: Downloads.active
-                opacity: face.mediaMorph
+                opacity: face.mediaMorph * face.faceHush
                 scale: 0.9 + 0.1 * face.mediaMorph
             }
 
@@ -306,7 +327,7 @@ Item {
                 enabled: face.live
                 visible: count > 0
 
-                opacity: face.trayMorph
+                opacity: face.trayMorph * face.faceHush
                 scale: 0.9 + 0.1 * face.trayMorph
 
                 faceActive: host.faceFocus >= 0 && host.faceFocus < host.faceCount
@@ -319,7 +340,7 @@ Item {
                 width: 1
                 height: 14 * host.s
                 color: Theme.hair
-                opacity: 0.7 * face.trayMorph
+                opacity: 0.7 * face.trayMorph * face.faceHush
             }
 
             Tray {
@@ -331,7 +352,7 @@ Item {
 
                 enabled: face.live
 
-                opacity: face.trayMorph
+                opacity: face.trayMorph * face.faceHush
                 scale: 0.9 + 0.1 * face.trayMorph
 
                 faceActive: host.faceFocus >= 0 && host.faceFocus < host.faceCount
@@ -388,7 +409,7 @@ Item {
                         font.weight: Font.DemiBold
                         font.features: { "tnum": 1 }
 
-                        opacity: face.clockHandoff
+                        opacity: face.clockHandoff * face.faceHush
                         /** 18px rest clock scaled up to 28px, tracking the pill's hop. */
                         scale: (18 / 28) + (1 - 18 / 28) * face.clockMorph
                     }
@@ -409,7 +430,7 @@ Item {
                     onOpenCalendar: (date) => host.openCalendarAt(date)
 
                     scale: host.s
-                    opacity: face.calendarMorph
+                    opacity: face.calendarMorph * face.faceHush
                 }
             }
 
