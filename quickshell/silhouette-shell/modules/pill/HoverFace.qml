@@ -155,6 +155,22 @@ Item {
         }
     }
 
+    /**
+     * Re-aim the flight while the clock is being handed back. The capture above
+     * is a single measurement taken at hover start, so it is only exact while
+     * nothing moves the rest clock in the meantime - and one thing does: the
+     * rest clock's `clockSlide` steps it sideways by ~14px whenever the
+     * visualizer's audio-active state flips, and it animates over 160ms. Land
+     * that inside the hop and the flight aims at where the clock used to be,
+     * so the handoff crossfades two clocks a wide gap apart. Re-measuring each
+     * frame of the give-back keeps the endpoint exact by construction.
+     *
+     * Only while mode is rest: that is the give-back, and re-measuring there is
+     * harmless on the way out because (1 - clockMorph) weights a fresh capture
+     * at nearly zero while the clock is still up at the hover end, so nothing
+     * jumps. The hover entrance is left alone entirely.
+     */
+    onClockMorphChanged: if (host.hoverHop && host.mode === "rest") captureClockStart()
     Component.onCompleted: {
         if (live) {
             captureClockStart()
