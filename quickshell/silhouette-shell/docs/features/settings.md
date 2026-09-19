@@ -14,7 +14,7 @@
 
 ## Quick settings index
 
-The pill's settings menu (the cog) is the category hub, rebranded Quick
+The pill's settings menu (the cog) is the category hub, a reworked Quick
 Settings (速). It keeps the original group-and-morph browsing: rows for
 Appearance, Look, Display, Input, Animation, Keybinds, Workspaces, Idle/Lock
 and Updates, arrow keys moving the glowing seam and Return opening the
@@ -45,6 +45,13 @@ workspace rule assignment. See [Display & Hardware](display-hardware.md).
 The check/apply engine lives in a singleton so the state survives surface
 churn. The surface is pure presentation on top of it. Applying pulls the
 latest config, relaunches the shell and raises a toast naming what landed.
+
+The engine itself is `hypr/scripts/rice-update.py`, which prints one JSON object
+per run: how far behind the install is, the changelog, the files whose local
+edits clash with upstream, and then the apply result. Local edits survive an
+update unless they are explicitly handed to upstream. The settings app has a
+second Updates page for the distribution's packages, driven by
+`silhouette-update.py` — see [settingsapp/README.md](../../modules/settingsapp/README.md).
 
 ## Shell tuning
 
@@ -80,7 +87,7 @@ numbers themselves.
 The settings window can also *record* the shell's own config rather than edit it:
 the tree in `~/.config/quickshell/silhouette-shell` and the state the shell keeps
 beside the flags (the flags, the calendar's events, the chosen wallpaper) go into
-one timestamped archive under `~/.local/state/ricelin/backups/`, and any of those
+one timestamped archive under `~/.local/state/silhouette/backups/`, and any of those
 archives can be put back — the running shell reloads what it watches, so a restore
 lands without a restart. The work is `utils/backup.py`; the page is
 `modules/settingsapp/`'s own (see its README for the contract and the safety
