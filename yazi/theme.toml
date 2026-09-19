@@ -4,14 +4,8 @@ light = "flexoki-dark"
 
 # Installed themes:
 
-# ayu-dark
-# catppuccin-frappe
-# everforest-medium
 # flexoki-dark
-# kanagawa
-# rose-pine-dawn
-# rose-pine-moon
-# rose-pine
+# vague
 
 # SECTION SEPARATORS
 # These separate entire statusline sections (e.g. lualine_a, lualine_b, etc.)
@@ -35,8 +29,7 @@ light = "flexoki-dark"
 #         |        | None                      | Flat style — no visual break
 #   ─     |  ─     | Flat Dash                 | Neutral divider
 #   ·     |  ·     | Dot Minimal               | For extremely minimal UI
-#
-#
+
 # COMPONENT SEPARATORS
 # These separate components *within* a section (like `filetype | filename`)
 #
@@ -55,8 +48,7 @@ light = "flexoki-dark"
 #   ⟡     |  ⟡     | Star Geometry            | Geometric ornament
 #   +     |  +     | Plus Symbol              | Simple ASCII fallback
 #         |        | None                     | No visual divider (clean interface)
-#
-#
+
 # VERTICAL/DIRECTIONAL SEPARATORS (Special Use)
 # For hierarchical or directional context
 #
@@ -72,7 +64,7 @@ light = "flexoki-dark"
 # Tip:
 # Use a Nerd Font–patched terminal (e.g. FiraCode Nerd Font, JetBrains Mono NF),
 # and `set guifont` if you're in a GUI. Otherwise, symbols like ``, ``, and `⟡` may not render properly.
-#
+
 # -- Quick switch
 #
 # -- section_separators = { left = "", right = "" },
@@ -94,7 +86,6 @@ light = "flexoki-dark"
 # -- { section_separators = { left = "", right = "" }, component_separators = { left = "⟨", right = "⟩" } }
 # -- { section_separators = { left = "", right = "" }, component_separators = { left = "╱", right = "╲" } }
 # -- { section_separators = { left = "", right = "" }, component_separators = { left = "⟪", right = "⟫" } }
-#
 # -- { left = "╱", right = "╲" }
 # -- { left = "⟍", right = "⟋" }
 # -- { left = "⟜", right = "⟝" }
