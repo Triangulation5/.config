@@ -1783,8 +1783,20 @@ Item {
         enabled: pill.mode === "osd"
         opacity: pill.mode === "osd" ? 1 : 0
         visible: opacity > 0.01
+        /**
+         * In on Motion.standard: the flash is the feedback, so it must not wait
+         * for the morph to arrive. Out on Motion.fast — the close dissolve
+         * PillSurface uses — because a flash ends by morphing the pill back
+         * into the toast card or the open surface, and those faces lay their
+         * content out for their own size. A 300ms fade left this face's
+         * stretched level bar and workspace dots smeared over the returning
+         * card for the whole growth.
+         */
         Behavior on opacity {
-            NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard }
+            NumberAnimation {
+                duration: pill.mode === "osd" ? Motion.standard : Motion.fast
+                easing.type: Motion.easeStandard
+            }
         }
     }
 
@@ -1797,11 +1809,41 @@ Item {
         anchors.rightMargin: 16 * pill.s
         anchors.bottomMargin: 12 * pill.s
         enabled: pill.mode === "toast"
-        opacity: pill.mode === "toast" ? 1 : 0
+
+        /**
+         * The card is laid out for the toast's own width: narrowing the pill
+         * re-wraps its column into a taller stack than the loader, and its
+         * action row is unconstrained, so a card drawn at any other size
+         * paints out past the pill body and onto the desktop. A workspace OSD
+         * takes the pill over at 44px, and this used to ride the pill's 300ms
+         * fade the whole way down, leaving the re-wrapped card spilling out
+         * for the length of the fade. So the card is only drawn while this face
+         * owns the pill, and only as the pill arrives at that size — the rule
+         * PillSurface applies to every surface — and cut rather than faded on
+         * the way out, so the drop lands on the frame the mode changes instead
+         * of following the pill down.
+         *
+         * `settled` latches the fade once the pill has arrived, so a stacked
+         * notification changing the card's own height never dips it.
+         */
+        readonly property bool owned: pill.mode === "toast"
+        property bool settled: false
+        onOwnedChanged: if (!owned) settled = false
+        opacity: owned ? (settled ? 1 : Math.pow(pill.morphCloseness, 1.3)) : 0
         visible: opacity > 0.01
-        Behavior on opacity {
-            NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard }
+        Connections {
+            target: pill
+            function onMorphClosenessChanged() {
+                if (toastLoader.owned && pill.morphCloseness > 0.92)
+                    toastLoader.settled = true;
+            }
         }
+
+        /**
+         * Bounds the card to its own rect. No part of the card belongs outside
+         * it, so this only ever catches the mid-morph frame.
+         */
+        clip: true
 
         sourceComponent: Item {
             implicitHeight: toastContent.implicitHeight
