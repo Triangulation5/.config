@@ -1,19 +1,25 @@
 # Credits
 
-SilhouetteShell is a rebranded fork of
-[Ricelin](https://github.com/Gakuseei/Ricelin) by
+SilhouetteShell is built on [Ricelin](https://github.com/Gakuseei/Ricelin) by
 [Gakuseei](https://github.com/Gakuseei).
 
-The entire pill concept, a single bar that morphs into whatever surface is
-needed, and the original shell base come from Ricelin. All credit for the
-base code goes to the original author:
+The pill concept, a single bar that morphs into whatever surface is needed,
+and the original shell base come from there, and this config's scripts started
+as Ricelin's custom scripts. All credit for that base goes to the original
+author:
 
 - **Author:** [Gakuseei](https://github.com/Gakuseei)
 - **Original project:** [Gakuseei/Ricelin](https://github.com/Gakuseei/Ricelin)
 
-This project keeps the original design language (pill, washi material,
-hand-written Quickshell) while rebranding and extending it. The static theme
-is a port of vague.nvim, replacing the warm vermilion theme Ricelin shipped.
+What sits in `quickshell/silhouette-shell` now is that base with a lot of local
+work on it: reworked modules, a settings app and IPC surface of its own, extra
+surfaces, and scripts pulled apart and rebuilt. The design language (pill, washi
+material) is kept. The static theme is a port of vague.nvim, replacing the warm
+vermilion theme Ricelin shipped.
+
+Not everything here is hand-written. Parts of the shell and the scripts were
+written with AI assistance, and several features take code or ideas from the
+projects below.
 
 ## Inspirations
 
@@ -29,3 +35,8 @@ Specific features drew on other projects:
 - [flickowoa dotfiles](https://github.com/flickowoa/dotfiles) by
   [flickowoa](https://github.com/flickowoa). The flowing string music
   visualizer.
+- [howdy](https://github.com/boltgolt/howdy) by
+  [boltgolt](https://github.com/boltgolt). Face unlock on the lockscreen.
+
+Vendored third-party work lives with the config that uses it, such as the yazi
+flavors and plugins in `yazi/flavors/` and `yazi/plugins/`.

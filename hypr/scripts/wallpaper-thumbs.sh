@@ -8,13 +8,13 @@ export MAGICK_CONFIGURE_PATH
 # runs ahead of this in the shell's refresh pipeline, so the state file is
 # normally the answer and the rest are only first-boot fallbacks.
 wpdir=""
-resolved="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin-wallpaper-dir"
+resolved="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir"
 [ -r "$resolved" ] && wpdir=$(cat "$resolved" 2>/dev/null || true)
 if [ -z "$wpdir" ] && command -v jq >/dev/null 2>&1; then
-    wpdir=$(jq -r '.wallpaperDir // ""' "${XDG_STATE_HOME:-$HOME/.local/state}/ricelin/flags.json" 2>/dev/null || true)
+    wpdir=$(jq -r '.wallpaperDir // ""' "${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json" 2>/dev/null || true)
 fi
 [ -n "$wpdir" ] || wpdir="$HOME/Pictures"
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/ricelin-wp-thumbs"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/silhouette-wp-thumbs"
 mkdir -p "$cache"
 
 for f in "$cache"/*.png; do

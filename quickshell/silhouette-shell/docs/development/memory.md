@@ -45,7 +45,7 @@ A few structural facts that shape where the bytes go:
 but **refusing while the session is locked**) and walks it through phases —
 baseline, opening/closing every pill surface, an idle reclaim wait, and an
 idle trend — printing a summary and writing
-`~/.local/state/ricelin/soak-<timestamp>.log` (+ `.json` with the raw
+`~/.local/state/silhouette/soak-<timestamp>.log` (+ `.json` with the raw
 samples). It samples `VmRSS` / `RssAnon` from `/proc/<pid>/status`.
 
 ```bash

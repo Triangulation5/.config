@@ -16,7 +16,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string base: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ricelin-polkit"
+    readonly property string base: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/silhouette-polkit"
     readonly property string respFile: base + "/response"
     readonly property string agentScript: Qt.resolvedUrl("../utils/polkit/agent.py").toString().replace(/^file:\/\//, "")
 

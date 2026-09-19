@@ -34,7 +34,7 @@ DDG_SAFESEARCH=2
 # block signal.
 
 wh_state() {
-    local base="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin"
+    local base="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette"
     mkdir -p "$base"
     printf '%s\n' "$base"
 }
@@ -258,7 +258,7 @@ thumbget() {
     local url="${1:-}"
     [ -n "$url" ] || exit 1
     local base digest cache tmp
-    base="${XDG_CACHE_HOME:-$HOME/.cache}/ricelin/wh-thumbs"
+    base="${XDG_CACHE_HOME:-$HOME/.cache}/silhouette/wh-thumbs"
     mkdir -p "$base"
     digest=$(printf '%s\n' "$url" | sha1sum | cut -c1-24)
     cache="$base/$digest"
@@ -771,7 +771,7 @@ download() {
     [ -n "$url" ] || exit 1
 
 
-    flags="${XDG_STATE_HOME:-$HOME/.local/state}/ricelin/flags.json"
+    flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 
     # Same folder chain as wallpaper.sh, so a pick always lands in the folder
     # the strip is actually browsing and joins its shuffle bag: the explicit
@@ -781,7 +781,7 @@ download() {
     wpdir=$(jq -r '.wallpaperDir // ""' "$flags" 2>/dev/null || echo "")
 
     [ -n "$wpdir" ] ||
-    wpdir=$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/ricelin-wallpaper-dir" 2>/dev/null || true)
+    wpdir=$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir" 2>/dev/null || true)
 
     [ -n "$wpdir" ] ||
     wpdir="$HOME/Pictures"

@@ -54,7 +54,7 @@ PICKER_TIMEOUT = 180  # seconds to wait for the user to pick a source
 def restore_token_path():
     """Where the portal-issued restore token is cached between recordings."""
     cache = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
-    return os.path.join(cache, "ricelin", "rec-restore-token")
+    return os.path.join(cache, "silhouette", "rec-restore-token")
 
 
 def parse_args():

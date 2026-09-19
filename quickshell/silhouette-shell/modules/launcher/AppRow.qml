@@ -21,7 +21,10 @@ Item {
     property bool selected: false
     property bool editing: false
 
-    readonly property bool isAppImage: entry && entry.id && entry.id.indexOf("ricelin-") === 0
+    /** Entries the drop-installer wrote: `silhouette-` now, and the `ricelin-`
+     *  prefix everything installed before that rename still carries. */
+    readonly property bool isAppImage: entry && entry.id
+        && (entry.id.indexOf("silhouette-") === 0 || entry.id.indexOf("ricelin-") === 0)
     property bool armed: false
     onEditingChanged: if (!editing) armed = false
 

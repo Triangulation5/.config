@@ -214,8 +214,20 @@ PillSurface {
         Quickshell.execDetached(["bash", root.guardScript, entry.name, entry.icon || "", entry.workingDirectory || ""].concat(entry.command));
     }
 
+    /**
+     * The AppImage slug behind an entry id, or "" when it is not one of ours.
+     * The drop-installer writes `silhouette-<slug>` now; `ricelin-<slug>` is what
+     * entries installed before that rename look like, and they stay editable
+     * instead of being orphaned by it.
+     */
     function appimageSlug(entry) {
-        return entry && entry.id && entry.id.indexOf("ricelin-") === 0 ? entry.id.substring(8) : "";
+        if (!entry || !entry.id)
+            return "";
+        if (entry.id.indexOf("silhouette-") === 0)
+            return entry.id.substring(11);
+        if (entry.id.indexOf("ricelin-") === 0)
+            return entry.id.substring(8);
+        return "";
     }
 
     Process { id: appimageProc }
@@ -231,7 +243,7 @@ PillSurface {
     ameForm: "caret"
     amePoint: caretPointOf(search.input)
 
-    readonly property string usageFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/launcher-usage.json"
+    readonly property string usageFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/launcher-usage.json"
 
     readonly property var allEntries: {
         var src = DesktopEntries.applications.values;
@@ -467,7 +479,7 @@ PillSurface {
             selected: root.selectedIndex === index
             /** Coerced to a real bool: a missing entry would otherwise leave the
              *  expression undefined, which QML logs as an invalid assignment. */
-            editing: { var e = root.results[index]; return !!(e && e.id && e.id.indexOf("ricelin-") === 0 && root.editIndex === index); }
+            editing: { var e = root.results[index]; return !!(e && root.appimageSlug(e).length > 0 && root.editIndex === index); }
         }
     }
 

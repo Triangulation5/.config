@@ -296,28 +296,9 @@ PillSurface {
         }
     }
 
-    // TEMP-PROBE: fires the trigger and traces the state machine to a file.
+    // Run one measurement as soon as the surface is built. The button below
+    // re-runs it on demand.
     Timer { interval: 1200; running: true; repeat: false; onTriggered: root.startSpeed() }
-    Timer { interval: 400; repeat: true; running: true; onTriggered: if (!probeProc.running) probeProc.running = true }
-    Process {
-        id: probeProc
-        command: ["sh", "-c", "echo \"$(date +%T) phase=" + root.speedPhase
-            + " ping=" + root.speedPing + " down=" + root.speedDown + " up=" + root.speedUp
-            + " running=" + root.speedRunning + " done=" + root.speedDone
-            + " err=[" + root.speedError + "]"
-            + " implicitH=" + root.implicitHeight + " contentH=" + content.implicitHeight
-            + " boxY=" + speedBox.y + " boxH=" + speedBox.height
-            + " s=" + root.s + " surfaceH=" + root.height + "\" >> /tmp/speed-probe.log"]
-
-    }
-
-    // TEMP-PROBE: dumps the exact command strings the phases hand to sh.
-    Component.onCompleted: {
-        fileWrite.command = ["sh", "-c", "printf '%s\\n\\n' \"$1\" \"$2\" \"$3\" > /tmp/speed-probe-cmds.txt",
-            "_", speedPingProc.command.join(" "), speedDlProc.command.join(" "), speedUlProc.command.join(" ")];
-        fileWrite.running = true;
-    }
-    Process { id: fileWrite }
 
     component Dial: Item {
         id: dial

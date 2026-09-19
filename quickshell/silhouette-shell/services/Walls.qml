@@ -17,7 +17,7 @@ import Quickshell.Io
  *
  * The folder resolves through one chain, first hit wins: an explicit
  * `wallpaperDir` from the settings app, then the dir wallpaper.sh resolved and
- * wrote to the ricelin-wallpaper-dir state file on its last run, then
+ * wrote to the silhouette-wallpaper-dir state file on its last run, then
  * ~/Pictures for a first boot before wallpaper.sh has ever run. The state file
  * is watched, so the strip follows a folder change the moment it lands, and
  * autodetect (which only lives in wallpaper.sh) is re-run on every refresh so
@@ -38,11 +38,11 @@ Singleton {
     property string resolvedDir: ""
     readonly property string wpDir: Flags.wallpaperDir.length > 0 ? Flags.wallpaperDir
         : (resolvedDir.length > 0 ? resolvedDir : Quickshell.env("HOME") + "/Pictures")
-    readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/ricelin-wp-thumbs/"
+    readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/silhouette-wp-thumbs/"
     readonly property string thumbScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-thumbs.sh"
     readonly property string setScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper.sh"
-    readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper"
-    readonly property string dirStateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin-wallpaper-dir"
+    readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-wallpaper"
+    readonly property string dirStateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-wallpaper-dir"
 
     /**
      * A folder picked in the settings app re-lists the strip in place: the

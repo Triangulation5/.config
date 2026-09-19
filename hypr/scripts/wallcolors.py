@@ -26,7 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-CACHE = Path.home() / ".cache" / "ricelin"
+CACHE = Path.home() / ".cache" / "silhouette"
 
 
 SURF_NAMES = [
@@ -257,8 +257,7 @@ def render_fastfetch(pill):
     if not template.is_file():
         print(
             "wallcolors: config.jsonc.in missing in ~/.config/fastfetch, "
-            "skipping fastfetch recolour "
-            "(apply the Ricelin update or re-run the installer)",
+            "skipping fastfetch recolour (re-run the installer)",
             file=sys.stderr,
         )
         return
@@ -456,17 +455,6 @@ def main():
         subprocess.SubprocessError,
     ):
         return 0
-
-    (CACHE / "hypr-colors.lua").write_text(
-        "return {\n"
-        '    active = "%s",\n'
-        '    inactive = "%s",\n'
-        "}\n"
-        % (
-            pill["primary"],
-            terminal_colors["base01"],
-        )
-    )
 
     kitty = [
         f"background {terminal_colors['base00']}",

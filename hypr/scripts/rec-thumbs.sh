@@ -4,7 +4,7 @@ recdir="$1"
 [ -n "$recdir" ] || exit 0
 [ -d "$recdir" ] || exit 0
 
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/ricelin/rec-thumbs"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/silhouette/rec-thumbs"
 mkdir -p "$cache"
 
 for f in "$cache"/*.jpg; do

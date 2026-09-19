@@ -9,7 +9,7 @@ import qs.modules.lock
 
 /**
  * Lock daemon root. Owns the WlSessionLock surface, the PAM auth, the shared
- * password state, and the pill-to-lock reveal. A touch file (ricelin-lock-trigger)
+ * password state, and the pill-to-lock reveal. A touch file (silhouette-lock-trigger)
  * fires the lock fast off the critical path, debounced and primed so the daemon
  * never locks itself on startup.
  */
@@ -100,7 +100,7 @@ ShellRoot {
             root.doLock()
     }
     FileView {
-        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ricelin-lock-trigger"
+        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/silhouette-lock-trigger"
         watchChanges: true
         printErrors: false
         onLoadFailed: setText("0")
