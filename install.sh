@@ -46,11 +46,13 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-install"
 # Top-level entries in the repo that belong in ~/.config. install.sh itself,
 # the README and .gitignore are deliberately not here: they are repo furniture,
 # not config. Neither are the machine-local ones .gitignore keeps out of the
-# repo - mpd/, rygel.conf and QtProject.conf belong to the packages that own
-# them on each machine, so there is nothing here to deploy. Keep this in sync
-# when a new top-level config lands.
+# repo - rygel.conf and QtProject.conf belong to the packages that own them on
+# each machine, so there is nothing here to deploy. mpd is here for its
+# configuration alone: the library database, the log, the pid and the session
+# state are ignored beside it, so a clone carries the conf and nothing else.
+# Keep this in sync when a new top-level config lands.
 CONFIG_ENTRIES=(
-    bash btop cava fastfetch hypr kitty ncmpcpp nvim nwg-look
+    bash btop cava fastfetch hypr kitty mpd ncmpcpp nvim nwg-look
     quickshell rishot sioyek tmux vim xsettingsd yazi zsh
     user-dirs.dirs user-dirs.locale
 )
