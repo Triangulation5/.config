@@ -131,8 +131,18 @@ Item {
     property real clockStartX: 0
     property real clockStartY: 0
 
+    /**
+     * Only a measurement taken at rest geometry is usable. The mapping is
+     * into the hover clock's frame, which *is* the pill, so a capture taken
+     * mid-morph stores the rest clock's position against a size the flight
+     * does not end at — hover again before the last collapse has finished and
+     * the next flight starts from wherever that half-grown frame put it, which
+     * reads as the clock flying in from off to one side instead of out of the
+     * rest pill. Skipping keeps the previous capture, which was taken at rest
+     * geometry and is still where the rest clock sits.
+     */
     function captureClockStart() {
-        if (!restClock)
+        if (!restClock || Math.abs(host.height - host.restH) > 1.5)
             return;
         const p = restClock.mapToItem(hoverClock, restClock.width / 2, restClock.height / 2);
         clockStartX = p.x;
@@ -145,6 +155,12 @@ Item {
      * exact. The onCompleted guard covers the one path where live is true
      * from birth — a monitor hotplug while its pill is peeked — so a
      * collapse then still flies from the rest clock's real position.
+     *
+     * Taken once, and never re-measured during the flight: the offset is
+     * weighted by (1 - clockMorph), so a live start is fully exposed exactly
+     * when the pill is smallest, and every jump in the measurement — the rest
+     * row re-laying out, clockSlide, the width changing — is then flung into
+     * the clock's own position instead of staying in the aim.
      */
     onLiveChanged: {
         if (live) {
@@ -154,23 +170,6 @@ Item {
             calendarStyle.onFaceOpened()
         }
     }
-
-    /**
-     * Re-aim the flight while the clock is being handed back. The capture above
-     * is a single measurement taken at hover start, so it is only exact while
-     * nothing moves the rest clock in the meantime - and one thing does: the
-     * rest clock's `clockSlide` steps it sideways by ~14px whenever the
-     * visualizer's audio-active state flips, and it animates over 160ms. Land
-     * that inside the hop and the flight aims at where the clock used to be,
-     * so the handoff crossfades two clocks a wide gap apart. Re-measuring each
-     * frame of the give-back keeps the endpoint exact by construction.
-     *
-     * Only while mode is rest: that is the give-back, and re-measuring there is
-     * harmless on the way out because (1 - clockMorph) weights a fresh capture
-     * at nearly zero while the clock is still up at the hover end, so nothing
-     * jumps. The hover entrance is left alone entirely.
-     */
-    onClockMorphChanged: if (host.hoverHop && host.mode === "rest") captureClockStart()
     Component.onCompleted: {
         if (live) {
             captureClockStart()
@@ -270,10 +269,16 @@ Item {
                 scale: 0.78 + 0.22 * face.mediaMorph
 
                 /**
-                 * `host.mediaBudIdle` is the idle cleaner's reclaim flag — see
-                 * Pill.mediaBudIdle. Read it instead of ever writing to this
-                 * Loader's own `active`, which would drop the binding above and
-                 * leave the bud gone for good.
+                 * `host.mediaBudIdle` is the flag the bud is closed by, set from
+                 * the media surface and cleared by a new source or by entering
+                 * hover (see Pill.mediaBudIdle). Read it instead of ever writing
+                 * to this Loader's own `active`, which would drop the binding
+                 * above and leave the bud gone for good.
+                 *
+                 * The idle cleaner no longer reclaims the bud: it is a child of
+                 * hoverRow and the pill's hover width comes from that row, so a
+                 * rebuild landed mid-morph and re-cut the row under the clock's
+                 * flight. Kept built for as long as anything is loaded.
                  */
                 active: host.hasMedia && !host.mediaBudIdle
                 visible: active
