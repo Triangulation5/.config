@@ -44,11 +44,11 @@ modules, my own settings app and IPC surface, extra surfaces, a different
 palette, scripts pulled apart and rebuilt. Credit for the foundation goes to
 Gakuseei.
 
-**A few pieces come from Ukishima.**
+**One piece owes Ukishima.**
 [Ukishima](https://github.com/amanhex/ukishima) by
 [amanhex](https://github.com/amanhex) is another Quickshell shell sitting on the
-same Ricelin base: the system monitor, the dynamic-palette singleton and the
-glyph icon renderer started as its versions of those.
+same Ricelin base, and the system monitor's ping and network speed test takes
+its cue from that shell's version of the card.
 
 **Not everything here is hand-written.** Parts of the shell and the scripts
 were written with AI assistance, and several features take code or ideas from
@@ -110,16 +110,21 @@ all live in Settings.
 
 > **Warning**
 > The installer has not been tested on any machine yet.
-> [install.sh](install.sh) before piping it into bash, and keep your own
+> Read [install.sh](install.sh) before piping it into bash, and keep your own
 > backups.
 
 One line, straight through the pipe:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | bash
-```What it does: detect the distro, make sure `git` and `python3` exist, take the repo either from a clone at `~/.local/share/silhouette-install` or from wherever it is already sitting, install the dependencies, then copy the configs into `~/.config`. Anything it replaces goes to
-`~/.local/state/silhouette-install/backups/<timestamp>` first, and files it has no
-opinion about are left alone. My monitor layout is swapped for a portable
+```
+
+What it does: detect the distro, make sure `git` and `python3` exist, take the
+repo either from a clone at `~/.local/share/silhouette-install` or from
+wherever it is already sitting, install the dependencies, then copy the configs
+into `~/.config`. Anything it replaces goes to
+`~/.local/state/silhouette-install/backups/<timestamp>` first, and files it has
+no opinion about are left alone. My monitor layout is swapped for a portable
 default with mine kept beside it as `monitors.lua.example`, and hardcoded
 `$HOME` paths are rewritten. Nothing is written until it has printed the plan
 and you have agreed to it.
@@ -129,25 +134,27 @@ Skip the confirmation and choose what you want:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | bash -s -- --quickstart
 ```
-
-| Flag              | What it does                                                                              |
-| ----------------- | ----------------------------------------------------------------------------------------- |
-| `--quickstart`    | core defaults, no questions                                                               |
-| `--full`          | also install the daily apps (nautilus, firefox, yazi and its helpers, mpd, ncmpcpp, btop) |
-| `--no-deps`       | skip the package step, just deploy the configs                                            |
-| `--dry-run`       | walk the whole flow and change nothing                                                    |
-| `--yes`           | assume yes for every prompt                                                               |
-| `--keep-monitors` | deploy my monitor layout as-is instead of the portable default                            |
-| `--dir PATH`      | clone and deploy somewhere other than the default                                         |
-| `--source PATH`   | deploy from a clone you already have, no fetching                                         |
-| `--ref REF`       | branch or tag to fetch, instead of `main`                                                 |
-| `--help`          | the same list, from the script itself                                                     |
+```txt
+--quickstart      core defaults, no questions
+--full            also install the daily apps (nautilus, firefox, yazi and its helpers, mpd, ncmpcpp, btop)
+--no-deps         skip the package step, just deploy the configs
+--dry-run         walk the whole flow and change nothing
+--yes             assume yes for every prompt
+--keep-monitors   deploy my monitor layout as-is instead of the portable default
+--dir PATH        clone and deploy somewhere other than the default
+--source PATH     deploy from a clone you already have, no fetching
+--ref REF         branch or tag to fetch, instead of `main`
+--help            the same list, from the script itself
+```
 
 Quickshell is the one dependency most distros do not ship in their main repos.
 On Fedora: `sudo dnf copr enable errornointernet/quickshell && sudo dnf install
 quickshell`. On Arch: `quickshell` or `quickshell-git`. The installer checks
 and tells you what is missing rather than guessing. Then start a Hyprland
 session, from a display manager or a TTY.
+
+Silhouette shell is a hyprland shell. I would not expect it to work on anything
+else.
 
 ## Keybinds
 
@@ -202,8 +209,8 @@ my machine or my habits and will look strange anywhere else:
   [Gakuseei](https://github.com/Gakuseei) — the shell base, the pill, and the
   original scripts this started from.
 - [Ukishima](https://github.com/amanhex/ukishima) by
-  [amanhex](https://github.com/amanhex) — the system monitor, the
-  dynamic-palette singleton and the glyph icon renderer.
+  [amanhex](https://github.com/amanhex) — the system monitor's ping and network
+  speed test was inspired by its version.
 - [vague.nvim](https://github.com/vague-theme/vague.nvim) — the static palette
   is a port of it, from the terminal to the yazi flavor.
 - [Ambxst](https://github.com/Axenide/Ambxst) by
@@ -213,7 +220,7 @@ my machine or my habits and will look strange anywhere else:
   audio visualizer ideas.
 - [flickowoa's dotfiles](https://github.com/flickowoa/dotfiles) — the flowing
   string music visualizer.
-- [howdy](https://github.com/boltgolt/howdy) — face unlock.
+- [howdy](https://github.com/boltgolt/howdy) — face unlock, yet to be implemented.
 - [yazi](https://github.com/sxyazi/yazi) flavors and plugins in `yazi/flavors/`
   and `yazi/plugins/` are other people's work, vendored.
 - The wallpapers, the lock screen art and the fastfetch art are not mine.
