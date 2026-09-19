@@ -15,7 +15,7 @@ could be launched with nothing listening behind it.
 
 It edits the same state the shell does:
 
-- the shell's own flags in `~/.local/state/ricelin/flags.json`, which the running
+- the shell's own flags in `~/.local/state/silhouette/flags.json`, which the running
   shell watches, so an edit applies live — no reload, no IPC round trip;
 - the Hyprland config it is built around (`~/.config/hypr/modules/*.lua`), written
   in place and applied with a reload, the way the shell's own settings surfaces do
@@ -41,7 +41,7 @@ subcommand of its own and swallows the word**: `ipc call settings show` prints t
 target list instead of reaching the app. `hide` and `toggle` are unaffected —
 `toggle` is what the keybind runs.
 
-`Escape` closes the window. `RICELIN_HYPR_DIR` overrides where the Hyprland
+`Escape` closes the window. `SILHOUETTE_HYPR_DIR` overrides where the Hyprland
 config is looked for (see `services/Paths.qml`).
 
 The window has an icon of its own — `assets/silhouette-settings.svg`: a cog in the
@@ -501,12 +501,12 @@ config the rest of the app writes: those files belong to the compositor, and the
 pages that edit them already own them.
 
 One archive per backup, `silhouette-YYYY-MM-DDTHH-MM-SS.tar.gz` under
-`~/.local/state/ricelin/backups/`. The work is a script — `utils/backup.py`, in
+`~/.local/state/silhouette/backups/`. The work is a script — `utils/backup.py`, in
 the shell tree because that tree is what it copies — and it answers the way
-`ricelin-update.py` does: one JSON object per run, `create` / `list` / `restore` /
+`silhouette-update.py` does: one JSON object per run, `create` / `list` / `restore` /
 `remove`, with `status` and, on a refusal, `error`. `Backups.qml` runs it and reads
-that and nothing else. Every path is overrideable (`RICELIN_SHELL_DIR`,
-`XDG_STATE_HOME`, `RICELIN_BACKUP_DIR`, or `--shell --state --dir`), which is what
+that and nothing else. Every path is overrideable (`SILHOUETTE_SHELL_DIR`,
+`XDG_STATE_HOME`, `SILHOUETTE_BACKUP_DIR`, or `--shell --state --dir`), which is what
 let the page be driven end to end against a scratch tree.
 
 Three things about it are load-bearing:
@@ -551,16 +551,19 @@ surface reads a file or a contract that this config does not have.
   and never touches the config's load order. `spaces.lua` is still written in the
   shell's exact shape, because the shell does read it: for the name it shows for a
   space, and for the window classes that route into it.
-- **Updates.** The shell's Updates surface drives a rice-engine contract
-  (`behind`, `changelog`, `conflicts`, `missingDeps`, `version`, then a shell
-  relaunch). The script this config ships — `scripts/ricelin-update.py` — is a
-  *package* updater with a different contract entirely (`check` → `updates` +
-  `packages`; `apply` → `results` + `rebootNeeded`). Pointing the shell's view at
-  it reads fields that never arrive: no `behind` reads as "0 updates", so it would
-  say "Up to date" with a pending upgrade in front of it. This page reads the
-  contract the script defines, which is why it offers a check, an upgrade, a
+- **Updates, twice.** Two updaters ship in `scripts/`, because they answer two
+  different questions. `rice-update.py` is the *rice* one: which commits the
+  config is behind, what the changelog is, which files clash with upstream, and
+  a shell relaunch once the new code lands. The shell's own Updates surface
+  drives that contract, and nothing on this page touches it.
+  `silhouette-update.py` is the *package* one: `check` → `updates` +
+  `packages`, `apply` → `results` + `rebootNeeded`, under pkexec. That is the
+  only thing here that can truthfully answer "what updates are there", which is
+  why this page reads its contract and offers a check, an upgrade, a
   security-only upgrade and a reboot hint, and nothing about conflicts or shell
-  relaunches.
+  relaunches. Pointing either page at the other script reads fields that never
+  arrive: no `behind` reads as "0 updates", so the surface would say "Up to
+  date" with a pending upgrade in front of it.
 - **Animation style, not bezier handles.** The config defines a whole curve and
   leaf set per style (`animationStyle = "liquid" | "pill" | "macos"`), so the
   Motion page offers the style, the master switch and the speed — which is

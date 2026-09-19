@@ -5,22 +5,25 @@ import Quickshell.Io
 
 /**
  * Update backend for the 更 UPDATES sub-surface: a terminal-free face for the
- * Ricelin update engine. Never touches git itself; it shells out to the python
- * engine at ~/.config/hypr/scripts/ricelin-update.py, which prints one JSON
+ * rice update engine. Never touches git itself; it shells out to the python
+ * engine at ~/.config/hypr/scripts/rice-update.py, which prints one JSON
  * object. `check` is a safe dry-run that reports how far behind the install is,
  * the changelog, and any protected file whose local edits clash with upstream;
  * `apply` performs the update, taking upstream wholesale only for the
  * conflicting files the user explicitly opted to overwrite.
  *
  * The engine owns every policy decision (devmode detection, on-demand cloning,
- * three-way merges); this singleton is a thin reader of its contract that owns
- * the state, the processes and the user's take/dep choices. The surface renders
- * the state and nothing else.
+ * keeping local edits through the move to upstream); this singleton is a thin
+ * reader of its contract that owns the state, the processes and the user's
+ * take/dep choices. The surface renders the state and nothing else.
+ *
+ * Its namesake in the settings app drives the other updater, the one for the
+ * distribution's packages - see modules/settingsapp/services/Updates.qml.
  */
 Singleton {
     id: root
 
-    readonly property string engine: Quickshell.env("HOME") + "/.config/hypr/scripts/ricelin-update.py"
+    readonly property string engine: Quickshell.env("HOME") + "/.config/hypr/scripts/rice-update.py"
 
     property string status: ""
     property string version: ""
@@ -191,7 +194,7 @@ Singleton {
 
     FileView {
         id: manifestFile
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/ricelin/update.json"
+        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/update.json"
         watchChanges: true
         printErrors: false
         onLoaded: root.readManifest()
@@ -271,7 +274,7 @@ Singleton {
         id: markerProc
         property string body: ""
         command: ["sh", "-c",
-            "d=\"${XDG_STATE_HOME:-$HOME/.local/state}/ricelin\"; mkdir -p \"$d\"; printf '%s' \"$1\" > \"$d/updated\"",
+            "d=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette\"; mkdir -p \"$d\"; printf '%s' \"$1\" > \"$d/updated\"",
             "sh", body]
     }
 }

@@ -9,17 +9,20 @@ import qs.modules.settingsapp.services
  * The updater behind the Updates page: a terminal-free face for the config's own
  * script, which is never touched here — it is run and its JSON is read.
  *
- * The script shipped with this config is not the engine the shell's Updates
- * surface expects. That surface drives a rice-updater contract (`behind`,
- * `fromDate`, `changelog`, `conflicts`, `missingDeps`, `version`, and a shell
- * relaunch once the new code lands); what `scripts/ricelin-update.py` actually
- * implements is the distribution's packages — `check` reports how many updates
- * dnf has, `apply` (or `apply-minimal`) runs the upgrade under pkexec and reports
- * each command and whether a reboot is wanted. Pointing the shell's view at it
- * reads a shape that never arrives: no `behind` means "0 updates, all good", so
- * the surface would say "Up to date" with a pending upgrade in front of it. This
- * page reads the contract the script defines, which is also the one thing on this
- * machine that can truthfully answer "what updates are there".
+ * Two updaters live in scripts/. This page drives the one about the
+ * distribution's packages — `check` reports how many updates dnf has, `apply`
+ * (or `apply-minimal`) runs the upgrade under pkexec and reports each command
+ * and whether a reboot is wanted. That is the only thing on this machine that
+ * can truthfully answer "what updates are there".
+ *
+ * The other, `scripts/rice-update.py`, answers a different question — which
+ * commits this config is behind — and backs the shell's own Updates surface,
+ * which drives a rice-updater contract (`behind`, `fromDate`, `changelog`,
+ * `conflicts`, `missingDeps`, `version`, and a shell relaunch once the new code
+ * lands). Pointing that surface at the package script reads a shape that never
+ * arrives: no `behind` means "0 updates, all good", so it would say "Up to
+ * date" with a pending upgrade in front of it. The two are kept apart for that
+ * reason.
  *
  * Nothing here needs a shell reload — the packages are not the shell — so the
  * page reports, and offers only what the script does: check, apply, apply-minimal.
