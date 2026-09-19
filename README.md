@@ -5,10 +5,9 @@
 **My Hyprland desktop on Fedora 44, and the config behind it. One Quickshell bar
 that turns into whatever I need, and as little else as possible.**
 
-<!-- Screenshot 1 (hero): drop screenshots/01-hero.png, then uncomment the line below. -->
-<!-- ![Silhouette desktop](screenshots/01-hero.png) -->
+![Silhouette desktop](screenshots/01-hero.png)
 
-<div/>
+</div>
 
 ## Why it looks like this
 
@@ -76,11 +75,9 @@ Plus a power menu, an OSD for volume and brightness, a polkit prompt so admin
 dialogs land on the pill instead of a bare GTK window, and face unlock on the
 lock screen.
 
-<!-- Screenshot 2: drop screenshots/02-pill.png (the pill at rest) and uncomment. -->
-<!-- ![The pill bar](screenshots/02-pill.png) -->
+![The pill at rest](screenshots/02-pill.png)
 
-<!-- Screenshot 3: drop screenshots/03-surfaces.png (two or three surfaces) and uncomment. -->
-<!-- ![Pill surfaces](screenshots/03-surfaces.png) -->
+![The pill as the app launcher, the calendar, and the connectivity centre](screenshots/03-surfaces.png)
 
 ## Stack
 
