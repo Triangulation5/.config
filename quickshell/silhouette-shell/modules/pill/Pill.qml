@@ -1371,6 +1371,7 @@ Item {
     onHoveredChanged: {
         if (hovered) {
             hoverLatch = true;
+            settleWaited = false;
             graceTimer.stop();
         } else {
             graceTimer.restart();
@@ -1391,11 +1392,27 @@ Item {
 
     HoverHandler { id: pillHover }
 
+    /**
+     * Set once per hover when the collapse has already waited a grace for the
+     * morph to land, so that wait happens at most once. Restarting for as long
+     * as morphCloseness stays under 0.95 reads as a tidy "don't reverse
+     * mid-flight" guard, but morphCloseness measures the pill against a target
+     * hover mode itself keeps moving - the hover row is still laying out its
+     * tray, bud and dates on the first hover after a while, and every relayout
+     * moves hoverW. The timer could therefore restart for good and the pill
+     * never collapsed at all, leaving the hover clock up over a pill that had
+     * long since finished growing. Bounded, the worst case is a collapse that
+     * starts one grace early; unbounded, the worst case is one that never
+     * starts.
+     */
+    property bool settleWaited: false
+
     Timer {
         id: graceTimer
         interval: Math.max(0, Flags.pillHoverGraceMs)
         onTriggered: {
-            if (pill.morphCloseness < 0.95) {
+            if (!settleWaited && pill.morphCloseness < 0.95) {
+                settleWaited = true;
                 graceTimer.restart();
                 return;
             }
