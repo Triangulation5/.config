@@ -125,18 +125,18 @@ Skip the confirmation and choose what you want:
 curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | bash -s -- --quickstart
 ```
 
-| Flag | What it does |
-|---|---|
-| `--quickstart` | core defaults, no questions |
-| `--full` | also install the daily apps (nautilus, firefox, yazi and its helpers, mpd, ncmpcpp, btop) |
-| `--no-deps` | skip the package step, just deploy the configs |
-| `--dry-run` | walk the whole flow and change nothing |
-| `--yes` | assume yes for every prompt |
-| `--keep-monitors` | deploy my monitor layout as-is instead of the portable default |
-| `--dir PATH` | clone and deploy somewhere other than the default |
-| `--source PATH` | deploy from a clone you already have, no fetching |
-| `--ref REF` | branch or tag to fetch, instead of `main` |
-| `--help` | the same list, from the script itself |
+| Flag              | What it does                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `--quickstart`    | core defaults, no questions                                                               |
+| `--full`          | also install the daily apps (nautilus, firefox, yazi and its helpers, mpd, ncmpcpp, btop) |
+| `--no-deps`       | skip the package step, just deploy the configs                                            |
+| `--dry-run`       | walk the whole flow and change nothing                                                    |
+| `--yes`           | assume yes for every prompt                                                               |
+| `--keep-monitors` | deploy my monitor layout as-is instead of the portable default                            |
+| `--dir PATH`      | clone and deploy somewhere other than the default                                         |
+| `--source PATH`   | deploy from a clone you already have, no fetching                                         |
+| `--ref REF`       | branch or tag to fetch, instead of `main`                                                 |
+| `--help`          | the same list, from the script itself                                                     |
 
 Quickshell is the one dependency most distros do not ship in their main repos.
 On Fedora: `sudo dnf copr enable errornointernet/quickshell && sudo dnf install
@@ -146,29 +146,29 @@ session, from a display manager or a TTY.
 
 ## Keybinds
 
-| Key | Action |
-|---|---|
-| `Super + Return` | terminal |
-| `Super + Space` | app launcher |
-| `Super + N` | connectivity and notifications |
-| `Super + V` | clipboard history |
-| `Super + C` | close window |
-| `Super + F` | toggle floating |
-| `Super + E` | file manager |
-| `Super + W` | wallpaper picker |
-| `Super + B` | shuffle wallpaper and retheme |
-| `Super + Shift + B` | recorder |
-| `Super + A` | media |
-| `Super + M` | power menu |
-| `Super + T` | system monitor |
-| `Super + Shift + I` | settings |
-| `Super + comma` | settings window |
-| `Super + I` | keybind cheat sheet |
-| `Super + O` | lock |
-| `Print` | [rishot](https://github.com/Gakuseei/rishot) |
-| `Super + H/J/K/L` | focus |
+| Key                       | Action |
+| ------------------------- | --- |
+| `Super + Return`          | terminal |
+| `Super + Space`           | app launcher |
+| `Super + N`               | connectivity and notifications |
+| `Super + V`               | clipboard history |
+| `Super + C`               | close window |
+| `Super + F`               | toggle floating |
+| `Super + E`               | file manager |
+| `Super + W`               | wallpaper picker |
+| `Super + B`               | shuffle wallpaper and retheme |
+| `Super + Shift + B`       | recorder |
+| `Super + A`               | media |
+| `Super + M`               | power menu |
+| `Super + T`               | system monitor |
+| `Super + Shift + I`       | settings |
+| `Super + comma`           | settings window |
+| `Super + I`               | keybind cheat sheet |
+| `Super + O`               | lock |
+| `Print`                   | [rishot](https://github.com/Gakuseei/rishot) |
+| `Super + H/J/K/L`         | focus |
 | `Super + Shift + H/J/K/L` | move window |
-| `Super + 1..0` | workspaces |
+| `Super + 1..0`            | workspaces |
 
 The full list is in `hypr/modules/binds.lua`, and on the pill behind `Super + I`.
 
