@@ -159,12 +159,16 @@ Singleton {
             property bool showGlyphs: false
             property string paletteMode: "static"
             /**
-             * Folder the wallpaper strip reads and picks land in. Empty means
-             * autodetect: an existing collection in ~/Pictures/rice-wallpapers,
-             * ~/Pictures/Wallpapers, ~/Pictures/wallpapers, ~/Wallpapers or
-             * ~/wallpapers wins, else ~/Pictures (see wallpaper.sh for the
-             * chain). Lives in user state so an in-app update never clobbers a
-             * custom folder.
+             * Folder the wallpaper strip reads and picks land in. Kept exactly
+             * as typed, so a leading ~ is expanded by whoever reads it —
+             * Walls.wpDir in the shell, wallpaper.sh in the scripts — because a
+             * tilde that arrives in a value is never expanded by the shell and
+             * would otherwise be taken as a relative path. Empty means
+             * autodetect: ~/Pictures first, then an existing collection in
+             * ~/Pictures/rice-wallpapers, ~/Pictures/Wallpapers,
+             * ~/Pictures/wallpapers, ~/Wallpapers or ~/wallpapers, else
+             * ~/Pictures again (see wallpaper.sh for the chain). Lives in user
+             * state so an in-app update never clobbers a custom folder.
              */
             property string wallpaperDir: ""
             property real uiScale: 1.1

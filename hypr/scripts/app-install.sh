@@ -209,8 +209,15 @@ install_wallpaper() {
 	local src="$1" base="$2" name wpdir dest
 	name="${base%.*}"
 	wpdir="$(jq -r '.wallpaperDir // ""' "${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json" 2>/dev/null || echo "")"
+	# Stored as typed, and the settings field's placeholder is `~/Pictures`; a
+	# tilde in a variable is never expanded by the shell, so expand it here or
+	# the drop lands in a relative `~/Pictures` nobody ever browses.
+	case "$wpdir" in
+		"~")   wpdir="$HOME" ;;
+		"~/"*) wpdir="$HOME/${wpdir#"~/"}" ;;
+	esac
 	[ -n "$wpdir" ] || wpdir="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir" 2>/dev/null || true)"
-	[ -n "$wpdir" ] || wpdir="$HOME/Silhouette/wallpapers"
+	[ -n "$wpdir" ] || wpdir="$HOME/Pictures"
 	mkdir -p "$wpdir"
 	case "$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')" in
 		*.webp) dest="$wpdir/$name.png"; magick "$src" "$dest" ;;

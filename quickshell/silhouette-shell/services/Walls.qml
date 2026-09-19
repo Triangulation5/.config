@@ -21,7 +21,11 @@ import Quickshell.Io
  * ~/Pictures for a first boot before wallpaper.sh has ever run. The state file
  * is watched, so the strip follows a folder change the moment it lands, and
  * autodetect (which only lives in wallpaper.sh) is re-run on every refresh so
- * a shell restart can never leave the strip on a stale folder.
+ * a shell restart can never leave the strip on a stale folder. The settings
+ * field stores the text exactly as typed, and its own placeholder is
+ * `~/Pictures`, so `wpDir` expands a leading `~` before anyone reads it as a
+ * path: a tilde carried in a value is never expanded by the shell, and every
+ * consumer here and in the scripts treats this as a real path.
  *
  * Entries are plain objects: { path, name, mtime, thumb } where path is the
  * absolute source file, mtime its modification time in epoch seconds and
@@ -36,7 +40,7 @@ Singleton {
     property bool pending: false
 
     property string resolvedDir: ""
-    readonly property string wpDir: Flags.wallpaperDir.length > 0 ? Flags.wallpaperDir
+    readonly property string wpDir: Flags.wallpaperDir.length > 0 ? expandHome(Flags.wallpaperDir)
         : (resolvedDir.length > 0 ? resolvedDir : Quickshell.env("HOME") + "/Pictures")
     readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/silhouette-wp-thumbs/"
     readonly property string thumbScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-thumbs.sh"
@@ -51,6 +55,20 @@ Singleton {
      * this cannot loop.
      */
     onWpDirChanged: refresh()
+
+    /**
+     * The settings field keeps whatever was typed, so a stored `~/Pictures`
+     * arrives here verbatim. Nothing downstream expands a tilde that came in
+     * through a binding, so it is expanded once, here, rather than teaching the
+     * strip, the thumbnail script and the drop handler about it separately.
+     */
+    function expandHome(path) {
+        if (path === "~")
+            return Quickshell.env("HOME")
+        if (path.indexOf("~/") === 0)
+            return Quickshell.env("HOME") + path.substring(1)
+        return path
+    }
 
     FileView {
         id: dirFile

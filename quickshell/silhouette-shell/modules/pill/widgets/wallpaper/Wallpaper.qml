@@ -244,7 +244,8 @@ PillSurface {
      * The folder name for the empty state, home-relative so the caption stays
      * short. Read off the singleton rather than hardcoded, since the folder is
      * whatever the settings app's Folder field resolved to (~/Pictures when it
-     * is blank).
+     * is blank). The singleton has already expanded a leading ~, so the replace
+     * below is what shortens home back to the tilde for display.
      */
     readonly property string dirLabel: Walls.wpDir.replace(Quickshell.env("HOME"), "~")
 
