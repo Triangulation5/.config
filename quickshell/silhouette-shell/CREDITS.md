@@ -17,6 +17,15 @@ surfaces, and scripts pulled apart and rebuilt. The design language (pill, washi
 material) is kept. The static theme is a port of vague.nvim, replacing the warm
 vermilion theme Ricelin shipped.
 
+Not all of it traces to Ricelin. A few parts came from
+[Ukishima](https://github.com/amanhex/ukishima) by
+[amanhex](https://github.com/amanhex), itself a Ricelin-derived Quickshell
+shell: the system-monitor service (`services/Sysmon.qml`), the dynamic-palette
+singleton (`services/Dyn.qml`) and the vector glyph renderer
+(`components/icons/GlyphIcon.qml`) started as its versions of those. Several
+other animation and control components descend from both projects, which share
+ancestry.
+
 Not everything here is hand-written. Parts of the shell and the scripts were
 written with AI assistance, and several features take code or ideas from the
 projects below.

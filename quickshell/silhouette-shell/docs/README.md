@@ -67,7 +67,11 @@ features take code or ideas from other Quickshell projects. See
 This shell is built on [Ricelin](https://github.com/Gakuseei/Ricelin) by
 [Gakuseei](https://github.com/Gakuseei). The pill concept, the original shell
 base and the custom scripts this config started from are theirs, so all credit
-for the base code goes to the original author. The static theme ports
+for the base code goes to the original author. The system monitor, the
+dynamic-palette singleton and the glyph icon renderer come from
+[Ukishima](https://github.com/amanhex/ukishima) by
+[amanhex](https://github.com/amanhex), another shell on the same base. The
+static theme ports
 [vague.nvim](https://github.com/vague-theme/vague.nvim). Screen corners
 borrow from [Ambxst](https://github.com/Axenide/Ambxst), some cava ideas
 from the [caelestia shell](https://github.com/caelestia-dots/shell), the
