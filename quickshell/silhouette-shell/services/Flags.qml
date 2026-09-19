@@ -78,8 +78,6 @@ Singleton {
     property alias pillPowerH: adapter.pillPowerH
     property alias pillBatteryW: adapter.pillBatteryW
     property alias pillMediaH: adapter.pillMediaH
-    property alias pillCallW: adapter.pillCallW
-    property alias pillCallH: adapter.pillCallH
     property alias pillTimerW: adapter.pillTimerW
     property alias pillTimerH: adapter.pillTimerH
     property alias pillWallpaperW: adapter.pillWallpaperW
@@ -246,8 +244,6 @@ Singleton {
             property real pillPowerH: 150
             property real pillBatteryW: 316
             property real pillMediaH: 150
-            property real pillCallW: 380
-            property real pillCallH: 150
             property real pillTimerW: 340
             property real pillTimerH: 460
             property real pillWallpaperW: 720

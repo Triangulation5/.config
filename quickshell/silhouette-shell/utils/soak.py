@@ -44,8 +44,8 @@ IPC = os.environ.get("QS_IPC", "qs -c silhouette-shell ipc call").split()
 LOG_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local/state")), "silhouette")
 
 # Surfaces whose open has real side effects or needs external state — excluded
-# from the default cycle. Recorder/updates/polkit/call need live conditions.
-RISKY = {"recorder", "updates", "polkit", "call", "quickRecord"}
+# from the default cycle. Recorder/updates/polkit need live conditions.
+RISKY = {"recorder", "updates", "polkit", "quickRecord"}
 DEFAULT_SURFACES = (
     "calendar launcher clipboard wallpaper settings keybinds workspaces stash "
     "spaceapps appearance display input look idlelock animation fontpicker "
