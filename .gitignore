@@ -20,6 +20,9 @@ gtk-3.0/
 gtk-4.0/
 sioyek/*.db
 connections.db
+rygel.conf
+QtProject.conf
+mpd/
 
 gnome-initial-setup-done
 .gsd-keyboard.settings-ported
