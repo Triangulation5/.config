@@ -75,7 +75,7 @@ Plus a power menu, an OSD for volume and brightness, a polkit prompt so admin
 dialogs land on the pill instead of a bare GTK window, and face unlock on the
 lock screen.
 
-![The rest pill in both shapes: the dynamic form above, the notch form below](screenshots/02-pill.png)
+![The pill at rest](screenshots/02-pill.png)
 
 ![The pill as the app launcher, the calendar, and the connectivity centre](screenshots/03-surfaces.png)
 
