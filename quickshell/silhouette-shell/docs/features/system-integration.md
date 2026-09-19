@@ -48,13 +48,16 @@ the colour matugen pulled from the current wallpaper and lays it under the
 blurred album art, so the card agrees with whatever is on screen and never
 carries the static theme's own hues into someone's colours.
 
-While a track with art is loaded, the rest pill wears a soft ambient aura:
+While a track with art is loaded, the rest pill can wear a soft ambient aura:
 the cover decoded tiny, saturated and blurred, stretched just past the pill
 so its dominant colour bleeds into the desktop around it, and the same cover
 colour casts the pill's shadow. Both follow the card's backdrop mode — at its
 intended strength on "bleed", a whisper on "wash", off on "none" — and dim
 while paused. ImageMagick averages the cover for the shadow tint, so it costs
 nothing when the aura is off.
+
+It ships off. The backdrop is the effect; the bleed around the pill is an
+addition you opt into in Appearance, so a fresh install gets the bare pill.
 
 The settings window layers three controls on top of that, in an Ambient aura
 card of its own next to the backdrop it answers to: an Ambient aura switch, an
