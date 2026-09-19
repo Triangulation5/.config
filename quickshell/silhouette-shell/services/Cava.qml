@@ -209,6 +209,22 @@ Singleton {
     }
 
     Component.onCompleted: {
+        /**
+         * Seed both graced gates from live state before the first capture
+         * decision. The handlers above only fire on a *transition*, so a shell
+         * that starts (or is reloaded) while something is already streaming
+         * can miss `clientsPlaying` going true entirely - the player's stream
+         * node outlives the shell, so it is there from this singleton's first
+         * evaluation and there is no change to observe. The capture would then
+         * stay down with music audibly playing until the next track change,
+         * which is exactly what "the bars turned off after a reload" looks
+         * like. Seeding leaves every later transition to the handlers.
+         */
+        if (root.clientsPlaying)
+            root.playbackWanted = true
+        if (root.pillWanted)
+            root.pillCaptureWanted = true
+
         cavaProc.running = wanted
         lockProc.running = enabled && available && root.playbackWanted
     }
