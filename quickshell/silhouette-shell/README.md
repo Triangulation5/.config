@@ -11,6 +11,10 @@ Built on [Ricelin](https://github.com/Gakuseei/Ricelin) by
 base and the custom scripts this config started from come from there, and a lot
 has been reworked locally since.
 
+A few parts come from [Ukishima](https://github.com/amanhex/ukishima), another
+Quickshell shell on the same base: the system monitor, the dynamic-palette
+singleton and the glyph icon renderer.
+
 Not everything here is hand-written. Parts of the shell and the scripts were
 written with AI assistance, and features take code or ideas from other
 Quickshell projects. See [CREDITS.md](CREDITS.md) for the base and the full
