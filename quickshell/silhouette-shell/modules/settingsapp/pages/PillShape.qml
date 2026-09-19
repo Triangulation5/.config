@@ -44,8 +44,6 @@ QtObject {
             { key: "pillPowerH", type: "slider", label: "Power menu height", min: 90, max: 260, step: 2, unit: "px", reset: 150 },
             { key: "pillBatteryW", type: "slider", label: "Battery width", min: 220, max: 480, step: 2, unit: "px", reset: 316 },
             { key: "pillMediaH", type: "slider", label: "Media height", min: 90, max: 240, step: 2, unit: "px", reset: 150 },
-            { key: "pillCallW", type: "slider", label: "Call width", min: 240, max: 520, step: 2, unit: "px", reset: 380 },
-            { key: "pillCallH", type: "slider", label: "Call height", min: 90, max: 240, step: 2, unit: "px", reset: 150 },
             { key: "pillTimerW", type: "slider", label: "Timer width", min: 220, max: 460, step: 2, unit: "px", reset: 340 },
             { key: "pillTimerH", type: "slider", label: "Timer height", min: 220, max: 600, step: 2, unit: "px", reset: 460 },
             { key: "pillWallpaperW", type: "slider", label: "Wallpaper picker width", min: 420, max: 900, step: 4, unit: "px", reset: 720 },

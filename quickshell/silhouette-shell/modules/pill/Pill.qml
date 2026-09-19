@@ -102,7 +102,6 @@ Item {
     readonly property bool wallpaperOpen: surface === "wallpaper"
     readonly property bool powerOpen: surface === "power"
     readonly property bool mediaOpen: surface === "media"
-    readonly property bool callOpen: surface === "call"
     readonly property bool linkOpen: surface === "link"
     readonly property bool settingsOpen: surface === "settings"
     readonly property bool keybindsOpen: surface === "keybinds"
@@ -255,8 +254,6 @@ Item {
     readonly property real powerH: Flags.pillPowerH * s
     readonly property real mediaW: (Players.pickable.length > 1 ? 460 : 390) * s
     readonly property real mediaH: Flags.pillMediaH * s
-    readonly property real callW: Flags.pillCallW * s
-    readonly property real callH: Flags.pillCallH * s
     readonly property real batteryW: Flags.pillBatteryW * s
     readonly property real settingsW: Flags.pillSettingsW * s
     readonly property real keybindsW: Flags.pillKeybindsW * s
@@ -548,7 +545,6 @@ Item {
         wallpaper: { size: () => { surfaceItem(ldWall, "wallpaper"); return Qt.size(wallpaperW, wallpaperH); }, ame: () => null },
         power:     { size: () => { surfaceItem(ldPower, "power"); return Qt.size(powerW, powerH); }, ame: () => surfaceItem(ldPower, "power") },
         media:     { size: () => { surfaceItem(ldMedia, "media"); return Qt.size(mediaW, mediaH); }, ame: () => surfaceItem(ldMedia, "media") },
-        call:      { size: () => { surfaceItem(ldCall, "call"); return Qt.size(callW, callH); }, ame: () => surfaceItem(ldCall, "call") },
         mixer:     { size: () => Qt.size(93 * Math.max(4, surfaceProp(ldMixer, "mixer", "faderCount", 4)) * s, mixerH), ame: () => surfaceItem(ldMixer, "mixer") },
         link:      { size: () => Qt.size(surfaceProp(ldLink, "link", "desiredW", 330 * s), surfaceHeight(ldLink, "link", 26 * s, 300 * s)), ame: () => surfaceItem(ldLink, "link") },
         battery:   stdSurface(ldBattery, "battery", batteryW, 26 * s, 160 * s),
@@ -1715,9 +1711,6 @@ Item {
          */
         surfaceProps: { "shown": () => pill.mediaOpen, "compact": () => true }
     }
-
-    /** Synchronous: an incoming call must appear on the ringing frame, not a build late. */
-    PillSurfaceLoader { id: ldCall; name: "call"; host: pill; sourceUrl: "widgets/call/CallSurface.qml" }
 
     PillSurfaceLoader {
         id: ldLink; name: "link"; asynchronous: true; host: pill

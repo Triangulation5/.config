@@ -141,8 +141,6 @@ Singleton {
             property real pillPowerH: 150
             property real pillBatteryW: 316
             property real pillMediaH: 150
-            property real pillCallW: 380
-            property real pillCallH: 150
             property real pillTimerW: 340
             property real pillTimerH: 460
             property real pillWallpaperW: 720
@@ -226,7 +224,7 @@ Singleton {
         "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
         "pillHoverH", "pillMixerH", "pillLauncherW", "pillLauncherH", "pillClipboardW",
         "pillClipboardH", "pillPowerW", "pillPowerH", "pillBatteryW", "pillMediaH",
-        "pillCallW", "pillCallH", "pillTimerW", "pillTimerH", "pillWallpaperW",
+        "pillTimerW", "pillTimerH", "pillWallpaperW",
         "pillWallpaperH", "pillSettingsW", "pillKeybindsW", "pillWorkspacesW", "pillStashW",
         "pillSpaceappsW", "pillSysmonW", "pillAppearanceW", "pillUpdatesW", "pillDisplayW",
         "pillInputW", "pillLookW", "pillIdlelockW", "pillAnimationW", "pillRecorderW",
