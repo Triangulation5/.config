@@ -60,7 +60,8 @@ project with purity guarantees.
 ## The pill
 
 The bar at the top of the screen is the whole shell. Hover it and it grows a
-face with the clock, media, tray and minimized apps. Tap it and it becomes:
+face with the clock, media, tray and minimized apps. This is a short summary of
+what it contains:
 
 - media and now playing, with a scrub bar
 - a calendar, and a timer
@@ -72,8 +73,7 @@ face with the clock, media, tray and minimized apps. Tap it and it becomes:
 - live machine vitals, and the settings menu behind it
 
 Plus a power menu, an OSD for volume and brightness, a polkit prompt so admin
-dialogs land on the pill instead of a bare GTK window, and face unlock on the
-lock screen.
+dialogs land on the pill instead of a bare GTK window, and a nice lock screen.
 
 ![The pill at rest](screenshots/02-pill.png)
 
@@ -197,12 +197,12 @@ my machine or my habits and will look strange anywhere else:
 - The shell's state, cache and wallpaper files were renamed from `ricelin`
   paths to `silhouette` ones. `hypr/scripts/migrate-state.sh` carries an older
   tree over, and `launch.sh` runs it before the shell starts, so a restart is
-  the whole upgrade. `quickshell/silhouette-shell/README.md` has the recovery if a
-  session comes up empty.
+  the whole upgrade. `quickshell/silhouette-shell/README.md` has the recovery
+  if a session comes up empty.
 - A few features expect tools that are installed on purpose rather than by
-  default: `howdy` for face unlock, `gpu-screen-recorder` for hardware-encoded
-  capture, `ddcutil` for external monitor brightness. Missing one degrades that
-  feature, not the session.
+  default: `howdy` for face unlock (work in progress), `gpu-screen-recorder`
+  for hardware-encoded capture, `ddcutil` for external monitor brightness.
+  Missing one degrades that feature, not the session.
 
 ## Credits
 
