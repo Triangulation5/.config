@@ -39,7 +39,7 @@ PillSurface {
 
     Timer {
         id: lockDelay
-        interval: 400
+        interval: Math.floor(Math.random() * (500 - 475 + 1)) + 475
         repeat: false
         onTriggered: {
             Quickshell.execDetached([

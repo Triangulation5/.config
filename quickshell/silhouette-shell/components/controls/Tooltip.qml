@@ -57,7 +57,7 @@ Item {
 
     Timer {
         id: delay
-        interval: 470
+        interval: Math.floor(Math.random() * (500 - 470 + 1)) + 470
         onTriggered: root.armed = true
     }
     onShowChanged: {
