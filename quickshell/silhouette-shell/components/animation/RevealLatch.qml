@@ -7,6 +7,10 @@ import QtQuick
  * pop in while the pill is still settling into its new size. `ready` drops
  * the moment `shown` goes false, so every reveal starts hidden again, and the
  * already-shown-at-creation case (lazy surfaces born open) is covered.
+ *
+ * The reveal delay can include a small randomized jitter to avoid perfectly
+ * mechanical timing between repeated reveals. With the default values this
+ * resolves to a delay between 100ms and 200ms.
  */
 Item {
     id: root
@@ -15,11 +19,14 @@ Item {
 
     property bool shown: false
     property int delay: 100
+    property int jitter: 100
     property bool ready: false
 
     Timer {
         id: latch
-        interval: root.delay
+
+        interval: root.delay + Math.floor(Math.random() * (root.jitter + 1))
+
         onTriggered: root.ready = true
     }
 
