@@ -202,6 +202,16 @@ PillSurface {
             Row {
                 anchors.left: parent.left
                 anchors.right: parent.right
+                /**
+                 * Air on the trailing edge. The conditions block (glyph,
+                 * degree, condition · humidity) sits flush right, tight enough
+                 * against the surface's own right margin that the degree reads
+                 * as crowding the edge; the row's own width is what gives it,
+                 * so the nudge costs the city a few px of elide room instead of
+                 * moving anything else. `mRight` still sets the surface's real
+                 * inset, and the seams below stay full width.
+                 */
+                anchors.rightMargin: 5 * root.s
                 spacing: 14 * root.s
                 opacity: root.sHeader
                 transform: Translate { y: 16 * root.s * (1 - root.sHeader) }
