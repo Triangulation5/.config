@@ -50,39 +50,66 @@ Item {
     }
 
     /**
-     * The clock grows out of the rest clock's spot and shrinks back into
-     * it: one continuous scale+slide driven by clockMorph. clockMorph is
-     * clockHop itself, so the flight rides the pill body's own morph easing
-     * (Motion.morph's bezier): the clock travels to its settled spot above
-     * the dates in exact sync with the pill's growth — same acceleration,
-     * same settle, no lead and no overshoot. The rest-to-hover handoff is a
-     * separate quick crossfade (clockHandoff) in the first moments, while
-     * the hover clock still sits exactly on the rest clock at the same
-     * size — so the swap is invisible and the growth reads as one clock
-     * smoothly travelling to its place.
+     * The clock grows out of the rest clock's spot and shrinks back into it:
+     * one continuous scale+slide driven by clockMorph, which is clockHop itself
+     * — the pill body's own rest→hover growth. The *scale* rides that growth
+     * 1:1, so the clock is never bigger than the pill morphing under it, and it
+     * settles on the same frame the pill does, with no lead and no overshoot.
+     *
+     * The *travel* deliberately does not ride it 1:1 — the morph curve is far
+     * too front-loaded for a distance this long (see `flight`), so the offset
+     * re-eases the same progress instead of inheriting it.
+     *
+     * The rest-to-hover handoff is a separate crossfade (clockHandoff) in the
+     * first moments, while the hover clock still sits exactly on the rest clock
+     * at the same size — so the swap is invisible and the growth reads as one
+     * clock smoothly travelling to its place.
      */
     readonly property real clockProgress: Math.max(0, Math.min(1, clockHop))
     readonly property real clockMorph: clockProgress
+
     /**
-     * Handoff tied to clockMorph: the hover clock is pixel-identical to the
-     * rest clock at morph=0, so the swap completes in the final moments of the
-     * flight while the two are still (within a couple of px of) coincident —
-     * a wider window would crossfade a clock still sliding into place and
-     * read as a shimmer at the settle.
+     * How much of the rest→hover flight offset is applied.
      *
-     * The window is 0.004 of the hop rather than the 0.03 it was, because the
-     * hop is where this stops being a detail. The rest and hover heights are
-     * 41.8px and 189.2px at the shipping uiScale, so 0.03 is 4.4px of travel -
-     * and the glide rides cubic-bezier(0.16, 1, 0.30, 1), whose last 4.4px of a
-     * 147px hop take *132ms* (8 frames at 60fps). Eight frames is not a swap,
-     * it is a long crossfade in which both clocks are drawn while the hover one
-     * is still visibly short of its landing spot: two clocks a few px apart,
-     * half-faded, which is what the close was reported as - the hover clock
-     * left behind rather than travelling home. 0.004 is 0.59px, a 76ms fade,
-     * so the overlap happens with the two already on top of each other and the
-     * same easing still keeps it a fade rather than a blink.
+     * The offset is sqrt(1 - clockMorph), not 1 - clockMorph. clockMorph comes
+     * straight off the pill's height, and that hop rides
+     * cubic-bezier(0.16, 1, 0.30, 1), whose y is exactly 1 - (1 - t)^3 — an
+     * ease-out cubic *in time*. Reading the offset back through it hands the
+     * clock only the time fraction: at 20% of the duration the pill has already
+     * covered 49% of the hop, and a clock riding the same number has covered
+     * 49% of a ~200px travel across the pill in three frames, then crept the
+     * rest of the way. That is the "flashes to the right at breakneck speed".
+     * sqrt(1 - y) undoes the cubic (y expressed in time, the offset becomes
+     * (1 - t)^1.5), so the clock leaves at a readable speed, accelerates, and
+     * still lands on the same frame the pill settles.
+     *
+     * Zero when the origin was never measured, so an un-measured hop scales
+     * into place instead of flying from a garbage point — see clockStartValid,
+     * and clockHandoff, which dissolves that swap instead of cutting it.
      */
-    readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / 0.004)); return t * t * (3 - 2 * t); }
+    readonly property real flight: clockStartValid ? Math.sqrt(1 - clockMorph) : 0
+    /**
+     * Width of the rest→hover swap, as a fraction of the hop. The rest clock's
+     * opacity is (1 - clockHandoff) in Pill.qml and the hover clock's is
+     * clockHandoff itself, so this is the crossfade between them.
+     *
+     * 0.006 of the hop is 0.89px of travel at the shipping uiScale (the rest and
+     * hover heights are 41.8px and 189.2px), a fade short enough that it happens
+     * while the two clocks are still on top of each other. It was 0.004 before —
+     * the same reasoning, a window small enough to be a swap and not a shimmer —
+     * but that small a window is one frame, and one frame is what turns any
+     * error in the flight origin into a blink rather than a movement.
+     *
+     * With no measured origin there is no flight at all (see clockStartValid),
+     * so the hover clock sits at its settled spot — half a pill away from the
+     * rest clock — and a one-frame swap between those two is a teleport of the
+     * clock from the left of the pill to the right. The window opens to 0.45 of
+     * the hop there: a real crossfade, long enough to read as the clock
+     * dissolving across to its place, which is the best a hop with no origin can
+     * look. Measured, it stays a swap.
+     */
+    readonly property real handoffWindow: clockStartValid ? 0.006 : 0.45
+    readonly property real clockHandoff: { var t = Math.max(0, Math.min(1, clockMorph / handoffWindow)); return t * t * (3 - 2 * t); }
 
     /**
      * The media bud, tray and calendar strip ride the pill's own rest→hover
@@ -132,22 +159,79 @@ Item {
     property real clockStartY: 0
 
     /**
-     * Only a measurement taken at rest geometry is usable. The mapping is
-     * into the hover clock's frame, which *is* the pill, so a capture taken
-     * mid-morph stores the rest clock's position against a size the flight
-     * does not end at — hover again before the last collapse has finished and
-     * the next flight starts from wherever that half-grown frame put it, which
-     * reads as the clock flying in from off to one side instead of out of the
-     * rest pill. Skipping keeps the previous capture, which was taken at rest
-     * geometry and is still where the rest clock sits.
+     * Whether clockStart is a measurement the flight may use. A flight from an
+     * unmeasured origin is not a mild error: the offset is at full strength
+     * exactly when the pill is smallest, so at the end of a collapse the whole
+     * difference between a zero capture and the clock's settled spot is applied
+     * — roughly half the hover row's width up and to the left of the pill's
+     * centre, which at rest (the pill is ~176px wide) puts the clock outside the
+     * body, drawn over the desktop, because nothing clips the face. An invalid
+     * capture therefore means no flight at all (see `flight`), which is a clock
+     * that scales into place where it already is rather than one that flies in
+     * from nowhere — and clockHandoff widens in that case so the swap is still a
+     * dissolve rather than a one-frame cut.
+     */
+    property bool clockStartValid: false
+
+    /** True only at rest geometry, where the capture is exact. */
+    readonly property bool atRestGeometry: Math.abs(host.height - host.restH) <= 1.5
+
+    /**
+     * Only a measurement taken at rest geometry is usable. The mapping is into
+     * the hover clock's frame, which *is* the pill, so a capture taken mid-morph
+     * stores the rest clock's position against a size the flight does not end at
+     * — hover again before the last collapse has finished and the next flight
+     * starts from wherever that half-grown frame put it, which reads as the clock
+     * flying in from off to one side instead of out of the rest pill. Skipping
+     * keeps the previous capture, which was taken at rest geometry and is still
+     * where the rest clock sits.
      */
     function captureClockStart() {
-        if (!restClock || Math.abs(host.height - host.restH) > 1.5)
+        if (!restClock || !atRestGeometry)
             return;
         const p = restClock.mapToItem(hoverClock, restClock.width / 2, restClock.height / 2);
+        if (!isFinite(p.x) || !isFinite(p.y))
+            return;
         clockStartX = p.x;
         clockStartY = p.y;
+        clockStartValid = true;
     }
+
+    /**
+     * Called whenever the hover row re-cuts itself. hoverClock sits inside that
+     * row, so every change to the row's width slides the frame the origin was
+     * measured in and leaves the capture pointing at a spot the hover clock no
+     * longer starts from — the tray icons and the minimized row land a beat
+     * after the face opens, and the clock's own text widens on the minute. Half
+     * of that shift is what the flight start is off by, which is how a clock
+     * that was captured against an empty tray ends up flying in from beside the
+     * pill.
+     *
+     * At rest the measurement is exact and cheap, so take it again right there.
+     * Anywhere else the capture is left exactly as it is. It used to be dropped
+     * (`clockStartValid = false`) so a stale value could not be used — but the
+     * value is never stale for what the flight needs it for: it is where the
+     * rest clock sits, and that is where the rest clock still is. The drop only
+     * cost the next collapse its flight, and a collapse with no flight is a
+     * clock that stays at its settled spot and then swaps to the rest clock's
+     * spot in a single frame — the left-to-right flash. Keeping the capture
+     * through the hover is what guarantees the collapse has somewhere to fly
+     * back to.
+     */
+    function refreshClockStart() {
+        if (atRestGeometry)
+            captureClockStart();
+    }
+
+    /**
+     * The collapse's last frames land the pill at rest geometry, which is the
+     * first moment the rest clock's position can be read exactly again — the
+     * row may have re-cut during the hover (tray icons, the minimized row, the
+     * minute ticking the text wider) and moved the frame the capture is written
+     * in. Re-taking it here means every hop starts from a measurement that is
+     * true as of the moment it starts.
+     */
+    onAtRestGeometryChanged: if (atRestGeometry) captureClockStart()
 
     /**
      * Fires on every rest-to-hover hop. The pill is still at rest geometry
@@ -156,11 +240,10 @@ Item {
      * from birth — a monitor hotplug while its pill is peeked — so a
      * collapse then still flies from the rest clock's real position.
      *
-     * Taken once, and never re-measured during the flight: the offset is
-     * weighted by (1 - clockMorph), so a live start is fully exposed exactly
-     * when the pill is smallest, and every jump in the measurement — the rest
-     * row re-laying out, clockSlide, the width changing — is then flung into
-     * the clock's own position instead of staying in the aim.
+     * Taken once, and never re-measured during the flight: the offset is fully
+     * exposed exactly when the pill is smallest, so every jump in the
+     * measurement — the rest row re-laying out, clockSlide, the width changing —
+     * would be flung into the clock's own position instead of staying in the aim.
      */
     onLiveChanged: {
         if (live) {
@@ -235,6 +318,13 @@ Item {
         anchors.horizontalCenterOffset: -20 * host.s
 
         spacing: 20 * host.s
+
+        /**
+         * `anchors.horizontalCenter` recentres the row, so every width change
+         * moves the clock column by half of it — and the clock's flight origin
+         * was measured inside that column. See refreshClockStart.
+         */
+        onImplicitWidthChanged: face.refreshClockStart()
 
         Row {
             id: statusRow
@@ -426,8 +516,8 @@ Item {
                     implicitHeight: hoverTime.implicitHeight
 
                     transform: Translate {
-                        x: (face.clockStartX - face.clockEndX) * (1 - face.clockMorph)
-                        y: (face.clockStartY - face.clockEndY) * (1 - face.clockMorph)
+                        x: (face.clockStartX - face.clockEndX) * face.flight
+                        y: (face.clockStartY - face.clockEndY) * face.flight
                     }
 
                     Text {
