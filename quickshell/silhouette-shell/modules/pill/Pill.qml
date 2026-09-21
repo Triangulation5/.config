@@ -176,6 +176,14 @@ Item {
     readonly property real wifiLevel: (wifiActive && wifiActive.signalStrength) || 0
     readonly property bool surfaceOpen: surface.length > 0
     property bool hoverLatch: false
+    /**
+     * Set when something asked the pill to get out of the way while the pointer
+     * was still on it (the launcher on its way out). The hover face then waits
+     * for a fresh pointer enter: a pointer that never moved must not re-latch
+     * the very hover the dismissal just dropped, or the face pops straight back
+     * up over whatever the launcher had just launched.
+     */
+    property bool hoverDismissed: false
     readonly property bool expanded: surfaceOpen || held || hoverLatch
 
     /**
@@ -1369,12 +1377,32 @@ Item {
      */
     readonly property real inputPadRight: 0
 
+    /**
+     * Collapse to rest and stay collapsed until the pointer leaves the pill.
+     * Called by the launcher as it exits: the launcher is normally opened from
+     * the hover face, so the pointer is sitting on the pill when the surface
+     * closes and would immediately latch the hover face back up — the clock,
+     * media bud, tray and dates reappearing over the app that was just
+     * launched. The latch is dropped here and the suppression is lifted by the
+     * first pointer leave, so hovering works again the moment the pointer makes
+     * a fresh entry.
+     */
+    function dismissHover() {
+        hoverDismissed = hovered;
+        hoverLatch = false;
+        settleWaited = false;
+        graceTimer.stop();
+    }
+
     onHoveredChanged: {
         if (hovered) {
+            if (hoverDismissed)
+                return;
             hoverLatch = true;
             settleWaited = false;
             graceTimer.stop();
         } else {
+            hoverDismissed = false;
             graceTimer.restart();
         }
     }
@@ -1693,7 +1721,12 @@ Item {
         surfaceProps: { "targetDate": () => pill.calendarFocusDate }
     }
 
-    PillSurfaceLoader { id: ldLauncher; name: "launcher"; asynchronous: true; host: pill; sourceUrl: "../launcher/Launcher.qml" }
+    PillSurfaceLoader {
+        id: ldLauncher; name: "launcher"; asynchronous: true; host: pill
+        sourceUrl: "../launcher/Launcher.qml"
+        /** So the launcher can hand the pill its rest face back as it exits (see dismissHover). */
+        surfaceProps: { "pillRef": () => pill }
+    }
 
     PillSurfaceLoader { id: ldClip; name: "clipboard"; asynchronous: true; host: pill; sourceUrl: "widgets/clipboard/Clipboard.qml" }
 

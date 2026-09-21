@@ -38,6 +38,28 @@ PillSurface {
     signal quit()
 
     /**
+     * The pill hosting this surface, when this is the pill's own launcher
+     * (Pill.qml passes it through surfaceProps). Null for the standalone
+     * launcher window, which has no pill to hand back.
+     */
+    property var pillRef: null
+
+    /**
+     * Exit path for every mode: launch a Firefox tab, run a terminal command,
+     * copy an emoji, focus a window or pick an app. The launcher is normally
+     * opened from the hover face, so the pointer is on the pill when it closes
+     * and the hover face would come straight back up — clock, media bud, tray
+     * and dates over the app that was just launched. The pill is told to drop
+     * that hover instead, so every exit leaves the desktop alone.
+     */
+    function finish() {
+        if (pillRef)
+            pillRef.dismissHover();
+        quit();
+        requestClose();
+    }
+
+    /**
      * Calc mode: when the whole query parses as a real calculation (an
      * expression with at least one operation, so lone numbers and app names like
      * i3 or python3 fall through to app search), a result row appears above the
@@ -72,7 +94,7 @@ PillSurface {
         const url = "https://www.perplexity.ai/search?q=" + encodeURIComponent(aiQuery);
         Quickshell.execDetached(["firefox", "--new-tab", url]);
 
-        requestClose();
+        root.finish();
     }
 
     /**
@@ -86,8 +108,7 @@ PillSurface {
         if (!root.commandActive || root.commandQuery.length === 0)
             return;
         Quickshell.execDetached(["firefox", "--search", root.commandQuery]);
-        root.quit();
-        root.requestClose();
+        root.finish();
     }
 
     /**
@@ -102,8 +123,7 @@ PillSurface {
         if (!root.terminalActive || root.terminalCommand.length === 0)
             return;
         Quickshell.execDetached(["kitty", "bash", "-c", root.terminalCommand + "; exec $SHELL"]);
-        root.quit();
-        root.requestClose();
+        root.finish();
     }
 
     /**
@@ -180,8 +200,7 @@ PillSurface {
             return;
         Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", root.emojiResults[selectedIndex].e]);
         root.emojiCopied = true;
-        root.quit();
-        root.requestClose();
+        root.finish();
     }
 
     function focusWindow() {
@@ -191,8 +210,7 @@ PillSurface {
         if (addr.indexOf("0x") !== 0)
             addr = "0x" + addr;
         Hyprland.dispatch('hl.dsp.focus({ window = "address:' + addr + '" })');
-        root.quit();
-        root.requestClose();
+        root.finish();
     }
 
     /** Row index currently in AppImage edit mode (rename plus armed delete), -1 when none. */
@@ -332,8 +350,7 @@ PillSurface {
                 root.launchApp(entry);
             }
         }
-        root.quit();
-        root.requestClose();
+        root.finish();
     }
 
     onActiveChanged: {
@@ -391,7 +408,7 @@ PillSurface {
         }
         onMoved: (d) => root.move(d)
         onAccepted: root.activate()
-        onDismissed: { root.quit(); root.requestClose(); }
+        onDismissed: root.finish()
     }
 
     Rectangle {
