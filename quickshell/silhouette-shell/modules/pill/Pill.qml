@@ -900,6 +900,57 @@ Item {
      * full duration.
      */
     property string lastMode: "rest"
+
+    /**
+     * How the clock crosses the current mode change: the one classification
+     * every clock/hover gate switches on. Set once per change from
+     * `clockTransitionFor` before `lastMode` is overwritten, so the gates read
+     * *what kind of move this is* instead of each re-deriving it from the mode
+     * pair. Seven partially-overlapping predicates doing that by hand is what
+     * took the clock off the screen for most of a close: each one agreed the
+     * hover face was up (or not) by a different rule, and none of them noticed
+     * that the rest clock was being held back by `clockHandoff` the whole way.
+     */
+    property string clockTransition: "idle"
+
+    /**
+     * The transition table: (to, from) in, one name out.
+     *
+     *   grow     rest  → hover   the clock grows into the hover face
+     *   hopHome  hover → rest    and flies back down into the rest clock
+     *   nudge    any   → same    a mode-change notification, not a move: the
+     *                            geometry re-targets on the short glide
+     *   arrive   *     → hover   the pill lands at hover after shrinking out of
+     *                            an open surface: the face crossfades in against
+     *                            the dissolving surface and rides the settle
+     *   home     surface → rest  the same, all the way down: there is no hover
+     *                            face to arrive at, so the face is kept up for
+     *                            the clock alone and the clock flies into the
+     *                            rest clock (see closeToRest)
+     *   flash    anything else   a surface opens, or an OSD/toast/quick-record
+     *                            panel appears or vanishes: nothing collapses,
+     *                            so there is no flight for a clock to make and
+     *                            the face drops on the fast fade
+     *
+     * Tested against `surfaces` rather than "not hover/rest" only for `home`: a
+     * hover landing out of an OSD or a toast is a real arrival and has always
+     * been treated as one, while a landing at rest out of one has no collapse
+     * for a clock to fly home through.
+     */
+    function clockTransitionFor(to, from) {
+        if (to === from)
+            return (to === "hover" || to === "rest") ? "nudge" : "idle";
+        if (to === "hover" && from === "rest")
+            return "grow";
+        if (to === "rest" && from === "hover")
+            return "hopHome";
+        if (to === "hover")
+            return "arrive";
+        if (to === "rest" && surfaces[from] !== undefined)
+            return "home";
+        return "flash";
+    }
+
     property bool hoverHop: false
 
     /**
@@ -910,6 +961,24 @@ Item {
      * mode change.
      */
     property bool closeArrive: false
+
+    /**
+     * The same close, but with the pill going all the way down to rest: a
+     * surface closed without the pointer latching the hover face back up — the
+     * launcher on its way out (`dismissHover`), a surface closed by key or by
+     * IPC. There is no hover face to arrive at, so the face is kept up for the
+     * clock alone and the clock flies into the rest clock exactly as it does on
+     * a hover→rest collapse. HoverFace reads this to hush everything but the
+     * clock, and treats it as an arrival (see its `arrivingClose`).
+     *
+     * Without it the face dropped on the 40ms fade while the pill still had a
+     * full collapse to travel, and `clockHandoff` — which is 1 for as long as
+     * the pill is taller than hover height — held the rest clock at 0 for that
+     * whole descent. Neither clock was then drawn: the hover clock went out with
+     * the face and the rest clock arrived only in the last pixel, so the clock
+     * vanished at the hover spot and popped in at the rest spot.
+     */
+    property bool closeToRest: false
 
     onModeChanged: {
         /**
@@ -924,9 +993,14 @@ Item {
         /** Hovering is the only way to see the bud, so clear the reclaim on the way in. */
         if (mode === "hover")
             mediaBudIdle = false;
-        hoverHop = (mode === "hover" || mode === "rest") && (lastMode === "hover" || lastMode === "rest");
-        /** Computed before lastMode is overwritten: hover reached by shrinking from a non-rest mode, not by growing from rest. */
-        closeArrive = mode === "hover" && lastMode !== "hover" && lastMode !== "rest";
+        /** Classified once, here, before lastMode is overwritten. */
+        clockTransition = clockTransitionFor(mode, lastMode);
+        /** The two rest↔hover hops (plus a same-mode notification) take the short glide. */
+        hoverHop = clockTransition === "grow" || clockTransition === "hopHome" || clockTransition === "nudge";
+        /** Hover reached by shrinking out of an open surface, not by growing from rest. */
+        closeArrive = clockTransition === "arrive";
+        /** Landing at rest out of an open surface: the clock flies home alone. */
+        closeToRest = clockTransition === "home";
         lastMode = mode;
         if (mode !== "hover") {
             hoverSoulGate = false;
@@ -1492,7 +1566,22 @@ Item {
          */
         Behavior on opacity {
             enabled: pill.mode !== "rest"
-            NumberAnimation { duration: pill.mode === "rest" ? Motion.fast : Math.round(260 * Motion.mult) }
+            /**
+             * A surface opens on the fast curve; the long fade is for a flash
+             * that does not grow the pill. A surface morph *is* the pill growing
+             * to fill where the surface will be, so the rest content is on
+             * borrowed time the moment it starts — and the visualizer bars in
+             * here already leave on exactly this curve, deliberately, so the
+             * string never bleeds into the incoming surface as it morphs open.
+             * The clock was left on 260ms doing what the bars were fixed not to
+             * do: fading slowly over a surface arriving underneath it. An OSD or
+             * a toast is the case the long fade is actually for — the rest face
+             * dissolving under a small panel reads as the panel arriving rather
+             * than as the pill having changed its mind.
+             */
+            NumberAnimation {
+                duration: (pill.mode === "rest" || pill.surfaceOpen) ? Motion.fast : Math.round(260 * Motion.mult)
+            }
         }
 
         Row {
