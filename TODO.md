@@ -1,4 +1,4 @@
 # TODO List
 
-- Clock still flashes weirdly when closing and opening some surfaces.
+- Rewrite, rework, reimplement, or refactor this? Clock still flashes weirdly when closing and opening some surfaces.
 - Add more security features to the lockscreen.
