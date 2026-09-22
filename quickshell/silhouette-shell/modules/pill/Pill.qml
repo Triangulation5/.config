@@ -1554,8 +1554,22 @@ Item {
          * appear mid-collapse and flash ahead of the returning clock; the
          * (1 - clockHandoff) factor keeps the whole rest face hidden until
          * the clock reaches the rest spot, then it arrives with the swap.
+         *
+         * A surface opening is the one case that must not snap. A surface is
+         * built and laid out over the first frames of its first open — the
+         * loader's item exists but reports no implicit height until its content
+         * has laid out, so the size thunks fall back to a guessed height and the
+         * pill sits still until the real one arrives (see the measure helpers).
+         * Snapping on the mode change hid this face on that very frame and left
+         * the pill hollow: the clock gone, nothing behind it, until the surface
+         * finally faded in and the pill grew into it. Handing over on the
+         * surface's own arrival curve — the same morphCloseness it is revealed
+         * by — keeps the clock on screen until there is something to hand over
+         * to, and hands over exactly as fast as the surface arrives.
          */
-        opacity: (pill.expanded || pill.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0 : Math.pow(pill.morphCloseness, 1.5) * (1 - hoverFace.clockHandoff)
+        opacity: pill.surfaceOpen ? Math.max(0, 1 - Math.pow(pill.morphCloseness, 1.3))
+            : (pill.expanded || pill.dragActive || pill.mode === "game" || pill.mode === "toast" || pill.mode === "osd" || pill.mode === "quickChoose" || pill.mode === "quickCount" || pill.hidden) ? 0
+            : Math.pow(pill.morphCloseness, 1.5) * (1 - hoverFace.clockHandoff)
         visible: opacity > 0.01
         /**
          * While at rest the fade-in is a pure per-frame binding (morphCloseness
@@ -1563,9 +1577,13 @@ Item {
          * re-target every frame against that moving value and add lag plus
          * judder. The Behavior stays for the other modes, where the face is
          * driven to a constant 0 and needs a real fade-out.
+         *
+         * A surface opening is the other per-frame case (the first branch
+         * above), by the same argument: it rides the curve that reveals the
+         * surface rather than snapping.
          */
         Behavior on opacity {
-            enabled: pill.mode !== "rest"
+            enabled: pill.mode !== "rest" && !pill.surfaceOpen
             /**
              * A surface opens on the fast curve; the long fade is for a flash
              * that does not grow the pill. A surface morph *is* the pill growing
