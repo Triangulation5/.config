@@ -1,0 +1,75 @@
+# SilhouetteShell as a systemd user service.
+#
+# This is the alternative to hypr/scripts/watchdog.sh, not a companion to it. The
+# two do the same job — bring the shell back after it dies — and enabling this
+# unit while the watchdog is running hands that job to both of them. The result is
+# the hazard launch.sh and the watchdog already guard against between launches: a
+# second instance of the same config stacks another layer surface on the monitor
+# and fights the first one for keyboard focus. One supervisor at a time:
+#
+#   systemd:  systemctl --user enable --now silhouette-shell.service
+#             and point hypr/modules/autostart.lua at it instead of the watchdog
+#   watchdog: bash ~/.config/hypr/scripts/watchdog.sh silhouette-shell
+#             (what autostart.lua does today)
+#
+# Versioned here and installed by symlink, so this copy is the one to edit. The
+# link is relative, so a clone at a different $HOME installs unchanged:
+#
+#   ln -sfn ../../quickshell/silhouette-shell/systemd/silhouette-shell.service \
+#           ~/.config/systemd/user/silhouette-shell.service
+#   systemctl --user daemon-reload
+#
+# A user service does not inherit the compositor's environment, and quickshell
+# cannot reach a Wayland socket it has no name for. Import the session's own
+# values before starting it (hypr/modules/env.lua lists everything the compositor
+# sets; QT_QPA_PLATFORMTHEME is there too — without it the settings dialog falls
+# back to a bare Qt theme):
+#
+#   systemctl --user import-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE \
+#       XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORM QT_QPA_PLATFORMTHEME
+#
+# or put them in ~/.config/environment.d/ so they are there on every login.
+#
+# The lock survives a restart of this unit: the shell reports its own state to
+# logind (modules/lock/LockRoot.qml) and reads that hint back on start, so a shell
+# systemd replaces while the session was locked re-locks the moment it is up,
+# instead of leaving the session open for the second it takes to respawn.
+
+[Unit]
+Description=SilhouetteShell — Quickshell desktop shell for Hyprland
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+
+# launch.sh runs this ahead of the shell, once per session, to carry state written
+# under the old `ricelin` names over to the `silhouette` ones. Idempotent, and
+# only meaningful for a tree that predates the rename; a missing script is not an
+# error, hence the `-`.
+ExecStartPre=-/usr/bin/sh %h/.config/hypr/scripts/migrate-state.sh
+
+# `qs -p <dir>` rather than launch.sh: this unit restarts on *any* exit, and
+# launch.sh exits 0 when another instance already answers IPC — running it here
+# would turn that guard into a restart loop. The tuning it exports is repeated
+# below instead, and it is the one thing to keep in step with launch.sh.
+ExecStart=/usr/bin/qs -p %h/.config/quickshell/silhouette-shell
+
+# The jemalloc decay tuning launch.sh exports: quickshell links jemalloc, which
+# otherwise parks freed pages at the session's high-water mark. Keep in step with
+# hypr/scripts/launch.sh.
+Environment=MALLOC_CONF=background_thread:true,dirty_decay_ms:100,muzzy_decay_ms:100
+
+# A crash or a clean exit both come back; the shell has no legitimate way to end
+# itself, so every exit is treated as a failure to stay up.
+Restart=always
+RestartSec=1
+
+# Stopping this unit tears the cgroup down, which takes the in-process lock with
+# it and exposes the session for as long as the replacement takes to mount; the
+# re-lock on start is what closes that window, so stop quickly rather than let
+# the unlock be drawn out.
+TimeoutStopSec=5
+
+[Install]
+WantedBy=graphical-session.target

@@ -101,6 +101,12 @@ ALLOW_LOCKED = False
 # actually took (not on --help, which never touches anything).
 RUNNING = False
 
+# Seconds a killed shell is given to be brought back by the session's supervisor
+# (the watchdog in hypr/modules/autostart.lua, which notices on its own 5s tick)
+# before this script launches one by hand. Launching as well is the race that
+# leaves two shells up.
+SUPERVISOR_GRACE = 12.0
+
 def paint(code, text):
     return f"\033[{code}m{text}\033[0m" if COLOR else text
 def dim(t):    return paint("2", t)
@@ -311,8 +317,17 @@ def restart_shell():
             except ProcessLookupError:
                 pass
             time.sleep(0.5)
-    relaunch()
-    new = wait_shell_up()
+    # Killing the shell is the whole restart when the watchdog is up: it sees IPC
+    # stop answering and brings one back through launch.sh. Hand that window over
+    # before launching directly — doing both at once is what leaves two shells
+    # fighting over the layer surface, and the direct launch is only for a session
+    # with no supervisor running at all.
+    print(dim(f"  waiting up to {SUPERVISOR_GRACE:g}s for the supervisor to respawn it"))
+    new = wait_shell_up(timeout=SUPERVISOR_GRACE)
+    if new is None:
+        print(dim("  nothing respawned it — launching directly"))
+        relaunch()
+        new = wait_shell_up()
     if new is None:
         print(red("  shell did not come back up!"))
     else:
