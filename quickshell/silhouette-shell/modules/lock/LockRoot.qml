@@ -43,6 +43,8 @@ ShellRoot {
             sessionLock.locked = false;
             Cava.enabled = false;
             root.pw.text = "";
+            root.clearGrabs();
+            root.reportLockState(false);
         }
     }
 
@@ -75,7 +77,95 @@ ShellRoot {
         sessionLock.locked = true;
         Cava.enabled = true;
         reveal.restart();
+        root.reportLockState(true);
     }
+
+    /**
+     * Drop the desktop grabs the lock backdrop was built from — one full-resolution
+     * screenshot per output, written by the lock script as silhouette-lock-<output>.png
+     * under XDG_RUNTIME_DIR on the way in. Both layers of every lock surface have
+     * read them long before the session is unlocked, and nothing removed them after
+     * that, so the last thing on screen — its windows, whatever was open — stayed
+     * readable in the runtime dir until logout. The sweep belongs on the unlock and
+     * nowhere earlier: a cancelled collapse relocks against the same grabs, and the
+     * surfaces read the file again every time they mount, so a sweep at lock start
+     * or at shell startup would race the script that is writing them. A shell that
+     * is killed while locked never reaches the unlock, so its grabs outlive it —
+     * XDG_RUNTIME_DIR being wiped at logout is the backstop for that one. The glob
+     * is why this is an `rm` in a shell rather than a FileView.
+     */
+    function clearGrabs(): void {
+        /** Reset first, so a sweep that is somehow still in flight re-runs rather than being ignored. */
+        grabCleaner.running = false;
+        grabCleaner.command = ["sh", "-c", "rm -f \"$1\"/silhouette-lock-*.png", "sh",
+            Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"];
+        grabCleaner.running = true;
+    }
+    Process { id: grabCleaner }
+
+    /**
+     * Tell logind what the lock is doing, because nothing else on the machine can
+     * see it. The shell hosts the lock in-process, so logind's LockedHint only ever
+     * got set as a side effect of a lock *asked for through logind* (hypridle's
+     * before_sleep calling lock-session) — a lock raised the ordinary way, by the
+     * touch-file trigger or the IPC handler, left the hint saying "unlocked" while
+     * the screen was covered. Outside readers act on that wrong answer: utils/soak.py
+     * is the one in the tree, and it refuses to restart the shell while the session
+     * is locked, so a lagging hint lets a relaunch land on top of a live lock. The
+     * same hint is read back on start — that is checkRelock below. Best-effort by
+     * design: if the call cannot be made, the lock itself is unaffected.
+     */
+    function reportLockState(locked: bool): void {
+        lockedHint.command = ["gdbus", "call", "--system",
+            "--dest", "org.freedesktop.login1",
+            "--object-path", "/org/freedesktop/login1/session/auto",
+            "--method", "org.freedesktop.login1.Session.SetLockedHint",
+            locked ? "true" : "false"];
+        lockedHint.running = true;
+    }
+    Process { id: lockedHint }
+
+    /**
+     * Re-lock on start when the session was locked as the previous shell died. The
+     * lock is in-process, so a crash takes the WlSessionLock down with it and leaves
+     * the session open; whatever brings a shell back — a supervisor, or reload.sh by
+     * hand — starts one that has no idea it was ever locked. The LockedHint written
+     * on every transition is that memory: `true` on record means the last lock was
+     * never followed by an unlock, so this process locks again at once and covers the
+     * same screens. `false` (a fresh login, or a shell that died unlocked) means
+     * there is nothing to restore.
+     *
+     * That is why the hint is read before anything writes it: the report calls in
+     * doLock and in the unlock would clear the evidence on the way in. A failed or
+     * unreadable query does nothing rather than reporting `false`, so a hint that did
+     * say `true` is never erased by a shell that could not check it.
+     *
+     * The reveal still has an image to open onto, because the grabs the dead lock was
+     * built from are exactly the ones the unlock-time sweep cannot reach — see
+     * clearGrabs. The re-lock therefore comes up on the desktop as it was when the
+     * session was first locked, never on a live capture.
+     */
+    function checkRelock(): void {
+        lockedQuery.command = ["gdbus", "call", "--system",
+            "--dest", "org.freedesktop.login1",
+            "--object-path", "/org/freedesktop/login1/session/auto",
+            "--method", "org.freedesktop.DBus.Properties.Get",
+            "org.freedesktop.login1.Session", "LockedHint"];
+        lockedQuery.running = true;
+    }
+
+    /** gdbus prints the property as one line: `(<true>,)` or `(<false>,)`. */
+    Process {
+        id: lockedQuery
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (line.indexOf("<true>") >= 0)
+                    root.doLock();
+            }
+        }
+    }
+
+    Component.onCompleted: root.checkRelock()
 
     /**
      * Fast lock trigger. Spawning a fresh `qs ipc call` client to ask for the lock
@@ -107,7 +197,24 @@ ShellRoot {
         onFileChanged: triggerFire.restart()
     }
 
-
+    /**
+     * The other two ways in, both from logind and both watched by the shell's one
+     * logind monitor (services/SuspendWatch — the same monitor the pill's calendar
+     * re-anchors off): a `Lock` over the session, which is `loginctl
+     * lock-session`, and the sleep half of PrepareForSleep, for a suspend that
+     * never passes through hypridle at all (a bare `systemctl suspend`, or a lid
+     * close logind handles itself). The hypridle config this shell writes makes
+     * its before_sleep_cmd exactly that lock-session call, and without a listener
+     * the request stopped at logind: the machine could suspend with the session
+     * wide open and come back the same way. Both signals are just more callers of
+     * the same doLock the trigger file and the IPC handler use, so the pair a
+     * single suspend produces is absorbed by doLock's own already-locked check.
+     */
+    Connections {
+        target: SuspendWatch
+        function onLockRequested() { root.doLock(); }
+        function onSuspending() { root.doLock(); }
+    }
 
     WlSessionLock {
         id: sessionLock
