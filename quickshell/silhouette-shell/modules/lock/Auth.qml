@@ -1,4 +1,6 @@
 import QtQuick
+import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pam
 
 /**
@@ -6,6 +8,11 @@ import Quickshell.Services.Pam
  * quickshell-lock PamContext, exposes failed/succeeded and the last error, and
  * retries the conversation once when a fingerprint reader fails to initialize so
  * a transient hiccup doesn't lock the user out.
+ *
+ * The retry lockout is the one piece of auth state that outlives the process: the
+ * streak and the deadline it is waiting out are written to a small file beside the
+ * shell's other state as they change, and read back when this item is built, so
+ * restarting the shell lands mid-lockout instead of clearing it.
  */
 
 Item {
@@ -38,6 +45,9 @@ Item {
     property bool lockedOut: false
     property int lockoutRemaining: 0
 
+    /** Same fallback the rest of the shell's state uses: XDG_STATE_HOME, else ~/.local/state. */
+    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette"
+
     function clearState() {
         pendingPassword = ""
         lastError = ""
@@ -56,6 +66,7 @@ Item {
             lockoutRemaining = Math.min(lockoutMax, lockoutSeconds * Math.pow(2, repeat))
             lockedOut = true
         }
+        persistLockout()
     }
 
     /** Successful auth clears the streak and any active lockout. */
@@ -63,6 +74,7 @@ Item {
         failedAttempts = 0
         lockedOut = false
         lockoutRemaining = 0
+        persistLockout()
     }
 
     Timer {
@@ -76,6 +88,8 @@ Item {
             } else {
                 auth.lockoutRemaining = 0
                 auth.lockedOut = false
+                /** The wait is served — drop the deadline so the file never reads as still locked. */
+                auth.persistLockout()
             }
         }
     }
@@ -179,6 +193,77 @@ Item {
             auth.retryingWithoutFingerprint = false
             auth.recordFailure()
             auth.failed()
+        }
+    }
+
+    /**
+     * Read the persisted streak and deadline back. Both are stored rather than the
+     * countdown alone: a remaining-seconds count would restart the full wait on
+     * every launch, while an absolute deadline resumes the wait where it actually
+     * is — it keeps running through a suspend, because the wall clock does. A
+     * deadline further out than lockoutMax can only be stale or hand-edited state,
+     * so it is dropped rather than honoured: believing it would lock the session
+     * out again on every launch.
+     */
+    function restoreLockout() {
+        var attempts = 0;
+        var until = 0;
+        try {
+            var t = lockoutFile.text();
+            if (t && t.trim().length > 0) {
+                var saved = JSON.parse(t);
+                attempts = Math.max(0, Number(saved.failedAttempts) || 0);
+                until = Number(saved.lockoutUntil) || 0;
+            }
+        } catch (e) {
+            attempts = 0;
+            until = 0;
+        }
+
+        var now = Date.now();
+        if (until - now > lockoutMax * 1000)
+            until = 0;
+
+        failedAttempts = attempts;
+        if (until > now) {
+            lockedOut = true;
+            lockoutRemaining = Math.ceil((until - now) / 1000);
+        } else {
+            lockedOut = false;
+            lockoutRemaining = 0;
+        }
+    }
+
+    /**
+     * Mirror the streak and the deadline to disk. Written on every failure and at
+     * both ends of the wait, so the file is never further behind than one failed
+     * attempt. This is continuity, not tamper-proofing: the file is the user's own,
+     * and a hand edit still bypasses it — what it closes is the restart.
+     */
+    function persistLockout() {
+        lockoutFile.setText(JSON.stringify({
+            failedAttempts: failedAttempts,
+            lockoutUntil: lockedOut ? Date.now() + lockoutRemaining * 1000 : 0
+        }));
+    }
+
+    Component.onCompleted: restoreLockout()
+
+    /**
+     * The lockout's state file. Read synchronously at construction (blockLoading,
+     * like the shell's other state) so the gate is armed before the first keystroke
+     * can land. Never watched: this item is its only writer.
+     */
+    FileView {
+        id: lockoutFile
+        path: auth.stateDir + "/lock-auth.json"
+        blockLoading: true
+        atomicWrites: true
+        printErrors: false
+
+        onLoadFailed: function (error) {
+            if (error === FileViewError.FileNotFound)
+                lockoutFile.setText(JSON.stringify({ failedAttempts: 0, lockoutUntil: 0 }));
         }
     }
 }
