@@ -15,6 +15,14 @@ Column {
     property real s: 1.1
     property var host: null
 
+    /**
+     * Redaction gate (Flags.lockPrivacy): while it is on nothing that identifies
+     * the track is drawn — no cover, no title, no artist or position text. The
+     * card and its progress thread stay, so the lock still says something is
+     * playing without saying what.
+     */
+    readonly property bool redacted: Flags.lockPrivacy
+
     visible: host.hasPlayer && !host.clockExpanded
     opacity: host.clockExpanded ? 0 : 1
     Behavior on opacity {
@@ -38,7 +46,7 @@ Column {
             Image {
                 id: coverImg
                 anchors.fill: parent
-                visible: host.artUrl.length > 0
+                visible: host.artUrl.length > 0 && !root.redacted
                 source: host.artUrl
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
@@ -68,7 +76,9 @@ Column {
             spacing: 3 * root.s
 
             Text {
-                text: host.trackTitle.length > 0 ? host.trackTitle : "Unknown"
+                text: root.redacted
+                    ? "Media hidden"
+                    : (host.trackTitle.length > 0 ? host.trackTitle : "Unknown")
                 color: Theme.bright
                 font.family: Theme.font
                 font.pixelSize: 12 * root.s
@@ -77,7 +87,7 @@ Column {
                 width: 154 * root.s
             }
             Text {
-                visible: host.metaLine.length > 0
+                visible: host.metaLine.length > 0 && !root.redacted
                 text: host.metaLine
                 color: Theme.dim
                 font.family: Theme.font

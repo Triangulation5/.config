@@ -108,6 +108,7 @@ Singleton {
             property int idleLockMin: 3
             property int idleScreenOffMin: 0
             property int idleSuspendMin: 0
+            property bool lockPrivacy: false
             property string lockDotsMode: "gpixel"
             property string weatherCity: "WELLAND"
             property bool musicViz: true
@@ -216,7 +217,7 @@ Singleton {
         "notchStyle", "notchFlare", "autoHide", "vimKeys",
         "recordCountdown", "recordDir", "recordFps", "recordQuality",
         "recordCursor", "recordMic", "recordDesktop", "recordClearedBefore",
-        "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockDotsMode",
+        "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockPrivacy", "lockDotsMode",
         "weatherCity", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode", "gamePrevDnd", "gamePrevViz", "gamePrevAwake",

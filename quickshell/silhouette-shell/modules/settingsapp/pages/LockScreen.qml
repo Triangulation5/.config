@@ -4,8 +4,9 @@ import QtQuick
 
 /**
  * Lock Screen: the three idle timeouts the shell writes into hypridle.conf (0
- * turns a stage off), the box the password field is drawn in, the backdrop's
- * blur, and the password bead animation.
+ * turns a stage off), what the lock screen may show before it is unlocked, the box
+ * the password field is drawn in, the backdrop's blur, and the password bead
+ * animation.
  *
  * The three timeouts are flags that the shell turns into a whole file — see the
  * shell's IdleLock surface — so they are settings, not config edits. The sizes
@@ -14,7 +15,7 @@ import QtQuick
 QtObject {
     readonly property string name: "Lock Screen"
     readonly property string icon: "\u25A1"
-    readonly property string keywords: "lock idle dim dpms suspend timeout password avatar backdrop blur bead animation screen"
+    readonly property string keywords: "lock idle dim dpms suspend timeout password avatar backdrop blur bead animation screen privacy private hide redact media music ssid wifi network name"
 
     readonly property var groups: [
         { card: "Idle", rows: [
@@ -24,6 +25,10 @@ QtObject {
               caption: "Blank the display after idle (0 = off)", reset: 0 },
             { key: "idleSuspendMin", type: "slider", label: "Suspend", min: 0, max: 60, step: 1, unit: "min",
               caption: "Sleep the machine after idle (0 = off)", reset: 0 }
+        ]},
+        { card: "Privacy", rows: [
+            { key: "lockPrivacy", type: "toggle", label: "Hide private info",
+              caption: "Keep the now-playing card, the wifi name and your real name off the lock", reset: false }
         ]},
         { card: "Surface", rows: [
             { key: "lockPillW", type: "slider", label: "Field width",

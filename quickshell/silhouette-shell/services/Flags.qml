@@ -45,6 +45,7 @@ Singleton {
     property alias idleLockMin: adapter.idleLockMin
     property alias idleScreenOffMin: adapter.idleScreenOffMin
     property alias idleSuspendMin: adapter.idleSuspendMin
+    property alias lockPrivacy: adapter.lockPrivacy
     property alias lockDotsMode: adapter.lockDotsMode
     property alias weatherCity: adapter.weatherCity
     property alias musicViz: adapter.musicViz
@@ -200,6 +201,15 @@ Singleton {
             property int idleLockMin: 3
             property int idleScreenOffMin: 0
             property int idleSuspendMin: 0
+            /**
+             * Redact the lock screen until the session is authenticated: the
+             * now-playing text and art, the wifi network name and the account's
+             * real name each give way to a neutral placeholder. Off by default —
+             * a lock screen a passer-by can read is not doing its job, but the
+             * default here is behaviour, not advice: existing sessions keep the
+             * lock they already had until they opt in from Settings › Lock Screen.
+             */
+            property bool lockPrivacy: false
             /** Lock-screen password bead entrance: "drop", "pulse", or "gpixel". */
             property string lockDotsMode: "gpixel"
             property string weatherCity: "WELLAND"

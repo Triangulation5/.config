@@ -20,6 +20,13 @@ Item {
     property bool expanded: false
     property real pressScale: 1
 
+    /**
+     * Redaction gate (Flags.lockPrivacy): a network name is an address the room
+     * can read, so the glance falls back to the bare "WiFi" label while the
+     * session is locked. The toggles and the signal glyph stay live.
+     */
+    readonly property bool redacted: Flags.lockPrivacy
+
     readonly property var wifiDevice:
         Networking?.devices?.values.find(d => d && d.type === DeviceType.Wifi) ?? null
 
@@ -197,7 +204,7 @@ Item {
 
                 text:
                     link.wifiOn && link.activeWifi
-                    ? link.wifiName
+                    ? (link.redacted ? "WiFi" : link.wifiName)
                     : link.bluetoothOn
                         ? "Bluetooth"
                         : "Offline"
@@ -239,7 +246,7 @@ Item {
             LinkRow {
                 title:
                     link.wifiOn
-                    ? link.wifiName
+                    ? (link.redacted ? "WiFi" : link.wifiName)
                     : "WiFi"
 
                 status:
