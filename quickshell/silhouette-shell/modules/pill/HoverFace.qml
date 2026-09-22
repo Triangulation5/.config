@@ -148,6 +148,17 @@ Item {
     readonly property real faceHush: (host.mode === "hover" || host.mode === "rest") ? 1 : 0
 
     /**
+     * The same hush, for the one close that lands at rest (host.closeToRest):
+     * the face is up only so the clock can fly into the rest clock, so every
+     * part of it the clock is not — the bud, the tray, the minimized row, the
+     * dates — is held off for the whole descent. clockHop cannot do that on its
+     * own: it clamps to 1 for as long as the pill is taller than hover height,
+     * which is most of a close from a full-size surface, so the whole hover face
+     * would ride back down and ghost over the surface dissolving under it.
+     */
+    readonly property real contentHush: closeToRest ? 0 : 1
+
+    /**
      * The rest clock's centre, captured once the moment hover mode begins
      * (while the pill is still at rest geometry) so the flight is a clean
      * straight line instead of chasing a live mapToItem mid-morph — the old
@@ -285,25 +296,57 @@ Item {
      * gone the face rides the pill's descent as before. From a rest→hover hop
      * faceArrive stays 1 and the existing stagger plays unchanged.
      */
-    readonly property bool closeArrive: host.closeArrive
-    readonly property real faceArrive: closeArrive
+    /**
+     * The pill's classification of this mode change (see Pill.clockTransition):
+     * grow, hopHome, nudge, arrive, home, flash or idle. Every gate in this file
+     * reads this instead of re-deriving the mode pair by hand.
+     */
+    readonly property string transition: host ? host.clockTransition : ""
+
+    readonly property bool closeArrive: transition === "arrive"
+
+    /**
+     * The same close, one step further: the pill is going all the way down to
+     * rest and there is no hover face to arrive at. The face is then a vehicle
+     * for the clock's flight home and nothing else — `contentHush` holds the
+     * rest of it off — and the arrival fade below applies exactly as it does on
+     * the hover landing, crossfading against the dissolving surface and then
+     * riding the pill's descent.
+     */
+    readonly property bool closeToRest: transition === "home"
+
+    /** Either arrival: the pill is closing out of a surface, not growing from rest. */
+    readonly property bool arrivingClose: closeArrive || closeToRest
+
+    readonly property real faceArrive: arrivingClose
         ? (1 - host.closingOpacity) * Math.pow(Math.max(0, (host.morphCloseness - 0.3) / 0.7), 1.3)
         : 1
 
     /**
      * The face stays up while the pill collapses from hover back to rest
-     * (host.hoverHop is freshly true exactly for the rest↔hover pair), so the
+     * (that is the `hopHome` transition, and `nudge` for a same-mode
+     * notification), so the
      * clock visibly flies back to the rest spot and the stagger fades the
      * media, tray and dates out over the shrink — ending in the clock handoff
-     * swap instead of a 40ms blink-and-reappear. Every other exit (surface,
-     * OSD, toast) still drops the face on the fast fade.
+     * swap instead of a 40ms blink-and-reappear.
+     *
+     * A close out of a surface that lands at rest gets that same stay (the
+     * third branch below): the pill passes through the same geometry on its way
+     * down, so the clock has the same flight to make, and dropping the face here
+     * is what took the clock off the screen for the whole collapse while
+     * clockHandoff held the rest clock back. Only the clock is drawn on that
+     * path — contentHush handles the rest of the face. The remaining exits (OSD,
+     * toast, quick-record) still drop the face on the fast fade, having no
+     * collapse to fly a clock through.
      */
-    opacity: live ? faceArrive : (host.hoverHop && host.mode === "rest" ? 1 : 0)
+    opacity: live ? faceArrive
+        : ((transition === "hopHome" || transition === "nudge") && host.mode === "rest" ? 1
+        : (arrivingClose ? faceArrive : 0))
     visible: opacity > 0.01
 
     Behavior on opacity {
         /** The close arrival is already driven smoothly by the pill's morph; a Behavior would fight the per-frame settle. */
-        enabled: !face.closeArrive
+        enabled: !face.arrivingClose
         NumberAnimation {
             duration: host.mode === "hover" ? Motion.fast : 40
             easing.type: Motion.easeStandard
@@ -333,7 +376,7 @@ Item {
 
             spacing: 12 * host.s
 
-            opacity: face.mediaMorph * face.faceHush
+            opacity: face.mediaMorph * face.faceHush * face.contentHush
 
             transform: Translate {
                 x: 56 * host.s * (1 - face.mediaMorph)
@@ -554,7 +597,7 @@ Item {
                     onOpenCalendar: (date) => host.openCalendarAt(date)
 
                     scale: host.s
-                    opacity: face.calendarMorph * face.faceHush
+                    opacity: face.calendarMorph * face.faceHush * face.contentHush
                 }
             }
 
