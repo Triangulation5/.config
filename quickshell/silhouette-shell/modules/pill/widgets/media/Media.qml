@@ -781,7 +781,7 @@ PillSurface {
                           + " / " + root.fmt(root.lengthSec)
         color: Theme.dim
         font.family: Theme.font
-        font.pixelSize: 12.5 * root.s
+        font.pixelSize: 11.5 * root.s
         font.features: { "tnum": 1 }
     }
 }
