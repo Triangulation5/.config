@@ -34,6 +34,14 @@ Item {
     property string user: ""
 
     /**
+     * Redaction gate (Flags.lockPrivacy): the real name off the GECOS field — and
+     * the login name it falls back to — is what a passer-by reads as this machine's
+     * owner, so the label carries a placeholder instead while the session is locked.
+     * The avatar and the passwd read are unchanged: the gate is about what is drawn.
+     */
+    readonly property bool redacted: Flags.lockPrivacy
+
+    /**
      * The user's display name: the GECOS field of their /etc/passwd entry, or
      * the login name when none is set. Read once per lock via a blockLoading
      * FileView, so it never blocks the reveal with a process spawn.
@@ -237,7 +245,7 @@ Item {
         anchors.top: tile.bottom
         anchors.topMargin: 12 * profile.s
 
-        text: profile.realName
+        text: profile.redacted ? "locked" : profile.realName
 
         color: Theme.cream
         opacity: 0.85
