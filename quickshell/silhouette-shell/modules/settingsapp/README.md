@@ -479,10 +479,11 @@ affected components read them the way they read every other flag:
 | --- | --- | --- | --- |
 | Screen-corner radii, bezel shadow, collapse time | `modules/screencorner/ScreenCornerRoot.qml` | `cornerNotchRadius`, `cornerNormalRadius`, `cornerGameRadius`, `cornerShadowSize`, `cornerMorphMs` | Corners |
 | Every shell animation duration | one multiplier in `services/Motion.qml` | `motionSpeed` | Motion |
-| Pill eviction sweep, hover grace | `modules/pill/Pill.qml` timers | `pillCleanupSec`, `pillHoverGraceMs` | Timers |
+| Pill eviction sweep, hover grace, game mode's harsher override | `modules/pill/Pill.qml` timers | `pillCleanupSec`, `pillGameUnloadMs`, `pillGameSweepSec`, `pillHoverGraceMs` | Timers |
 | OSD hold | `widgets/osd/Osd.qml` | `osdHoldMs` | Timers |
 | Notification popup life | `services/Notifs.qml` | `notifMs`, `notifLowMs` | Timers |
-| Lock field and avatar, blur spread, bead timeline | `modules/lock/*` | `lockPillW`, `lockPillH`, `lockAvatarSize`, `lockBlurSpread`, `lockBeadMs` | Lock Screen |
+| Lock field and avatar, backdrop blur and grade, bead timeline | `modules/lock/*`, `assets/shaders/grade.frag` | `lockPillW`, `lockPillH`, `lockAvatarSize`, `lockBlurSpread`, `lockBlurDarken`, `lockBlurSaturation`, `lockBlurVignette`, `lockBlurGrain`, `lockBeadMs` | Lock Screen |
+| Failed-password escalation (new): log out, restart or shut down, and how many wrong tries | the lock's auth daemon, `modules/lock/Auth.qml` | `lockFailAction`, `lockFailLimit` | Lock Screen |
 
 The motion one is worth a sentence: **one flag scales the whole shell**, because
 `services/Motion.qml` is the single place durations are handed out — every

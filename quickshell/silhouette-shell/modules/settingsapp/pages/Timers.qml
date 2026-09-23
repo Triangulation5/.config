@@ -21,6 +21,13 @@ import qs.services
  * screen, a running timer and a pending polkit prompt alone. There is a row for
  * it right under the saver's switch.
  *
+ * Game mode outranks the whole schedule: entering it clears the closed surfaces
+ * immediately, and for as long as it is on a closed surface is reclaimed at the
+ * game-mode tail whatever its tier — even with the saver off — with the sweep held
+ * to the shorter of the cleanup sweep and the game-mode one. The rows below
+ * describe the ordinary session; the pair after them is that override, so the
+ * schedule the mode runs on is set from the same card the ordinary one is.
+ *
  * That row is why this page imports the shell's `qs.services` and no other page
  * does. Everywhere else here edits a file and lets the shell notice, but a button
  * that hands memory back has to act on the running shell, which is the same
@@ -57,6 +64,18 @@ QtObject {
             { key: "pillCleanupSec", type: "slider", label: "Cleanup sweep",
               min: 2, max: 60, step: 1, unit: "s",
               caption: "How often the pill looks for closed surfaces to evict", reset: 10 },
+            // Game mode's override of the two rows above: while the mode is on,
+            // Pill.qml frees a closed surface at this one tail whatever its tier
+            // and runs the sweep at most this often, even with the saver off. Two
+            // rows rather than a read-only line, because the override is a setting
+            // in its own right — the numbers Pill.qml applies are the ones chosen
+            // here.
+            { key: "pillGameUnloadMs", type: "slider", label: "Game-mode tail",
+              min: 0, max: 5000, step: 100, unit: "ms",
+              caption: "While game mode is on, how long a closed surface lingers before it is freed (0 frees it at the very next sweep, which can clip its close)", reset: 1000 },
+            { key: "pillGameSweepSec", type: "slider", label: "Game-mode sweep",
+              min: 1, max: 10, step: 1, unit: "s",
+              caption: "How often the pill looks for closed surfaces to free while game mode is on; the cleanup sweep above still applies when it is the shorter of the two", reset: 2 },
             { key: "pillHoverGraceMs", type: "slider", label: "Hover grace",
               min: 0, max: 1000, step: 50, unit: "ms",
               caption: "How long the pill waits before collapsing after the pointer leaves", reset: 300 }

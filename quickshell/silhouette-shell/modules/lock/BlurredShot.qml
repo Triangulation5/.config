@@ -9,6 +9,12 @@ import QtQuick
  * version of the desktop behind. Loaded asynchronously by the lock surface so
  * the cheap sharp overlay and clock are up first, which keeps the compositor
  * from showing a black gap while this instantiates.
+ *
+ * Every knob here — the blur's reach and the four grade strengths laid over it —
+ * is bound from a flag by the lock surface, so the whole backdrop look is a Lock
+ * Screen setting rather than a rebuild. The defaults are the shell's shipped
+ * look: the spread the surface used to hand over, and the numbers the grade
+ * shader used to hard-code.
  */
 Item {
     id: root
@@ -20,6 +26,15 @@ Item {
 
     /** How much the final grade darkens the result. */
     property real darken: 0.62
+
+    /** Colour saturation the grade pulls the result toward (1 = untouched, 0 = greyscale). */
+    property real saturate: 1.0
+
+    /** How much darkness the grade gathers at the edges (0 = flat). */
+    property real vignette: 0.14
+
+    /** Film grain amplitude the grade mixes in (0 = clean). */
+    property real grain: 0.012
 
     readonly property size half: Qt.size(Math.max(2, Math.round(width / 2)), Math.max(2, Math.round(height / 2)))
     readonly property size quarter: Qt.size(Math.max(2, Math.round(width / 4)), Math.max(2, Math.round(height / 4)))
@@ -212,6 +227,9 @@ Item {
         property var source: blurV3Src
         property vector2d srcSize: root.eighthVec
         property real darken: root.darken
+        property real saturate: root.saturate
+        property real vignette: root.vignette
+        property real grain: root.grain
         fragmentShader: "../../assets/shaders/grade.frag.qsb"
     }
 }
