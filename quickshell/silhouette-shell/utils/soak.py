@@ -18,7 +18,10 @@ every surface, window and the memory saver that frees them live inside it. So
             close is followed by `pill unloadAll` while that surface is the only
             one closed, so what the drop returns is that surface's own tree, and
             one further surface is left to the memory saver's own tier tail to
-            prove the timed sweep fires without the manual door
+            prove the timed sweep fires without the manual door. Game mode is
+            honored throughout: the run reports the override it is actually
+            under and waits out game mode's harsh tail and capped sweep instead
+            of the tier table
   quiet     idle soak with a least-squares trend (MB/min) to catch slow leaks
 
 It is deliberately safe around the lock: it refuses to restart while the lock is
@@ -62,8 +65,16 @@ LOG_DIR = STATE_DIR
 FLAGS_PATH = os.path.join(STATE_DIR, "flags.json")
 
 # The memory saver's short tier (Pill.qml unloadIdleMs): the two heaviest surfaces
-# are swept at the base tail, everything else after one double-length reset.
+# are swept at the base tail, everything else after one double-length reset. Game
+# mode replaces the whole table with one harsh tail (see tier_tail), so this is
+# only consulted while the mode is off.
 BASE_TIER = {"wallpaper", "mixer"}
+
+# Pill.qml's shipped game-mode override, used when flags.json has no say. The mode
+# always overrides the memory saver (even when the saver is off), so these are the
+# numbers it runs on.
+GAME_MS = 1000
+GAME_SWEEP_S = 2
 
 # RSS that may stay behind after a surface's own tree is dropped, in KiB, before a
 # probe calls it kept memory: background services (network scans, bluetooth, the
@@ -344,7 +355,8 @@ def ensure_shell():
     return wait_shell_up()
 
 # --------------------------------------------------------------------------
-# memory saver (Pill.qml's tier table, as configured in flags.json)
+# memory saver (Pill.qml's tier table, plus game mode's override of it, as
+# configured in flags.json)
 
 def _num(v, default):
     try:
@@ -353,14 +365,26 @@ def _num(v, default):
         return default
 
 def saver_config():
-    """{on, base, sweep} from the shell's flags, defaulting to Flags.qml."""
-    cfg = {"on": True, "base": 12, "sweep": 10}
+    """{on, base, sweep, game, game_ms, game_sweep} from the shell's flags,
+    defaulting to Flags.qml.
+
+    The `game*` trio is game mode's override of the saver (Pill.qml's unloadS /
+    cleanupSweepMs): while the mode is on the tier table is replaced by one harsh
+    tail and the sweep is capped, and both hold even with the saver itself off.
+    Like the saver's own numbers these are a snapshot taken before the run — a
+    mode toggled mid-run is not re-read.
+    """
+    cfg = {"on": True, "base": 12, "sweep": 10,
+           "game": False, "game_ms": GAME_MS, "game_sweep": GAME_SWEEP_S}
     try:
         with open(FLAGS_PATH) as f:
             flags = json.load(f)
         cfg["on"] = bool(flags.get("memorySaver", True))
         cfg["base"] = _num(flags.get("pillSurfaceIdleTimeout"), cfg["base"])
         cfg["sweep"] = _num(flags.get("pillCleanupSec"), cfg["sweep"])
+        cfg["game"] = bool(flags.get("gameMode", False))
+        cfg["game_ms"] = _num(flags.get("pillGameUnloadMs"), cfg["game_ms"])
+        cfg["game_sweep"] = _num(flags.get("pillGameSweepSec"), cfg["game_sweep"])
     except (OSError, ValueError):
         pass
     return cfg
@@ -369,22 +393,47 @@ def base_tail(cfg):
     """The base tail in seconds — Pill.qml floors pillSurfaceIdleTimeout at 10."""
     return max(10, cfg["base"])
 
+def game_tail(cfg):
+    """Game mode's harsh tail in seconds — Pill.qml's gameUnloadMs, kept in ms in
+    the flag but carried here in seconds like every other tail."""
+    return cfg["game_ms"] / 1000.0
+
+def effective_sweep(cfg):
+    """The sweep period in seconds the shell actually runs: pillCleanupSec, capped
+    at pillGameSweepSec while game mode is on (Pill.qml's cleanupSweepMs)."""
+    secs = min(cfg["sweep"], cfg["game_sweep"]) if cfg["game"] else cfg["sweep"]
+    return max(1, secs)
+
+def sweep_runs(cfg):
+    """Whether the timed sweep fires at all: with the saver on, or in game mode,
+    whose override holds even when the saver is off."""
+    return cfg["on"] or cfg["game"]
+
 def tier_tail(name, cfg):
-    """Tail (seconds) before a closed `name` is swept, from Pill.qml's table: the
-    two heaviest surfaces go at exactly the base, everything else gets double."""
+    """Tail (seconds) before a closed `name` is swept. Game mode collapses the
+    table to its one harsh tail for every surface; otherwise the two heaviest go
+    at exactly the base and everything else gets double (Pill.qml's unloadTail)."""
+    if cfg["game"]:
+        return game_tail(cfg)
     return base_tail(cfg) if name in BASE_TIER else 2 * base_tail(cfg)
 
 def timed_wait(name, cfg):
-    """Tier tail for `name` plus one sweep tick — when its own tier has certainly run."""
-    return tier_tail(name, cfg) + max(1, cfg["sweep"])
+    """That surface's tail plus one sweep tick — when its own tier has certainly run."""
+    return tier_tail(name, cfg) + effective_sweep(cfg)
 
 def saver_line(cfg):
+    if cfg["game"]:
+        line = (f"  game mode ON: closed surfaces free after {game_tail(cfg):g}s "
+                f"(any tier), sweep every {effective_sweep(cfg)}s")
+        if not cfg["on"]:
+            line += "; the saver is off, but the override still sweeps"
+        return dim(line)
     if not cfg["on"]:
         return dim("  memory saver OFF — the timed sweep never fires; closed "
                    "surfaces stay resident until `pill unloadAll` or a restart")
     return dim(f"  memory saver on: base {base_tail(cfg)}s (floored at 10), "
                f"heaviest tier {base_tail(cfg)}s / rest {2 * base_tail(cfg)}s, "
-               f"sweep every {max(1, cfg['sweep'])}s")
+               f"sweep every {effective_sweep(cfg)}s")
 
 # --------------------------------------------------------------------------
 # phases
@@ -630,20 +679,25 @@ def run_soak(args):
     else:
         name = next((s for s in surfaces if s in BASE_TIER), surfaces[0] if surfaces else "")
     secs = args.reclaim if args.reclaim is not None else (
-        timed_wait(name, cfg) if (name and cfg["on"]) else 0)
+        timed_wait(name, cfg) if (name and sweep_runs(cfg)) else 0)
 
-    if not cfg["on"]:
-        log(dim("  timed sweep skipped: the memory saver is off, so a closed surface "
-                "stays resident until `pill unloadAll` or a restart"))
+    if not sweep_runs(cfg):
+        log(dim("  timed sweep skipped: the memory saver is off and game mode is off, "
+                "so a closed surface stays resident until `pill unloadAll` or a restart"))
     elif not name:
         log(dim("  timed sweep skipped: no surface in this run to leave to it"))
     elif secs <= 0:
         log(dim("  timed sweep skipped (--reclaim 0)"))
     else:
-        tier = ("the base" if name in BASE_TIER else "2× the base")
-        log(dim(f"  timed sweep: open + close {name}, then {secs:.0f}s idle — its own "
-                f"tier ({tier_tail(name, cfg):.0f}s = {tier} {base_tail(cfg)}s) + one "
-                f"{max(1, cfg['sweep'])}s sweep tick, with no manual drop"))
+        if cfg["game"]:
+            log(dim(f"  timed sweep: open + close {name}, then {secs:.0f}s idle — game "
+                    f"mode's harsh tail ({game_tail(cfg):g}s, any tier) + one "
+                    f"{effective_sweep(cfg)}s sweep tick, with no manual drop"))
+        else:
+            tier = ("the base" if name in BASE_TIER else "2× the base")
+            log(dim(f"  timed sweep: open + close {name}, then {secs:.0f}s idle — its own "
+                    f"tier ({tier_tail(name, cfg):.0f}s = {tier} {base_tail(cfg)}s) + one "
+                    f"{effective_sweep(cfg)}s sweep tick, with no manual drop"))
         ipc("pill", "hide")
         time.sleep(0.5)
         pre = mem_kb(pid)[0]
@@ -686,7 +740,9 @@ def run_soak(args):
     if timed is not None:
         log(f"  timed     : {timed['surface']} "
             + ("returned" if timed["kept_kb"] <= LEAK_TOL_KB
-               else f"kept {timed['kept_kb'] / 1024:.1f} MB") + " on its own tier")
+               else f"kept {timed['kept_kb'] / 1024:.1f} MB")
+            + (f" on game mode's {game_tail(cfg):g}s tail" if cfg["game"]
+               else " on its own tier"))
     if dialog:
         log(f"  dialog    : {(dialog['peak_kb'] - dialog['after_kb']) / 1024:+.1f} MB "
             "returned after its teardown")
@@ -734,8 +790,9 @@ def main():
                     help="seconds to wait after closing a surface (default 4)")
     ap.add_argument("--reclaim", type=float, default=None,
                     help="idle seconds to wait for the timed sweep in the end-of-run "
-                         "probe; default is auto — the probe surface's own tier tail "
-                         "+ one pillCleanupSec tick — and 0 skips it")
+                         "probe; default is auto — the probe surface's own tail + one "
+                         "sweep tick (game mode's harsh tail and capped sweep while "
+                         "it is on) — and 0 skips it")
     ap.add_argument("--unload-settle", type=float, default=2.0,
                     help="seconds after each per-surface `pill unloadAll` before reading "
                          "RSS, i.e. the Loader teardown (default 2)")

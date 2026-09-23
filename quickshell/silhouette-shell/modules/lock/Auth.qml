@@ -1,7 +1,9 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Pam
+import qs.services
 
 /**
  * PAM authentication for the lock. Submits the typed password through a
@@ -13,6 +15,12 @@ import Quickshell.Services.Pam
  * streak and the deadline it is waiting out are written to a small file beside the
  * shell's other state as they change, and read back when this item is built, so
  * restarting the shell lands mid-lockout instead of clearing it.
+ *
+ * Past the wait there is an escalation: once the streak reaches the configured
+ * limit the lock ends the session instead of only making it wait — log out,
+ * restart or shut down, or nothing at all. It is off by default, and both the
+ * action and the limit are Lock Screen settings (`lockFailAction`,
+ * `lockFailLimit`), so the lock never acts on its own until it is asked to.
  */
 
 Item {
@@ -45,6 +53,15 @@ Item {
     property bool lockedOut: false
     property int lockoutRemaining: 0
 
+    /**
+     * Escalation past the lockout. `escalateAction` mirrors the `lockFailAction`
+     * flag ("none", "logout", "reboot" or "shutdown") and `escalateLimit` the
+     * `lockFailLimit` one, floored at 1 so a zero can never turn every keystroke
+     * into a session-ender.
+     */
+    readonly property string escalateAction: Flags.lockFailAction
+    readonly property int escalateLimit: Math.max(1, Flags.lockFailLimit)
+
     /** Same fallback the rest of the shell's state uses: XDG_STATE_HOME, else ~/.local/state. */
     readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette"
 
@@ -58,7 +75,8 @@ Item {
         lockoutRemaining = 0
     }
 
-    /** Count one real failure; crossing the threshold arms the lockout. */
+    /** Count one real failure; crossing the threshold arms the lockout, and the
+     * configured limit escalates to ending the session. */
     function recordFailure() {
         failedAttempts++
         if (failedAttempts >= lockoutThreshold && !lockedOut) {
@@ -66,7 +84,39 @@ Item {
             lockoutRemaining = Math.min(lockoutMax, lockoutSeconds * Math.pow(2, repeat))
             lockedOut = true
         }
+        if (escalateAction !== "none" && failedAttempts >= escalateLimit)
+            escalate()
         persistLockout()
+    }
+
+    /**
+     * Run the configured end-of-session action, once per streak. The same calls
+     * the power surface's tiles make — Hyprland's exit dispatch for a log out, and
+     * systemd for the two power actions — and detached on purpose: the session
+     * this surface belongs to is going away, so there is nobody left to reap a
+     * child.
+     *
+     * The streak and its penalty are cleared as the action fires, both here and
+     * on disk. The session is ending, so both have served their purpose, and the
+     * next one must not inherit them: without this, a log out would leave
+     * `failedAttempts` at the limit in the state file, and the first mistake after
+     * logging back in would end the session again (and a stale deadline would keep
+     * the new session's lock locked out). If the action cannot actually run, the
+     * user is simply back at the lock with a full allowance.
+     */
+    function escalate() {
+        var action = escalateAction
+        if (action !== "logout" && action !== "reboot" && action !== "shutdown")
+            return
+        failedAttempts = 0
+        lockedOut = false
+        lockoutRemaining = 0
+        if (action === "logout")
+            Hyprland.dispatch("hl.dsp.exit()")
+        else if (action === "reboot")
+            Quickshell.execDetached(["systemctl", "reboot"])
+        else
+            Quickshell.execDetached(["systemctl", "poweroff"])
     }
 
     /** Successful auth clears the streak and any active lockout. */

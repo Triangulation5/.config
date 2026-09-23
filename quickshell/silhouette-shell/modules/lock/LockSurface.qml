@@ -39,8 +39,6 @@ Item {
     onActiveChanged: if (!active)
         closeAnim.restart()
 
-    readonly property real spread: Flags.lockBlurSpread
-
     readonly property string shotSource: {
         if (surface.screenName.length === 0)
             return "";
@@ -62,10 +60,20 @@ Item {
         active: true
         asynchronous: true
 
+        /**
+         * The whole backdrop look rides flags: the blur's reach and the grade's
+         * darken, saturation, vignette and grain (Lock Screen › Backdrop in the
+         * settings app). The blur layer is the one heavy item here, so a change
+         * to any of them rebuilds it live; the flags are read in bindings, so
+         * that happens on the next file write without a shell reload.
+         */
         sourceComponent: BlurredShot {
             source: surface.shotSource
-            spread: surface.spread
-            darken: 0.62
+            spread: Flags.lockBlurSpread
+            darken: Flags.lockBlurDarken
+            saturate: Flags.lockBlurSaturation
+            vignette: Flags.lockBlurVignette
+            grain: Flags.lockBlurGrain
         }
     }
 

@@ -362,8 +362,27 @@ Item {
      * names keybinds, wallpaper, link, timer and weather as the priciest
      * first-touchers; only the two giants are on the short tier here, so adding
      * any of the others to the base tier below is a one-line change.
+     *
+     * Game mode overrides the schedule the tiers describe: while it is on, a
+     * closed surface is reclaimed at the next sweep rather than after its tier,
+     * and the sweep itself is capped at a couple of seconds — the desktop hands
+     * its memory back to the game as fast as the close animations allow. The
+     * override holds even with the memory saver off, because entering game mode
+     * is an explicit ask for the quiet rather than a preference the saver's own
+     * toggle is meant to survive. Both override numbers are flags
+     * (`pillGameUnloadMs`, `pillGameSweepSec`) so the Timers page can report the
+     * effective pair rather than a copy of it; the shipped tail is a second and
+     * not zero on purpose, because a surface that just closed is still dissolving
+     * (the hover face crossfades against `closingSurface`) and evicting it out
+     * from under that animation is the clock flash this shell has already fought.
      */
     readonly property real unloadS: (Flags.memorySaver ? Math.max(10, Flags.pillSurfaceIdleTimeout) : 1e12)
+
+    /** Tail (ms) for a surface that closed while game mode is on; see `unloadS`. */
+    readonly property real gameUnloadMs: Flags.pillGameUnloadMs
+
+    /** True while game mode replaces the tiered tails with the single harsh one. */
+    readonly property bool harshUnload: Flags.gameMode
 
     /** Tail (ms) before a closed surface is freed, keyed by surface name. */
     readonly property var unloadIdleMs: ({
@@ -393,8 +412,10 @@ Item {
             pill.closedAt[name] = Date.now();
     }
 
-    /** Tail (ms) for `name`, falling back to the default tier. */
+    /** Tail (ms) for `name`: the harsh game-mode one while it is on, else the tier. */
     function unloadTail(name) {
+        if (pill.harshUnload)
+            return pill.gameUnloadMs;
         var t = pill.unloadIdleMs[name];
         return t !== undefined ? t : pill.unloadIdleMs["default"];
     }
@@ -508,9 +529,20 @@ Item {
         function onUnloadClosedRequested() { pill.unloadClosedSurfaces() }
     }
 
+    /**
+     * Sweep period (ms): the Timers flag, capped at `pillGameSweepSec` (two
+     * seconds shipped) while game mode is on so the harsh tail above is actually
+     * collected promptly. The floor of one second is the same one the flag
+     * already implies on its own.
+     */
+    readonly property int cleanupSweepMs: {
+        const secs = Flags.gameMode ? Math.min(Flags.pillCleanupSec, Flags.pillGameSweepSec) : Flags.pillCleanupSec;
+        return Math.max(1, secs) * 1000;
+    }
+
     Timer {
         id: idleCleanupTimer
-        interval: Math.max(1, Flags.pillCleanupSec) * 1000
+        interval: pill.cleanupSweepMs
         repeat: true
         running: pill._surfaceCleanupReady
         onTriggered: pill._cleanupIdleSurfaces()
@@ -744,26 +776,29 @@ Item {
     }
 
     /**
-     * Current opacity of the dissolving surface, 1 while it is fully visible
-     * and animating down to 0 with its close fade. 0 with no surface closing.
-     * The hover face reads this so its entrance on a close is an exact
-     * crossfade against the dissolving surface instead of popping over it —
-     * for surfaces whose close barely moves the pill (the media card) the old
-     * morphCloseness gate alone was already satisfied the instant the close
-     * began, so the hover clock and media bud flashed over the still-visible
-     * card.
+     * How present the dissolving surface is: 1 while it is fully visible,
+     * animating down to 0 with its close fade. 0 with no surface closing. The
+     * hover face reads this so its entrance on a close is an exact crossfade
+     * against the dissolving surface instead of popping over it — for surfaces
+     * whose close barely moves the pill (the media card) the old morphCloseness
+     * gate alone was already satisfied the instant the close began, so the
+     * hover clock and media bud flashed over the still-visible card.
      *
-     * Pushed from the item's own opacity change signal rather than read live in
-     * a binding: a read through the `closingSurface` var is not a subscription,
-     * so the value only refreshed when `morphCloseness` happened to move — on a
-     * close that barely moves the pill the crossfade froze on its first frame
-     * and the hover face then arrived at full strength.
+     * Read from the surface's `presence`, its dissolve progress, rather than
+     * its `opacity`: the surface's root opacity is dropped once its close layer
+     * is up, so it is no longer the value on screen (see PillSurface).
+     *
+     * Pushed from the item's own presence change signal rather than read live
+     * in a binding: a read through the `closingSurface` var is not a
+     * subscription, so the value only refreshed when `morphCloseness` happened
+     * to move — on a close that barely moves the pill the crossfade froze on
+     * its first frame and the hover face then arrived at full strength.
      */
     property real closingOpacity: 0
 
     function _syncClosingOpacity() {
         const s = pill.closingSurface;
-        pill.closingOpacity = (s && typeof s.opacity === "number") ? s.opacity : 0;
+        pill.closingOpacity = (s && typeof s.presence === "number") ? s.presence : 0;
     }
 
     onClosingSurfaceChanged: _syncClosingOpacity()
@@ -771,7 +806,7 @@ Item {
     Connections {
         target: pill.closingSurface
         ignoreUnknownSignals: true
-        function onOpacityChanged() { pill._syncClosingOpacity(); }
+        function onPresenceChanged() { pill._syncClosingOpacity(); }
     }
 
     onSurfaceOpenChanged: if (surfaceOpen) {

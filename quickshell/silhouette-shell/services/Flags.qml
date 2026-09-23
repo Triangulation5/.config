@@ -47,6 +47,8 @@ Singleton {
     property alias idleSuspendMin: adapter.idleSuspendMin
     property alias lockPrivacy: adapter.lockPrivacy
     property alias lockDotsMode: adapter.lockDotsMode
+    property alias lockFailAction: adapter.lockFailAction
+    property alias lockFailLimit: adapter.lockFailLimit
     property alias weatherCity: adapter.weatherCity
     property alias musicViz: adapter.musicViz
     property alias vizStyle: adapter.vizStyle
@@ -125,6 +127,8 @@ Singleton {
     property alias cornerShadowSize: adapter.cornerShadowSize
     property alias motionSpeed: adapter.motionSpeed
     property alias pillCleanupSec: adapter.pillCleanupSec
+    property alias pillGameUnloadMs: adapter.pillGameUnloadMs
+    property alias pillGameSweepSec: adapter.pillGameSweepSec
     property alias pillHoverGraceMs: adapter.pillHoverGraceMs
     property alias osdHoldMs: adapter.osdHoldMs
     property alias notifMs: adapter.notifMs
@@ -133,7 +137,18 @@ Singleton {
     property alias lockPillH: adapter.lockPillH
     property alias lockAvatarSize: adapter.lockAvatarSize
     property alias lockBeadMs: adapter.lockBeadMs
+    /*
+     * The lock backdrop's blur and grade. Spread is the blur's reach; darken,
+     * saturation, vignette and grain are what BlurredShot's grade shader lays
+     * over the blurred grab — the constants that used to live in
+     * modules/lock/BlurredShot.qml and its grade.frag. All five are Lock Screen
+     * settings, so the whole backdrop look is tunable from the settings app.
+     */
     property alias lockBlurSpread: adapter.lockBlurSpread
+    property alias lockBlurDarken: adapter.lockBlurDarken
+    property alias lockBlurSaturation: adapter.lockBlurSaturation
+    property alias lockBlurVignette: adapter.lockBlurVignette
+    property alias lockBlurGrain: adapter.lockBlurGrain
 
     FileView {
         id: file
@@ -212,6 +227,22 @@ Singleton {
             property bool lockPrivacy: false
             /** Lock-screen password bead entrance: "drop", "pulse", or "gpixel". */
             property string lockDotsMode: "gpixel"
+            /**
+             * What the lock does once the wrong-password streak reaches
+             * `lockFailLimit`: "none" leaves only the time lockout, while "logout",
+             * "reboot" and "shutdown" end the session through the same calls the
+             * power surface makes. Off by default — the shipped lock escalates its
+             * wait but never acts on its own until asked to. Read by
+             * modules/lock/Auth.qml.
+             */
+            property string lockFailAction: "none"
+            /**
+             * Consecutive wrong passwords before `lockFailAction` runs. Counted
+             * from the last successful unlock (that is what clears the streak),
+             * and cleared again once the action fires, so a session that comes
+             * back does not trip on its first mistake.
+             */
+            property int lockFailLimit: 10
             property string weatherCity: "WELLAND"
             property bool musicViz: true
             /** Rest-pill spectrum renderer: bars, centered bars, or the flowing string. */
@@ -311,6 +342,18 @@ Singleton {
             property real motionSpeed: 1.0
             /** How often the pill sweeps for surfaces to evict, in seconds. */
             property int pillCleanupSec: 10
+            /**
+             * Game mode's override of the memory saver above. While the mode is
+             * on, Pill.qml reclaims a closed surface `pillGameUnloadMs` after it
+             * closes instead of after its tier tail, and runs the eviction sweep
+             * at most every `pillGameSweepSec` seconds — the desktop hands its
+             * memory back to the game as fast as the close animations allow, even
+             * with the saver itself off. Flags rather than constants so the
+             * Timers page's read-only note reports the same numbers the shell
+             * applies rather than a copy that could drift from them.
+             */
+            property int pillGameUnloadMs: 1000
+            property int pillGameSweepSec: 2
             /** Grace before the pill collapses after the pointer leaves it. */
             property int pillHoverGraceMs: 300
             /** How long a volume, brightness or track overlay stays up. */
@@ -326,6 +369,14 @@ Singleton {
             property int lockBeadMs: 350
             /** Blur spread of the lock screen's wallpaper backdrop. */
             property real lockBlurSpread: 2.4
+            /** How much the blurred backdrop is darkened (1 = untouched). */
+            property real lockBlurDarken: 0.62
+            /** Colour saturation of the backdrop (1 = untouched, 0 = greyscale). */
+            property real lockBlurSaturation: 1.0
+            /** How much darkness gathers at the backdrop's edges (0 = flat). */
+            property real lockBlurVignette: 0.14
+            /** Film grain mixed into the backdrop, as a 0-1 amplitude (0 = clean). */
+            property real lockBlurGrain: 0.012
         }
     }
 }

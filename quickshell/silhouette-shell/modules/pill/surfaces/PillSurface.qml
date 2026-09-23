@@ -11,6 +11,10 @@ import qs.services
  * `morphCloseness`; the surface sets its own `mTop`/`mLeft`/`mRight`/`mBottom`
  * insets. `active` mirrors `open` for the older `onActiveChanged` hooks.
  * `requestClose()` asks the pill to dismiss.
+ *
+ * A deriving surface declares its content as usual: it is parented into an
+ * inner wrapper (`content`), which is what carries the dissolve fade — see
+ * `presence` for why the fade cannot sit on this item's own `opacity`.
  */
 Item {
     id: surface
@@ -82,7 +86,7 @@ Item {
     onMorphClosenessChanged: if (open && morphCloseness > 0.92) settled = true
 
     /** True only while the close dissolve is in progress. */
-    readonly property bool closing: !open && opacity > 0.005
+    readonly property bool closing: !open && presence > 0.005
 
     anchors.fill: parent
     anchors.topMargin: mTop * s
@@ -91,15 +95,27 @@ Item {
     anchors.bottomMargin: mBottom * s
 
     enabled: open
-    /**
-     * Open: fade in over Motion.standard once the morph nears full size.
-     * Close: fast dissolve (Motion.fast, ~140ms) so the text clears well
-     * before the pill body begins its 420ms morph — no text artifacts.
-     */
-    opacity: open ? (settled ? 1 : Math.pow(morphCloseness, 1.3)) : 0
-    visible: opacity > 0.005
 
-    Behavior on opacity {
+    /**
+     * Dissolve progress: 1 while the surface is fully present, falling to 0
+     * across the close. Open: fade in over Motion.standard once the morph
+     * nears full size. Close: fast dissolve (Motion.fast, ~140ms) so the text
+     * clears well before the pill body begins its 420ms morph — no text
+     * artifacts. It also drives the dissolve's blur, and is the value the
+     * pill's hover face crossfades against (`Pill.closingOpacity`).
+     *
+     * The fade cannot ride this item's own `opacity`: once `layer.enabled` is
+     * on, the item is drawn from its layer's texture, and the root's opacity
+     * is dropped at that seam. The wallpaper surface showed it plainly — with
+     * the close's layer up, its strip held at full strength over the shrinking
+     * pill until the layer was dropped, which read as the wallpaper flashing
+     * over the pill for the first frames of a close. Fading `content` puts the
+     * fade inside the texture, which the layer cannot swallow.
+     */
+    property real presence: open ? (settled ? 1 : Math.pow(morphCloseness, 1.3)) : 0
+    visible: presence > 0.005
+
+    Behavior on presence {
         NumberAnimation {
             duration: surface.open ? Motion.standard : Motion.fast
             easing.type: surface.open ? Motion.easeStandard : Easing.OutCubic
@@ -107,15 +123,28 @@ Item {
     }
 
     /**
+     * Every deriving surface's content is parented here rather than onto the
+     * surface itself, so the dissolve fade reaches each child individually.
+     * The wrapper fills the inset surface rect, so a child's `parent` is the
+     * same-sized item it always was and no geometry shifts.
+     */
+    default property alias content: fadeWrap.data
+    Item {
+        id: fadeWrap
+        anchors.fill: parent
+        opacity: surface.presence
+    }
+
+    /**
      * Blur dissolve during the close window. The layer is only enabled while
      * the dissolve is playing, so it costs nothing at rest or while open.
-     * Blur ramps from 0→1 inversely with opacity for a soft recession effect
+     * Blur ramps from 0→1 inversely with presence for a soft recession effect
      * that clears before the pill body begins its morph.
      */
     layer.enabled: surface.closing
     layer.effect: MultiEffect {
         blurEnabled: surface.closing
         blurMax: 32
-        blur: surface.closing ? (1 - surface.opacity) : 0
+        blur: surface.closing ? (1 - surface.presence) : 0
     }
 }

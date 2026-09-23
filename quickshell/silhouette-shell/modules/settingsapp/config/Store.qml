@@ -110,6 +110,8 @@ Singleton {
             property int idleSuspendMin: 0
             property bool lockPrivacy: false
             property string lockDotsMode: "gpixel"
+            property string lockFailAction: "none"
+            property int lockFailLimit: 10
             property string weatherCity: "WELLAND"
             property bool musicViz: true
             property string vizStyle: "bars"
@@ -182,6 +184,8 @@ Singleton {
             property real cornerShadowSize: 8
             property real motionSpeed: 1.0
             property int pillCleanupSec: 10
+            property int pillGameUnloadMs: 1000
+            property int pillGameSweepSec: 2
             property int pillHoverGraceMs: 300
             property int osdHoldMs: 1800
             property int notifMs: 6000
@@ -191,6 +195,10 @@ Singleton {
             property real lockAvatarSize: 120
             property int lockBeadMs: 350
             property real lockBlurSpread: 2.4
+            property real lockBlurDarken: 0.62
+            property real lockBlurSaturation: 1.0
+            property real lockBlurVignette: 0.14
+            property real lockBlurGrain: 0.012
         }
     }
 
@@ -218,6 +226,7 @@ Singleton {
         "recordCountdown", "recordDir", "recordFps", "recordQuality",
         "recordCursor", "recordMic", "recordDesktop", "recordClearedBefore",
         "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockPrivacy", "lockDotsMode",
+        "lockFailAction", "lockFailLimit",
         "weatherCity", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode", "gamePrevDnd", "gamePrevViz", "gamePrevAwake",
@@ -234,8 +243,9 @@ Singleton {
         "pillDragOverW", "pillDragOverH", "pillGameH", "memorySaver", "pillSurfaceIdleTimeout",
         "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius",
         "cornerMorphMs", "cornerShadowSize", "motionSpeed",
-        "pillCleanupSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",
-        "lockPillW", "lockPillH", "lockAvatarSize", "lockBeadMs", "lockBlurSpread"
+        "pillCleanupSec", "pillGameUnloadMs", "pillGameSweepSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",
+        "lockPillW", "lockPillH", "lockAvatarSize", "lockBeadMs", "lockBlurSpread",
+        "lockBlurDarken", "lockBlurSaturation", "lockBlurVignette", "lockBlurGrain"
     ]
 
     Timer {
