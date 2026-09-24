@@ -1,6 +1,0 @@
-has fadeWrap: true
-child.children: 1 [<none>]
-wrap.children: 2 [kidA, kidB]
-wrap.parent === child: true
-child[0] is wrap: true
-wrap.width === child.width: true (0 vs 0)
