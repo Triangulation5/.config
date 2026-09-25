@@ -14,7 +14,7 @@ import qs.modules.settingsapp.config
 QtObject {
     readonly property string name: "Bar & Island"
     readonly property string icon: "\u25AD"
-    readonly property string keywords: "pill bar island notch game mode pointer hover collapse island"
+    readonly property string keywords: "pill bar island notch game mode pointer hover collapse auto hide strip wake"
 
     readonly property var groups: [
         { card: "Pill", rows: [
@@ -29,7 +29,10 @@ QtObject {
             { source: "deco", field: "pillBlur", type: "toggle", label: "Pill blur",
               caption: "Frosts the pill body; needs opacity under 100% to show", reset: true },
             { key: "autoHide", type: "toggle", label: "Auto hide",
-              caption: "Retract the pill off the top edge until the pointer touches it", reset: false }
+              caption: "Retract the pill off the top edge until the pointer touches it", reset: false },
+            { key: "pillAutoStripH", type: "slider", label: "Wake strip",
+              min: 1, max: 20, step: 1, unit: "px",
+              caption: "Thickness of the top-edge strip that wakes the pill back down while auto hide is on", reset: 5 }
         ]},
         { card: "Notch", rows: [
             /**

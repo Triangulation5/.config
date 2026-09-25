@@ -14,13 +14,14 @@ import Quickshell.Services.UPower
  * own battery; the rest are USB-dongle peripherals the surface lists on their
  * own. `connectedCount` tracks connected Bluetooth devices reactively through
  * an Instantiator, since a plain binding on the device list misses per-device
- * connected flips. A peripheral at or below 20% raises one notify-send, reset
+ * connected flips. A peripheral at or below the `battLowPct` flag (20%
+ * shipped, shared with the laptop's own warning) raises one notify-send, reset
  * once it climbs back or disappears.
  */
 Singleton {
     id: root
 
-    readonly property int lowAt: 20
+    readonly property int lowAt: Flags.battLowPct
     readonly property var devices: (typeof UPower !== "undefined" && UPower && UPower.devices) ? UPower.devices.values : []
 
     readonly property var list: devices.filter(function(d) {
@@ -82,7 +83,7 @@ Singleton {
             if (lowest < 0 || p < lowest)
                 lowest = p;
             if (p <= lowAt && !charging(d)) {
-                if (!notified[key]) {
+                if (Flags.periphLowNotify && !notified[key]) {
                     notified[key] = true;
                     notifyProc.command = ["notify-send", "-a", "SilhouetteShell", "-i", "battery-caution",
                         (d.model || "Device") + " at " + p + "%", "Charge it soon"];

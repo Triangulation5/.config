@@ -47,5 +47,33 @@ Specific features drew on other projects:
 - [howdy](https://github.com/boltgolt/howdy) by
   [boltgolt](https://github.com/boltgolt). Face unlock on the lockscreen.
 
+- [ChillPill-Shell](https://github.com/LUCKYS1NGHH/ChillPill-Shell) by
+  [LUCKYS1NGHH](https://github.com/LUCKYS1NGHH). A pill bar aimed at machines
+  with no discrete GPU, and the source of this shell's performance pass:
+
+  - **Lite mode** (`liteMode`) — one flag that drops the expensive GPU layers
+    instead of leaving them always on: the now-playing bleed blur
+    (`modules/pill/widgets/media/Media.qml`), the ambient aura blur
+    (`modules/pill/Pill.qml`), the Ame bead's bloom
+    (`modules/pill/widgets/ame/AmeBody.qml`), the surface closing blur
+    (`modules/pill/surfaces/PillSurface.qml`), the lock backdrop's six blur
+    passes (`modules/lock/BlurredShot.qml`) and the lock audio glow
+    (`components/effects/GlowField.qml`). Their shell simply has no blur,
+    shader or canvas layers at all; this is the version that keeps the look
+    and lets the layers be turned off.
+  - **Fullscreen from the foreign-toplevel protocol** rather than by shelling
+    out to `hyprctl` (`services/Fullscreen.qml`) — their
+    `ToplevelManager.activeToplevel.fullscreen` is the whole idea.
+  - **Precomputed derived lists** instead of rebuilding them inside bindings
+    (`services/Notifs.qml`: the grouped notification tree).
+  - **Collapsing duplicate notifications** (`notifDedupe`) and the
+    **notification sound** (`notifSound`).
+  - **A volume ceiling past unity** (`maxVolume`), which the mixer's fader
+    and the OSD both read.
+
+  Their config file is also the reference for a handful of small switches
+  worth having. The work here is a reimplementation of the ideas, not a copy
+  of their code — ChillPill-Shell is GPL-3.0, so none of its source was taken.
+
 Vendored third-party work lives with the config that uses it, such as the yazi
 flavors and plugins in `yazi/flavors/` and `yazi/plugins/`.

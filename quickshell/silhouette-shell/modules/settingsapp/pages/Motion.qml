@@ -18,11 +18,15 @@ import QtQuick
  * config, the shell's multiplies the durations `services/Motion.qml` hands to
  * every surface the pill morphs into. One is the desktop, one is the pill, and
  * wanting them equal is not the same as making them one control.
+ *
+ * Lite mode sits with them because it is the other half of the same budget:
+ * reduce motion trims how long things take, lite mode trims what they cost to
+ * draw (the blur layers).
  */
 QtObject {
     readonly property string name: "Motion"
     readonly property string icon: "\u2248"
-    readonly property string keywords: "animation animations speed easing curve bezier style liquid pill macos visualizer cava bars string spectrum motion"
+    readonly property string keywords: "animation animations speed easing curve bezier style liquid pill macos visualizer cava bars string spectrum motion lite performance gpu blur low end integrated"
 
     readonly property var groups: [
         { card: "Compositor", rows: [
@@ -37,6 +41,8 @@ QtObject {
         { card: "Shell", rows: [
             { key: "reduceMotion", type: "toggle", label: "Reduce motion",
               caption: "Trim the shell's own animation budget", reset: false },
+            { key: "liteMode", type: "toggle", label: "Lite mode",
+              caption: "Skip the shell's blur layers — the now-playing bleed, the ambient aura, the Ame bead, the lock backdrop — for an integrated GPU; everything still draws, just flat", reset: false },
             { key: "motionSpeed", type: "slider", label: "Speed",
               min: 0.5, max: 2, step: 0.05, unit: "\u00D7",
               caption: "Scales every duration the shell's own motion hands out; the "

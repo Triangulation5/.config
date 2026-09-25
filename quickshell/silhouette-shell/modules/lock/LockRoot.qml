@@ -75,7 +75,9 @@ ShellRoot {
         root.pw.text = "";
         root.revealed = false;
         sessionLock.locked = true;
-        Cava.enabled = true;
+        /** Lite mode never starts the lock's cava run; the glow that reads it is
+          * dropped with the blur layers (see components/effects/GlowField.qml). */
+        Cava.enabled = Flags.lockViz && !Flags.liteMode;
         reveal.restart();
         root.reportLockState(true);
     }

@@ -20,7 +20,9 @@ import qs.services
  * in three phases (ping, download, upload), each its own process so one phase
  * can be cut without touching the others, with the running phase's readout lit
  * and the failure line folded into the card's height. Nothing here runs until
- * the trigger is pressed, and the whole run is torn down when the surface
+ * the trigger is pressed — the auto-run is opt-in through the `sysmonAutoTest`
+ * flag, off by default, because opening the monitor should not spend tens of
+ * megabytes on its own — and the whole run is torn down when the surface
  * closes, so a test never outlives the card that started it.
  */
 PillSurface {
@@ -296,9 +298,19 @@ PillSurface {
         }
     }
 
-    // Run one measurement as soon as the surface is built. The button below
-    // re-runs it on demand.
-    Timer { interval: 1200; running: true; repeat: false; onTriggered: root.startSpeed() }
+    /**
+     * The optional auto-run. With `sysmonAutoTest` on, one measurement starts
+     * shortly after the surface is built; off (the shipped default) the card
+     * moves no bytes until the Test button is pressed, so merely glancing at
+     * the monitor cannot pull tens of megabytes. The delay lets the card's
+     * entrance settle before the readouts light.
+     */
+    Timer {
+        interval: 1200
+        running: Flags.sysmonAutoTest
+        repeat: false
+        onTriggered: root.startSpeed()
+    }
 
     component Dial: Item {
         id: dial

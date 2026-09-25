@@ -6,9 +6,10 @@ import Quickshell.Bluetooth
 import qs.services
 
 /**
- * Bluetooth drill-in for the link surface: back chevron, scan with 25s
- * auto-stop, adapter toggle, a connected block on top and the nearby list
- * below. Connected rows are taller and carry a full-width battery thread fed by
+ * Bluetooth drill-in for the link surface: back chevron, scan with a
+ * flag-set auto-stop (`btScanMs`, 25s shipped), adapter toggle, a connected
+ * block on top and the nearby list below. Connected rows are taller and carry
+ * a full-width battery thread fed by
  * Peripherals (UPower), since BlueZ keeps Battery1 behind Experimental;
  * USB-dongle peripherals with a battery join that block as display-only rows.
  * Known devices use the Quickshell connect/disconnect calls; unpaired devices
@@ -23,7 +24,7 @@ LinkDrillIn {
     id: root
 
     title: "BLUETOOTH"
-    scanInterval: 25000
+    scanInterval: Flags.btScanMs
 
     readonly property var adapter: (typeof Bluetooth !== "undefined" && Bluetooth) ? Bluetooth.defaultAdapter : null
     readonly property var devices: (typeof Bluetooth !== "undefined" && Bluetooth && Bluetooth.devices) ? Bluetooth.devices.values : []

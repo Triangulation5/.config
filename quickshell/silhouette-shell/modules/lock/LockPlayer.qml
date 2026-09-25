@@ -23,7 +23,7 @@ Column {
      */
     readonly property bool redacted: Flags.lockPrivacy
 
-    visible: host.hasPlayer && !host.clockExpanded
+    visible: Flags.lockMedia && host.hasPlayer && !host.clockExpanded
     opacity: host.clockExpanded ? 0 : 1
     Behavior on opacity {
         NumberAnimation {

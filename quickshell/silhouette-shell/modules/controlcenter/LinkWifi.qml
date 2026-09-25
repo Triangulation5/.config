@@ -27,6 +27,7 @@ LinkDrillIn {
     id: root
 
     title: "WIFI"
+    scanInterval: Flags.wifiScanMs
     caption: !wifiOn ? "Off"
         : (activeNet ? (activeNet.name || "Connected") : "Not connected")
     captionColor: root.activeNet ? Theme.vermLit : Theme.faint

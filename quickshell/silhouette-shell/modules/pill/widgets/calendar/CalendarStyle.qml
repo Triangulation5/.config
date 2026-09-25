@@ -368,13 +368,14 @@ Item {
             : root.nextDaySlot)
 
     /**
-     * Idle return to the real today. After `idleReturnMs` with nothing
-     * touching the strip, the wheel glides back so today is centred again —
-     * the hover dates always settle on the real day after a pause instead of
-     * parking on whatever day the last scroll left behind. If the window has
-     * been re-anchored past today it is rebuilt around the real today first.
+     * Idle return to the real today. After `idleReturnMs` (the
+     * `calendarIdleReturnMs` flag, 2s shipped) with nothing touching the strip,
+     * the wheel glides back so today is centred again — the hover dates always
+     * settle on the real day after a pause instead of parking on whatever day
+     * the last scroll left behind. If the window has been re-anchored past today
+     * it is rebuilt around the real today first.
      */
-    property int idleReturnMs: 2000
+    property int idleReturnMs: Flags.calendarIdleReturnMs
 
     /**
      * True once the user has manually parked the wheel off today (a scroll

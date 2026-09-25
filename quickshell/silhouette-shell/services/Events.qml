@@ -169,6 +169,10 @@ Singleton {
      * time. Each event fires at most once per day; the fired-today set resets
      * when the date changes. A matching event plays a chime and posts a desktop
      * notification so it lands even when the calendar surface is closed.
+     *
+     * The two effects are the `eventChime` and `eventNotify` flags, each
+     * independent; the event is marked fired regardless, so switching an effect
+     * off never makes the reminder repeat.
      */
     function checkAlerts() {
         var now = new Date();
@@ -191,13 +195,16 @@ Singleton {
                 continue;
             root.firedToday[e.id] = true;
 
-            alertChime.running = true;
-            var details = e.endTime && e.endTime.length > 0 ? e.time + " – " + e.endTime : e.time;
-            alertNotif.command = ["notify-send", "-a", "SilhouetteShell",
-                "⏰ " + e.text,
-                details + " · escape dismisses",
-                "-u", "normal"];
-            alertNotif.running = true;
+            if (Flags.eventChime)
+                alertChime.running = true;
+            if (Flags.eventNotify) {
+                var details = e.endTime && e.endTime.length > 0 ? e.time + " – " + e.endTime : e.time;
+                alertNotif.command = ["notify-send", "-a", "SilhouetteShell",
+                    "⏰ " + e.text,
+                    details + " · escape dismisses",
+                    "-u", "normal"];
+                alertNotif.running = true;
+            }
         }
     }
 

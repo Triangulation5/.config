@@ -8,9 +8,10 @@ import Quickshell.Services.UPower
  * gated so a desktop without a battery reports `present` false (the hover
  * cluster and 蓄 surface stay hidden). Exposes percentage, charge state, a
  * signed draw/charge wattage, capacity and optional health, plus a formatted
- * time-to-empty/full string. `low` flags a discharging battery at or below 20%,
- * and `plugged` tracks the AC line so the OSD can flash on plug/unplug even at
- * a charge threshold, where the device state never reaches `Charging`.
+ * time-to-empty/full string. `low` flags a discharging battery at or below the
+ * `battLowPct` flag (20% shipped), and `plugged` tracks the AC line so the OSD
+ * can flash on plug/unplug even at a charge threshold, where the device state
+ * never reaches `Charging`.
  */
 Singleton {
     id: root
@@ -25,7 +26,7 @@ Singleton {
     readonly property bool charging: state === UPowerDeviceState.Charging
     readonly property bool full: state === UPowerDeviceState.FullyCharged || pct >= 100
     readonly property bool discharging: state === UPowerDeviceState.Discharging
-    readonly property bool low: !charging && pct <= 20
+    readonly property bool low: !charging && pct <= Flags.battLowPct
 
     /**
      * AC state, from UPower's line-power aggregate. `plugged` is what the

@@ -188,6 +188,7 @@ Item {
         id: batteryIndicator
 
         z: 20
+        visible: Flags.lockBattery
         opacity: content.clockExpanded ? 0 : 1
 
         Behavior on opacity {
@@ -208,6 +209,7 @@ Item {
         id: linkSurface
 
         z: 20
+        visible: Flags.lockLink
         opacity: content.clockExpanded ? 0 : 1
 
         Behavior on opacity {
@@ -230,6 +232,8 @@ Item {
         anchors.fill: parent
 
         s: content.s
+
+        visibleClock: Flags.lockClock
 
         expanded: content.clockExpanded
 

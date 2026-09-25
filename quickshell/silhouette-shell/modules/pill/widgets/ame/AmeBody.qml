@@ -261,7 +261,9 @@ Canvas {
      * is hidden (wallpaper strip, toast, plain hover) that's pure GPU tax on an
      * empty canvas, so the layer only exists while something is drawn or fading.
      */
-    layer.enabled: opacity > 0.001 || host.busy
+    /** Off in lite mode: the bead keeps its shape and colour, only the bloom's
+      * blur pass goes — the one layer the rest pill pays for at all times. */
+    layer.enabled: !Flags.liteMode && (opacity > 0.001 || host.busy)
     layer.effect: MultiEffect {
         blurEnabled: true
         blur: 0.34

@@ -484,6 +484,25 @@ affected components read them the way they read every other flag:
 | Notification popup life | `services/Notifs.qml` | `notifMs`, `notifLowMs` | Timers |
 | Lock field and avatar, backdrop blur and grade, bead timeline | `modules/lock/*`, `assets/shaders/grade.frag` | `lockPillW`, `lockPillH`, `lockAvatarSize`, `lockBlurSpread`, `lockBlurDarken`, `lockBlurSaturation`, `lockBlurVignette`, `lockBlurGrain`, `lockBeadMs` | Lock Screen |
 | Failed-password escalation (new): log out, restart or shut down, and how many wrong tries | the lock's auth daemon, `modules/lock/Auth.qml` | `lockFailAction`, `lockFailLimit` | Lock Screen |
+| Retry lockout: failures before the wait, the first wait, its ceiling | `modules/lock/Auth.qml` | `lockoutThreshold`, `lockoutSeconds`, `lockoutMax` | Lock Screen |
+| Low-battery warning, one threshold for the laptop and for peripherals | `services/Battery.qml`, `services/Peripherals.qml` | `battLowPct` | System |
+| Notification popup stack and history cap | `services/Notifs.qml` | `notifPopupMax`, `notifHistoryMax` | Timers |
+| Auto-hide wake strip | `modules/pill/PillOverlay.qml` | `pillAutoStripH` | Bar & Island |
+| Wi-Fi and Bluetooth rescan gaps | `modules/controlcenter/LinkWifi.qml`, `LinkBt.qml`, `LinkDrillIn.qml` | `wifiScanMs`, `btScanMs` | Control Center |
+| Calendar hover-strip idle return | `modules/pill/widgets/calendar/CalendarStyle.qml` | `calendarIdleReturnMs` | Clock & Date |
+| Weather retry and refresh cadence | `services/Weather.qml` | `weatherRetryMs`, `weatherRefreshMs` | Clock & Date |
+| Recent-recordings list cap | `services/RecEngine.qml` | `recHistoryMax` | System |
+| Toggles that used to be hard-coded | | | |
+| Critical notifications still pop under do-not-disturb | `services/Notifs.qml` | `dndCritical` | Notifications |
+| Low-peripheral-battery warning | `services/Peripherals.qml` | `periphLowNotify` | System |
+| Recording-saved notification | `services/RecEngine.qml` | `recordNotify` | System |
+| Lock now-playing card and audio glow | `modules/lock/LockPlayer.qml`, `modules/lock/LockRoot.qml`, `services/Cava.qml` | `lockMedia`, `lockViz` | Lock Screen |
+| Lock clock and the battery/network glances | `modules/lock/Content.qml`, `modules/lock/Clock.qml` | `lockClock`, `lockBattery`, `lockLink` | Lock Screen |
+| Calendar reminder chime and notification | `services/Events.qml` | `eventChime`, `eventNotify` | Clock & Date |
+| System monitor's speed test running on open | `modules/pill/surfaces/SysmonSurface.qml` | `sysmonAutoTest` (off) | System |
+| Lite mode: the shell's blur layers | `widgets/media/Media.qml`, `Pill.qml`, `ame/AmeBody.qml`, `PillSurface.qml`, `lock/BlurredShot.qml`, `components/effects/GlowField.qml` | `liteMode` (off) | Motion |
+| Mixer volume ceiling (past unity) | `widgets/mixer/Mixer.qml`, `widgets/osd/Osd.qml` | `maxVolume` | System |
+| Notification repeat collapsing and sound | `services/Notifs.qml` | `notifDedupe`, `notifSound` (off) | Notifications |
 
 The motion one is worth a sentence: **one flag scales the whole shell**, because
 `services/Motion.qml` is the single place durations are handed out — every

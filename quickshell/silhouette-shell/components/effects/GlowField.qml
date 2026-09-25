@@ -16,7 +16,13 @@ Item {
     id: glow
     property color accent: Theme.verm
 
-    readonly property bool live: Cava.lockActive
+    /**
+     * Lite mode drops the whole band rather than drawing it flat: the glow is a
+     * per-frame shader over the capture, so there is no cheaper version of it
+     * worth keeping. The Cava capture it reads is switched off with it (see
+     * `lockViz` on the Lock Screen page and services/Cava.qml).
+     */
+    readonly property bool live: Cava.lockActive && !Flags.liteMode
     property var levels: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     /**
