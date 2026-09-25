@@ -4,7 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.settingsapp.services
-import "../utils/lua/monitors.js" as Mon
+import "../../../utils/lua/monitors.js" as Mon
+import "../../../utils/settings/fields.js" as Fields
 import "../utils/lua/insert.js" as Insert
 
 /**
@@ -38,8 +39,12 @@ Singleton {
 
     /** Live monitors, as parsed from `hyprctl monitors -j`. */
     property var monitors: []
-    /** The scales the scale row offers. */
-    readonly property var scales: [1.0, 1.25, 1.5, 2.0]
+    /**
+     * The scales the scale row offers, and their labels — the table shared with
+     * the shell's own Display surface, so the two offer the same fractions.
+     */
+    readonly property var scales: Fields.get("monitor", "scales").options
+    readonly property var scaleNames: Fields.get("monitor", "scales").names
 
     /** `hyprctl workspaces -j`, slimmed to `{ id, monitor }`. */
     property var workspaces: []

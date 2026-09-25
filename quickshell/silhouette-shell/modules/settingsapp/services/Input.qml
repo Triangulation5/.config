@@ -4,7 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.settingsapp.services
-import "../utils/lua/input.js" as SetInput
+import "../../../utils/lua/setInput.js" as SetInput
+import "../../../utils/settings/fields.js" as Fields
 import "../utils/lua/insert.js" as Insert
 
 /**
@@ -35,22 +36,35 @@ Singleton {
     /** Non-empty when a write could not be made, or was inserted. */
     property string note: ""
 
-    property real sensitivity: 0
-    property string accelProfile: "flat"
-    property string kbLayout: "us"
-    property int repeatRate: 25
-    property int repeatDelay: 600
-    property bool numlock: false
-    property int cursorSize: 24
-    property string cursorTheme: "Bibata-Modern-Ice"
+    /**
+     * A field's shipped value, from the table shared with the shell's own Input
+     * surface — the value the read below falls back to when the file does not
+     * carry the field, and the one the app's Reset writes back.
+     */
+    function shipped(field) {
+        return Fields.get("input", field).reset;
+    }
+
+    property real sensitivity: shipped("sensitivity")
+    property string accelProfile: shipped("accelProfile")
+    property string kbLayout: shipped("kbLayout")
+    property int repeatRate: shipped("repeatRate")
+    property int repeatDelay: shipped("repeatDelay")
+    property bool numlock: shipped("numlock")
+    property int cursorSize: shipped("cursorSize")
+    property string cursorTheme: shipped("cursorTheme")
 
     readonly property var accelProfiles: ["flat", "adaptive"]
 
-    /** The common layouts, which the layout row offers. */
-    readonly property var kbLayouts: ["us", "de", "gb", "fr", "es", "it", "tr"]
+    /**
+     * The common layouts, which the layout row offers — the table shared with the
+     * shell's own Input surface, so the two offer the same list.
+     */
+    readonly property var kbLayouts: Fields.get("input", "kbLayout").options
     /** Those layouts, plus the one the file actually uses when it is not among them. */
     readonly property var kbLayoutOptions: root.kbLayouts.indexOf(root.kbLayout) >= 0
         ? root.kbLayouts : root.kbLayouts.concat([root.kbLayout])
+    /** The options upper-cased; this field carries no name list in the table. */
     readonly property var kbLayoutNames: root.kbLayoutOptions.map(function (l) { return l.toUpperCase(); })
 
     /** field → the lua name it is written as. */

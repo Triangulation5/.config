@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../../utils/lua/setDeco.js" as SetDeco
+import "../../../utils/settings/fields.js" as Fields
 import qs.services
 import qs.modules.settings
 import qs.components.controls
@@ -86,33 +87,53 @@ SettingsSurface {
     readonly property string decoPath: Quickshell.env("HOME") + "/.config/hypr/modules/decoration.lua"
     readonly property string pillBlurRule: 'hl.layer_rule({ name = "pill-blur", match = { namespace = "pill" }, blur = true, ignore_alpha = 0.5 })\n'
 
-    property int gapsIn: 6
-    property int gapsOut: 12
-    property int rounding: 12
-    property int roundingPower: 4
-    property int borderSize: 2
-    property bool resizeOnBorder: true
-    property string layout: "dwindle"
-    property bool blurOn: true
-    property int blurSize: 8
-    property int blurPasses: 3
-    property real blurVibrancy: 0.17
-    property real blurNoise: 0.01
-    property bool shadowOn: true
-    property int shadowRange: 12
-    property int shadowRenderPower: 3
-    property real activeOpacity: 1.0
-    property real inactiveOpacity: 1.0
+    /**
+     * The shipped value of a shared decoration field, from the table the
+     * settings app's Look page reads too (utils/settings/fields.js) — the same
+     * table seed() falls back to when the config does not carry the field and the
+     * groups below take their scrub ranges from.
+     */
+    function shipped(field) {
+        return Fields.get("deco", field).reset;
+    }
 
-    readonly property var layoutOptions: [
-        { label: "Dwindle", value: "dwindle" },
-        { label: "Master", value: "master" }
-    ]
-    readonly property var nightModeOptions: [
-        { label: "Off", value: "off" },
-        { label: "On", value: "on" },
-        { label: "Scheduled", value: "scheduled" }
-    ]
+    /**
+     * One property per decoration.lua field this surface edits, each starting at
+     * the field's shipped value. `shadowRenderPower` reads the table's
+     * `shadowPower` entry: it is the same field, under the name this surface and
+     * the Lua key use.
+     */
+    property int gapsIn: shipped("gapsIn")
+    property int gapsOut: shipped("gapsOut")
+    property int rounding: shipped("rounding")
+    property int roundingPower: shipped("roundingPower")
+    property int borderSize: shipped("borderSize")
+    property bool resizeOnBorder: shipped("resizeOnBorder")
+    property string layout: shipped("layout")
+    property bool blurOn: shipped("blurOn")
+    property int blurSize: shipped("blurSize")
+    property int blurPasses: shipped("blurPasses")
+    property real blurVibrancy: shipped("blurVibrancy")
+    property real blurNoise: shipped("blurNoise")
+    property bool shadowOn: shipped("shadowOn")
+    property int shadowRange: shipped("shadowRange")
+    property int shadowRenderPower: shipped("shadowPower")
+    property real activeOpacity: shipped("activeOpacity")
+    property real inactiveOpacity: shipped("inactiveOpacity")
+
+    /**
+     * The `{label, value}` seg options a table entry carries, so the choices the
+     * app's page offers are the ones offered here.
+     */
+    function options(source, field) {
+        const m = Fields.get(source, field);
+        var out = [];
+        for (var i = 0; i < m.options.length; i++)
+            out.push({ label: m.names[i], value: m.options[i] });
+        return out;
+    }
+    readonly property var layoutOptions: options("deco", "layout")
+    readonly property var nightModeOptions: options("flags", "nightLightMode")
 
     property string decoText: ""
     property var base: ({})
@@ -127,36 +148,36 @@ SettingsSurface {
         root.decoText = decoFile.text();
         var t = root.decoText;
         var gi = parseInt(SetDeco.getField(t, "gaps_in"), 10);
-        root.gapsIn = isNaN(gi) ? 6 : gi;
+        root.gapsIn = isNaN(gi) ? shipped("gapsIn") : gi;
         var go = parseInt(SetDeco.getField(t, "gaps_out"), 10);
-        root.gapsOut = isNaN(go) ? 12 : go;
+        root.gapsOut = isNaN(go) ? shipped("gapsOut") : go;
         var rd = parseInt(SetDeco.getField(t, "rounding"), 10);
-        root.rounding = isNaN(rd) ? 12 : rd;
+        root.rounding = isNaN(rd) ? shipped("rounding") : rd;
         var rp = parseInt(SetDeco.getField(t, "rounding_power"), 10);
-        root.roundingPower = isNaN(rp) ? 4 : rp;
+        root.roundingPower = isNaN(rp) ? shipped("roundingPower") : rp;
         var bs = parseInt(SetDeco.getField(t, "border_size"), 10);
-        root.borderSize = isNaN(bs) ? 2 : bs;
+        root.borderSize = isNaN(bs) ? shipped("borderSize") : bs;
         root.resizeOnBorder = SetDeco.getField(t, "resize_on_border") === "true";
         var lo = SetDeco.getField(t, "layout");
-        root.layout = lo.length > 0 ? lo : "dwindle";
+        root.layout = lo.length > 0 ? lo : shipped("layout");
         root.blurOn = SetDeco.getBlockField(t, "blur", "enabled") === "true";
         var bz = parseInt(SetDeco.getBlockField(t, "blur", "size"), 10);
-        root.blurSize = isNaN(bz) ? 8 : bz;
+        root.blurSize = isNaN(bz) ? shipped("blurSize") : bz;
         var bp = parseInt(SetDeco.getBlockField(t, "blur", "passes"), 10);
-        root.blurPasses = isNaN(bp) ? 3 : bp;
+        root.blurPasses = isNaN(bp) ? shipped("blurPasses") : bp;
         var vb = parseFloat(SetDeco.getBlockField(t, "blur", "vibrancy"));
-        root.blurVibrancy = isNaN(vb) ? 0.17 : vb;
+        root.blurVibrancy = isNaN(vb) ? shipped("blurVibrancy") : vb;
         var nz = parseFloat(SetDeco.getBlockField(t, "blur", "noise"));
-        root.blurNoise = isNaN(nz) ? 0.01 : nz;
+        root.blurNoise = isNaN(nz) ? shipped("blurNoise") : nz;
         root.shadowOn = SetDeco.getBlockField(t, "shadow", "enabled") === "true";
         var sr = parseInt(SetDeco.getBlockField(t, "shadow", "range"), 10);
-        root.shadowRange = isNaN(sr) ? 12 : sr;
+        root.shadowRange = isNaN(sr) ? shipped("shadowRange") : sr;
         var sp = parseInt(SetDeco.getBlockField(t, "shadow", "render_power"), 10);
-        root.shadowRenderPower = isNaN(sp) ? 3 : sp;
+        root.shadowRenderPower = isNaN(sp) ? shipped("shadowPower") : sp;
         var ao = parseFloat(SetDeco.getField(t, "active_opacity"));
-        root.activeOpacity = isNaN(ao) ? 1.0 : ao;
+        root.activeOpacity = isNaN(ao) ? shipped("activeOpacity") : ao;
         var io = parseFloat(SetDeco.getField(t, "inactive_opacity"));
-        root.inactiveOpacity = isNaN(io) ? 1.0 : io;
+        root.inactiveOpacity = isNaN(io) ? shipped("inactiveOpacity") : io;
         Flags.pillBlur = SetDeco.hasNamedRule(t, "pill-blur");
         root.base = {
             gapsIn: root.gapsIn, gapsOut: root.gapsOut, rounding: root.rounding,

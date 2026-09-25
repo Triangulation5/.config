@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQuick
+import "../utils/rows.js" as Rows
 
 /**
  * Motion: the shell's own animation budget and spectrum visualizer, plus the
@@ -22,6 +23,11 @@ import QtQuick
  * Lite mode sits with them because it is the other half of the same budget:
  * reduce motion trims how long things take, lite mode trims what they cost to
  * draw (the blur layers).
+ *
+ * The rows the shell's own Animation and Appearance surfaces also edit take their
+ * bounds, choices and default from the table shared with them
+ * (`utils/settings/fields.js`, read through `Rows`); what is this page's alone —
+ * the animation style, lite mode and the shell's own speed — states its own.
  */
 QtObject {
     readonly property string name: "Motion"
@@ -30,17 +36,17 @@ QtObject {
 
     readonly property var groups: [
         { card: "Compositor", rows: [
-            { source: "deco", field: "animOn", type: "toggle", label: "Animations",
-              caption: "Animate windows, workspaces and fades", reset: true },
-            { source: "deco", field: "animSpeed", type: "slider", label: "Speed", min: 1, max: 10, step: 0.5, unit: "",
-              caption: "Higher is faster, applied to every animation leaf", reset: 3 },
+            Rows.of("deco", "animOn", "toggle", "Animations",
+                "Animate windows, workspaces and fades", ""),
+            Rows.of("deco", "animSpeed", "slider", "Speed",
+                "Higher is faster, applied to every animation leaf", ""),
             { source: "deco", field: "animStyle", type: "segmented", label: "Style",
               caption: "Which curve and leaf set the config defines",
               options: ["liquid", "pill", "macos"], names: ["Liquid", "Pill", "macOS"], reset: "macos" }
         ]},
         { card: "Shell", rows: [
-            { key: "reduceMotion", type: "toggle", label: "Reduce motion",
-              caption: "Trim the shell's own animation budget", reset: false },
+            Rows.flag("reduceMotion", "toggle", "Reduce motion",
+                "Trim the shell's own animation budget", ""),
             { key: "liteMode", type: "toggle", label: "Lite mode",
               caption: "Skip the shell's blur layers — the now-playing bleed, the ambient aura, the Ame bead, the lock backdrop — for an integrated GPU; everything still draws, just flat", reset: false },
             { key: "motionSpeed", type: "slider", label: "Speed",
@@ -49,14 +55,12 @@ QtObject {
                   + "compositor's speed is the row above", reset: 1.0 }
         ]},
         { card: "Visualizer", rows: [
-            { key: "musicViz", type: "toggle", label: "Music visualizer",
-              caption: "Spectrum in the rest pill while a player is open", reset: true },
-            { key: "vizStyle", type: "segmented", label: "Style",
-              caption: "Bars, mirrored bars, or the flowing string",
-              options: ["bars", "centered", "string"],
-              names: ["Bars", "Center", "String"], reset: "bars" },
-            { key: "vizFps", type: "slider", label: "Framerate", min: 15, max: 120, step: 15, unit: "fps",
-              caption: "Capture rate; the pill EQ is visually identical at 30", reset: 60 }
+            Rows.flag("musicViz", "toggle", "Music visualizer",
+                "Spectrum in the rest pill while a player is open", ""),
+            Rows.flag("vizStyle", "segmented", "Style",
+                "Bars, mirrored bars, or the flowing string", ""),
+            Rows.flag("vizFps", "slider", "Framerate",
+                "Capture rate; the pill EQ is visually identical at 30", "fps")
         ]}
     ]
 }

@@ -188,12 +188,10 @@ ColumnLayout {
             rateNames.push(rates[i] + "Hz");
         }
 
-        var scaleOptions = [];
-        var scaleNames = [];
-        for (var s = 0; s < Monitors.scales.length; s++) {
-            scaleOptions.push(Monitors.scales[s]);
-            scaleNames.push(Monitors.scales[s] === 1 ? "1.0" : String(Monitors.scales[s]));
-        }
+        // The fractions, and their labels, come from the table the shell's own
+        // Display surface reads too (see the Monitors service).
+        var scaleOptions = Monitors.scales;
+        var scaleNames = Monitors.scaleNames;
 
         return {
             card: "",

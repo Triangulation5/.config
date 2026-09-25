@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQuick
+import "../utils/rows.js" as Rows
 
 /**
  * Appearance: the palette the whole rice is tinted from, the UI font and scale,
@@ -19,33 +20,37 @@ import QtQuick
  *
  * The aura ships off: the backdrop is the effect, and the bleed around the pill
  * is an addition someone opts into, not part of the default look.
+ *
+ * A row for a field the shell's own Appearance surface edits states only what
+ * this page alone decides about it — the editor, the label, the caption, the unit
+ * — and takes its bounds, choices and default from the table shared with that
+ * surface (`utils/settings/fields.js`, read through `row()` below). Aura and
+ * wallpaper are this page's alone, so they state their own.
  */
 QtObject {
     readonly property string name: "Appearance"
     readonly property string icon: "\u25D0"
     readonly property string keywords: "theme colour color palette wallpaper font scale ui tint backdrop media aura glow shadow strength"
 
+    /** One row for a flag, its bounds read from the shared table (see utils/rows.js). */
+    function row(field, type, label, caption, unit, extra) {
+        return Rows.flag(field, type, label, caption, unit, extra);
+    }
+
     readonly property var groups: [
         { card: "Palette", rows: [
-            { key: "paletteMode", type: "segmented", label: "Mode",
-              caption: "Static washi, live wallpaper colours, or pick a hue",
-              options: ["static", "dynamic", "manual"], names: ["Static", "Dynamic", "Manual"], reset: "static" },
-            { key: "manualHue", type: "slider", label: "Hue", min: 0, max: 359, step: 5, unit: "\u00B0", reset: 0 },
-            { key: "manualSat", type: "slider", label: "Saturation", min: 0, max: 1, step: 0.05,
-              displayScale: 100, unit: "%", reset: 0.5 },
-            { key: "manualDark", type: "toggle", label: "Dark accent",
-              caption: "Dark instead of light accent tones in manual mode", reset: true }
+            row("paletteMode", "segmented", "Mode", "Static washi, live wallpaper colours, or pick a hue", ""),
+            row("manualHue", "slider", "Hue", "", "\u00B0"),
+            row("manualSat", "slider", "Saturation", "", "%", { displayScale: 100 }),
+            row("manualDark", "toggle", "Dark accent", "Dark instead of light accent tones in manual mode", "")
         ]},
         { card: "Typography & scale", rows: [
-            { key: "uiFont", type: "text", label: "UI font", placeholder: "Inter",
-              caption: "Font family for every surface", reset: "JetBrainsMono Nerd Font Mono" },
-            { key: "uiScale", type: "slider", label: "UI scale", min: 0.9, max: 1.25, step: 0.05,
-              displayScale: 100, unit: "%", reset: 1.1 }
+            row("uiFont", "text", "UI font", "Font family for every surface", "", { placeholder: "Inter" }),
+            row("uiScale", "slider", "UI scale", "", "%", { displayScale: 100 })
         ]},
         { card: "Media backdrop", rows: [
-            { key: "mediaStyle", type: "segmented", label: "Now-playing backdrop",
-              caption: "Blurred album-art bleed, the warm wash, or fully transparent",
-              options: ["bleed", "wash", "none"], names: ["Bleed", "Wash", "None"], reset: "bleed" }
+            row("mediaStyle", "segmented", "Now-playing backdrop",
+                "Blurred album-art bleed, the warm wash, or fully transparent", "")
         ]},
         // The aura card is the one group here that answers to another row: the
         // backdrop above has to be something other than None for any of these to

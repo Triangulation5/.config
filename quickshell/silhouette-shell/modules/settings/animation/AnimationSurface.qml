@@ -5,6 +5,7 @@ import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import "../../../utils/lua/setAnim.js" as SetAnim
+import "../../../utils/settings/fields.js" as Fields
 import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
@@ -53,8 +54,19 @@ SettingsSurface {
     readonly property string animPath: Quickshell.env("HOME") + "/.config/hypr/modules/animations.lua"
     readonly property string mainCurve: "pillMorph"
 
-    property bool animOn: true
-    property real speed: 3
+    /**
+     * This surface's fields' bounds and shipped values, from the table shared with
+     * the settings app's Motion page (utils/settings/fields.js). The app also
+     * offers the animation *style*; this surface shapes the curve itself instead,
+     * so the style is not in the table.
+     */
+    readonly property var meta: ({
+        animOn: Fields.get("deco", "animOn"),
+        animSpeed: Fields.get("deco", "animSpeed")
+    })
+
+    property bool animOn: meta.animOn.reset
+    property real speed: meta.animSpeed.reset
     property string animText: ""
     property bool loaded: false
     property var base: ({})
@@ -96,7 +108,7 @@ SettingsSurface {
 
         root.animOn = SetAnim.getEnabled(t) === "true";
         var sp = parseFloat(SetAnim.getLeafSpeed(t, "global"));
-        root.speed = isNaN(sp) ? 3 : sp;
+        root.speed = isNaN(sp) ? meta.animSpeed.reset : sp;
 
         var pts = SetAnim.getCurvePoints(t, root.mainCurve);
         if (pts) {
@@ -177,7 +189,7 @@ SettingsSurface {
             s: root.s
             value: root.speed
             openValue: root.base.speed
-            from: 1; to: 10; step: 0.5; decimals: 1
+            from: root.meta.animSpeed.min; to: root.meta.animSpeed.max; step: root.meta.animSpeed.step; decimals: 1
             onEdited: v => {
                 root.speed = v;
                 root.writeSpeed(v);
