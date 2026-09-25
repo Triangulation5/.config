@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQuick
+import "../utils/rows.js" as Rows
 import qs.modules.settingsapp.services
 
 /**
@@ -10,36 +11,37 @@ import qs.modules.settingsapp.services
  *
  * The layout row offers the common layouts plus whatever the file already says,
  * so a config on an unlisted one still shows its value instead of an empty strip.
+ *
+ * A row's bounds, step, choices and default are not stated here: they are
+ * properties of the field, shared with the shell's own Input surface, and live in
+ * one table (`utils/settings/fields.js`, read through `row()` below).
  */
 QtObject {
     readonly property string name: "Input"
     readonly property string icon: "\u2328"
     readonly property string keywords: "mouse pointer sensitivity acceleration accel profile keyboard layout repeat rate delay numlock cursor theme size touchpad scrolling"
 
+    /** One row for an `input` field, its bounds read from the shared table (see utils/rows.js). */
+    function row(field, type, label, caption, unit, extra) {
+        return Rows.of("input", field, type, label, caption, unit, extra);
+    }
+
     readonly property var groups: [
         { card: "Pointer", rows: [
-            { source: "input", field: "sensitivity", type: "slider", label: "Sensitivity", min: -1, max: 1, step: 0.05, unit: "",
-              caption: "Pointer speed offset; 0 leaves it alone", reset: 0 },
-            { source: "input", field: "accelProfile", type: "segmented", label: "Acceleration",
-              caption: "How pointer speed follows motion",
-              options: ["flat", "adaptive"], names: ["Flat", "Adaptive"], reset: "flat" }
+            row("sensitivity", "slider", "Sensitivity", "Pointer speed offset; 0 leaves it alone", ""),
+            row("accelProfile", "segmented", "Acceleration", "How pointer speed follows motion", "")
         ]},
         { card: "Keyboard", rows: [
-            { source: "input", field: "kbLayout", type: "segmented", label: "Layout",
-              caption: "Keyboard layout",
-              options: Input.kbLayoutOptions, names: Input.kbLayoutNames, reset: "us" },
-            { source: "input", field: "repeatRate", type: "slider", label: "Repeat rate", min: 1, max: 100, step: 1, unit: "/s",
-              caption: "Key repeats per second when held", reset: 25 },
-            { source: "input", field: "repeatDelay", type: "slider", label: "Repeat delay", min: 100, max: 1000, step: 50, unit: "ms",
-              caption: "Hold time before a key repeats", reset: 600 },
-            { source: "input", field: "numlock", type: "toggle", label: "Numlock",
-              caption: "Numlock on at startup", reset: false }
+            row("kbLayout", "segmented", "Layout", "Keyboard layout", "",
+                { options: Input.kbLayoutOptions, names: Input.kbLayoutNames }),
+            row("repeatRate", "slider", "Repeat rate", "Key repeats per second when held", "/s"),
+            row("repeatDelay", "slider", "Repeat delay", "Hold time before a key repeats", "ms"),
+            row("numlock", "toggle", "Numlock", "Numlock on at startup", "")
         ]},
         { card: "Cursor", rows: [
-            { source: "input", field: "cursorSize", type: "slider", label: "Size", min: 16, max: 64, step: 2, unit: "px",
-              caption: "Cursor size in pixels", reset: 24 },
-            { source: "input", field: "cursorTheme", type: "text", label: "Theme", placeholder: "Bibata-Modern-Ice",
-              caption: "XCURSOR_THEME; applied live with hyprctl setcursor", reset: "Bibata-Modern-Ice" }
+            row("cursorSize", "slider", "Size", "Cursor size in pixels", "px"),
+            row("cursorTheme", "text", "Theme", "XCURSOR_THEME; applied live with hyprctl setcursor", "",
+                { placeholder: "Bibata-Modern-Ice" })
         ]}
     ]
 }

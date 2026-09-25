@@ -102,9 +102,13 @@ services/                  qs.services — one file per config document
                              binds.lua pair that toggles each one
   Updates.qml                the config's own updater script, check and apply
   Backups.qml                the shell's *own* config: snapshot, list, restore, delete
-utils/lua/                 the Lua field read/write helpers (see "Lua helpers")
-utils/keybinds/            keychord.js (key capture) and spacebinds.js, this app's
-                           special-workspace bind editor
+utils/lua/                 insert.js, adding a field a file does not carry yet —
+                           the only Lua helper this app owns (see "Lua helpers")
+utils/keybinds/            spacebinds.js, this app's special-workspace bind
+                           editor; every other helper is imported from the shell
+utils/rows.js              the row builders: a page states what it alone decides
+                           (editor, label, caption, unit), the builder takes the
+                           bounds from the table shared with the shell
 pages/                     qs.pages — what is configurable
   Pages.qml                  the index: pages, search, row flattening
   Appearance.qml … Backups.qml  one singleton per page, in rail order
@@ -261,6 +265,25 @@ compositor or another surface changes the value.
 | `button` / `done` | an `action` row's button text, and the word it flips to for a moment after a press |
 | `action` | the function an `action` row's button runs |
 
+A row's bounds, step, default and option list are not stated on the row when the
+shell's own settings surfaces edit the same field: both read them from one table,
+`utils/settings/fields.js`, and `utils/rows.js` builds a row from it —
+`deco.<field>` for a Hyprland field, `flags.<flag>` for a shell flag, and
+`input.<field>` for one of the input files. That table holds only fields both UIs
+edit; a row whose field is absent from it states its own `min`/`max`/`step`/`reset`
+as before. That is why the Pill shape page is all inline rows, and the aura,
+wallpaper, lite-mode and animation-style rows with it: the shell's own surfaces
+never edit those.
+
+Some entries were *settled* rather than copied, because the two UIs had already
+drifted apart and a bound cannot be both: the night-light ranges, and the Input
+page's. For Input the two were unioned, so no value either UI could already have
+written is left unreachable, and the finer step was kept where the two differed
+(0.05 over 0.1, 2px over 4px), since it reaches every value the coarser one could
+and more. `monitor.scales` is not a field at all: it is the one duplicated
+*choice list* — the fractional scales both Display surfaces offer — stated once
+for the same reason. Each settled entry says so in the table's own comments.
+
 ## Adding things
 
 **A page.** Write `pages/Whatever.qml` (copy a neighbour: `pragma Singleton`, a
@@ -318,36 +341,44 @@ services writing one file would clobber each other, which is why `decorations.lu
 
 ## Lua helpers
 
-`utils/lua/*.js` are the shell's own helpers, copied so the same edits produce
-byte-identical files: `fields.js` (a `name = value` field), `deco.js`
-(block-scoped fields, named `hl.layer_rule`s), `input.js` (env calls, the
-setcursor line), `anim.js` (the animations table, leaf speeds, a curve's
-control points), `monitors.js` (parse `hyprctl monitors -j`, rewrite a monitor
-block). Keep them in sync with `silhouette-shell/utils/lua/`.
+The Lua helpers are the shell's own, in the shell tree's `utils/lua/`, and this
+app imports them directly instead of carrying copies: a relative `.js` import
+reaches any file in the tree, so `deco.js`/`anim.js`/`input.js` here have become
+the shell's `setDeco.js`/`setAnim.js`/`setInput.js` over `fields.js`. The shell's
+Look/Input/Animation surfaces and this app's pages therefore run the same function
+against the same text, and the same edit cannot produce two different files. The
+copies were dropped for a reason worth keeping in mind: `monitors.js` is the one
+that drifted from the shell's while a "keep them in sync" note sat over both.
 
-`monitors.js` has grown two things the shell's copy does not have, both for the
-Displays page: `parseWorkspaces` + `monitorOfWorkspace` (which output a workspace
-is on — how "main" is answered when the config does not say, and one reason the
-copy drifts from the shell's) and the `make`/`model`/`focused` fields it now keeps
-from `hyprctl monitors -j` for a monitor's portrait. Its workspace parser reads the
-number from `id` when the report has one and from `name` when it does not: current
-Hyprland names a numbered workspace `"1"` with no numeric field, and a parser that
-only looked for `id` silently empties the list.
+`monitors.js` is the one that grew for this app, and the growth lives in the
+shared file now: `parseWorkspaces` + `monitorOfWorkspace` (which output a
+workspace is on — how "main" is answered when the config does not say) and the
+`make`/`model`/`focused` fields kept from `hyprctl monitors -j` for a monitor's
+portrait. The shell's Display surface reads only the geometry and ignores the
+rest. Its workspace parser reads the number from `id` when the report has one and
+from `name` when it does not: current Hyprland names a numbered workspace `"1"`
+with no numeric field, and a parser that only looked for `id` silently empties the
+list.
 
-`utils/keybinds/` holds `keychord.js` (the shell's captured-key mapping, for the
-create form's key capture) and `spacebinds.js`, which is this app's addition: it
-lists a binds file's special workspaces, and adds or removes the toggle/move pair
-one space needs, reading the modifier variable off the file rather than assuming
-`mod` (see the parity notes). The shell's `binds.js` is deliberately *not* copied —
-its combo resolution only knows the variable name `mod`, and this config declares
-`mainMod`, so it reports a taken key as free.
+Two helpers stay here, because only this app has anything that needs them:
 
-`insert.js` is this app's addition: it adds a field that is not in the file yet.
-The shell's `setField` no-ops when the field is missing, which is right for a
-hand-trimmed config but means a control that accepts a drag and changes nothing —
-this config's `input.lua`, for instance, carries no `accel_profile`,
-`repeat_rate`, `repeat_delay` or `numlock_by_default`. Those rows insert the
-entry inside the `input` block instead and say so in the note line.
+- `utils/keybinds/spacebinds.js` lists a binds file's special workspaces and adds
+  or removes the toggle/move pair one space needs, reading the modifier variable
+  off the file rather than assuming `mod` (see the parity notes).
+- `utils/lua/insert.js` adds a field that is not in the file yet. The shell's
+  `setField` no-ops when the field is missing, which is right for a hand-trimmed
+  config but means a control that accepts a drag and changes nothing — this
+  config's `input.lua`, for instance, carries no `accel_profile`, `repeat_rate`,
+  `repeat_delay` or `numlock_by_default`. Those rows insert the entry inside the
+  `input` block instead and say so in the note line. The shell's own editors treat
+  a missing field as a no-op (`setField` returns `ok: false`; Deco refuses the
+  write outright) rather than inserting one, so there is nothing here to share.
+
+`keychord.js` (the shell's captured-key mapping, for the create form's key
+capture) is imported from the shell's `utils/keybinds/` too. The shell's
+`binds.js` is deliberately *not* used — its combo resolution only knows the
+variable name `mod`, and this config declares `mainMod`, so it reports a taken key
+as free.
 
 ## The window itself
 

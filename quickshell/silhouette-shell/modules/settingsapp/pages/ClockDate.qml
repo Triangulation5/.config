@@ -1,11 +1,16 @@
 pragma Singleton
 
 import QtQuick
+import "../utils/rows.js" as Rows
 
 /**
  * Clock & Date: how the pill's clock reads, how the hover date strip settles,
  * how a timed calendar event announces itself, and where its weather glance looks
  * and how often it refreshes.
+ *
+ * The three clock rows are the ones the shell's own Appearance surface edits too,
+ * so they read their shipped values from the table shared with it
+ * (`utils/settings/fields.js`, through `Rows`); the rest are this page's alone.
  */
 QtObject {
     readonly property string name: "Clock & Date"
@@ -14,10 +19,10 @@ QtObject {
 
     readonly property var groups: [
         { card: "Clock", rows: [
-            { key: "time12h", type: "toggle", label: "12-hour clock", caption: "AM/PM instead of 24-hour time", reset: true },
-            { key: "clockSeconds", type: "toggle", label: "Show seconds", reset: false },
-            { key: "showGlyphs", type: "toggle", label: "Japanese glyphs",
-              caption: "Kanji headers and transport glyphs across the shell", reset: false }
+            Rows.flag("time12h", "toggle", "12-hour clock", "AM/PM instead of 24-hour time", ""),
+            Rows.flag("clockSeconds", "toggle", "Show seconds", "", ""),
+            Rows.flag("showGlyphs", "toggle", "Japanese glyphs",
+                "Kanji headers and transport glyphs across the shell", "")
         ]},
         { card: "Calendar", rows: [
             { key: "calendarIdleReturnMs", type: "slider", label: "Idle return",

@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import qs.modules.settingsapp.config
 import qs.modules.settingsapp.services
 import qs.modules.settingsapp.components
-import "../utils/keybinds/keychord.js" as Chord
+import "../../../utils/keybinds/keychord.js" as Chord
 
 /**
  * The Workspaces page body: the special workspaces, one row each, with the keys

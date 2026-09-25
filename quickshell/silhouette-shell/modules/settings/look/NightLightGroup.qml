@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../../utils/settings/fields.js" as Fields
 import qs.modules.settings
 import qs.services
 import qs.components.controls
@@ -16,6 +17,17 @@ Group {
 
     title: "Night light"
     s: look ? look.s : 1
+
+    /**
+     * This group's fields' bounds and steps, from the table shared with the
+     * settings app's Control Center page (utils/settings/fields.js). A bound is a
+     * property of the field, not of the control drawing it, so both read it here.
+     */
+    readonly property var meta: ({
+        temp: Fields.get("flags", "nightLightTemp"),
+        onMin: Fields.get("flags", "nightLightOnMin"),
+        offMin: Fields.get("flags", "nightLightOffMin")
+    })
 
     property alias nlModeRow: nlModeRow
     property alias nlTempRow: nlTempRow
@@ -43,7 +55,7 @@ Group {
         ScrubValue {
             id: nlTempScrub; s: look.s
             value: Flags.nightLightTemp; openValue: look.base.nlTemp
-            from: 2200; to: 6000; step: 100; unit: "K"
+            from: nightGrp.meta.temp.min; to: nightGrp.meta.temp.max; step: nightGrp.meta.temp.step; unit: "K"
             onEdited: v => NightLight.setTemp(v)
         }
     }
@@ -55,7 +67,7 @@ Group {
         ScrubValue {
             id: nlOnScrub; s: look.s
             value: Flags.nightLightOnMin; openValue: look.base.nlOnMin
-            from: 0; to: 1425; step: 15
+            from: nightGrp.meta.onMin.min; to: nightGrp.meta.onMin.max; step: nightGrp.meta.onMin.step
             fmt: look.fmtClock
             onEdited: v => NightLight.setOnMin(v)
         }
@@ -68,7 +80,7 @@ Group {
         ScrubValue {
             id: nlOffScrub; s: look.s
             value: Flags.nightLightOffMin; openValue: look.base.nlOffMin
-            from: 0; to: 1425; step: 15
+            from: nightGrp.meta.offMin.min; to: nightGrp.meta.offMin.max; step: nightGrp.meta.offMin.step
             fmt: look.fmtClock
             onEdited: v => NightLight.setOffMin(v)
         }

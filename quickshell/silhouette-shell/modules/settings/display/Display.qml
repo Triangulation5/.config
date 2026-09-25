@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../../utils/lua/monitors.js" as Mon
+import "../../../utils/settings/fields.js" as Fields
 import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
@@ -62,12 +63,18 @@ SettingsSurface {
     readonly property var selMon: monitorByName(selName)
     readonly property bool selIsMain: selMon !== null && selMon.name === mainName
 
-    readonly property var scaleOptions: [
-        { label: "1.0", value: 1 },
-        { label: "1.25", value: 1.25 },
-        { label: "1.5", value: 1.5 },
-        { label: "2.0", value: 2 }
-    ]
+    /**
+     * The fractional scales this card offers, from the table shared with the
+     * settings app's Display page (utils/settings/fields.js) — the table's one
+     * entry that is a choice list rather than a field either side writes.
+     */
+    readonly property var scaleOptions: {
+        const m = Fields.get("monitor", "scales");
+        var out = [];
+        for (var i = 0; i < m.options.length; i++)
+            out.push({ label: m.names[i], value: m.options[i] });
+        return out;
+    }
 
     onActiveChanged: {
         if (active) {

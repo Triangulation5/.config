@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQuick
+import "../utils/rows.js" as Rows
 import qs.modules.settingsapp.config
 
 /**
@@ -10,20 +11,33 @@ import qs.modules.settingsapp.config
  *
  * It imports `qs.config` for one row only, the notch style, which is a pair of
  * flags rather than one — see its comment.
+ *
+ * The pill's own geometry rows take their bounds, step and default from the table
+ * shared with the shell's Pill group (utils/settings/fields.js — read through
+ * `row()` below), so the two UIs cannot offer different ranges for one flag.
  */
 QtObject {
     readonly property string name: "Bar & Island"
     readonly property string icon: "\u25AD"
     readonly property string keywords: "pill bar island notch game mode pointer hover collapse auto hide strip wake"
 
+    /**
+     * One row for the flag `field`, with its bounds, step and default taken from
+     * the shared table. `extra` carries what the table deliberately does not —
+     * `unit`, `displayScale` and the like are how a control formats a value, not
+     * what the field accepts.
+     */
+    function row(field, type, label, caption, unit, extra) {
+        return Rows.flag(field, type, label, caption, unit, extra);
+    }
+
     readonly property var groups: [
         { card: "Pill", rows: [
-            { key: "topGap", type: "slider", label: "Pill gap", min: -1, max: 2, step: 0.1, unit: "",
-              caption: "Space above the pill as a fraction of the shipped 8px; lower moves it up. The notch style sets this to -0.2", reset: 0.7 },
-            { key: "appGap", type: "slider", label: "App gap", min: 0, max: 2, step: 0.1, unit: "",
-              caption: "Gap between the pill and tiled windows; 0 tucks them flush underneath", reset: 1.0 },
-            { key: "pillOpacity", type: "slider", label: "Pill opacity", min: 0.55, max: 1, step: 0.05,
-              displayScale: 100, unit: "%", reset: 1.0 },
+            row("topGap", "slider", "Pill gap",
+                "Space above the pill as a fraction of the shipped 8px; lower moves it up. The notch style sets this to -0.2", ""),
+            row("appGap", "slider", "App gap",
+                "Gap between the pill and tiled windows; 0 tucks them flush underneath", ""),
+            row("pillOpacity", "slider", "Pill opacity", "", "%", { displayScale: 100 }),
             // The pill's frost is a layer rule in the Hyprland config, not a flag:
             // toggling it adds or removes that rule, which is what the shell does.
             { source: "deco", field: "pillBlur", type: "toggle", label: "Pill blur",
@@ -58,8 +72,7 @@ QtObject {
                   Sources.write({ key: "topGap" }, v ? -0.2 : 0.7);
               },
               reset: false },
-            { key: "notchFlare", type: "slider", label: "Notch flare", min: -7, max: 10, step: 0.25, unit: "px",
-              caption: "Flare offset pushed out on both notch ears", reset: 1 }
+            row("notchFlare", "slider", "Notch flare", "Flare offset pushed out on both notch ears", "px")
         ]},
         { card: "Gaming", rows: [
             { key: "gameMode", type: "toggle", label: "Game mode",

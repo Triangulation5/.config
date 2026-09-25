@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../../utils/settings/fields.js" as Fields
 import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.controls
@@ -19,6 +20,19 @@ Group {
     title: "Window"
     s: look ? look.s : 1
     open: true
+
+    /**
+     * This group's fields' bounds and steps, from the table shared with the
+     * settings app's Look page (utils/settings/fields.js). Stated once there and
+     * read here, so a range cannot be widened in one UI and not the other.
+     */
+    readonly property var meta: ({
+        gapsIn: Fields.get("deco", "gapsIn"),
+        gapsOut: Fields.get("deco", "gapsOut"),
+        rounding: Fields.get("deco", "rounding"),
+        roundingPower: Fields.get("deco", "roundingPower"),
+        borderSize: Fields.get("deco", "borderSize")
+    })
 
     property alias gapsInRow: gapsInRow
     property alias gapsInScrub: gapsInScrub
@@ -39,7 +53,7 @@ Group {
         ScrubValue {
             id: gapsInScrub; s: look.s
             value: look.gapsIn; openValue: look.base.gapsIn
-            from: 0; to: 40; step: 1; unit: "px"
+            from: winGrp.meta.gapsIn.min; to: winGrp.meta.gapsIn.max; step: winGrp.meta.gapsIn.step; unit: "px"
             onEdited: v => { look.gapsIn = v; look.writeDeco("gaps_in", String(v)); }
         }
     }
@@ -50,7 +64,7 @@ Group {
         ScrubValue {
             id: gapsOutScrub; s: look.s
             value: look.gapsOut; openValue: look.base.gapsOut
-            from: 0; to: 60; step: 1; unit: "px"
+            from: winGrp.meta.gapsOut.min; to: winGrp.meta.gapsOut.max; step: winGrp.meta.gapsOut.step; unit: "px"
             onEdited: v => { look.gapsOut = v; look.writeDeco("gaps_out", String(v)); }
         }
     }
@@ -61,7 +75,7 @@ Group {
         ScrubValue {
             id: roundScrub; s: look.s
             value: look.rounding; openValue: look.base.rounding
-            from: 0; to: 30; step: 1; unit: "px"
+            from: winGrp.meta.rounding.min; to: winGrp.meta.rounding.max; step: winGrp.meta.rounding.step; unit: "px"
             onEdited: v => { look.rounding = v; look.writeDeco("rounding", String(v)); }
         }
     }
@@ -72,7 +86,7 @@ Group {
         ScrubValue {
             id: roundPowScrub; s: look.s
             value: look.roundingPower; openValue: look.base.roundingPower
-            from: 1; to: 10; step: 1
+            from: winGrp.meta.roundingPower.min; to: winGrp.meta.roundingPower.max; step: winGrp.meta.roundingPower.step
             onEdited: v => { look.roundingPower = v; look.writeDeco("rounding_power", String(v)); }
         }
     }
@@ -83,7 +97,7 @@ Group {
         ScrubValue {
             id: borderScrub; s: look.s
             value: look.borderSize; openValue: look.base.borderSize
-            from: 0; to: 8; step: 1; unit: "px"
+            from: winGrp.meta.borderSize.min; to: winGrp.meta.borderSize.max; step: winGrp.meta.borderSize.step; unit: "px"
             onEdited: v => { look.borderSize = v; look.writeDeco("border_size", String(v)); }
         }
     }

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../../utils/settings/fields.js" as Fields
 import qs.modules.settings
 import qs.modules.controlcenter
 import qs.components.controls
@@ -16,6 +17,17 @@ Group {
 
     title: "Blur"
     s: look ? look.s : 1
+
+    /**
+     * This group's fields' bounds and steps, from the table shared with the
+     * settings app's Look page (utils/settings/fields.js) — see WindowGroup.
+     */
+    readonly property var meta: ({
+        blurSize: Fields.get("deco", "blurSize"),
+        blurPasses: Fields.get("deco", "blurPasses"),
+        blurVibrancy: Fields.get("deco", "blurVibrancy"),
+        blurNoise: Fields.get("deco", "blurNoise")
+    })
 
     property alias blEnRow: blEnRow
     property alias blSizeRow: blSizeRow
@@ -47,7 +59,7 @@ Group {
         ScrubValue {
             id: blSizeScrub; s: look.s
             value: look.blurSize; openValue: look.base.blurSize
-            from: 1; to: 20; step: 1; unit: "px"
+            from: blurGrp.meta.blurSize.min; to: blurGrp.meta.blurSize.max; step: blurGrp.meta.blurSize.step; unit: "px"
             onEdited: v => { look.blurSize = v; look.writeBlur("size", String(v)); }
         }
     }
@@ -59,7 +71,7 @@ Group {
         ScrubValue {
             id: blPassScrub; s: look.s
             value: look.blurPasses; openValue: look.base.blurPasses
-            from: 1; to: 5; step: 1
+            from: blurGrp.meta.blurPasses.min; to: blurGrp.meta.blurPasses.max; step: blurGrp.meta.blurPasses.step
             onEdited: v => { look.blurPasses = v; look.writeBlur("passes", String(v)); }
         }
     }
@@ -71,7 +83,7 @@ Group {
         ScrubValue {
             id: blVibScrub; s: look.s
             value: look.blurVibrancy; openValue: look.base.blurVibrancy
-            from: 0; to: 1; step: 0.01; decimals: 2
+            from: blurGrp.meta.blurVibrancy.min; to: blurGrp.meta.blurVibrancy.max; step: blurGrp.meta.blurVibrancy.step; decimals: 2
             onEdited: v => { look.blurVibrancy = v; look.writeBlur("vibrancy", v.toFixed(2)); }
         }
     }
@@ -83,7 +95,7 @@ Group {
         ScrubValue {
             id: blNoiseScrub; s: look.s
             value: look.blurNoise; openValue: look.base.blurNoise
-            from: 0; to: 0.2; step: 0.01; decimals: 2
+            from: blurGrp.meta.blurNoise.min; to: blurGrp.meta.blurNoise.max; step: blurGrp.meta.blurNoise.step; decimals: 2
             onEdited: v => { look.blurNoise = v; look.writeBlur("noise", v.toFixed(2)); }
         }
     }

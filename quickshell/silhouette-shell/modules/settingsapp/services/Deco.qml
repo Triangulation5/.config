@@ -4,8 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.settingsapp.services
-import "../utils/lua/deco.js" as SetDeco
-import "../utils/lua/anim.js" as SetAnim
+import "../../../utils/lua/setDeco.js" as SetDeco
+import "../../../utils/lua/setAnim.js" as SetAnim
 
 /**
  * `~/.config/hypr/modules/decorations.lua` as a live document — the window

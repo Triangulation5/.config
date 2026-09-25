@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
+import "../../../utils/settings/fields.js" as Fields
 import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
@@ -28,6 +29,21 @@ SettingsSurface {
     kanji: "相"
     label: "APPEARANCE"
     headerGap: 12 * root.s
+
+    /**
+     * The `{label, value}` seg options a table entry carries, so the choices the
+     * app's page offers are the ones offered here.
+     */
+    function options(source, field) {
+        const m = Fields.get(source, field);
+        var out = [];
+        for (var i = 0; i < m.options.length; i++)
+            out.push({ label: m.names[i], value: m.options[i] });
+        return out;
+    }
+
+    /** The hue strip's span, from the table shared with the app's Appearance page. */
+    readonly property real hueMax: Fields.get("flags", "manualHue").max
 
     property string hueArg: String(Math.round(Flags.manualHue))
     property string modeArg: Flags.manualDark ? "dark" : "light"
@@ -165,11 +181,7 @@ SettingsSurface {
 
         SettingsSeg {
             s: root.s
-            options: [
-                { label: "Bars", value: "bars" },
-                { label: "Center", value: "centered" },
-                { label: "String", value: "string" }
-            ]
+            options: root.options("flags", "vizStyle")
             value: Flags.vizStyle
             onPicked: (v) => Flags.vizStyle = v
         }
@@ -183,12 +195,7 @@ SettingsSurface {
 
         SettingsSeg {
             s: root.s
-            options: [
-                { label: "15", value: 15 },
-                { label: "30", value: 30 },
-                { label: "60", value: 60 },
-                { label: "120", value: 120 }
-            ]
+            options: root.options("flags", "vizFps")
             value: Flags.vizFps
             onPicked: (v) => Flags.vizFps = v
         }
@@ -202,11 +209,7 @@ SettingsSurface {
 
         SettingsSeg {
             s: root.s
-            options: [
-                { label: "Bleed", value: "bleed" },
-                { label: "Wash", value: "wash" },
-                { label: "None", value: "none" }
-            ]
+            options: root.options("flags", "mediaStyle")
             value: Flags.mediaStyle
             onPicked: (v) => Flags.mediaStyle = v
         }
@@ -235,7 +238,7 @@ SettingsSurface {
 
         SettingsSeg {
             s: root.s
-            options: [{ label: "Static", value: "static" }, { label: "Dynamic", value: "dynamic" }, { label: "Manual", value: "manual" }]
+            options: root.options("flags", "paletteMode")
             value: Flags.paletteMode
             onPicked: (v) => root.applyMode(v)
         }
@@ -291,7 +294,7 @@ SettingsSurface {
                         height: 16 * root.s
                         radius: width / 2
                         anchors.verticalCenter: parent.verticalCenter
-                        x: (Flags.manualHue / 359) * (hueStrip.width - width)
+                        x: (Flags.manualHue / root.hueMax) * (hueStrip.width - width)
                         color: root.accentColor
                         border.width: 2.5 * root.s
                         border.color: Theme.cream
@@ -303,7 +306,7 @@ SettingsSurface {
                         function setHue(mx) {
                             if (Flags.manualSat < 0.05)
                                 Flags.manualSat = 0.5;
-                            Flags.manualHue = Math.round(Math.max(0, Math.min(1, mx / hueStrip.width)) * 359);
+                            Flags.manualHue = Math.round(Math.max(0, Math.min(1, mx / hueStrip.width)) * root.hueMax);
                         }
                         onPressed: (mouse) => setHue(mouse.x)
                         onPositionChanged: (mouse) => setHue(mouse.x)
@@ -407,7 +410,7 @@ SettingsSurface {
                         if (/^[0-9a-fA-F]{6}$/.test(clean)) {
                             var c = Qt.color("#" + clean);
                             if (c.hslHue >= 0) {
-                                Flags.manualHue = Math.round(c.hslHue * 359);
+                                Flags.manualHue = Math.round(c.hslHue * root.hueMax);
                                 Flags.manualSat = c.hslSaturation;
                             } else {
                                 Flags.manualSat = 0;
@@ -444,7 +447,7 @@ SettingsSurface {
 
         SettingsSeg {
             s: root.s
-            options: [{ label: "90%", value: 0.9 }, { label: "100%", value: 1.0 }, { label: "110%", value: 1.1 }, { label: "125%", value: 1.25 }]
+            options: root.options("flags", "uiScale")
             value: Flags.uiScale
             onPicked: (v) => Flags.uiScale = v
         }

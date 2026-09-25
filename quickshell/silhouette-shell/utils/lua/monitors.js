@@ -1,9 +1,15 @@
 .import "fields.js" as Fields
 
 /**
- * Parses `hyprctl monitors -j` into the slim shape the Display surface needs
- * and rewrites a named `hl.monitor({...})` block's mode/position/scale fields.
+ * Parses `hyprctl monitors -j` into the slim shape a display editor needs and
+ * rewrites a named `hl.monitor({...})` block's mode/position/scale fields.
  * escapeRe comes from fields.js.
+ *
+ * Shared by both display editors — the shell's own Display surface
+ * (modules/settings/display/Display.qml) and the settings app's Displays page
+ * (modules/settingsapp/services/Monitors.qml) — so a change to how a report is
+ * read or a block is rewritten cannot land in one and miss the other. This is
+ * the single copy: neither editor carries one of its own.
  */
 
 /**
@@ -28,10 +34,16 @@ function parseMode(raw) {
 
 /**
  * Parses the `hyprctl monitors -j` text into the slim shape the Display surface
- * needs: per monitor its name, current width/height/refresh/scale/x/y and the
- * available modes as `{ w, h, hz, raw }`. Refresh is rounded the same way as a
- * mode's Hz so the current mode can be matched against the list. Modes that do
- * not parse are dropped. Returns [] on bad input.
+ * needs: per monitor its name, current width/height/refresh/scale/x/y, its
+ * identity (make/model), whether it holds the cursor, and the available modes as
+ * `{ w, h, hz, raw }`. Refresh is rounded the same way as a mode's Hz so the
+ * current mode can be matched against the list. Modes that do not parse are
+ * dropped. Returns [] on bad input.
+ *
+ * The identity fields are kept because the settings app's Displays page shows a
+ * monitor as itself (a shape, its model underneath) rather than as a bare output
+ * name; they are empty on backends that do not report them, and every caller
+ * treats them as optional — the shell's Display surface reads only the geometry.
  */
 function parse(jsonText) {
     var data;
@@ -64,11 +76,83 @@ function parse(jsonText) {
             scale: mon.scale,
             x: mon.x,
             y: mon.y,
+            make: mon.make || "",
+            model: mon.model || "",
+            description: mon.description || "",
+            focused: mon.focused === true,
             modes: modes
         };
     }
 
     return result;
+}
+
+/**
+ * The output monitors.lua makes main: the one named by the `hl.workspace_rule`
+ * loop that covers workspace 1. Hyprland has no "main monitor" setting of its
+ * own, so a config written as a loop declares it this way and that declaration is
+ * worth believing. The regex mirrors the shell's own reader so both surfaces agree
+ * on the same output.
+ *
+ * Returns "" when no loop covers workspace 1 — which includes a config that hands
+ * workspaces out as individual rules with `monitor = ""`, as this one does. The
+ * caller falls back to the compositor for those (see monitorOfWorkspace).
+ */
+var MAIN_RE = /for\s+i\s*=\s*(\d+)\s*,\s*(\d+)\s+do\s*\n\s*hl\.workspace_rule\(\{[^}]*monitor\s*=\s*"([^"]+)"/g;
+
+function mainFromLua(luaText) {
+    if (!luaText)
+        return "";
+    MAIN_RE.lastIndex = 0;
+    var m;
+    while ((m = MAIN_RE.exec(luaText)) !== null)
+        if (parseInt(m[1], 10) <= 1 && parseInt(m[2], 10) >= 1)
+            return m[3];
+    return "";
+}
+
+/**
+ * `hyprctl workspaces -j` slimmed to `{ id, monitor }`: which output each
+ * workspace is on right now. Used for the one thing the compositor knows that a
+ * config file can leave unsaid — where workspace 1 (the workspace a config
+ * written without a main monitor is describing) actually lives.
+ *
+ * The number is read from `id` when the report carries one and from `name` when it
+ * does not: Hyprland versions differ here, and current ones name a numbered
+ * workspace "1" with no numeric field at all. Named workspaces (`special:chat`)
+ * have no number and are dropped, as is any entry with no monitor.
+ */
+function parseWorkspaces(jsonText) {
+    var data;
+    try {
+        data = JSON.parse(jsonText);
+    } catch (e) {
+        return [];
+    }
+    if (!Array.isArray(data))
+        return [];
+
+    var result = [];
+    for (var i = 0; i < data.length; i++) {
+        var ws = data[i];
+        if (!ws.monitor)
+            continue;
+        var id = typeof ws.id === "number" ? ws.id : parseInt(ws.name, 10);
+        if (isNaN(id))
+            continue;
+        result.push({ id: id, monitor: ws.monitor });
+    }
+    return result;
+}
+
+/** The output workspace `id` is on, or "" when that workspace does not exist. */
+function monitorOfWorkspace(workspaces, id) {
+    if (!workspaces)
+        return "";
+    for (var i = 0; i < workspaces.length; i++)
+        if (workspaces[i].id === id)
+            return workspaces[i].monitor;
+    return "";
 }
 
 /**

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../../utils/settings/fields.js" as Fields
 import qs.modules.settings
 import qs.components.controls
 
@@ -16,6 +17,15 @@ Group {
     title: "Opacity"
     s: look ? look.s : 1
 
+    /**
+     * This group's fields' bounds and steps, from the table shared with the
+     * settings app's Look page (utils/settings/fields.js) — see WindowGroup.
+     */
+    readonly property var meta: ({
+        activeOpacity: Fields.get("deco", "activeOpacity"),
+        inactiveOpacity: Fields.get("deco", "inactiveOpacity")
+    })
+
     property alias opActRow: opActRow
     property alias opActScrub: opActScrub
     property alias opInactRow: opInactRow
@@ -27,7 +37,7 @@ Group {
         ScrubValue {
             id: opActScrub; s: look.s
             value: look.activeOpacity; openValue: look.base.activeOpacity
-            from: 0.5; to: 1.0; step: 0.05; decimals: 2
+            from: opGrp.meta.activeOpacity.min; to: opGrp.meta.activeOpacity.max; step: opGrp.meta.activeOpacity.step; decimals: 2
             onEdited: v => { look.activeOpacity = v; look.writeOpacity("active_opacity", v.toFixed(2)); }
         }
     }
@@ -38,7 +48,7 @@ Group {
         ScrubValue {
             id: opInactScrub; s: look.s
             value: look.inactiveOpacity; openValue: look.base.inactiveOpacity
-            from: 0.5; to: 1.0; step: 0.05; decimals: 2
+            from: opGrp.meta.inactiveOpacity.min; to: opGrp.meta.inactiveOpacity.max; step: opGrp.meta.inactiveOpacity.step; decimals: 2
             onEdited: v => { look.inactiveOpacity = v; look.writeOpacity("inactive_opacity", v.toFixed(2)); }
         }
     }

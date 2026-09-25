@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../../../utils/lua/setInput.js" as SetInput
+import "../../../utils/settings/fields.js" as Fields
 import qs.services
 import qs.modules.settings
 import qs.modules.controlcenter
@@ -53,14 +54,31 @@ SettingsSurface {
     readonly property string envPath: Quickshell.env("HOME") + "/.config/hypr/modules/env.lua"
     readonly property string autostartPath: Quickshell.env("HOME") + "/.config/hypr/modules/autostart.lua"
 
-    property real sensitivity: 0
-    property string accelProfile: "flat"
-    property string kbLayout: "de"
-    property int repeatRate: 25
-    property int repeatDelay: 600
-    property bool numlockOn: false
-    property int cursorSize: 24
-    property string cursorTheme: "Bibata-Modern-Ice"
+    /**
+     * This surface's fields' bounds and shipped values, from the table shared with
+     * the settings app's Input page (utils/settings/fields.js) — the same table
+     * seed() falls back to when a file does not carry the field. The app's field
+     * for numlock is `numlock`; this surface calls it `numlockOn`.
+     */
+    readonly property var meta: ({
+        sensitivity: Fields.get("input", "sensitivity"),
+        accelProfile: Fields.get("input", "accelProfile"),
+        kbLayout: Fields.get("input", "kbLayout"),
+        repeatRate: Fields.get("input", "repeatRate"),
+        repeatDelay: Fields.get("input", "repeatDelay"),
+        numlock: Fields.get("input", "numlock"),
+        cursorSize: Fields.get("input", "cursorSize"),
+        cursorTheme: Fields.get("input", "cursorTheme")
+    })
+
+    property real sensitivity: meta.sensitivity.reset
+    property string accelProfile: meta.accelProfile.reset
+    property string kbLayout: meta.kbLayout.reset
+    property int repeatRate: meta.repeatRate.reset
+    property int repeatDelay: meta.repeatDelay.reset
+    property bool numlockOn: meta.numlock.reset
+    property int cursorSize: meta.cursorSize.reset
+    property string cursorTheme: meta.cursorTheme.reset
     property var cursorThemes: []
     property bool themeOpen: false
 
@@ -71,12 +89,15 @@ SettingsSurface {
     /** Per-field values captured on each open; the ScrubValue undo glyphs revert to these. */
     property var base: ({})
 
-    readonly property var accelOptions: [
-        { label: "Flat", value: "flat" },
-        { label: "Adaptive", value: "adaptive" }
-    ]
+    readonly property var accelOptions: {
+        const m = Fields.get("input", "accelProfile");
+        var out = [];
+        for (var i = 0; i < m.options.length; i++)
+            out.push({ label: m.names[i], value: m.options[i] });
+        return out;
+    }
 
-    readonly property var kbLayouts: ["de", "us", "gb", "fr", "es", "it", "tr"]
+    readonly property var kbLayouts: meta.kbLayout.options
     readonly property var kbLayoutVals: kbLayouts.indexOf(kbLayout) >= 0 ? kbLayouts : kbLayouts.concat([kbLayout])
 
     onActiveChanged: {
@@ -105,22 +126,22 @@ SettingsSurface {
 
         var inp = root.inputText;
         var sens = parseFloat(SetInput.getField(inp, "sensitivity"));
-        root.sensitivity = isNaN(sens) ? 0 : sens;
+        root.sensitivity = isNaN(sens) ? meta.sensitivity.reset : sens;
         var ap = SetInput.getField(inp, "accel_profile");
-        root.accelProfile = ap.length > 0 ? ap : "flat";
+        root.accelProfile = ap.length > 0 ? ap : meta.accelProfile.reset;
         var kl = SetInput.getField(inp, "kb_layout");
-        root.kbLayout = kl.length > 0 ? kl : "de";
+        root.kbLayout = kl.length > 0 ? kl : meta.kbLayout.reset;
         var rr = parseInt(SetInput.getField(inp, "repeat_rate"), 10);
-        root.repeatRate = isNaN(rr) ? 25 : rr;
+        root.repeatRate = isNaN(rr) ? meta.repeatRate.reset : rr;
         var rd = parseInt(SetInput.getField(inp, "repeat_delay"), 10);
-        root.repeatDelay = isNaN(rd) ? 600 : rd;
+        root.repeatDelay = isNaN(rd) ? meta.repeatDelay.reset : rd;
         root.numlockOn = SetInput.getField(inp, "numlock_by_default") === "true";
 
         var env = root.envText;
         var cs = parseInt(SetInput.getField(env, "XCURSOR_SIZE"), 10);
-        root.cursorSize = isNaN(cs) ? 24 : cs;
+        root.cursorSize = isNaN(cs) ? meta.cursorSize.reset : cs;
         var ct = SetInput.getField(env, "XCURSOR_THEME");
-        root.cursorTheme = ct.length > 0 ? ct : "Bibata-Modern-Ice";
+        root.cursorTheme = ct.length > 0 ? ct : meta.cursorTheme.reset;
 
         root.base = {
             sensitivity: root.sensitivity,
@@ -279,7 +300,7 @@ SettingsSurface {
                 s: root.s
                 value: root.sensitivity
                 openValue: root.base.sensitivity
-                from: -1; to: 1; step: 0.1; decimals: 1
+                from: root.meta.sensitivity.min; to: root.meta.sensitivity.max; step: root.meta.sensitivity.step; decimals: 2
                 onEdited: v => {
                     root.sensitivity = v;
                     root.writeInputField("sensitivity", String(v));
@@ -344,7 +365,7 @@ SettingsSurface {
                 s: root.s
                 value: root.repeatRate
                 openValue: root.base.repeatRate
-                from: 10; to: 80; step: 1; unit: "Hz"
+                from: root.meta.repeatRate.min; to: root.meta.repeatRate.max; step: root.meta.repeatRate.step; unit: "Hz"
                 onEdited: v => {
                     root.repeatRate = v;
                     root.writeInputField("repeat_rate", String(v));
@@ -363,7 +384,7 @@ SettingsSurface {
                 s: root.s
                 value: root.repeatDelay
                 openValue: root.base.repeatDelay
-                from: 150; to: 1000; step: 25; unit: "ms"
+                from: root.meta.repeatDelay.min; to: root.meta.repeatDelay.max; step: root.meta.repeatDelay.step; unit: "ms"
                 onEdited: v => {
                     root.repeatDelay = v;
                     root.writeInputField("repeat_delay", String(v));
@@ -400,7 +421,7 @@ SettingsSurface {
                 s: root.s
                 value: root.cursorSize
                 openValue: root.base.cursorSize
-                from: 12; to: 96; step: 4; unit: "px"
+                from: root.meta.cursorSize.min; to: root.meta.cursorSize.max; step: root.meta.cursorSize.step; unit: "px"
                 onEdited: v => {
                     root.cursorSize = v;
                     root.applyCursor(root.cursorTheme, v);
