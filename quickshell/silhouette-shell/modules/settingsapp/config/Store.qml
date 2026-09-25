@@ -11,8 +11,8 @@ import Quickshell.Io
  * a change here is picked up by the live shell instantly: no reload, no
  * IPC. The JsonAdapter mirrors the shell's schema exactly - every property
  * the shell's adapter declares exists here with the same name, type and
- * default - so a write round-trips keys the app never edits (gamePrev*,
- * recordClearedBefore) without dropping them.
+ * default - so a write round-trips keys the app never edits
+ * (recordClearedBefore) without dropping them.
  *
  * Reactive access: rows bind Store.adapter.<key> directly (the adapter is a
  * QObject with notifiable properties, so bindings re-evaluate on change -
@@ -133,9 +133,6 @@ Singleton {
             property real auraStrength: 1.0
             property bool auraShadow: true
             property bool gameMode: false
-            property bool gamePrevDnd: false
-            property bool gamePrevViz: true
-            property bool gamePrevAwake: false
             property string nightLightMode: "scheduled"
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
@@ -259,7 +256,7 @@ Singleton {
         "lockClock", "lockBattery", "lockLink",
         "weatherCity", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
-        "gameMode", "gamePrevDnd", "gamePrevViz", "gamePrevAwake",
+        "gameMode",
         "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
         "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
         "pillHoverH", "pillMixerH", "pillLauncherW", "pillLauncherH", "pillClipboardW",

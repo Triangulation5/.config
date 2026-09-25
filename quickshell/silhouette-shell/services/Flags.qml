@@ -70,9 +70,6 @@ Singleton {
     property alias auraStrength: adapter.auraStrength
     property alias auraShadow: adapter.auraShadow
     property alias gameMode: adapter.gameMode
-    property alias gamePrevDnd: adapter.gamePrevDnd
-    property alias gamePrevViz: adapter.gamePrevViz
-    property alias gamePrevAwake: adapter.gamePrevAwake
     property alias nightLightMode: adapter.nightLightMode
     property alias nightLightTemp: adapter.nightLightTemp
     property alias nightLightOnMin: adapter.nightLightOnMin
@@ -338,9 +335,6 @@ Singleton {
             /** Whether the cover's dominant colour also darkens the pill's shadow. */
             property bool auraShadow: true
             property bool gameMode: false
-            property bool gamePrevDnd: false
-            property bool gamePrevViz: true
-            property bool gamePrevAwake: false
             property string nightLightMode: "scheduled"
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200

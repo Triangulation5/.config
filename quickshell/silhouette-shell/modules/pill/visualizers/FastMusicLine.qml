@@ -29,7 +29,8 @@ Rectangle {
     property double curveSpill: 1.5
 
     /**
-     * True while the visualizer feature is enabled (Flags.musicViz). The cava
+     * True while the visualizer is on for this session — `GameMode.visualizer`,
+     * the flag with game mode's mute over it, as the pill passes it down. The cava
      * capture runs whenever this is set, so the string is already warm by the
      * time audio flows - no spawn delay on the first note. Frames are still
      * only consumed while `resting`, and a long stretch away from rest puts

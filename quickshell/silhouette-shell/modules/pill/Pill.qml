@@ -1728,7 +1728,7 @@ Item {
                  * sub-pixel layout stepping that made the old layout-driven
                  * slide stutter.
                  */
-                readonly property bool barsOn: Flags.musicViz && musicBars.active
+                readonly property bool barsOn: GameMode.visualizer && musicBars.active
 
                 /**
                  * The visualizer only renders while the pill is actually at
@@ -1750,7 +1750,7 @@ Item {
 
                     centeredVisualizer: Flags.vizStyle === "centered"
                     stringVisualizer: Flags.vizStyle === "string"
-                    live: Flags.musicViz
+                    live: GameMode.visualizer
                     resting: pill.mode === "rest"
 
                     opacity: restKanji.vizShown ? 1 : 0
