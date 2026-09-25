@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.services
 
 /**
  * The blurred desktop backdrop for the lock reveal. Takes the frozen screenshot
@@ -35,6 +36,14 @@ Item {
 
     /** Film grain amplitude the grade mixes in (0 = clean). */
     property real grain: 0.012
+
+    /**
+     * Lite mode keeps the grade and drops the blur: the chain below is three
+     * downsamples, six separable blur passes and an extra copy pass, and the
+     * grade only needs the first downsample to work on. The blur stages stay
+     * declared but unreferenced, so Qt never renders them.
+     */
+    readonly property bool lite: Flags.liteMode
 
     readonly property size half: Qt.size(Math.max(2, Math.round(width / 2)), Math.max(2, Math.round(height / 2)))
     readonly property size quarter: Qt.size(Math.max(2, Math.round(width / 4)), Math.max(2, Math.round(height / 4)))
@@ -224,8 +233,10 @@ Item {
 
     ShaderEffect {
         anchors.fill: parent
-        property var source: blurV3Src
-        property vector2d srcSize: root.eighthVec
+        property var source: root.lite ? downHalf : blurV3Src
+        /** Must match whichever texture is feeding the grade, or the vignette
+          * radius and grain frequency scale off the wrong resolution. */
+        property vector2d srcSize: root.lite ? Qt.vector2d(root.half.width, root.half.height) : root.eighthVec
         property real darken: root.darken
         property real saturate: root.saturate
         property real vignette: root.vignette

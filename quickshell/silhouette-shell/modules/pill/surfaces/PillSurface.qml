@@ -141,7 +141,8 @@ Item {
      * Blur ramps from 0→1 inversely with presence for a soft recession effect
      * that clears before the pill body begins its morph.
      */
-    layer.enabled: surface.closing
+    /** Off in lite mode: the surface still fades out, without the blur pass. */
+    layer.enabled: !Flags.liteMode && surface.closing
     layer.effect: MultiEffect {
         blurEnabled: surface.closing
         blurMax: 32

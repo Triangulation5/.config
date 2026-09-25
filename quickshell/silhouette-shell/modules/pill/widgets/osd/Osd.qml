@@ -104,7 +104,11 @@ Item {
 
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
-    readonly property real volume: sink && sink.audio ? Math.max(0, Math.min(1, sink.audio.volume)) : 0
+    /** Output volume as a 0..>1 fraction: 1.25 is a 125% boost. */
+    readonly property real volume: sink && sink.audio ? Math.max(0, sink.audio.volume) : 0
+    /** The bar and ring fill against the `maxVolume` ceiling, so a boost configured
+      * in the mixer still reads as progress instead of a pinned-full bar. */
+    readonly property real volumeFill: Math.min(1, root.volume * 100 / Math.max(1, Flags.maxVolume))
 
     readonly property var source: Pipewire.defaultAudioSource
     readonly property bool micMuted: source && source.audio ? source.audio.muted : false
@@ -381,11 +385,11 @@ Item {
         s: root.s
         active: root.kind === "volume"
         glyph: root.muted ? "speaker-off" : "speaker-level"
-        glyphProgress: root.volume
+        glyphProgress: root.volumeFill
         glyphColor: root.muted ? Theme.dim : Theme.iconDim
         pctText: Math.round(root.volume * 100) + "%"
         pctColor: root.muted ? Theme.dim : Theme.cream
-        fill: root.volume
+        fill: root.volumeFill
         fillColor: root.muted ? Theme.vermDim : Theme.vermLit
     }
 

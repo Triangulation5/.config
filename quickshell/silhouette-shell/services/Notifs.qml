@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 
 /**
@@ -33,7 +34,47 @@ Singleton {
         return u;
     }
 
-    readonly property var groups: {
+    /**
+     * The grouped tree the tray renders.
+     *
+     * Built by rebuildGroups() and *scheduled* once per change rather than
+     * evaluated as a binding: a single notification close reassigns arrivalMs,
+     * history, expireAt and hookedIds in a row, and a binding would redo the
+     * whole sort-and-coalesce pass once per assignment instead of once per
+     * change. The schedule collapses to the next event-loop turn, so the tree
+     * still lands in the frame it used to.
+     *
+     * `liveSig` below is what re-schedules it: a cheap signature over the live
+     * list's ids and the fields coalesce() reads, so the rebuild still fires if
+     * a live notification's summary or urgency changes in place — which is what
+     * a plain binding used to catch for free.
+     */
+    property var groups: []
+    property bool groupsPending: false
+
+    readonly property string liveSig: {
+        var s = "";
+        for (var i = 0; i < tracked.length; i++)
+            s += tracked[i].id + ":" + tracked[i].summary + ":" + tracked[i].urgency + ";";
+        return s;
+    }
+
+    onLiveSigChanged: root.scheduleGroups()
+    onHistoryChanged: root.scheduleGroups()
+    /** Arrival times order the groups, and the shell restores tracked notifications
+      * on reload without the list itself changing — so this one is not redundant
+      * with liveSig. */
+    onArrivalMsChanged: root.scheduleGroups()
+
+    function scheduleGroups() {
+        if (root.groupsPending)
+            return;
+        root.groupsPending = true;
+        Qt.callLater(root.rebuildGroups);
+    }
+
+    function rebuildGroups() {
+        root.groupsPending = false;
         var map = {};
         var order = [];
         for (var i = 0; i < tracked.length; i++) {
@@ -75,7 +116,7 @@ Singleton {
             };
         });
         gs.sort(function(a, b) { return b.t - a.t; });
-        return gs;
+        root.groups = gs;
     }
 
     function iconFor(n) {
@@ -231,7 +272,7 @@ Singleton {
                     urgency: n.urgency,
                     ts: root.arrivalMs[n.id] || Date.now(),
                     id: "h" + n.id + "-" + Date.now()
-                }].concat(root.history).slice(0, 50);
+                }].concat(root.history).slice(0, Math.max(1, Flags.notifHistoryMax));
             else {
                 var du = Object.assign({}, root.userDismissed);
                 delete du[n.id];
@@ -295,8 +336,49 @@ Singleton {
             n.tracked = true;
             root.hookClosed(n);
             var critical = n.urgency === NotificationUrgency.Critical;
-            if (!Flags.dnd || critical)
-                root.popups = root.popups.concat([n]).slice(-3);
+            if (!Flags.dnd || (critical && Flags.dndCritical)) {
+                /**
+                 * A repeat of something already on screen is not a second
+                 * toast. The repeat is still tracked and still folds into the
+                 * tray's group count, so nothing is lost by leaving the stack
+                 * alone — the popup just stops stacking identical rows.
+                 */
+                if (isDuplicatePopup(n))
+                    return;
+                root.popups = root.popups.concat([n]).slice(-Math.max(1, Flags.notifPopupMax));
+                if (Flags.notifSound)
+                    chime.running = true;
+            }
         }
+    }
+
+    /**
+     * True when an identical notification — same app, summary and body — is
+     * already in the popup stack. Gated by the `notifDedupe` flag so the old
+     * always-stack behaviour is one toggle away.
+     */
+    function isDuplicatePopup(n) {
+        if (!Flags.notifDedupe)
+            return false;
+        var app = (n.appName && n.appName.length) ? n.appName : "System";
+        for (var i = 0; i < root.popups.length; i++) {
+            var p = root.popups[i];
+            if (!p)
+                continue;
+            var papp = (p.appName && p.appName.length) ? p.appName : "System";
+            if (papp === app && p.summary === n.summary && p.body === n.body)
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Optional notification sound, off by default: the freedesktop message
+     * blip through the same `paplay` route the calendar reminder and the timer
+     * already use, played once per notification that is actually shown.
+     */
+    Process {
+        id: chime
+        command: ["paplay", "/usr/share/sounds/freedesktop/stereo/message.oga"]
     }
 }

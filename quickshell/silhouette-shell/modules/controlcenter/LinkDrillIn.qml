@@ -41,7 +41,8 @@ Item {
     property string caption: ""
     property color captionColor: Theme.faint
 
-    /** Scan state + auto-stop timer; interval overridden per panel (bt: 25s). */
+    /** Scan state + auto-stop timer; the interval is set per panel from the
+     *  `wifiScanMs` / `btScanMs` flags (10s / 25s shipped). */
     property bool scanning: false
     property int scanInterval: 10000
 

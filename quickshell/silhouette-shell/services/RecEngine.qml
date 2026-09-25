@@ -147,7 +147,8 @@ Item {
                     "Recording failed", msg.length > 0 ? msg : (root.host.backend === "ffmpeg" ? "ffmpeg exited " + exitCode : "gpu-screen-recorder exited " + exitCode)];
                 failProc.running = true;
             } else {
-                savedProc.running = true;
+                if (Flags.recordNotify)
+                    savedProc.running = true;
                 Qt.callLater(root.host.refreshRecent);
             }
         }
@@ -196,7 +197,7 @@ Item {
     Process {
         id: listProc
         command: ["sh", "-c",
-            "d=\"$1\"; [ -d \"$d\" ] || exit 0; find \"$d\" -maxdepth 1 -type f -name 'recording_*.mp4' -printf '%T@\\t%s\\t%p\\n' | sort -rn | head -n 40",
+            "d=\"$1\"; [ -d \"$d\" ] || exit 0; find \"$d\" -maxdepth 1 -type f -name 'recording_*.mp4' -printf '%T@\\t%s\\t%p\\n' | sort -rn | head -n " + Math.max(1, Flags.recHistoryMax),
             "_", root.host.outDir]
         stdout: StdioCollector {
             onStreamFinished: {

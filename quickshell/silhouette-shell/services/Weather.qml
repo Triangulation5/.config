@@ -482,14 +482,15 @@ Singleton {
 
     /**
      * One repeating tick whose cadence depends on state: while never located it
-     * retries every 30s so a transient geolocation failure (offline boot,
-     * blacklisted geocoder) heals in seconds instead of leaving the panel dark
-     * for a full refresh cycle; once located it drops to refreshing the forecast
-     * every 20 minutes. Before the first demand the cadence is the slow one and
-     * each tick returns immediately, so an unused weather service costs nothing.
+     * retries every `weatherRetryMs` (30s shipped) so a transient geolocation
+     * failure (offline boot, blacklisted geocoder) heals in seconds instead of
+     * leaving the panel dark for a full refresh cycle; once located it drops to
+     * refreshing the forecast every `weatherRefreshMs` (20 min shipped). Before
+     * the first demand the cadence is the slow one and each tick returns
+     * immediately, so an unused weather service costs nothing.
      */
     Timer {
-        interval: root.needed && !root.located ? 30000 : 1200000
+        interval: root.needed && !root.located ? Flags.weatherRetryMs : Flags.weatherRefreshMs
         running: true
         repeat: true
         onTriggered: {

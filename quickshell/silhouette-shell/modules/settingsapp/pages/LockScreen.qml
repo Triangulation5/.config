@@ -12,16 +12,16 @@ import QtQuick
  * shell's IdleLock surface — so they are settings, not config edits. The sizes
  * and the bead timeline used to be constants in `modules/lock/`.
  *
- * The failed-attempts pair is read by the lock's own auth daemon
- * (`modules/lock/Auth.qml`): the timed lockout it has always had stays, and on top
- * of it the streak can escalate to ending the session. It ships off, so a lock
- * that only ever made you wait keeps doing exactly that until the action is
- * chosen.
+ * The failed-attempts group is read by the lock's own auth daemon
+ * (`modules/lock/Auth.qml`): the timed lockout it has always had is tuned by the
+ * three `lockout*` rows, and on top of it the streak escalates to ending the
+ * session — logging the user out by default, so a keyboard left in front of a
+ * locked screen does not simply keep guessing.
  */
 QtObject {
     readonly property string name: "Lock Screen"
     readonly property string icon: "\u25A1"
-    readonly property string keywords: "lock idle dim dpms suspend timeout password avatar backdrop blur darken saturation vignette grain bead animation screen privacy private hide redact media music ssid wifi network name failed failure attempt attempts tries escalate escalation logout log out sign out shutdown shut down poweroff power off reboot restart lockout"
+    readonly property string keywords: "lock idle dim dpms suspend timeout password avatar backdrop blur darken saturation vignette grain bead animation screen privacy private hide redact media music ssid wifi network name failed failure attempt attempts tries escalate escalation logout log out sign out shutdown shut down poweroff power off reboot restart lockout player glow visualizer cava content card clock battery network glance"
 
     readonly property var groups: [
         { card: "Idle", rows: [
@@ -36,14 +36,38 @@ QtObject {
             { key: "lockPrivacy", type: "toggle", label: "Hide private info",
               caption: "Keep the now-playing card, the wifi name and your real name off the lock", reset: false }
         ]},
+        { card: "Content", rows: [
+            { key: "lockClock", type: "toggle", label: "Clock",
+              caption: "The big time and date on the lock; clicking them still expands the full date layout", reset: true },
+            { key: "lockMedia", type: "toggle", label: "Now-playing card",
+              caption: "Show the media card on the lock while a player is active; Hide private info still redacts its details", reset: true },
+            { key: "lockViz", type: "toggle", label: "Music glow",
+              caption: "Glow that reacts to the audio, with its own capture independent of the pill's visualizer", reset: true },
+            { key: "lockBattery", type: "toggle", label: "Battery glance",
+              caption: "The battery capsule in the lock's top-right corner", reset: true },
+            { key: "lockLink", type: "toggle", label: "Network glance",
+              caption: "The wifi and bluetooth capsule in the lock's bottom-right corner", reset: true }
+        ]},
         { card: "Failed attempts", rows: [
             { key: "lockFailAction", type: "segmented", label: "After too many tries",
               caption: "What the lock does once the wrong-password streak below is reached. Nothing keeps just the timed lockout",
               options: ["none", "logout", "reboot", "shutdown"],
-              names: ["Nothing", "Log out", "Restart", "Shut down"], reset: "none" },
+              names: ["Nothing", "Log out", "Restart", "Shut down"], reset: "logout" },
             { key: "lockFailLimit", type: "slider", label: "Allowed failures",
               min: 1, max: 20, step: 1, unit: "",
-              caption: "Consecutive wrong passwords before that action runs; a successful unlock resets the streak", reset: 10 }
+              caption: "Consecutive wrong passwords before that action runs; a successful unlock resets the streak", reset: 10 },
+            // The timed lockout under the escalation: after this many failures the
+            // field locks for the first wait below, doubling per repeat. It applies
+            // whether or not the escalation above is armed.
+            { key: "lockoutThreshold", type: "slider", label: "Lockout after",
+              min: 1, max: 20, step: 1, unit: "",
+              caption: "Consecutive failures before the field is locked out", reset: 5 },
+            { key: "lockoutSeconds", type: "slider", label: "First lockout wait",
+              min: 5, max: 300, step: 5, unit: "s",
+              caption: "How long the first lockout lasts; each repeat doubles it", reset: 30 },
+            { key: "lockoutMax", type: "slider", label: "Longest lockout wait",
+              min: 30, max: 1800, step: 30, unit: "s",
+              caption: "Ceiling on the doubling wait", reset: 600 }
         ]},
         { card: "Surface", rows: [
             { key: "lockPillW", type: "slider", label: "Field width",

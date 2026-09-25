@@ -352,7 +352,10 @@ PillSurface {
             Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
             /** Stay blurred while the fade-out runs so the tail never snaps sharp. */
-            layer.enabled: root.bleedOn && (root.shown || opacity > 0.01)
+            /** Off in lite mode: the cover still bleeds, just sharp. The blur
+              * runs while the card is up, which is the longest-lived layer in
+              * the shell besides the aura. */
+            layer.enabled: !Flags.liteMode && root.bleedOn && (root.shown || opacity > 0.01)
             layer.effect: MultiEffect {
                 blurEnabled: true
                 blurMax: 32

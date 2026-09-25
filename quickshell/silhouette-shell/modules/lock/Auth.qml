@@ -18,9 +18,9 @@ import qs.services
  *
  * Past the wait there is an escalation: once the streak reaches the configured
  * limit the lock ends the session instead of only making it wait — log out,
- * restart or shut down, or nothing at all. It is off by default, and both the
- * action and the limit are Lock Screen settings (`lockFailAction`,
- * `lockFailLimit`), so the lock never acts on its own until it is asked to.
+ * restart or shut down, or nothing at all. It logs the session out by default,
+ * and both the action and the limit are Lock Screen settings (`lockFailAction`,
+ * `lockFailLimit`), so how far the lock goes is always the user's call.
  */
 
 Item {
@@ -47,9 +47,14 @@ Item {
      * `lockoutRemaining` ticks down live so the surface can show a countdown.
      */
     property int failedAttempts: 0
-    property int lockoutThreshold: 5
-    property int lockoutSeconds: 30
-    property int lockoutMax: 600
+    /**
+     * The retry-lockout numbers are Lock Screen settings (`lockoutThreshold`,
+     * `lockoutSeconds`, `lockoutMax`), floored so a hand-edited zero can never
+     * lock the field out forever or arm the wait with no way out.
+     */
+    readonly property int lockoutThreshold: Math.max(1, Flags.lockoutThreshold)
+    readonly property int lockoutSeconds: Math.max(1, Flags.lockoutSeconds)
+    readonly property int lockoutMax: Math.max(lockoutSeconds, Flags.lockoutMax)
     property bool lockedOut: false
     property int lockoutRemaining: 0
 

@@ -425,9 +425,18 @@ PillSurface {
             subLabel: "Volume"
             subPersistent: false
             focused: root.focusIndex === root.faderCount - 2
-            value: root.sink && root.sink.audio ? root.sink.audio.volume : 0
+            /**
+             * VFader is normalised 0..1, so the track's top is the `maxVolume`
+             * ceiling rather than unity: at the shipped 100% the mapping is
+             * identity, and above it a boost simply sits past the midpoint.
+             * PipeWire accepts volume over 1.0, which is what makes the row
+             * worth configuring. The gain and mic faders stay at unity — a
+             * recording trim past 0 dB is a different control.
+             */
+            readonly property real ceiling: Math.max(1, Flags.maxVolume) / 100
+            value: root.sink && root.sink.audio ? root.sink.audio.volume / ceiling : 0
             valueLabel: Math.round((root.sink && root.sink.audio ? root.sink.audio.volume : 0) * 100) + "%"
-            onMoved: (v) => { if (root.sink && root.sink.audio) root.sink.audio.volume = v; }
+            onMoved: (v) => { if (root.sink && root.sink.audio) root.sink.audio.volume = v * ceiling; }
         }
         VFader {
             id: micFader

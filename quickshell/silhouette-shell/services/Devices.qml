@@ -98,7 +98,11 @@ Singleton {
 
     Process {
         id: ddcDetect
-        command: ["ddcutil", "detect", "--brief"]
+        // Guarded through `sh`: when ddcutil is not installed the shell exits
+        // quietly instead of Quickshell logging "Process failed to start" for a
+        // missing binary. The parser below simply sees no output and leaves the
+        // DDC monitor list empty, exactly as an installed-but-idle ddcutil does.
+        command: ["sh", "-c", "command -v ddcutil >/dev/null 2>&1 || exit 0; exec ddcutil detect --brief"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {

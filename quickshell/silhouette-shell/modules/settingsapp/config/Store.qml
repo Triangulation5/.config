@@ -77,6 +77,7 @@ Singleton {
             // The defaults below are the shipped values; Pages' row `reset`
             // fields mirror them for the "Reset to Defaults" button.
             property bool dnd: false
+            property bool dndCritical: true
             property bool keepAwake: false
             property bool time12h: true
             property bool clockSeconds: false
@@ -104,15 +105,26 @@ Singleton {
             property bool recordCursor: true
             property bool recordMic: true
             property bool recordDesktop: true
+            property bool recordNotify: true
             property real recordClearedBefore: 0
             property int idleLockMin: 3
             property int idleScreenOffMin: 0
             property int idleSuspendMin: 0
             property bool lockPrivacy: false
             property string lockDotsMode: "gpixel"
-            property string lockFailAction: "none"
+            property string lockFailAction: "logout"
             property int lockFailLimit: 10
+            property int lockoutThreshold: 5
+            property int lockoutSeconds: 30
+            property int lockoutMax: 600
+            property bool lockMedia: true
+            property bool lockViz: true
+            property bool lockClock: true
+            property bool lockBattery: true
+            property bool lockLink: true
             property string weatherCity: "WELLAND"
+            property bool eventChime: true
+            property bool eventNotify: true
             property bool musicViz: true
             property string vizStyle: "bars"
             property int vizFps: 60
@@ -174,6 +186,7 @@ Singleton {
             property real pillDragOverW: 300
             property real pillDragOverH: 126
             property real pillGameH: 34
+            property real pillAutoStripH: 5
             property bool memorySaver: true
             property int pillSurfaceIdleTimeout: 12
             // -- the shell's own timing, geometry and motion, mirrored from Flags.qml --
@@ -190,6 +203,21 @@ Singleton {
             property int osdHoldMs: 1800
             property int notifMs: 6000
             property int notifLowMs: 4000
+            property int notifHistoryMax: 50
+            property int notifPopupMax: 3
+            property bool notifDedupe: true
+            property bool notifSound: false
+            property bool liteMode: false
+            property int battLowPct: 20
+            property bool periphLowNotify: true
+            property int maxVolume: 100
+            property int wifiScanMs: 10000
+            property int btScanMs: 25000
+            property int calendarIdleReturnMs: 2000
+            property int weatherRetryMs: 30000
+            property int weatherRefreshMs: 1200000
+            property int recHistoryMax: 40
+            property bool sysmonAutoTest: false
             property real lockPillW: 176
             property real lockPillH: 42
             property real lockAvatarSize: 120
@@ -218,16 +246,18 @@ Singleton {
 
     /** Every mirrored flag key, in schema order. */
     readonly property var keys: [
-        "dnd", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
+        "dnd", "dndCritical", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
         "paletteMode", "wallpaperDir", "uiScale", "reduceMotion",
         "manualHue", "manualDark", "manualSat", "uiFont",
         "pillOpacity", "pillBlur", "topGap", "appGap",
         "notchStyle", "notchFlare", "autoHide", "vimKeys",
         "recordCountdown", "recordDir", "recordFps", "recordQuality",
-        "recordCursor", "recordMic", "recordDesktop", "recordClearedBefore",
+        "recordCursor", "recordMic", "recordDesktop", "recordNotify", "recordClearedBefore",
         "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockPrivacy", "lockDotsMode",
         "lockFailAction", "lockFailLimit",
-        "weatherCity", "musicViz", "vizStyle", "vizFps", "mediaStyle",
+        "lockoutThreshold", "lockoutSeconds", "lockoutMax", "lockMedia", "lockViz",
+        "lockClock", "lockBattery", "lockLink",
+        "weatherCity", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode", "gamePrevDnd", "gamePrevViz", "gamePrevAwake",
         "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
@@ -240,10 +270,14 @@ Singleton {
         "pillInputW", "pillLookW", "pillIdlelockW", "pillAnimationW", "pillRecorderW",
         "pillFontpickerW", "pillWeatherW", "pillPolkitW", "pillOpenCorner", "pillToastW",
         "pillQuickChooseW", "pillQuickChooseH", "pillQuickCountW", "pillQuickCountH",
-        "pillDragOverW", "pillDragOverH", "pillGameH", "memorySaver", "pillSurfaceIdleTimeout",
+        "pillDragOverW", "pillDragOverH", "pillGameH", "pillAutoStripH", "memorySaver", "pillSurfaceIdleTimeout",
         "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius",
         "cornerMorphMs", "cornerShadowSize", "motionSpeed",
         "pillCleanupSec", "pillGameUnloadMs", "pillGameSweepSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",
+        "notifHistoryMax", "notifPopupMax", "notifDedupe", "notifSound", "liteMode",
+        "battLowPct", "periphLowNotify", "maxVolume", "wifiScanMs", "btScanMs",
+        "calendarIdleReturnMs", "weatherRetryMs", "weatherRefreshMs", "recHistoryMax",
+        "sysmonAutoTest",
         "lockPillW", "lockPillH", "lockAvatarSize", "lockBeadMs", "lockBlurSpread",
         "lockBlurDarken", "lockBlurSaturation", "lockBlurVignette", "lockBlurGrain"
     ]

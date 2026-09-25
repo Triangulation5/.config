@@ -10,24 +10,25 @@ import Quickshell.Io
  * processes that bring the AP up/down and re-read its state. The view
  * (WifiHotspot) renders this state and emits toggle/edit signals back in.
  *
- * The `Singleton` root is used only as a non-visual object container (same as
- * ScreenRec): it is the only Quickshell type that is not an Item yet still
- * carries a default property, which is what lets the Process children sit
- * inside it. There is no `pragma Singleton`, so each wifi surface gets its own
- * independent control. A plain QtObject root cannot be used here — its lack of
- * a default property makes every child a hard "Cannot assign to non-existent
- * default property" error.
- *
- * The cost of that root is one benign warning at first instantiation:
- * Quickshell treats a Singleton-rooted type as a module singleton and logs
- * "Tried to register singleton HotspotControl ... which is not the root
- * component of its file". Declaring it `singleton` in the module qmldir would
- * silence that warning and change behavior — the state (hotspot name,
- * password, inline-edit draft) would become process-wide and leak between
- * monitors' control centers.
+ * The `Item` root is used only as a non-visual object container: it is sized to
+ * zero and hidden, and exists to carry the Process children. Each wifi surface
+ * gets its own independent control — there is no `pragma Singleton`. A plain
+ * QtObject root cannot be used here: it has no default property, which makes
+ * every child a hard "Cannot assign to non-existent default property" error.
+ * A Quickshell `Singleton` root would carry the children too, but Quickshell
+ * then treats the type as a module singleton and logs "Tried to register
+ * singleton HotspotControl ... which is not the root component of its file" on
+ * every instantiation; the zero-sized Item carries the same children with no
+ * warning, and declaring the type `singleton` in the module qmldir would change
+ * behavior — the state (hotspot name, password, inline-edit draft) would become
+ * process-wide and leak between monitors' control centers.
  */
-Singleton {
+Item {
     id: ctl
+
+    visible: false
+    width: 0
+    height: 0
 
     /** Wifi interface the AP binds to, fed live by the surface's wifi device. */
     property string iface: "wlan0"

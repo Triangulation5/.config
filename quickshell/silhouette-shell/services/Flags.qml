@@ -14,6 +14,7 @@ Singleton {
     id: root
 
     property alias dnd: adapter.dnd
+    property alias dndCritical: adapter.dndCritical
     property alias keepAwake: adapter.keepAwake
     property alias time12h: adapter.time12h
     property alias clockSeconds: adapter.clockSeconds
@@ -41,6 +42,7 @@ Singleton {
     property alias recordCursor: adapter.recordCursor
     property alias recordMic: adapter.recordMic
     property alias recordDesktop: adapter.recordDesktop
+    property alias recordNotify: adapter.recordNotify
     property alias recordClearedBefore: adapter.recordClearedBefore
     property alias idleLockMin: adapter.idleLockMin
     property alias idleScreenOffMin: adapter.idleScreenOffMin
@@ -49,7 +51,17 @@ Singleton {
     property alias lockDotsMode: adapter.lockDotsMode
     property alias lockFailAction: adapter.lockFailAction
     property alias lockFailLimit: adapter.lockFailLimit
+    property alias lockoutThreshold: adapter.lockoutThreshold
+    property alias lockoutSeconds: adapter.lockoutSeconds
+    property alias lockoutMax: adapter.lockoutMax
+    property alias lockMedia: adapter.lockMedia
+    property alias lockViz: adapter.lockViz
+    property alias lockClock: adapter.lockClock
+    property alias lockBattery: adapter.lockBattery
+    property alias lockLink: adapter.lockLink
     property alias weatherCity: adapter.weatherCity
+    property alias eventChime: adapter.eventChime
+    property alias eventNotify: adapter.eventNotify
     property alias musicViz: adapter.musicViz
     property alias vizStyle: adapter.vizStyle
     property alias vizFps: adapter.vizFps
@@ -111,6 +123,7 @@ Singleton {
     property alias pillDragOverW: adapter.pillDragOverW
     property alias pillDragOverH: adapter.pillDragOverH
     property alias pillGameH: adapter.pillGameH
+    property alias pillAutoStripH: adapter.pillAutoStripH
     property alias memorySaver: adapter.memorySaver
     property alias pillSurfaceIdleTimeout: adapter.pillSurfaceIdleTimeout
     /*
@@ -133,6 +146,12 @@ Singleton {
     property alias osdHoldMs: adapter.osdHoldMs
     property alias notifMs: adapter.notifMs
     property alias notifLowMs: adapter.notifLowMs
+    property alias notifHistoryMax: adapter.notifHistoryMax
+    property alias notifPopupMax: adapter.notifPopupMax
+    property alias notifDedupe: adapter.notifDedupe
+    property alias notifSound: adapter.notifSound
+    /* Performance: one switch for the shell's expensive GPU layers. */
+    property alias liteMode: adapter.liteMode
     property alias lockPillW: adapter.lockPillW
     property alias lockPillH: adapter.lockPillH
     property alias lockAvatarSize: adapter.lockAvatarSize
@@ -149,6 +168,27 @@ Singleton {
     property alias lockBlurSaturation: adapter.lockBlurSaturation
     property alias lockBlurVignette: adapter.lockBlurVignette
     property alias lockBlurGrain: adapter.lockBlurGrain
+    /*
+     * Thresholds and cadences that used to be literals in the components that
+     * use them: the two battery warnings, the wifi/bluetooth rescan gaps, the
+     * calendar strip's idle return, the weather refresh pair and the recording
+     * list's cap. Same reason the lock's own numbers are flags — what the
+     * settings app cannot reach is not a setting.
+     */
+    property alias battLowPct: adapter.battLowPct
+    property alias periphLowNotify: adapter.periphLowNotify
+    property alias maxVolume: adapter.maxVolume
+    property alias wifiScanMs: adapter.wifiScanMs
+    property alias btScanMs: adapter.btScanMs
+    property alias calendarIdleReturnMs: adapter.calendarIdleReturnMs
+    property alias weatherRetryMs: adapter.weatherRetryMs
+    property alias weatherRefreshMs: adapter.weatherRefreshMs
+    property alias recHistoryMax: adapter.recHistoryMax
+    /**
+     * Whether opening the system monitor runs its network speed test on its
+     * own, or waits for the card's Test button. Off by default.
+     */
+    property alias sysmonAutoTest: adapter.sysmonAutoTest
 
     FileView {
         id: file
@@ -167,6 +207,8 @@ Singleton {
         JsonAdapter {
             id: adapter
             property bool dnd: false
+            /** Whether a critical-urgency notification still pops while Do-Not-Disturb is on. */
+            property bool dndCritical: true
             property bool keepAwake: false
             property bool time12h: true
             property bool clockSeconds: false
@@ -212,6 +254,8 @@ Singleton {
             property bool recordCursor: true
             property bool recordMic: true
             property bool recordDesktop: true
+            /** Announce a finished recording with a notification (modules/recording). */
+            property bool recordNotify: true
             property real recordClearedBefore: 0
             property int idleLockMin: 3
             property int idleScreenOffMin: 0
@@ -231,11 +275,11 @@ Singleton {
              * What the lock does once the wrong-password streak reaches
              * `lockFailLimit`: "none" leaves only the time lockout, while "logout",
              * "reboot" and "shutdown" end the session through the same calls the
-             * power surface makes. Off by default — the shipped lock escalates its
-             * wait but never acts on its own until asked to. Read by
-             * modules/lock/Auth.qml.
+             * power surface makes. Defaults to "logout" — a keyboard left in
+             * front of a locked screen ends the session rather than being left to
+             * keep guessing. Read by modules/lock/Auth.qml.
              */
-            property string lockFailAction: "none"
+            property string lockFailAction: "logout"
             /**
              * Consecutive wrong passwords before `lockFailAction` runs. Counted
              * from the last successful unlock (that is what clears the streak),
@@ -243,7 +287,43 @@ Singleton {
              * back does not trip on its first mistake.
              */
             property int lockFailLimit: 10
+            /**
+             * AOSP-style retry lockout, read by modules/lock/Auth.qml: after
+             * `lockoutThreshold` consecutive failures the field locks for
+             * `lockoutSeconds`, doubling per repeat and capped at `lockoutMax`.
+             * Distinct from the escalation above — the wait applies even with
+             * `lockFailAction` set to "none".
+             */
+            property int lockoutThreshold: 5
+            property int lockoutSeconds: 30
+            property int lockoutMax: 600
+            /**
+             * Show the now-playing card on the lock screen while a player is
+             * active. Read by modules/lock/LockPlayer.qml; `lockPrivacy` above
+             * still decides whether its track details are legible.
+             */
+            property bool lockMedia: true
+            /**
+             * The lock screen's audio-reactive glow — its own cava capture, not
+             * the pill's (services/Cava.qml). Independent of `musicViz`: a
+             * locked screen can glow with the pill's visualizer switched off.
+             */
+            property bool lockViz: true
+            /** Big time and date on the lock. Read by modules/lock/Content.qml. */
+            property bool lockClock: true
+            /** The lock's battery glance (modules/lock/BatterySurface.qml). */
+            property bool lockBattery: true
+            /** The lock's wifi/bluetooth glance (modules/lock/LinkSurface.qml). */
+            property bool lockLink: true
             property string weatherCity: "WELLAND"
+            /**
+             * Calendar reminder effects, read by services/Events.qml: a timed
+             * event's start plays an alarm chime and posts a desktop
+             * notification. Each can be switched off on its own; the event is
+             * still marked fired either way, so it never repeats.
+             */
+            property bool eventChime: true
+            property bool eventNotify: true
             property bool musicViz: true
             /** Rest-pill spectrum renderer: bars, centered bars, or the flowing string. */
             property string vizStyle: "bars"
@@ -315,6 +395,8 @@ Singleton {
             property real pillDragOverW: 300
             property real pillDragOverH: 126
             property real pillGameH: 34
+            /** Height of the wake strip auto-hide leaves at the top edge, in logical px. */
+            property real pillAutoStripH: 5
             /**
              * Memory saver: free a closed surface's object tree once its own
              * idle tier has passed (see the tier table in Pill.qml). Off holds
@@ -361,6 +443,66 @@ Singleton {
             /** How long a notification popup stays, by urgency. */
             property int notifMs: 6000
             property int notifLowMs: 4000
+            /** Cap on the notification inbox's history list. */
+            property int notifHistoryMax: 50
+            /** Most notification popups stacked at once. */
+            property int notifPopupMax: 3
+            /**
+             * Collapse a repeat of a notification that is already on screen
+             * instead of stacking a second identical popup. The repeat is still
+             * tracked, so the tray's group count still climbs.
+             */
+            property bool notifDedupe: true
+            /** Play a blip for each notification shown. Off by default. */
+            property bool notifSound: false
+            /**
+             * Skip the shell's expensive GPU layers — the now-playing bleed
+             * blur, the ambient aura blur, the Ame bead's blur, the pill's
+             * closing blur, the tooltip/tray shadows and the lock backdrop's
+             * blur and grain. Everything still works; it draws flat. Intended
+             * for integrated GPUs, where those layers are the frame budget.
+             */
+            property bool liteMode: false
+            /**
+             * Low-battery warning threshold, shared by both warnings so the
+             * laptop's and a peripheral's cannot drift: services/Battery.qml
+             * flags a discharging battery at or below this, and
+             * services/Peripherals.qml raises one notify-send per device when
+             * it falls to it.
+             */
+            property int battLowPct: 20
+            /** Notify once when a peripheral falls to `battLowPct` and is not charging. */
+            property bool periphLowNotify: true
+            /**
+             * Ceiling the mixer's volume slider reaches, in percent. Above 100
+             * lets the sink run past unity, which PipeWire allows; the shell's
+             * own OSD and the mixer's readout follow it.
+             */
+            property int maxVolume: 100
+            /**
+             * Rescan gaps for the control center's link panels, in ms —
+             * modules/controlcenter/LinkWifi.qml and LinkBt.qml.
+             */
+            property int wifiScanMs: 10000
+            property int btScanMs: 25000
+            /** How long the calendar strip hovers a day before gliding back to today. */
+            property int calendarIdleReturnMs: 2000
+            /**
+             * Weather cadence, in ms: while the machine has never been located
+             * it retries every `weatherRetryMs` so a transient geolocation
+             * failure heals quickly, else it refreshes the forecast every
+             * `weatherRefreshMs`.
+             */
+            property int weatherRetryMs: 30000
+            property int weatherRefreshMs: 1200000
+            /** How many recent recordings the recorder's list looks up. */
+            property int recHistoryMax: 40
+            /**
+             * Run the system monitor's Cloudflare speed test the moment the
+             * surface opens. Off by default: a run moves tens of megabytes, so
+             * the card waits for its Test button unless this is turned on.
+             */
+            property bool sysmonAutoTest: false
             /** The lock screen's password pill and avatar, in logical px. */
             property real lockPillW: 176
             property real lockPillH: 42

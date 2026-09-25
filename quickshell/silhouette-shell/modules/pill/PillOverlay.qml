@@ -66,7 +66,7 @@ Variants {
             && pill.specialView === "" && !pill.held
 
         /** The wake strip and the growing hover band, shared by the mask. */
-        readonly property real autoStripH: 5 * s
+        readonly property real autoStripH: Flags.pillAutoStripH * s
         readonly property real autoBandH: Math.max(autoStripH, pill.y + pill.height + autoStripH)
 
         onAutoCollapsedChanged: host.setPillCollapsed(modelData.name, autoCollapsed)

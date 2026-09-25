@@ -1237,7 +1237,8 @@ Item {
                  * every time the pill changed face — a workspace OSD flashing,
                  * a hover, a toast — is what made the pill flash as it morphed.
                  */
-                layer.enabled: aura.enabled
+                /** Off in lite mode: the aura's tint and shadow stay, its blur does not. */
+                layer.enabled: aura.enabled && !Flags.liteMode
                 layer.effect: MultiEffect {
                     blurEnabled: true
                     blurMax: 64

@@ -7,7 +7,8 @@ import qs.services
  * Timers: how long the shell waits. The pill's memory saver (its on/off switch
  * and the base tail it counts from, plus how often the sweep looks for a closed
  * surface to evict), the hover grace before the pill collapses, how long an
- * overlay stays up, and how long a notification popup lives.
+ * overlay stays up, and how long a notification popup lives — plus how many
+ * stack at once and how many the history keeps.
  *
  * The tail used to be one flat number, timed from a surface's last open. It is
  * now the base of a small tier table in Pill.qml — the heaviest surfaces
@@ -43,7 +44,7 @@ import qs.services
 QtObject {
     readonly property string name: "Timers"
     readonly property string icon: "\u25F4"
-    readonly property string keywords: "timers timeout timeouts duration durations wait delay grace sweep hold popup idle lazy eviction expires surface memory saver ram resident unload reclaim closed free"
+    readonly property string keywords: "timers timeout timeouts duration durations wait delay grace sweep hold popup popups stack history inbox idle lazy eviction expires surface memory saver ram resident unload reclaim closed free"
 
     readonly property var groups: [
         { card: "Pill", rows: [
@@ -91,7 +92,13 @@ QtObject {
               caption: "How long a notification popup stays on screen", reset: 6000 },
             { key: "notifLowMs", type: "slider", label: "Low urgency",
               min: 1000, max: 20000, step: 500, unit: "ms",
-              caption: "The same, for a notification that marks itself low", reset: 4000 }
+              caption: "The same, for a notification that marks itself low", reset: 4000 },
+            { key: "notifPopupMax", type: "slider", label: "Popup stack",
+              min: 1, max: 6, step: 1, unit: "",
+              caption: "Most notification popups stacked on screen at once", reset: 3 },
+            { key: "notifHistoryMax", type: "slider", label: "History limit",
+              min: 10, max: 200, step: 10, unit: "",
+              caption: "How many dismissed notifications the inbox keeps", reset: 50 }
         ]}
     ]
 }
