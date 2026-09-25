@@ -107,13 +107,14 @@ Singleton {
     }
 
     /**
-     * The pill pipeline only answers to the pill visualizer flag and the
+     * The pill pipeline only answers to the visualizer as the session sees it —
+     * the flag with game mode's mute over it (`GameMode.visualizer`) — and the
      * graced capture gate; the lock's forced capture is a separate process
      * below. The string style never needs this capture: FastMusicLine runs
      * its own 10-segment cava, so keeping the bars capture alive too would
      * run two cava processes for one visible visualizer.
      */
-    readonly property bool wanted: Flags.musicViz && available && root.pillCaptureWanted
+    readonly property bool wanted: GameMode.visualizer && available && root.pillCaptureWanted
         && Flags.vizStyle !== "string" && root.playbackWanted
 
     /**
@@ -179,7 +180,7 @@ Singleton {
              * leaving them stuck.
              */
             idle.restart()
-        } else if (!Flags.musicViz || !root.available) {
+        } else if (!GameMode.visualizer || !root.available) {
             /**
              * Freeze, don't vanish, on expand: active and levels persist so
              * returning to rest shows the bars immediately while cava respawns

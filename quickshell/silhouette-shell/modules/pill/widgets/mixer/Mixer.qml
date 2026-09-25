@@ -251,21 +251,27 @@ PillSurface {
                 tipWhileOn: true
                 onToggled: root.openPicker = root.openPicker === "in" ? "" : "in"
             }
+            /**
+             * The chip shows what is actually in force and writes back the
+             * opposite, so game mode holding DND on is visible here and a press
+             * still lifts it: `GameMode.dnd` reads the flag while the mode is
+             * off, and the mode's own value while it holds it.
+             */
             IconChip {
                 s: root.s
                 glyph: "dnd"
-                on: Flags.dnd
+                on: GameMode.dnd
                 tipTitle: "Do not disturb"
                 tipDesc: "Silence notifications"
-                onToggled: Flags.dnd = !Flags.dnd
+                onToggled: Flags.dnd = !GameMode.dnd
             }
             IconChip {
                 s: root.s
                 glyph: "awake"
-                on: Flags.keepAwake
+                on: GameMode.keepAwake
                 tipTitle: "Keep awake"
                 tipDesc: "Block sleep & screen-off"
-                onToggled: Flags.keepAwake = !Flags.keepAwake
+                onToggled: Flags.keepAwake = !GameMode.keepAwake
             }
             IconChip {
                 s: root.s

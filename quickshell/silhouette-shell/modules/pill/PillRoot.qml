@@ -106,7 +106,7 @@ ShellRoot {
 
     PanelWindow {
         id: inhibitWin
-        visible: Flags.keepAwake
+        visible: GameMode.keepAwake
         implicitWidth: 1
         implicitHeight: 1
         color: "transparent"
@@ -115,7 +115,7 @@ ShellRoot {
         WlrLayershell.namespace: "pill-inhibit"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         anchors { top: true; left: true }
-        IdleInhibitor { window: inhibitWin; enabled: Flags.keepAwake }
+        IdleInhibitor { window: inhibitWin; enabled: GameMode.keepAwake }
     }
 
     /**
@@ -125,7 +125,7 @@ ShellRoot {
      * does respect, so hold one for as long as the flag is set.
      */
     Process {
-        running: Flags.keepAwake
+        running: GameMode.keepAwake
         command: ["systemd-inhibit", "--what=idle:sleep", "--who=josh",
                   "--why=keep awake", "--mode=block", "sleep", "infinity"]
     }

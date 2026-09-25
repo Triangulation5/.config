@@ -336,7 +336,7 @@ Singleton {
             n.tracked = true;
             root.hookClosed(n);
             var critical = n.urgency === NotificationUrgency.Critical;
-            if (!Flags.dnd || (critical && Flags.dndCritical)) {
+            if (!GameMode.dnd || (critical && Flags.dndCritical)) {
                 /**
                  * A repeat of something already on screen is not a second
                  * toast. The repeat is still tracked and still folds into the
