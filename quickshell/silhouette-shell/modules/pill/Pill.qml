@@ -184,7 +184,14 @@ Item {
      * up over whatever the launcher had just launched.
      */
     property bool hoverDismissed: false
-    readonly property bool expanded: surfaceOpen || held || hoverLatch
+    /**
+     * Set while a pin/peek, pointer latch or the wallpaper's staged close holds
+     * the pill at hover. `wallCloseHold` counts here even though it is a hover
+     * landing with no pointer behind it: the pill really is expanded for that
+     * beat, so the rest face must stay hidden and the OSD must keep its inline
+     * chips off exactly as it would for a real hover.
+     */
+    readonly property bool expanded: surfaceOpen || held || hoverLatch || wallCloseHold
 
     /**
      * True while the open surface is waiting on an external auth dialog (the
@@ -440,7 +447,26 @@ Item {
      * PillRoot, so every new hold re-fires the delete hold.
      */
     property bool _wpHoldStarted: false
-    onWallpaperOpenChanged: if (!wallpaperOpen) _wpHoldStarted = false
+    onWallpaperOpenChanged: {
+        if (wallpaperOpen) {
+            /** A reopen cancels the staged close's hold outright. */
+            wallCloseHold = false;
+            wallCloseTimer.stop();
+            return;
+        }
+        _wpHoldStarted = false;
+        /**
+         * Stage the strip's close through the hover face (see `wallCloseHold`).
+         * Skipped whenever something else already holds the pill up — a
+         * pin/peek, the pointer's own latch, a fullscreen hide, game mode's own
+         * face, or a surface-to-surface swap — because the hold only exists to
+         * supply the step a bare close would skip.
+         */
+        if (!surfaceOpen && !held && !hovered && !hidden && !Flags.gameMode) {
+            wallCloseHold = true;
+            wallCloseTimer.restart();
+        }
+    }
 
     function _cleanupIdleSurfaces() {
         var now = Date.now();
@@ -629,6 +655,27 @@ Item {
     property string dragStage: ""
 
     /**
+     * The wallpaper strip's close lands on the hover face on the way down.
+     *
+     * The strip is opened by keybind or IPC and is by far the widest thing the
+     * pill morphs into (720px against the 160px rest pill), so the pointer is
+     * normally still sitting wherever the keybind left it and nothing latches
+     * the hover face when the strip goes away: the close was a single morph
+     * straight from the strip to rest, taken as the `home` transition — the
+     * hover face hushed to the clock alone for the whole way down. Holding the
+     * pill at hover for one beat first splits that into the two hops the morph
+     * is actually tuned for: the strip dissolves into the hover face (`arrive`,
+     * the landing a hovered surface close already gets), then the face
+     * collapses into the rest pill (`hopHome`) with the clock flying home.
+     *
+     * Raised only when nothing else would hold the hover up — no pin/peek, no
+     * pointer latch, no fullscreen hide, no game mode — and dropped by
+     * `wallCloseTimer` once the arrival has settled, so the pointer's own latch
+     * still keeps the face up for as long as it is there.
+     */
+    property bool wallCloseHold: false
+
+    /**
      * Mode ladder: drag-over, OSD, open surface, game, quick-record, toast,
      * hover, rest.
      *
@@ -638,6 +685,13 @@ Item {
      * Closing a surface therefore used to step through a phantom "hover" on the
      * still-stale `expanded`, which set `hoverHop` and pinned the hover face
      * (clock, media bud) at full opacity over the collapsing pill.
+     *
+     * `wallCloseHold` joins the hover branch deliberately: the wallpaper's
+     * staged close is the one landing that is not the pointer's doing. It is
+     * raised after the surface is already gone, so the pill parks at hover for
+     * one beat and then walks the collapse down to rest (see the property's own
+     * note). Spelled out like the rest of the branch rather than read through
+     * `expanded`, which is one evaluation behind that same change.
      */
     readonly property string mode: (dragActive ? "dragOver"
         : (osdPreempts ? "osd"
@@ -646,7 +700,7 @@ Item {
         : (quickChoosing ? "quickChoose"
         : (quickCounting ? "quickCount"
         : (toastActive && !held ? "toast"
-        : ((surfaceOpen || held || hoverLatch) ? "hover" : "rest"))))))))
+        : ((surfaceOpen || held || hoverLatch || wallCloseHold) ? "hover" : "rest"))))))))
 
     signal requestSurface(string name)
     signal requestClose()
@@ -1557,6 +1611,18 @@ Item {
             }
             pill.hoverLatch = false;
         }
+    }
+
+    /**
+     * One-beat hold for the wallpaper's staged close (see `wallCloseHold`): long
+     * enough for the strip to dissolve and the hover face to arrive, and short
+     * of the arrival's full morph so the descent flows out of it rather than the
+     * pill stopping dead on hover geometry before dropping.
+     */
+    Timer {
+        id: wallCloseTimer
+        interval: Math.max(1, Math.round(Motion.morph * 0.85))
+        onTriggered: pill.wallCloseHold = false
     }
 
     TapHandler {
