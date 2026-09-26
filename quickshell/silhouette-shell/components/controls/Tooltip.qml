@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import qs.services
+import qs.components.animation
 import qs.components.layout
 
 /**
@@ -28,9 +29,30 @@ Item {
     property bool show: false
     property string placement: "above"
 
+    /**
+     * Run the title as a marquee when it is wider than `titleMaxWidth`. Off by
+     * default: a pill's short tooltip never needs to scroll, and only the
+     * settings window's captions opt in. The marquee carries no edge fade —
+     * these bubbles already dissolve into their own surface, and a fade band
+     * over the card's wash reads as a coloured smear rather than a dissolve.
+     */
+    property bool marquee: false
+    /** Width the marqueeed title is capped to; a longer title scrolls within it. */
+    property real titleMaxWidth: 240
+
     readonly property bool below: placement === "below"
     /** One em-unit: the title's font size, so every dimension scales with the text. */
-    readonly property real em: titleText.font.pixelSize
+    readonly property real em: titleText.pixelSize
+
+    /**
+     * The title's on-screen width. Unchanged when `marquee` is off, so a pill
+     * tooltip still sizes exactly to its text; when it is on, a caption wider
+     * than `titleMaxWidth` is capped and scrolls instead of stretching the
+     * bubble past the room it has beside the cursor.
+     */
+    readonly property real titleWidth: root.marquee
+        ? Math.min(titleText.implicitWidth, root.titleMaxWidth)
+        : titleText.implicitWidth
     readonly property real pointerH: 0.5 * em
     readonly property real gap: 0.5 * em
 
@@ -73,7 +95,7 @@ Item {
         id: bubble
         anchors.horizontalCenter: parent.horizontalCenter
         y: root.below ? root.pointerH : 0
-        width: Math.max(titleText.implicitWidth, descText.implicitWidth) + 2.3 * root.em
+        width: Math.max(root.titleWidth, descText.implicitWidth) + 2.3 * root.em
         /**
          * Sized from the two texts rather than from `column.implicitHeight`:
          * the column is centred in this card, so reading its height here closed
@@ -118,14 +140,28 @@ Item {
         anchors.centerIn: bubble
         spacing: 0.3 * root.em
 
-        Text {
+        Marquee {
             id: titleText
             anchors.horizontalCenter: parent.horizontalCenter
+            width: root.titleWidth
             text: root.title
             color: Theme.cream
-            font.family: Theme.font
-            font.pixelSize: 10.5 * root.s
-            font.weight: Font.DemiBold
+            pixelSize: 10.5 * root.s
+            weight: Font.DemiBold
+            /**
+             * A marqueeed caption is pixel-snapped, so it renders natively; a
+             * pill tooltip that never scrolls keeps the smoother rendering it
+             * has always had.
+             */
+            renderType: root.marquee ? Text.NativeRendering : Text.QtRendering
+            /** No edge fade: the bubble's surface already carries the text away. */
+            fadeWidth: 0
+            /**
+             * Only scroll while the bubble is on screen. The caption outlives
+             * the hover (see Hint.leave), so without this the title would keep
+             * ping-ponging, invisible, long after the pointer moved away.
+             */
+            active: root.visible
         }
         Text {
             id: descText
