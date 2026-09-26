@@ -34,6 +34,12 @@ flock -n 9 || exit 0
 # script by design.)
 runtime="${XDG_RUNTIME_DIR:-/tmp}"
 
+# The lock's own state, as a file the lock writes on every transition ("1"/"0",
+# see LockRoot.reportLockState), so the tick below can be read without asking
+# logind: this is read every tick, and a gdbus round trip per tick would cost more
+# than the supervision it serves. A read here is ~0.02 ms and needs no fork.
+lock_marker="$runtime/silhouette-locked"
+
 # Liveness is asked one of two questions, at two prices:
 #
 #   cheap — is the instance's process still there (`kill -0`)? A shell builtin,
@@ -51,11 +57,39 @@ runtime="${XDG_RUNTIME_DIR:-/tmp}"
 # is free, and the shell's own pid turns out to be available in the runtime dir it
 # already publishes (see resolve below).
 #
-# Measured here: a full probe every 5 s cost 1.26% of one core; this costs ~0.1%.
-# The tick itself is deliberately left at 5 s: it is also how long a session stays
-# uncovered after a shell dies *while locked*, since the in-process lock dies with
-# it, so it is worth more than the CPU it saves.
-ceiling=12                  # ticks between full probes: 12 x 5 s = 60 s
+# Measured here: a full probe every 5 s cost 1.26% of one core; asking the kernel
+# instead costs ~0.1%, and what is left per tick is the napper — `sleep 0` in this
+# loop's shape measured 1.2 ms of fork+exec+wait. The tick is chosen against that
+# price, because it is also the latency a dead shell is noticed at, and the two
+# states the loop runs in do not want the same number:
+#
+#   unlocked  1 s     ~0.12% of one core. The tick used to be 5 s in both states,
+#                    which was the wrong side of a trade this session had already
+#                    settled: the systemd unit it ran carried `RestartSec=1`, and
+#                    dropping that unit for this watchdog quietly turned a
+#                    one-second recovery into five.
+#   locked    0.1 s   ~1.2%, and nobody is waiting on that core. A shell that dies
+#                    *while the session is locked* takes the in-process
+#                    WlSessionLock down with it, so the session is open — desktop,
+#                    windows, whatever was on screen — until a replacement mounts
+#                    and re-locks (LockRoot.checkRelock). This tick is the floor
+#                    under that whole window, which is what buys the short one:
+#                    the tick is now a tenth of the shell's own cold start, so
+#                    what is left to wait on is the start itself.
+#
+# The full probe keeps its 60 s cadence in both states; only the cheap check speeds
+# up. A shell that is alive but wedged still takes up to a minute to catch, because
+# catching it costs a whole quickshell startup (see `full` above) — and a wedged
+# shell still holds the lock it drew, so that window is not the exposed one.
+#
+# The locked state is not just a shorter sleep on the same path: see the loop
+# below, where a dead shell found while locked skips the full probe entirely. That
+# probe is a whole quickshell startup spent learning what `kill -0` already said,
+# and while locked it is the one question there is no time to ask twice.
+tick=1                      # seconds per cheap check, session unlocked
+tick_locked=0.1             # ...and while it is locked
+ceiling=60                  # ticks between full probes, unlocked: 60 x 1 s = 60 s
+ceiling_locked=600          # ...and locked: 600 x 0.1 s = the same 60 s
 sock=""
 shell_pid=""
 
@@ -68,6 +102,18 @@ connect_ok() {
 # shell — costs this loop nothing per tick.
 alive() {
     [ -n "$shell_pid" ] && kill -0 "$shell_pid" 2>/dev/null
+}
+
+# True while the session is locked, read off the lock's own marker. A missing or
+# unreadable marker reads as unlocked: that is the slower tick, not a broken loop,
+# and it is what a session whose lock predates this marker looks like.
+locked=0
+read_lock() {
+    locked=0
+    [ -f "$lock_marker" ] || return
+    lock_value=""
+    read -r lock_value <"$lock_marker"
+    [ "$lock_value" = 1 ] && locked=1
 }
 
 # Identify the running instance and remember its pid. quickshell publishes an
@@ -105,8 +151,9 @@ resolve() {
 # handing back to the liveness loop. quickshell does not guard against a second
 # instance of the same config, so a slow cold start under boot load must not be
 # read as a dead shell and respawned, or the duplicates stack up and fight over
-# the layer surface and keyboard focus. The wait is capped so a launch that
-# never comes up still falls back to the normal retry cadence.
+# the layer surface and keyboard focus. The wait is capped, and — more to the
+# point — it ends as soon as the launch it is waiting on is itself gone, so a
+# launch that never happened costs a tick rather than the whole cap.
 launch() {
     # Through launch.sh, not a bare `qs -c`: it carries the jemalloc decay tuning
     # (MALLOC_CONF), which quickshell otherwise launches without, and the
@@ -117,18 +164,57 @@ launch() {
     # watchdog lock fd — a shell holding that lock would stop any replacement
     # watchdog from ever coming up.
     bash "$scripts_dir/launch.sh" -d 9>&- >/dev/null 2>&1 &
+    child=$!
+    # Poll at the tick this pass is running at, so the wait costs the locked state
+    # nothing: a 1 s nap here would put a second of pure sleep back on the critical
+    # path the tick above was shortened to get out from under.
     i=0
-    while [ "$i" -lt 30 ]; do
+    while [ "$i" -lt "$poll_ticks" ]; do
         qs -c "$name" ipc show >/dev/null 2>&1 9>&- && return
-        sleep 1
+        # Give up the moment the launch itself is gone. launch.sh ends by exec'ing
+        # the shell, so this pid is the shell (or launch.sh, for the instant before
+        # that exec) — and if it has exited with nothing answering, no shell is
+        # coming: launch.sh's own idempotency probe can land on a socket the dead
+        # shell has not released yet and exit 0 without starting anything. Waiting
+        # the whole budget for a shell that was never started is the one failure
+        # this wait must not have, because it is the same open-session seconds the
+        # locked tick exists to cut — measured at 33 s of it, against a 0.1 s tick.
+        # Handing back at once costs nothing: the caller's next tick relaunches.
+        kill -0 "$child" 2>/dev/null || return
+        sleep "$step"
         i=$((i + 1))
     done
 }
 
 i=0
 while true; do
-    if [ "$poked" = 0 ] && [ "$((i % ceiling))" -ne 0 ] && alive; then
+    # Which tick this pass runs at, and how many of them make up the 60 s between
+    # full probes. Both follow the lock, so the two move together and the probe
+    # cadence does not depend on which state won.
+    read_lock
+    if [ "$locked" = 1 ]; then
+        step="$tick_locked"
+        span="$ceiling_locked"
+        poll_ticks=150                  # 150 x 0.1 s = 15 s
+    else
+        step="$tick"
+        span="$ceiling"
+        poll_ticks=15                   # 15 x 1 s = 15 s
+    fi
+
+    if [ "$poked" = 0 ] && [ "$((i % span))" -ne 0 ] && alive; then
         :                                   # cheap path: the process is still there
+    elif [ "$locked" = 1 ] && ! alive; then
+        # Dead, and the session is locked: skip the full probe. That probe is a
+        # whole quickshell startup (~50 ms and a transient 45 MB) spent learning
+        # what `kill -0` just said, and it is here — with the desktop covered by
+        # nothing but a lock that died with the process — that the milliseconds are
+        # the whole point. launch.sh asks the same question again before it starts
+        # anything, so the duplicate-shell guard is not lost, only moved to the
+        # caller that is about to need it.
+        poked=0
+        launch
+        resolve
     else
         poked=0
         qs -c "$name" ipc show >/dev/null 2>&1 9>&- || launch
@@ -139,11 +225,11 @@ while true; do
     fi
     # A backgrounded child plus `wait`, not a plain `sleep`: this is the portable
     # shape that lets the USR1 trap above cut the nap short. A plain `sleep` keeps
-    # running to the full five seconds before the trap is serviced, which is
-    # exactly the tick a reload would still be waiting on. The interrupted sleep
-    # is left to expire on its own — one per poke at most, bounded by the same
-    # five seconds, so there is nothing to reap.
-    sleep 5 9>&- &
+    # running to the end of the tick before the trap is serviced, which is exactly
+    # the tick a reload would still be waiting on. The interrupted sleep is left to
+    # expire on its own — one per poke at most, bounded by the same tick, so there
+    # is nothing to reap.
+    sleep "$step" 9>&- &
     wait $!
     i=$((i + 1))
 done
