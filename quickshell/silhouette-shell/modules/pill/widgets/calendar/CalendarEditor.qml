@@ -117,8 +117,14 @@ Item {
         }        /** Capped so a day stacked with events scrolls instead of growing the surface. */
         EventList {
             width: parent.width
-            s: surface ? surface.s : 0
-            surface: surface
+            /**
+             * Qualified through `editor.`: a bare `surface` on the right would
+             * resolve to this EventList's own property, whose default null then
+             * read back into `s` as 0 — and a 0 `s` collapses the list's height
+             * cap to 0, clipping every event row out of sight.
+             */
+            s: editor.surface ? editor.surface.s : 0
+            surface: editor.surface
             events: editor.dayEvents
         }
 
