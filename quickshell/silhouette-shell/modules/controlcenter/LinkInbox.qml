@@ -231,6 +231,7 @@ Item {
                                     font.capitalization: Font.AllUppercase
                                     font.letterSpacing: 1.2 * s
                                     elide: Text.ElideRight
+                                    textFormat: Text.PlainText
                                 }
 
                                 Text {
