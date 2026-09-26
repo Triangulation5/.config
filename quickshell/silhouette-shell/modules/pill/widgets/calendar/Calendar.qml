@@ -279,9 +279,9 @@ PillSurface {
     /**
      * On open, reset to the real today; when a strip click supplied a target
      * date, jump to its month and select the day so Ame rings it and the editor
-     * shows that date. Runs on every open — the onCompleted guard covers the
-     * first lazy creation, where `active` is already true so the changed hook
-     * never fires.
+     * shows that date. Runs from `onActiveChanged`, on every open including the
+     * first: the host loader applies `targetDate` before it flips `open`, so
+     * this hook always sees the day the strip asked for (see PillSurfaceLoader).
      */
     function applyFocusTarget() {
         resetToday();

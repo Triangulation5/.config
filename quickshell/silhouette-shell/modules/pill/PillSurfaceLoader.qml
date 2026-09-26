@@ -103,17 +103,28 @@ Loader {
         const it = loader.item;
         if (it && loader.host) {
             it.s = Qt.binding(() => loader.host.s);
+            it.morphCloseness = Qt.binding(() => loader.host.morphCloseness);
+            /**
+             * Per-surface props land before `open`, deliberately: a surface's
+             * open hook (`onActiveChanged`, driven by `active: open`) reads
+             * them, and a prop assigned after `open` flips has already missed
+             * that one evaluation. The calendar is the case that showed it —
+             * `targetDate` used to arrive after `open`, so the first open of
+             * each component lifetime (and the first open after every
+             * memory-saver eviction) ran its focus hook with a null target and
+             * reset to today instead of the day the strip was clicked.
+             */
+            for (var k in loader.surfaceProps)
+                it[k] = Qt.binding(loader.surfaceProps[k]);
             /**
              * The surface counts as open only while the pill is actually
              * showing it: when the OSD preempts the pill for a flash, `open`
              * drops so the surface dissolves instead of being crushed under
              * the OSD-sized body, and it fades back in as the pill morphs
-             * back to the surface.
+             * back to the surface. Set last so the open hook sees every other
+             * prop already in place (see above).
              */
             it.open = Qt.binding(() => loader.host.surface === loader.name && loader.host.mode !== "osd");
-            it.morphCloseness = Qt.binding(() => loader.host.morphCloseness);
-            for (var k in loader.surfaceProps)
-                it[k] = Qt.binding(loader.surfaceProps[k]);
             if (it.requestClose)
                 it.requestClose.connect(loader.closeAction ? loader.closeAction : () => loader.host.requestClose());
             if (it.requestSurface)
