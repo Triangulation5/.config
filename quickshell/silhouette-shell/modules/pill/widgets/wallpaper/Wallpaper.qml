@@ -30,7 +30,9 @@ import qs.modules.pill.surfaces
  *
  * The web search is the primary source, as it always was: Bing images, the
  * personal GitHub wallpaper repo (`gh:` prefix, handled inside the script, and
- * every word of a query has to match) and moewalls for motion. Wallhaven is the
+ * every word of a query has to match) and moewalls for motion. The repo result
+ * is returned whole — every match, not a first page — so `gh:` browses the
+ * entire library, and the strip can walk to the end of it. Wallhaven is the
  * second source, reached two ways — a
  * `wh:` prefix asks it directly with the tag that follows, and an empty web
  * result hands the same query over once, because image endpoints refuse heavy

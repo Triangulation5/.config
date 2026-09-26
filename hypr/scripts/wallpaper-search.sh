@@ -288,29 +288,36 @@ thumbget() {
 
 safe_filter() {
     jq -c --argjson blocked "$(printf '%s\n' "${BLOCKED_TERMS[@]}" | jq -R . | jq -s .)" '
+        # Match a term the way a person reads a filename. A single-word term has
+        # to be a whole token, so "ass" still blocks "big-ass" but no longer eats
+        # "grass", "brass" or "classic", and "ero" no longer eats an aero wall. A
+        # term carrying a separator ("x-rated", "not safe for work") is matched
+        # against the flattened text instead, since separators are what would
+        # otherwise hide it.
+        def norm: ascii_downcase | gsub("[^a-z0-9+]"; "");
+        def toks: ascii_downcase | [splits("[^a-z0-9+]+")] | map(select(length > 0));
         map(
             select(
                 (
-                    (.file // "") +
-                    (.image // "") +
-                    (.thumb // "") +
-                    (.preview // "") +
+                    (.file // "") + " " +
+                    (.image // "") + " " +
+                    (.thumb // "") + " " +
+                    (.preview // "") + " " +
                     (.source // "")
-                )
-                | ascii_downcase
-                | gsub("[[:space:]_.-]"; "")
-                | gsub("[^a-z0-9+]"; "")
-                as $text
-                |
-                [
+                ) as $raw
+                | ($raw | norm) as $flat
+                | ($raw | toks) as $tokens
+                | [
                     $blocked[]
-                    |
-                    ascii_downcase
-                    | gsub("[[:space:]_.-]"; "")
-                    | gsub("[^a-z0-9+]"; "")
-                    as $term
-                    |
-                    select($text | contains($term))
+                    | ascii_downcase
+                    | . as $term
+                    | ($term | norm) as $word
+                    | select(
+                        if ($term | test("[^a-z0-9+]"))
+                        then ($flat | contains($word))
+                        else ($tokens | index($word)) != null
+                        end
+                      )
                 ]
                 | length == 0
             )
@@ -322,6 +329,10 @@ safe_filter() {
 # live on every call — nothing is cached, so a wallpaper pushed to the repo is
 # in the strip on the next search rather than whenever a cache happens to
 # expire.
+#
+# Every match is returned. The whole repo is one list, so it is never sliced to
+# a first page: a bare `gh:` opens the entire library and the strip can walk to
+# the end of it, which is what a personal repo is for.
 #
 # Matching is per word, not per phrase. The old check required the whole query
 # as a substring of the path, so `gh:space city` matched nothing while
@@ -425,7 +436,7 @@ results = entries("all")
 if not results and len(words) > 1:
     results = entries("any")
 
-print(json.dumps(results[:60]))
+print(json.dumps(results))
 PYEOF
 }
 
@@ -601,7 +612,7 @@ for blob in re.findall(r'\bm="([^"]+)"', page):
         "h": 0,
     })
 
-print(json.dumps(results[:60]))
+print(json.dumps(results))
 PYEOF
 }
 
@@ -750,7 +761,6 @@ search_ddg() {
                 h: (.height // 0)
               })
             | map(select(.image != null and .image != ""))
-            | .[0:60]
         ' 2>/dev/null | safe_filter)
     [ -n "$mapped" ] || mapped='[]'
     printf '%s\n' "$mapped"
