@@ -71,21 +71,6 @@ understand while audio is playing it makes sense but at all times like when
 closing the mixer, power, or any other surface and closing the surface back
 into the rest surface causes this.
 
-# Settings Keybind Cheatsheet
-
-## Goal
-
-Add a read-only keybind reference page inside the Settings application.
-
-## Requirements
-
-* Display all configured keymaps.
-* Provide a quick overview for users.
-* Keybinds must not be editable from this page.
-* The cheatsheet exists only as documentation/reference.
-
----
-
 # Notification System Improvements
 
 ## Goal
