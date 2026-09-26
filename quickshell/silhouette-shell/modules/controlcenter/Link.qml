@@ -85,18 +85,24 @@ PillSurface {
         : (wifiActive ? (wifiActive.name || "") : (wifiOn ? "Not connected" : "Off"))
 
     readonly property var btAdapter: (typeof Bluetooth !== "undefined" && Bluetooth) ? Bluetooth.defaultAdapter : null
-    readonly property var btDevices: (typeof Bluetooth !== "undefined" && Bluetooth && Bluetooth.devices) ? Bluetooth.devices.values : []
-    readonly property var btConnected: btDevices.filter(function(d) { return d && d.connected })
     readonly property bool btOn: btAdapter ? btAdapter.enabled === true : false
-    readonly property var btPrimary: btConnected.length > 0 ? btConnected[0] : null
-    /** UPower entry matched to the primary device by MAC; BlueZ battery is the fallback. */
-    readonly property var btPeripheral: btPrimary ? (Peripherals.byMac[String(btPrimary.address || "").toUpperCase()] || null) : null
-    readonly property int btBattery: btPeripheral ? Peripherals.pct(btPeripheral) : batteryLevel(btPrimary)
+    /**
+     * The connected Bluetooth peripheral the row speaks for, and its charge —
+     * both straight off the peripheral model, which is what matches the device
+     * to its UPower battery and decides whether there is a reading at all. The
+     * count is the model's too, so the "+N" here always matches the rows in the
+     * drill-in it points at.
+     */
+    readonly property var btPrimaryRow: Peripherals.connected.find(function(r) {
+        return r && r.source === "bt";
+    }) || null
+    readonly property var btPrimary: btPrimaryRow ? btPrimaryRow.bt : null
+    readonly property int btBattery: btPrimaryRow ? btPrimaryRow.level : -1
 
     readonly property string btSubText: !btOn ? "Off"
         : (btPrimary
             ? ((btPrimary.deviceName || btPrimary.name || "Unknown")
-                + (btConnected.length > 1 ? " +" + (btConnected.length - 1) : ""))
+                + (Peripherals.connectedCount > 1 ? " +" + (Peripherals.connectedCount - 1) : ""))
             : "Not connected")
 
     property string ethIp: ""
@@ -179,14 +185,6 @@ PillSurface {
         if (subview === "bt")
             return btPage.kbAdjust(dir);
         return false;
-    }
-
-    function batteryLevel(d) {
-        if (!d || d.battery === undefined || d.battery === null) return -1;
-        var b = d.battery;
-        if (b <= 0) return -1;
-        if (b <= 1) b = b * 100;
-        return Math.round(b);
     }
 
     onActiveChanged: {
@@ -352,7 +350,7 @@ PillSurface {
                 s: root.s
                 focused: root.kbIndex === 1
                 icon: "bluetooth"
-                iconColor: root.btConnected.length > 0 ? Theme.vermLit : Theme.iconDim
+                iconColor: root.btPrimaryRow !== null ? Theme.vermLit : Theme.iconDim
                 name: "Bluetooth"
                 sub: root.btSubText
                 subColor: root.btPrimary ? Theme.vermLit : Theme.dim
