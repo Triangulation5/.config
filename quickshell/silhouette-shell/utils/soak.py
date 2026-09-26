@@ -215,14 +215,25 @@ def session_id():
     return None
 
 def locked():
-    """Best-effort lock detection: logind's LockedHint, plus a 'lock' layer.
+    """Best-effort lock detection: the shell's marker, logind's LockedHint, a 'lock' layer.
 
-    The shell hosts the lock itself now (modules/lock, a WlSessionLock), so
-    there is no locker process to look for and no compositor query for session
-    lock state; logind is the one outside signal, and it is only set when
-    whoever locked the session asked logind to (hypridle's before_sleep does).
-    The layer probe stays for any other locker that registers one.
+    The shell hosts the lock itself now (modules/lock, a WlSessionLock), so there
+    is no locker process to look for and no compositor query for session lock
+    state. Its own marker first: `silhouette-locked` is written by the same
+    function that reports to logind (LockRoot.reportLockState), so it cannot be
+    the stale half of a transition and it costs a file read where the hint costs a
+    dbus round trip. logind is still the signal for a lock raised by some other
+    route, and the layer probe stays for any other locker that registers one. A
+    marker reading "0" only means this shell is not locked, so it is never an
+    early false — the other two are still asked.
     """
+    marker = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "silhouette-locked")
+    try:
+        with open(marker) as f:
+            if f.read(1) == "1":
+                return True
+    except OSError:
+        pass
     sid = session_id()
     if sid:
         out = subprocess.run(["loginctl", "show-session", sid, "-p", "LockedHint"],

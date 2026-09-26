@@ -19,6 +19,14 @@ ShellRoot {
 
     readonly property string currentUser: Quickshell.env("USER") || Quickshell.env("LOGNAME") || ""
 
+    /**
+     * The lock's state as a file beside its trigger, for watchdog.sh: "1" while
+     * locked, "0" while not. The supervisor reads it on every tick to choose its
+     * tick length, which is why it is a file and not a logind query — see
+     * reportLockState for both records, and the watchdog for what it does with it.
+     */
+    readonly property string lockStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/silhouette-locked"
+
     /** Shared password state bridged between the auth input and the lock root. */
     property QtObject pw: QtObject {
         property string text: ""
@@ -106,18 +114,34 @@ ShellRoot {
     Process { id: grabCleaner }
 
     /**
-     * Tell logind what the lock is doing, because nothing else on the machine can
-     * see it. The shell hosts the lock in-process, so logind's LockedHint only ever
-     * got set as a side effect of a lock *asked for through logind* (hypridle's
-     * before_sleep calling lock-session) — a lock raised the ordinary way, by the
-     * touch-file trigger or the IPC handler, left the hint saying "unlocked" while
-     * the screen was covered. Outside readers act on that wrong answer: utils/soak.py
-     * is the one in the tree, and it refuses to restart the shell while the session
-     * is locked, so a lagging hint lets a relaunch land on top of a live lock. The
-     * same hint is read back on start — that is checkRelock below. Best-effort by
-     * design: if the call cannot be made, the lock itself is unaffected.
+     * Record what the lock is doing, in the two places that can see it from outside
+     * this process.
+     *
+     * logind's LockedHint is the public one, and the machine could not see the lock
+     * without it: the shell hosts the lock in-process, so the hint only ever got set
+     * as a side effect of a lock *asked for through logind* (hypridle's before_sleep
+     * calling lock-session) — a lock raised the ordinary way, by the touch-file
+     * trigger or the IPC handler, left the hint saying "unlocked" while the screen was
+     * covered. Outside readers act on that wrong answer: utils/soak.py is the one in
+     * the tree, and it refuses to restart the shell while the session is locked, so a
+     * lagging hint lets a relaunch land on top of a live lock. The same hint is read
+     * back on start — that is checkRelock below.
+     *
+     * The file is the local one, for the reader that cannot afford the round trip:
+     * watchdog.sh asks whether the session is locked on every tick so it can tighten
+     * its tick from a second to a quarter of a second — a shell that dies while
+     * locked takes the in-process lock with it, so that tick is the floor under how
+     * long the session stays open. A `gdbus` call per tick would cost more than the
+     * supervision is worth; a read of `silhouette-locked` is free. Both records are
+     * written here rather than from doLock and the unlock so the two cannot drift,
+     * and the file deliberately outlives the process that wrote it: the supervisor
+     * reads it while no shell is up, which is exactly when it matters.
+     *
+     * Best-effort by design: if either record cannot be written, the lock itself is
+     * unaffected.
      */
     function reportLockState(locked: bool): void {
+        lockStateFile.setText(locked ? "1" : "0");
         lockedHint.command = ["gdbus", "call", "--system",
             "--dest", "org.freedesktop.login1",
             "--object-path", "/org/freedesktop/login1/session/auto",
@@ -126,6 +150,18 @@ ShellRoot {
         lockedHint.running = true;
     }
     Process { id: lockedHint }
+
+    /**
+     * The state file itself. `blockLoading` because it does not exist until the
+     * first transition, and a missing file is a normal state here rather than a
+     * failure worth printing — the watchdog reads it as "unlocked" either way.
+     */
+    FileView {
+        id: lockStateFile
+        path: root.lockStatePath
+        blockLoading: true
+        printErrors: false
+    }
 
     /**
      * Re-lock on start when the session was locked as the previous shell died. The
@@ -141,6 +177,11 @@ ShellRoot {
      * doLock and in the unlock would clear the evidence on the way in. A failed or
      * unreadable query does nothing rather than reporting `false`, so a hint that did
      * say `true` is never erased by a shell that could not check it.
+     *
+     * A hint that reads `false` is restated rather than left alone, which is what
+     * clears the state file after a session that was unlocked out from under a shell
+     * that died locked — the file the watchdog reads, and the one record here that
+     * a dead process leaves behind.
      *
      * The reveal still has an image to open onto, because the grabs the dead lock was
      * built from are exactly the ones the unlock-time sweep cannot reach — see
@@ -163,6 +204,8 @@ ShellRoot {
             onRead: (line) => {
                 if (line.indexOf("<true>") >= 0)
                     root.doLock();
+                else if (line.indexOf("<false>") >= 0)
+                    root.reportLockState(false);
             }
         }
     }

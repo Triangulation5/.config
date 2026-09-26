@@ -13,9 +13,9 @@
 #       surface on the monitor and fights the first for keyboard focus.
 #
 #       Waiting is not left to the watchdog's tick: it is poked awake (USR1) so
-#       the wait is the shell's start time rather than that plus up to five
-#       seconds of liveness sleep. See the poke below for why that signal is safe
-#       to send at any moment.
+#       the wait is the shell's start time rather than that plus up to a second of
+#       liveness sleep (a quarter of one while the session is locked). See the poke
+#       below for why that signal is safe to send at any moment.
 #
 #   no supervisor — a session older than the watchdog, or one whose watchdog
 #       died, since nothing watches the watcher
@@ -43,8 +43,8 @@ done
 
 if pgrep -f "watchdog.sh $name" >/dev/null 2>&1; then
     # Wake the supervisor out of its liveness sleep so it re-checks now. Without
-    # this, Super+R could sit on a dead bar for however much of the five-second
-    # tick was left. The signal is safe to send at any point in the watchdog's
+    # this, Super+R could sit on a dead bar for however much of the current tick
+    # was left. The signal is safe to send at any point in the watchdog's
     # loop because it installs a no-op USR1 handler before it does anything else;
     # a poke that lands during its launch wait only shortens that wait, and one
     # that lands during the sleep makes the next check happen immediately.
