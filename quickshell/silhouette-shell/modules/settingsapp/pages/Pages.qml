@@ -38,7 +38,7 @@ QtObject {
      * how it is drawn (Appearance, Look, Pill shape, Corners, Motion, Timers),
      * then the bar itself (Bar & Island, Clock & Date, Notifications, Control
      * Center, Launcher), then the input and outputs it is attached to (Input,
-     * Displays, Workspaces), then the session and its upkeep (Lock Screen,
+     * Keybinds, Displays, Workspaces), then the session and its upkeep (Lock Screen,
      * System, Updates, Backups). Pages used to be appended as they were written,
      * which left the newer ones — Pill shape, Backups, Corners, Timers — in a
      * pile at the end, unrelated to anything next to them.
@@ -56,6 +56,7 @@ QtObject {
         ControlCenter,
         Launcher,
         Input,
+        Keybinds,
         Displays,
         Workspaces,
         LockScreen,

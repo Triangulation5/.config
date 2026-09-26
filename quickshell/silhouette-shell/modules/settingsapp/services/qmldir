@@ -1,6 +1,7 @@
 module qs.modules.settingsapp.services
 
 singleton Backups 1.0 Backups.qml
+singleton Binds 1.0 Binds.qml
 singleton Deco 1.0 Deco.qml
 singleton Dyn 1.0 Dyn.qml
 singleton Hypr 1.0 Hypr.qml

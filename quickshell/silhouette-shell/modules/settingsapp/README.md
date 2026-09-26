@@ -100,12 +100,16 @@ services/                  qs.services — one file per config document
   Monitors.qml               live monitors from hyprctl + the monitors.lua writer
   Spaces.qml                 spaces.lua (the user's special workspaces) and the
                              binds.lua pair that toggles each one
+  Binds.qml                  binds.lua as reference only: every hl.bind parsed
+                             for the Keybinds page, and no writer at all
   Updates.qml                the config's own updater script, check and apply
   Backups.qml                the shell's *own* config: snapshot, list, restore, delete
 utils/lua/                 insert.js, adding a field a file does not carry yet —
                            the only Lua helper this app owns (see "Lua helpers")
 utils/keybinds/            spacebinds.js, this app's special-workspace bind
-                           editor; every other helper is imported from the shell
+                           editor, and cheatsheet.js, the read-only binds parser
+                           behind the Keybinds page; every other helper is
+                           imported from the shell
 utils/rows.js              the row builders: a page states what it alone decides
                            (editor, label, caption, unit), the builder takes the
                            bounds from the table shared with the shell
@@ -118,6 +122,7 @@ pages/                     qs.pages — what is configurable
   WorkspacesView.qml          the spaces body (list, apps, create form)
   UpdatesView.qml             the updates body (status, pending, results)
   Backups.qml / BackupsView.qml  the backups page and its body (status, archives)
+  Keybinds.qml / KeybindsView.qml  the shortcut sheet and its body (read only)
 assets/                    the app's own icon, and the entry that points at it
   silhouette-settings.svg      the cog with the pill cut out of it (dock, taskbar,
                                window list, and the name the entry's Icon= gives)
@@ -392,7 +397,7 @@ content rather than the surface.
 
 Nothing of it exists until the dialog is first opened. `SettingsApp.qml` keeps a
 bool (`built`) and a `Loader`: the first `open` flips it, which builds the whole
-window — the rail, its eighteen page singletons, the content column — and closing
+window — the rail, its nineteen page singletons, the content column — and closing
 the dialog starts a five-second timer that flips it back, destroying the tree and
 returning the memory. That is not the same thing as hiding it: a hidden window is
 still a live item tree, and this one is the largest in the shell, so a dialog
@@ -657,10 +662,19 @@ surface reads a file or a contract that this config does not have.
   of a settings app rather than a settings surface — you reach for it when
   something is already wrong — and it is the reason this page has a body of its
   own instead of rows.
-- **Not built:** the keybind editor and the submap manager. (`spacebinds.js` covers
-  the one keybind this app has to write; a full editor is the shell's surface, with
-  the shell's `utils/keybinds/binds.js` behind it — which resolves combos through a
-  variable named `mod`, so it does not fit a config that declares `mainMod`.)
+- **A read-only cheat sheet.** The shell's keybinds surface edits; the app's
+  Keybinds page only reads — the whole binds file as chords and names, with a
+  filter and not one control that writes. The two are different jobs: you want the
+  sheet open *while* you use the shortcuts, and nothing on it should be able to
+  change one by accident. The parse is this app's own
+  (`utils/keybinds/cheatsheet.js`) because the shell's assumes the modifier is
+  named `mod`, so it hands back the raw `mainMod .. " + Q"` source instead of the
+  chord; it borrows only that file's line scanner (`splitArgs`, `closeParenIndex`,
+  `nameComment`).
+- **Not built:** the keybind editor and the submap manager (the sheet above is
+  neither — it cannot write). `spacebinds.js` covers the one keybind this app has
+  to write; a full editor is the shell's surface, with the shell's
+  `utils/keybinds/binds.js` behind it, which is why it is not here.
 
 ## Conventions
 
