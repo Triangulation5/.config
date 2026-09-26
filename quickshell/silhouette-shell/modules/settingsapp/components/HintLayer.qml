@@ -78,6 +78,16 @@ Item {
 
             /** Above the cursor, or below it where the layer has no room above. */
             placement: layer.here.y > layer.edge + layer.room ? "above" : "below"
+
+            /**
+             * Captions are prose, so some are wider than the window. Scroll a
+             * long one rather than let it hang off the layer, and cap it to the
+             * room the bubble has: the layer less its two edge insets and the
+             * bubble's own 2.3em of horizontal padding. No edge fade — see
+             * Tooltip.
+             */
+            marquee: true
+            titleMaxWidth: Math.max(0, layer.width - 2 * layer.edge - 2.3 * tip.em)
         }
     }
 }

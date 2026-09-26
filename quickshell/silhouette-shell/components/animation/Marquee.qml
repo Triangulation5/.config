@@ -26,6 +26,12 @@ Item {
     property real pixelSize: 14
     property int weight: Font.Normal
     property bool active: true
+    /**
+     * How the label is rasterised. Defaults to native rendering, which stays
+     * crisp as the text pixel-snaps past; a host that only ever shows it at
+     * rest can keep the smoother default instead.
+     */
+    property int renderType: Text.NativeRendering
 
     /** Width of the palette fade at each edge; 0 disables the fade. */
     property real fadeWidth: 18
@@ -34,6 +40,12 @@ Item {
 
     property real scrollX: 0
 
+    /**
+     * The label's natural width, before any width cap. A host that sizes itself
+     * around the text (a tooltip's bubble, which centres this in a Column)
+     * reads it as the marquee's implicit width.
+     */
+    implicitWidth: label.implicitWidth
     implicitHeight: label.implicitHeight
     clip: true
 
@@ -52,7 +64,7 @@ Item {
         x: Math.round(root.scrollX)
         text: root.text
         color: root.color
-        renderType: Text.NativeRendering
+        renderType: root.renderType
         font.family: Theme.font
         font.pixelSize: root.pixelSize
         font.weight: root.weight

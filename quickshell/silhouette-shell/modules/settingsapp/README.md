@@ -128,6 +128,8 @@ components/                qs.components — chrome and layout primitives
   Hint.qml                   the hover hint's state (a singleton: no items)
   HintLayer.qml              the one bubble every row's caption is shown by:
                              the shell's own Tooltip, worn by the hovered row
+                             (a caption wider than the window marquees within it,
+                             no edge fade — see Tooltip.marquee)
   SectionLabel.qml           a faint heading inside a card
   SettingGroup.qml           one card: heading + a row per entry
   SettingRow.qml             the row skeleton every editor is built on
