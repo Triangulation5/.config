@@ -109,29 +109,6 @@ Add notification controls inside Settings:
 
 ---
 
-# Timer Surface Redesign
-
-## Goal
-
-Redesign the timer surface to match the quality and interaction style of Tide
-Island's timer interface.
-
-## Requirements
-
-* Cleaner visual hierarchy.
-* Improved animations.
-* More polished interactions.
-* Better alignment with Silhouette Shell's design language.
-
-Focus areas:
-
-* Surface transitions.
-* Information hierarchy.
-* User interaction flow.
-* Motion quality.
-
----
-
 # Toast Surface Artifact Fixes
 
 ## Problem
