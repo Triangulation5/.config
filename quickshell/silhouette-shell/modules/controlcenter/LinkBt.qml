@@ -27,48 +27,34 @@ LinkDrillIn {
     scanInterval: Flags.btScanMs
 
     readonly property var adapter: (typeof Bluetooth !== "undefined" && Bluetooth) ? Bluetooth.defaultAdapter : null
-    readonly property var devices: (typeof Bluetooth !== "undefined" && Bluetooth && Bluetooth.devices) ? Bluetooth.devices.values : []
 
     /**
-     * BlueZ hands the cache out in arbitrary order; sort connected first,
-     * then paired, then named devices, nameless MACs last so a discovery scan
-     * doesn't churn the useful rows around. Reads connectedCount so a connect
-     * flip re-sorts, which the raw device list never signals.
+     * The connected block: every peripheral Peripherals says is connected — a
+     * Bluetooth device BlueZ reports connected, or a USB-dongle peripheral that
+     * only UPower knows about — one row each, sorted by name so a row keeps its
+     * place across scans. The matching, and the fact that a device can appear
+     * here once and only once, is the model's job, not this panel's.
      */
-    readonly property var devicesSorted: {
-        var tick = Peripherals.connectedCount;
-        function rank(d) {
-            if (!d) return 3;
-            if (d.connected) return 0;
-            if (d.paired) return 1;
-            return (d.name && d.name.length) ? 2 : 3;
-        }
-        return devices.slice().sort(function(a, b) {
-            var r = rank(a) - rank(b);
-            if (r !== 0) return r;
-            return String((a && a.name) || "").localeCompare(String((b && b.name) || ""));
-        });
-    }
+    readonly property var connectedRows: Peripherals.connected.slice().sort(function(a, b) {
+        return String(a.name || "").localeCompare(String(b.name || ""));
+    })
 
     /**
-     * Rows for the connected block: every connected Bluetooth device paired
-     * with its UPower battery entry by MAC, then USB-dongle peripherals that
-     * have no Bluetooth counterpart. `up` is null when nothing reports charge.
+     * Devices BlueZ knows that are not connected, ranked for display: paired
+     * first, then named devices, nameless MACs last so a discovery scan does not
+     * churn the useful rows around; name breaks the ties.
      */
-    readonly property var connectedRows: {
-        var rows = [];
-        var byMac = Peripherals.byMac;
-        for (var i = 0; i < devicesSorted.length; i++) {
-            var d = devicesSorted[i];
-            if (!d || !d.connected) continue;
-            rows.push({ bt: d, up: byMac[String(d.address || "").toUpperCase()] || null });
-        }
-        var usb = Peripherals.usb;
-        for (var j = 0; j < usb.length; j++)
-            rows.push({ bt: null, up: usb[j] });
-        return rows;
+    readonly property var nearbyRows: Peripherals.nearby.slice().sort(function(a, b) {
+        var r = rank(a) - rank(b);
+        if (r !== 0) return r;
+        return String(a.name || "").localeCompare(String(b.name || ""));
+    })
+
+    function rank(row) {
+        if (!row || !row.bt) return 3;
+        if (row.paired) return 1;
+        return (row.name && row.name.length) ? 2 : 3;
     }
-    readonly property var nearbyRows: devicesSorted.filter(function(d) { return d && !d.connected; })
 
     property string pairingAddress: ""
     property string failedAddress: ""
@@ -81,38 +67,6 @@ LinkDrillIn {
 
     implicitHeight: listFrame.y + listFrame.height
 
-    function metaFor(d) {
-        if (!d) return "";
-        var parts = [];
-        if (d.paired) parts.push("paired");
-        if (d.state !== undefined && typeof BluetoothDeviceState !== "undefined") {
-            var st = BluetoothDeviceState.toString(d.state);
-            if (st && st.length > 0 && parts.indexOf(st.toLowerCase()) === -1) parts.push(st.toLowerCase());
-        }
-        return parts.join(" · ");
-    }
-
-    /** BlueZ battery, the fallback when UPower reports nothing for the device. */
-    function batteryLevel(d) {
-        if (!d || d.battery === undefined || d.battery === null) return -1;
-        var b = d.battery;
-        if (b <= 0) return -1;
-        if (b <= 1) b = b * 100;
-        return Math.round(b);
-    }
-
-    /** Battery for one block row: UPower first, BlueZ for a bare Bluetooth row. */
-    function batteryFor(row) {
-        if (!row) return -1;
-        if (row.up) return Peripherals.pct(row.up);
-        return root.batteryLevel(row.bt);
-    }
-
-    function rowName(row) {
-        if (!row) return "Unknown";
-        if (row.bt) return row.bt.deviceName || row.bt.name || "Unknown";
-        return (row.up && row.up.model) ? row.up.model : "Unknown";
-    }
 
     /**
      * Click dispatch for a row. A connected or paired device toggles the inline
@@ -323,17 +277,17 @@ LinkDrillIn {
 
             BtConnectedRow {
                 s: root.s
-                expanded: (modelData && modelData.bt && modelData.bt.address)
-                    ? root.expandedRow === modelData.bt.address
-                    : false
+                expanded: modelData.address.length > 0 && root.expandedRow === modelData.address
                 focused: root.kbIndex === index
                 confirmFocus: root.confirmFocus
-                battery: root.batteryFor(modelData)
-                charging: (modelData && modelData.up) ? Peripherals.charging(modelData.up) : false
-                glyph: (modelData && modelData.bt)
-                    ? "bluetooth"
-                    : Peripherals.glyphFor(modelData ? modelData.up : null)
-                name: root.rowName(modelData)
+                /** Everything the row shows comes from the model row it is handed. */
+                level: modelData.level
+                onPower: modelData.onPower
+                pending: modelData.pending
+                glyph: modelData.glyph
+                tag: modelData.tag
+                name: modelData.name
+                stateLabel: modelData.stateLabel
                 list: listFrame
                 onRequestActivate: root.activateConnected(modelData)
                 onRequestConnect: root.connectDevice(modelData.bt)
@@ -362,8 +316,9 @@ LinkDrillIn {
                     && root.pairingAddress === (modelData && modelData.address)
                 failed: root.failedAddress.length > 0
                     && root.failedAddress === (modelData && modelData.address)
-                battery: root.batteryLevel(modelData)
-                meta: root.metaFor(modelData)
+                level: modelData.level
+                glyph: modelData.glyph
+                meta: modelData.stateLabel
                 list: listFrame
                 onRequestActivate: root.activateDevice(modelData)
                 onRequestConnect: root.connectDevice(modelData)

@@ -28,17 +28,21 @@ Column {
     property bool focused: false
     property int confirmFocus: -1
     property var list: null
-    property int battery: -1
-    property bool charging: false
+    /** All of it straight off the peripheral model row: charge, power, kind, tag. */
+    property int level: -1
+    property bool onPower: false
+    property bool pending: false
+    property string tag: ""
     property string glyph: "bluetooth"
     property string name: "Unknown"
+    property string stateLabel: ""
 
     readonly property var bt: modelData ? modelData.bt : null
     readonly property var up: modelData ? modelData.up : null
     readonly property bool isUsb: bt === null
     readonly property string addr: (bt && bt.address) ? bt.address : ""
-    readonly property bool hasBattery: battery >= 0
-    readonly property bool low: hasBattery && !charging && battery <= Peripherals.lowAt
+    readonly property bool hasBattery: level >= 0
+    readonly property bool low: hasBattery && !onPower && level <= Peripherals.lowAt
     readonly property bool busy: (bt && typeof BluetoothDeviceState !== "undefined")
         ? bt.state === BluetoothDeviceState.Disconnecting
         : false
@@ -142,7 +146,7 @@ Column {
                 Rectangle {
                     id: usbTag
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: con.isUsb
+                    visible: con.tag.length > 0
                     width: usbLabel.implicitWidth + 8 * con.s
                     height: 13 * con.s
                     radius: 4 * con.s
@@ -153,7 +157,7 @@ Column {
                     Text {
                         id: usbLabel
                         anchors.centerIn: parent
-                        text: "USB"
+                        text: con.tag
                         color: Theme.faint
                         font.family: Theme.font
                         font.pixelSize: 7.5 * con.s
@@ -178,7 +182,8 @@ Column {
 
                 GlyphIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: con.charging
+                    /** On power, not merely charging: a pack held at its limit is plugged in too. */
+                    visible: con.onPower
                     width: 10 * con.s
                     height: 10 * con.s
                     name: "bolt"
@@ -189,8 +194,8 @@ Column {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: con.hasBattery
-                    text: con.battery + "%"
-                    color: con.low ? Theme.vermLit : (con.charging ? Theme.flameGlow : Theme.subtle)
+                    text: con.level + "%"
+                    color: con.low ? Theme.vermLit : (con.onPower ? Theme.flameGlow : Theme.subtle)
                     font.family: Theme.font
                     font.pixelSize: 11 * con.s
                     font.weight: Font.DemiBold
@@ -205,7 +210,7 @@ Column {
                 visible: con.hasBattery
                 s: con.s
                 kind: "battery"
-                level: Math.max(0, con.battery) / 100
+                level: Math.max(0, con.level) / 100
             }
 
             Text {
@@ -241,7 +246,7 @@ Column {
             anchors.right: confirmBtns.left
             anchors.rightMargin: 8 * con.s
             anchors.verticalCenter: parent.verticalCenter
-            text: "Connected"
+            text: con.stateLabel.length > 0 ? con.stateLabel : "Connected"
             color: Theme.faint
             font.family: Theme.font
             font.pixelSize: 9.5 * con.s

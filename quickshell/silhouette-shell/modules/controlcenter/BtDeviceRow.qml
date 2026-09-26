@@ -12,8 +12,9 @@ import qs.components.controls
  * Single device row for the bluetooth drill-in's list, carrying every state a
  * row can show: plain, pairing ember, inline confirm (disconnect/connect +
  * forget) and the transient failure line. Pure view — the list state comes in
- * as props and every action goes back out as a signal, so delegates keep
- * their identity across scans without owning any device logic.
+ * as props (including the device's class, so the tile glyph is the real one) and
+ * every action goes back out as a signal, so delegates keep their identity
+ * across scans without owning any device logic.
  */
 Column {
     id: dev
@@ -27,7 +28,9 @@ Column {
     property int confirmFocus: -1
     property bool pairing: false
     property bool failed: false
-    property int battery: -1
+    /** From the peripheral model row: the device's charge, its class and its state. */
+    property int level: -1
+    property string glyph: "bluetooth"
     property string meta: ""
     /** The list frame, for scroll-into-view on focus/expansion. */
     property var list: null
@@ -103,7 +106,8 @@ Column {
                 anchors.centerIn: parent
                 width: 15 * dev.s
                 height: 15 * dev.s
-                name: "bluetooth"
+                /** The device's own class, so a gamepad row is not drawn as generic Bluetooth. */
+                name: dev.glyph
                 color: dev.isConnected ? Theme.vermLit : Theme.iconDim
                 stroke: 1.7
             }
@@ -155,10 +159,10 @@ Column {
 
             Filament {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: dev.isConnected && dev.battery >= 0
+                visible: dev.isConnected && dev.level >= 0
                 s: dev.s
                 kind: "battery"
-                level: Math.max(0, dev.battery) / 100
+                level: Math.max(0, dev.level) / 100
             }
 
             Rectangle {
