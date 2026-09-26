@@ -109,23 +109,6 @@ Add notification controls inside Settings:
 
 ---
 
-# Wallpaper Search Improvements
-
-## Problem
-
-The custom wallpaper searcher no longer displays all results when searching:
-
-``` gh: ```
-
-## Requirements
-
-* Restore full result visibility.
-* Allow manually browsing through all available results.
-* Do not limit results unnecessarily.
-* Ensure searching and scrolling behavior remain consistent.
-
----
-
 # Timer Surface Redesign
 
 ## Goal
