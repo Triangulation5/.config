@@ -38,11 +38,16 @@ Item {
     readonly property string timeRemaining: {
         if (!Battery.dev)
             return "";
+        if (Battery.charging)
+            return Battery.hasTime ? (Battery.timeStr + " to full") : "Charging";
+        /** Held at a threshold: plugged in, not full — saying "Plugged in" here is the half-truth this replaces. */
+        if (Battery.pending)
+            return "Held at its charge limit";
         if (Battery.full)
             return "Plugged in";
         if (!Battery.hasTime)
             return "Calculating...";
-        return Battery.timeStr + (Battery.charging ? " to full" : " remaining");
+        return Battery.timeStr + " remaining";
     }
 
     width: batteryBackground.width
@@ -214,7 +219,7 @@ Item {
                 spacing: 4 * battery.s
 
                 Text {
-                    text: Battery.charging ? "Charging" : "Battery"
+                    text: Battery.charging ? "Charging" : (Battery.pending ? "On AC" : "Battery")
 
                     color: Theme.cream
 
