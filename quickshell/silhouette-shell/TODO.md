@@ -126,28 +126,6 @@ The custom wallpaper searcher no longer displays all results when searching:
 
 ---
 
-# Peripheral Status Handling
-
-## Goal
-
-Improve hardware detection and status presentation.
-
-## Current Problems
-
-* Bluetooth devices are represented incorrectly.
-* Charging states are unclear.
-* Connected Bluetooth devices may appear multiple times.
-* Duplicate or conflicting information is displayed.
-
-## Requirements
-
-* Show accurate connection state.
-* Show charging state clearly.
-* Remove duplicate peripheral entries.
-* Create a consistent peripheral status model.
-
----
-
 # Timer Surface Redesign
 
 ## Goal
