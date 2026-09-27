@@ -1,9 +1,12 @@
 -- https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in  = 6,
-        gaps_out = 12,
-        border_size = 2,
+        -- gaps_in  = 6,
+        -- gaps_out = 12,
+        -- border_size = 2,
+        gaps_in  = 4,
+        gaps_out = 8,
+        border_size = 1,
 
         col = {
             active_border   = { colors = { "rgba(205, 205, 205, 0.15)" } },
@@ -16,21 +19,22 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 12,
-        rounding_power = 4,
+        -- rounding       = 12,
+        -- rounding_power = 4,
+        rounding       = 0,
 
         active_opacity   = 1.00,
         inactive_opacity = 1.00,
 
         shadow = {
-            enabled      = true,
+            enabled      = false,
             range        = 12,
             render_power = 3,
             color        = 0xee121212,
         },
 
         blur = {
-            enabled   = true,
+            enabled   = false,
             size      = 8,
             passes    = 3, -- 3 for frosted glass
             vibrancy  = 0.17,
@@ -39,7 +43,7 @@ hl.config({
     },
 
     animations = {
-        enabled = true,
+        enabled = false,
     },
 })
 
