@@ -4,29 +4,10 @@
 
 ---
 
-# Minimal DWM-Style Bar
+# Minimal Lockscreen for DWM style
 
-## Goal
-
-Create a minimal, toggleable DWM-style status bar that can be enabled and
-disabled from the Settings application.
-
-## Requirements
-
-* Target extremely low resource usage (~100–150 MB RAM).
-* Keep interaction surface minimal.
-* Avoid unnecessary clickable UI elements.
-* Follow a `dwmblocks`-inspired philosophy:
-
-  * Simple.
-  * Modular.
-  * Efficient.
-  * State-driven.
-* Reuse or adapt concepts from the previous implementation if applicable.
-* Review git history to recover useful ideas from the previous bar
-  implementation.
-
----
+Create a simple lockscreen, when the lockscreen keybind is clicked while in
+dwmstyle it should just open the lockscreen without the cutout animation.
 
 # Code Cleanup & Maintenance
 

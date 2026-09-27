@@ -5,9 +5,10 @@ import "../utils/rows.js" as Rows
 import qs.modules.settingsapp.config
 
 /**
- * Bar & Island: the pill's own geometry, the notch look, and game mode. These
- * are the flags the shell reads in Modules/pill and in Motion, so a change here
- * is visible on the pill immediately.
+ * Bar & Island: the shell's top edge. The pill's own geometry, the notch look and
+ * game mode, plus the switch that replaces the pill with the minimal DWM-style
+ * bar in modules/bar. These are flags the shell reads live, so a change here is
+ * visible at once — including a whole presentation swap.
  *
  * It imports `qs.config` for one row only, the notch style, which is a pair of
  * flags rather than one — see its comment.
@@ -19,7 +20,7 @@ import qs.modules.settingsapp.config
 QtObject {
     readonly property string name: "Bar & Island"
     readonly property string icon: "\u25AD"
-    readonly property string keywords: "pill bar island notch game mode pointer hover collapse auto hide strip wake"
+    readonly property string keywords: "pill bar island notch game mode pointer hover collapse auto hide strip wake minimal dwm status chips colour color"
 
     /**
      * One row for the flag `field`, with its bounds, step and default taken from
@@ -32,6 +33,19 @@ QtObject {
     }
 
     readonly property var groups: [
+        { card: "Minimal bar", rows: [
+            { key: "barEnabled", type: "toggle", label: "Minimal bar",
+              caption: "Replace the pill with a plain dwm-style status strip across the top edge; the pill is rebuilt when this is switched back off",
+              reset: false },
+            { key: "barHeight", type: "slider", label: "Bar height",
+              min: 18, max: 40, step: 1, unit: "px",
+              caption: "Height of the minimal bar strip, before display scaling", reset: 35 },
+            { key: "barStyle", type: "segmented", label: "Bar style",
+              caption: "Palette follows the shell theme (the live wallpaper palette included), Accent fills the strip with the palette accent, Plain drops the backdrop",
+              options: ["theme", "accent", "plain"], names: ["Palette", "Accent", "Plain"], reset: "theme" },
+            { key: "barChips", type: "toggle", label: "Block chips",
+              caption: "Sit the status readouts on a subtle rounded backdrop. The lit workspace tag is chipped either way", reset: false }
+        ]},
         { card: "Pill", rows: [
             row("topGap", "slider", "Pill gap",
                 "Space above the pill as a fraction of the shipped 8px; lower moves it up. The notch style sets this to -0.2", ""),

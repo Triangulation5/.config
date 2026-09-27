@@ -1,0 +1,9 @@
+module qs.modules.bar.blocks
+
+Battery 1.0 Battery.qml
+Clock 1.0 Clock.qml
+Cpu 1.0 Cpu.qml
+Memory 1.0 Memory.qml
+Volume 1.0 Volume.qml
+WindowTitle 1.0 WindowTitle.qml
+Workspaces 1.0 Workspaces.qml

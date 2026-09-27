@@ -24,12 +24,21 @@ Variants {
         screen: modelData
 
         /**
-         * Keep the layer alive so the corners can animate away.
+         * Keep the layer alive so the corners can animate away — except in DWM
+         * (minimal bar) mode, where they do not go away so much as cease to
+         * exist, at once.
          *
-         * Visibility is controlled through opacity/scale morphing
-         * instead of destroying the surface instantly.
+         * The corners belong to the pill's island look: the rounded screen corner
+         * is what the notch and the rest pill sit in, and the radius morph is the
+         * pill changing shape. With the minimal bar across the top edge there is
+         * nothing for them to belong to, so they are not faded out, morphed down
+         * or dissolved — the surface is dropped on the same frame `Flags.barEnabled`
+         * flips, and rebuilt the same way when the pill comes back. Fading here
+         * would be actively wrong: `Flags.cornerMorphMs` is a 1500ms evaporate, and
+         * a bar toggle trailing a corner slowly collapsing out of the old shell is
+         * exactly what makes the swap look like two shells fighting.
          */
-        visible: true
+        visible: !Flags.barEnabled
 
         color: "transparent"
 

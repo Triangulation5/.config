@@ -10,14 +10,39 @@ import Quickshell.Wayland
  *
  * The pill retracts off the top edge while a fullscreen client owns a monitor,
  * and a workspace flash yields to it instead of lingering over the content.
+ * "Owns a monitor" means the monitor's *active workspace* holds a fullscreen
+ * window — not merely that a fullscreen window exists somewhere on the output.
+ * A client parked on a hidden workspace must not keep the pill away.
  *
  * Two sources are read, cheapest first:
  *
  *   1. `Quickshell.Wayland`'s ToplevelManager — the compositor's own
- *      wlr-foreign-toplevel list. Every toplevel that reports `fullscreen`
- *      marks each screen it sits on, and the property is notified by the
- *      compositor, so a toggle lands on the next frame with no process and no
- *      polling. This is the normal path: nothing below it runs.
+ *      wlr-foreign-toplevel list. A toplevel that is `fullscreen` *and*
+ *      `activated` marks each screen it sits on, and both properties are
+ *      notified by the compositor, so a toggle or a workspace switch lands on
+ *      the next frame with no process and no polling. This is the normal path:
+ *      nothing below it runs.
+ *
+ *      `activated` is what makes the answer correct, and it is load-bearing.
+ *      The protocol has no notion of workspaces: a toplevel that moves to a
+ *      hidden workspace keeps the output in its `screens` list — Hyprland sends
+ *      no output-leave for it, only an `activated: false` state update (checked
+ *      against a live session) — so a fullscreen window parked on workspace 2
+ *      still reports `fullscreen` on this output while workspace 1 is showing.
+ *      Keying on `fullscreen` alone therefore retracted the pill on every
+ *      workspace of the monitor until the fullscreen client went away.
+ *      Hyprland only ever activates the fullscreen window that is on the
+ *      monitor's active workspace, so requiring `activated` picks out exactly
+ *      that window, and it does so the instant the compositor reports the
+ *      switch. The join below could answer the same question, but only a
+ *      debounced process later, which is a visible retract-then-return flap on
+ *      every switch; the protocol's own state has no such window.
+ *
+ *      The trade-off: a fullscreen window that is *not* the focused one — a
+ *      floating dialog focused over it, or keyboard focus on another monitor —
+ *      no longer retracts the pill, which then sits over that content. That is
+ *      the harmless direction to be wrong in, and it is the price of an answer
+ *      that is immediate.
  *
  *   2. `hyprctl monitors -j` for each monitor's active workspace *name*, plus
  *      `hyprctl workspaces -j` for each workspace's `hasfullscreen`, joined
@@ -28,7 +53,7 @@ import Quickshell.Wayland
  *      the real state. It is also the fallback for a compositor without the
  *      foreign-toplevel protocol — `Hyprland.toplevels` still works, so a
  *      toplevel list that stays empty while Hyprland reports windows is the
- *      signal that the protocol is missing.
+ *      signal that the protocol is missing. Only used in that case.
  *
  * The fallback is read on the events that can change it (a fullscreen toggle, a
  * workspace switch, a window opening/closing, a monitor hotplug, a config
@@ -38,13 +63,13 @@ import Quickshell.Wayland
 Singleton {
     id: root
 
-    /** monitorName -> true while that monitor holds a fullscreen toplevel (protocol path). */
+    /** monitorName -> true while that monitor's active workspace holds a fullscreen toplevel (protocol path). */
     readonly property var tmByMonitor: {
         var out = {};
         var list = ToplevelManager.toplevels.values;
         for (var i = 0; i < list.length; i++) {
             var t = list[i];
-            if (!t || !t.fullscreen || !t.screens)
+            if (!t || !t.fullscreen || !t.activated || !t.screens)
                 continue;
             for (var j = 0; j < t.screens.length; j++) {
                 var sc = t.screens[j];
@@ -167,6 +192,8 @@ Singleton {
                     root.fullscreenWorkspaces = fs;
                     root.rebuild();
                 }
+                if (root.dirty && !monProc.running)
+                    debounce.restart();
             }
         }
     }

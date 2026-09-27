@@ -1,6 +1,8 @@
 module qs.services
 
 singleton Backlight       1.0 Backlight.qml
+singleton BarStatus       1.0 BarStatus.qml
+singleton BarStyle        1.0 BarStyle.qml
 singleton Battery         1.0 Battery.qml
 singleton Cava            1.0 Cava.qml
 singleton Cliphist        1.0 Cliphist.qml
