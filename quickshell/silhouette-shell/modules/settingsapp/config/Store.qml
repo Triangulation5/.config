@@ -133,6 +133,11 @@ Singleton {
             property real auraStrength: 1.0
             property bool auraShadow: true
             property bool gameMode: false
+            // -- the minimal bar, mirrored from Flags.qml --
+            property bool barEnabled: false
+            property real barHeight: 35
+            property string barStyle: "theme"
+            property bool barChips: false
             property string nightLightMode: "scheduled"
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
@@ -257,6 +262,7 @@ Singleton {
         "weatherCity", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode",
+        "barEnabled", "barHeight", "barStyle", "barChips",
         "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
         "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
         "pillHoverH", "pillMixerH", "pillLauncherW", "pillLauncherH", "pillClipboardW",

@@ -70,6 +70,17 @@ Singleton {
     property alias auraStrength: adapter.auraStrength
     property alias auraShadow: adapter.auraShadow
     property alias gameMode: adapter.gameMode
+    /*
+     * The shell's second presentation: the minimal DWM-style bar in
+     * modules/bar. While it is on the pill is not built at all, so the two
+     * never share the top edge and the bar does not pay for the pill's tree.
+     */
+    property alias barEnabled: adapter.barEnabled
+    /** Minimal bar strip height, in logical px, scaled by uiScale where it draws. */
+    property alias barHeight: adapter.barHeight
+    /** Minimal bar look: "theme" follows the palette, "accent" fills with it, "plain" drops the backdrop. */
+    property alias barStyle: adapter.barStyle
+    property alias barChips: adapter.barChips
     property alias nightLightMode: adapter.nightLightMode
     property alias nightLightTemp: adapter.nightLightTemp
     property alias nightLightOnMin: adapter.nightLightOnMin
@@ -335,6 +346,11 @@ Singleton {
             /** Whether the cover's dominant colour also darkens the pill's shadow. */
             property bool auraShadow: true
             property bool gameMode: false
+            property bool barEnabled: false
+            property real barHeight: 35
+            property string barStyle: "theme"
+            /** Subtle rounded backdrops behind the bar's status readouts. */
+            property bool barChips: false
             property string nightLightMode: "scheduled"
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
