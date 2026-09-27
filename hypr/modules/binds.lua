@@ -40,6 +40,7 @@ hl.bind(mainMod .. " + A",         hl.dsp.exec_cmd(quickshell .. " media"))
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd(quickshell .. " timer"))
 hl.bind(mainMod .. " + W",         hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + G",         hl.dsp.exec_cmd(quickshell .. " gameMode"))
+hl.bind(mainMod .. " + D",         hl.dsp.exec_cmd(quickshell .. " dwmBar"))
 hl.bind(mainMod .. " + X",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V",         hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
