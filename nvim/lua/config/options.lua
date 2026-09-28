@@ -4,16 +4,16 @@ vim.g.mapleader = " "
 
 local opt = vim.opt
 for k, v in pairs({
-    nu = true, rnu = true,
-    scl = "yes",
-    ts = 4, sts = 4, sw = 4, et = true,
-    si = true, bri = true, stal = 2,
-    ic = true, scs = true, hls = false,
-    ut = 50, tm = 250, gcr = "a:block",
-    so = 8, siso = 8,
-    winborder = "rounded", cb = "unnamedplus",
-    cot = { "menuone", "noselect" },
-    ph = 10, swf = false,
+    number = true, relativenumber = true,
+    signcolumn = "yes",
+    tabstop = 4, softtabstop = 4, shiftwidth = 4, expandtab = true,
+    smartindent = true, breakindent = true, showtabline = 1,
+    ignorecase = true, smartcase = true, hlsearch = false,
+    updatetime = 50, timeoutlen = 250, guicursor = "a:block",
+    scrolloff = 8, sidescrolloff = 8,
+    winborder = "rounded", clipboard = "unnamedplus",
+    completeopt = { "menuone", "noselect" },
+    pumheight = 10, swapfile = false,
 }) do
     opt[k] = v
 end
