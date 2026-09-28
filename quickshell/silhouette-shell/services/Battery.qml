@@ -53,7 +53,7 @@ Singleton {
      * `charging` is the narrow fact — charge is going in right now. `pending` is
      * the one nothing used to name: PendingCharge is a pack the machine has
      * plugged in and is deliberately *not* charging, which on a ThinkPad is the
-     * charge threshold doing its job. `onPower` is either of those plus full, and
+     * charge threshold doing its job. `plugged` is either of those plus full, and
      * is what the surfaces color from, so a held pack reads as plugged in rather
      * than as running down. `full` now means every pack, not the aggregate, or a
      * machine holding one pack at 80% would claim to be full.
@@ -63,7 +63,6 @@ Singleton {
     readonly property bool full: packs.length > 0 ? allFull
         : (state === UPowerDeviceState.FullyCharged || pct >= 100)
     readonly property bool discharging: state === UPowerDeviceState.Discharging
-    readonly property bool onPower: plugged
 
     /**
      * Low is a warning about *running out*, so it is asked of a pack that is
@@ -78,8 +77,14 @@ Singleton {
      * power-source OSD keys off: it flips the instant the cable goes in or out
      * even when the battery is at a charge threshold and never enters
      * `Charging` (a status the old charging-only flash missed entirely).
+     *
+     * `fromBattery` mirrors UPower's own aggregate, and is named for what it says
+     * rather than as `onBattery`: properties named `on` plus a capital have twice
+     * been found holding their first value instead of tracking (see the notes in
+     * services/Dyn.qml), and a name that costs nothing to change is not worth the
+     * risk on a value that flips with the cable.
      */
-    readonly property bool onBattery: UPower.onBattery
+    readonly property bool fromBattery: UPower.onBattery
     readonly property bool plugged: present && !UPower.onBattery
 
     readonly property real rateW: !dev ? 0

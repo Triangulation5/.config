@@ -63,7 +63,7 @@ Item {
      * reads as `true`: there is no invisible dialog to correct, and a window maps
      * on the focused workspace when it is built.
      */
-    readonly property bool onFocusedWorkspace: {
+    readonly property bool atFocusedWorkspace: {
         if (!root.window)
             return true;
         var focused = Hyprland.focusedWorkspace;
@@ -95,7 +95,7 @@ Item {
         root.built = true;
         if (!root.shown)
             root.shown = true;
-        else if (!root.onFocusedWorkspace)
+        else if (!root.atFocusedWorkspace)
             root.summon();
     }
 
@@ -108,7 +108,7 @@ Item {
 
     /** Open if closed or out of sight, close if it is right in front of you. */
     function toggle(): void {
-        if (root.shown && root.onFocusedWorkspace)
+        if (root.shown && root.atFocusedWorkspace)
             root.hide();
         else
             root.open();

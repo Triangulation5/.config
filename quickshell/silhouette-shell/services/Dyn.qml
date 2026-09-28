@@ -22,7 +22,14 @@ Singleton {
     readonly property string surfaceContainerHighest: adapter.surface_container_highest
     readonly property string primary: adapter.primary
     readonly property string primaryContainer: adapter.primary_container
-    readonly property string onPrimaryContainer: adapter.on_primary_container
+    /**
+     * Matugen's `on_primary_container` — the ink that reads on the primary
+     * container. Named for what it is rather than for the generator's key: a
+     * property called `on` + a capital is read as a signal handler, and this one
+     * held the empty string under that name while every sibling token mirrored
+     * the palette fine.
+     */
+    readonly property string primaryContainerInk: adapter.on_primary_container
     readonly property string outline: adapter.outline
     readonly property string outlineVariant: adapter.outline_variant
     readonly property string cream: adapter.cream

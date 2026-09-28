@@ -165,8 +165,13 @@ Item {
      * global, so without this gate one keypress flashes every monitor at once.
      * Workspace flashes skip it: those are already keyed to this screen's own
      * active workspace.
+     *
+     * Deliberately not named `onFocusedMonitor`: properties named `on` plus a
+     * capital have twice been found holding their first value instead of tracking
+     * (see the notes in services/Dyn.qml), and this one answers a question that
+     * moves with the compositor's focus.
      */
-    readonly property bool onFocusedMonitor: !Hyprland.focusedMonitor || Hyprland.focusedMonitor.name === screenName
+    readonly property bool focusedHere: !Hyprland.focusedMonitor || Hyprland.focusedMonitor.name === screenName
 
     function flash(which) {
         if (!armed || suppressed)
@@ -179,7 +184,7 @@ Item {
             dirty = false;
             return false;
         }
-        if (which !== "workspace" && !onFocusedMonitor)
+        if (which !== "workspace" && !focusedHere)
             return false;
         /**
          * A running workspace flash owns the pill. A track announce landing with

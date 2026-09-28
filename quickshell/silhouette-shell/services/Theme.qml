@@ -56,7 +56,7 @@ Singleton {
     readonly property string flameInk:   dyn ? Dyn.primary : "#d8647e"
     readonly property string flameEmber: dyn ? Dyn.primaryContainer : "#d8647e"
     readonly property string flameBurn:  dyn ? Dyn.primaryContainer : "#d8647e"
-    readonly property string flameTip:   dyn ? Dyn.onPrimaryContainer : "#cdcdcd"
+    readonly property string flameTip:   dyn ? Dyn.primaryContainerInk : "#cdcdcd"
 
     readonly property color todayWarm: dyn ? onGlow : "#f3be7c"
 
