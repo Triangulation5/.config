@@ -22,6 +22,13 @@ import qs.modules.bar.blocks as Blocks
  *
  * Height and type scale come from `Flags.barHeight` and `uiScale` on the same
  * height/1080 ratio the pill uses, so one setting lands evenly on any output.
+ * On top of that ratio the blocks are laid out at `typeScale`, which carries the
+ * user's own `Flags.barFontScale` as well: every readout's type comes off it, and
+ * so do the chip padding and the tag spacing that are built from it, so one
+ * slider grows the whole strip's words together. The strip's height, its margins
+ * and the gap between blocks stay on `s`, because those belong to Bar height and
+ * to the layout rather than to the type.
+ *
  * The backdrop and every colour on the strip come from BarStyle, so the bar
  * follows the palette and the chosen style without a token named in here.
  */
@@ -32,6 +39,9 @@ PanelWindow {
 
     readonly property real s: modelData ? (modelData.height / 1080) * Flags.uiScale : 1
     readonly property string screenName: modelData ? modelData.name : ""
+
+    /** What the blocks are laid out at: the geometry scale, plus the font scale. */
+    readonly property real typeScale: bar.s * Flags.barFontScale
 
     screen: modelData
     color: BarStyle.bg
@@ -49,13 +59,14 @@ PanelWindow {
         spacing: 12 * bar.s
 
         Blocks.Workspaces {
-            s: bar.s
+            s: bar.typeScale
             screenName: bar.screenName
             Layout.alignment: Qt.AlignVCenter
         }
 
         Blocks.WindowTitle {
-            s: bar.s
+            s: bar.typeScale
+            screenName: bar.screenName
             Layout.alignment: Qt.AlignVCenter
             Layout.maximumWidth: 460 * bar.s
         }
@@ -63,35 +74,35 @@ PanelWindow {
         Item { Layout.fillWidth: true }
 
         Chip {
-            s: bar.s
+            s: bar.typeScale
             Layout.alignment: Qt.AlignVCenter
-            Blocks.Cpu { s: bar.s }
+            Blocks.Cpu { s: bar.typeScale }
         }
 
         Chip {
-            s: bar.s
+            s: bar.typeScale
             Layout.alignment: Qt.AlignVCenter
-            Blocks.Memory { s: bar.s }
+            Blocks.Memory { s: bar.typeScale }
         }
 
         /** The chip follows the block: a machine with no pack has neither. */
         Chip {
-            s: bar.s
+            s: bar.typeScale
             Layout.alignment: Qt.AlignVCenter
             visible: Battery.present
-            Blocks.Battery { s: bar.s }
+            Blocks.Battery { s: bar.typeScale }
         }
 
         Chip {
-            s: bar.s
+            s: bar.typeScale
             Layout.alignment: Qt.AlignVCenter
-            Blocks.Volume { s: bar.s }
+            Blocks.Volume { s: bar.typeScale }
         }
 
         Chip {
-            s: bar.s
+            s: bar.typeScale
             Layout.alignment: Qt.AlignVCenter
-            Blocks.Clock { s: bar.s }
+            Blocks.Clock { s: bar.typeScale }
         }
     }
 }

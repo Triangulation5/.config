@@ -3,12 +3,19 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Hyprland
 import qs.services
+import qs.modules.bar
 
 /**
- * Workspace tags: one number per workspace on this monitor, the active one lit.
- * Bare numbers, no backdrops: the accent on the lit one is the whole signal, and
- * a chip behind it only competes with the readouts beside it. Display only — no
- * click handler, because the bar is not a control surface.
+ * Workspace tags: one number per workspace on this monitor, the active one
+ * blocked. The lit tag is a flat accent block with the digit in the ink that
+ * reads on it — dwm's own blocked tag, squared off rather than rounded — and the
+ * idle tags are bare dim numbers beside it. Display only — no click handler,
+ * because the bar is not a control surface.
+ *
+ * Every tag keeps the block's padding even though only the lit one draws, so the
+ * digits hold their places when the active workspace changes instead of the row
+ * shuffling as the block moves; that is also why the row's own spacing is tight,
+ * since each tag already carries its padding.
  *
  * The numbers come from Workspacerules.byMonitor, not Quickshell's
  * `Hyprland.workspaces` model, which collapses every workspace onto id 0 on the
@@ -21,7 +28,8 @@ Row {
     property string screenName: ""
     property real s: 1.1
 
-    spacing: 6 * s
+    /** Tight: each tag carries a block's own padding on either side of the digit. */
+    spacing: 2 * s
 
     readonly property var range: Workspacerules.byMonitor[screenName] || []
 
@@ -36,16 +44,28 @@ Row {
     Repeater {
         model: root.range
 
-        delegate: Text {
+        /**
+         * A chip squared off into dwm's tag block. An idle tag passes a
+         * transparent fill rather than none, which still counts as the chip being
+         * on — that is what reserves its padding so the row never shifts.
+         */
+        delegate: Chip {
             required property var modelData
 
             readonly property bool lit: String(modelData) === root.activeName
 
-            text: modelData
-            color: lit ? BarStyle.accent : BarStyle.dim
-            font.family: Theme.font
-            font.pixelSize: 12 * root.s
-            font.weight: lit ? Font.DemiBold : Font.Normal
+            s: root.s
+            radius: 0
+            fill: lit ? BarStyle.accent : "transparent"
+            edge: "transparent"
+
+            Text {
+                text: modelData
+                color: lit ? BarStyle.accentInk : BarStyle.dim
+                font.family: Theme.font
+                font.pixelSize: 12 * root.s
+                font.weight: lit ? Font.DemiBold : Font.Normal
+            }
         }
     }
 }
