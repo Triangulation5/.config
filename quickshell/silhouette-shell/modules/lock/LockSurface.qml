@@ -14,6 +14,12 @@ import qs.components.effects
  * resting spot to the full screen. Carries the glow field and the full lock
  * Content on every monitor, so the whole UI (clock, password capsule, profile)
  * is present on each screen and the auth panel can be used from any of them.
+ *
+ * In the minimal bar there is no pill, so there is no cutout to wipe from: the
+ * lock is simply open on the frame this surface is built, its backdrop is the
+ * wallpaper instead of a grab of the desktop — built in that same frame, off the
+ * mirror wallpaper.sh keeps — and the frozen overlay the wipe runs against is
+ * never loaded. See `instant` below.
  */
 
 Item {
@@ -32,11 +38,23 @@ Item {
     property bool active: false
     property real maskP: 0
 
+    /**
+     * The minimal bar's lock: no pill, no hole, nothing to wipe. The mask is put
+     * at 1 as this surface is built, so the lock is there and interactive from
+     * its first frame, and both morphs are skipped — a wipe with no pill to wipe
+     * from is a delay with a picture attached, and the picture is the grab that
+     * `lock.sh` no longer waits for in this mode.
+     */
+    readonly property bool instant: Flags.barEnabled
+
+    Component.onCompleted: if (surface.instant)
+        surface.maskP = 1
+
     readonly property bool overlayReady: deskOverlay.status === Image.Ready
     readonly property bool shouldOpen: active && overlayReady
-    onShouldOpenChanged: if (shouldOpen)
+    onShouldOpenChanged: if (shouldOpen && !surface.instant)
         openAnim.restart()
-    onActiveChanged: if (!active)
+    onActiveChanged: if (!active && !surface.instant)
         closeAnim.restart()
 
     readonly property string shotSource: {
@@ -46,19 +64,36 @@ Item {
         return "file://" + dir + "/silhouette-lock-" + surface.screenName + ".png";
     }
 
+    /**
+     * What the minimal bar's lock opens onto: the wallpaper mirror wallpaper.sh
+     * keeps in step with the picture on screen (see services/Walls.qml), falling
+     * back to the singleton's own idea of the current pick for a state dir that
+     * has never synced one.
+     */
+    readonly property string backdrop: Walls.lockWallpaper.length > 0
+        ? Walls.lockWallpaper
+        : Walls.current
+
     clip: true
 
     /**
-     * The blurred desktop backdrop. It is the whole build cost, so it loads a beat
-     * after the surface mounts; the cheap sharp overlay and clock are up first,
-     * which keeps the compositor from showing a black gap while this instantiates.
-     * The hole reveals this once the pill grows.
+     * The blurred backdrop. In the pill's lock it is the whole build cost, so it
+     * loads a beat after the surface mounts: the cheap sharp overlay and the
+     * clock are up first, and the hole only reveals it once the pill has grown.
+     *
+     * The minimal bar has no overlay to carry that first frame, so there it is
+     * built synchronously, out of the mirror. An asynchronous load in that mode
+     * is a hole in the screen for as long as it takes: this surface is one
+     * monitor's whole lock, so the frame before the backdrop lands is a black
+     * screen with a clock on it. The mirror exists to make that load cheap — it
+     * is the wallpaper cut down to the size a blurred backdrop can use — which is
+     * what makes loading it in the frame affordable.
      */
     Loader {
         id: blurLayer
         anchors.fill: parent
         active: true
-        asynchronous: true
+        asynchronous: !surface.instant
 
         /**
          * The whole backdrop look rides flags: the blur's reach and the grade's
@@ -68,7 +103,18 @@ Item {
          * that happens on the next file write without a shell reload.
          */
         sourceComponent: BlurredShot {
-            source: surface.shotSource
+            /**
+             * Normally the grabbed desktop, so the lock opens onto the screen you
+             * just left. The minimal bar takes no grab — `lock.sh` skips it so the
+             * lock can come up at once — so the backdrop is the wallpaper instead,
+             * out of the mirror, with no capture needed to name it.
+             */
+            source: surface.instant
+                ? (surface.backdrop.length > 0 ? "file://" + surface.backdrop : "")
+                : surface.shotSource
+            /** Synchronous in the minimal bar, where this is the frame the lock is
+              * seen on rather than something behind an overlay. */
+            immediate: surface.instant
             spread: Flags.lockBlurSpread
             darken: Flags.lockBlurDarken
             saturate: Flags.lockBlurSaturation
@@ -110,7 +156,8 @@ Item {
     Image {
         id: deskOverlay
         anchors.fill: parent
-        source: surface.shotSource
+        /** Nothing to punch through in the minimal bar, so nothing to decode. */
+        source: surface.instant ? "" : surface.shotSource
         fillMode: Image.PreserveAspectCrop
         smooth: true
         cache: false
@@ -211,6 +258,8 @@ Item {
 
     MultiEffect {
         anchors.fill: parent
+        /** The mask pass is the wipe; the minimal bar has nothing to run it for. */
+        visible: !surface.instant
         source: deskOverlay
         maskEnabled: true
         maskInverted: true

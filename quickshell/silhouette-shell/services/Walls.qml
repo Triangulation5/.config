@@ -30,6 +30,14 @@ import Quickshell.Io
  * Entries are plain objects: { path, name, mtime, thumb } where path is the
  * absolute source file, mtime its modification time in epoch seconds and
  * thumb the absolute path of the cached preview png.
+ *
+ * Beside the strip it carries the minimal bar's lock backdrop: that lock opens
+ * onto the wallpaper instead of a grab of the desktop, so wallpaper.sh mirrors
+ * every pick to a file of its own (see hypr/scripts/lock-wallpaper.sh) and
+ * `lockWallpaper` names the mirror here. Read from disk and not handed over,
+ * because the lock needs it on the frame it is raised — including the relock a
+ * shell does on start, which lands long before this singleton's own pipeline
+ * has read anything at all.
  */
 Singleton {
     id: root
@@ -37,6 +45,14 @@ Singleton {
     property var entries: []
     readonly property int count: entries.length
     property string current: ""
+
+    /**
+     * The minimal bar's lock backdrop, as the mirror path in the pointer file
+     * wallpaper.sh writes on every wallpaper change. Empty until that file
+     * exists, which is why the lock keeps `current` as its fallback.
+     */
+    property string lockWallpaper: ""
+
     property bool pending: false
 
     property string resolvedDir: ""
@@ -47,6 +63,7 @@ Singleton {
     readonly property string setScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper.sh"
     readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-wallpaper"
     readonly property string dirStateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-wallpaper-dir"
+    readonly property string lockWallpaperFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-lock-wallpaper"
 
     /**
      * A folder picked in the settings app re-lists the strip in place: the
@@ -79,6 +96,27 @@ Singleton {
         onLoaded: root.resolvedDir = dirFile.text().trim()
         onFileChanged: reload()
         onLoadFailed: root.resolvedDir = ""
+    }
+
+    /**
+     * The lock backdrop mirror, watched so a wallpaper picked while a shell is
+     * already up reaches the next lock. Line one of the file is the mirror path;
+     * line two is the picture it was made from, which is lock-wallpaper.sh's own
+     * business and none of ours. The link is written in one move, so a reload
+     * never catches half of it: either the previous backdrop or the new one.
+     */
+    FileView {
+        id: lockWallFile
+        path: root.lockWallpaperFile
+        blockLoading: true
+        watchChanges: true
+        printErrors: false
+        onLoaded: {
+            var lines = lockWallFile.text().trim().split("\n");
+            root.lockWallpaper = lines.length > 0 ? lines[0].trim() : "";
+        }
+        onFileChanged: reload()
+        onLoadFailed: root.lockWallpaper = ""
     }
 
     function refresh() {
@@ -179,13 +217,6 @@ Singleton {
             onStreamFinished: {
                 root.current = this.text.trim();
 
-                syncLockWallpaper.command = [
-                    "bash",
-                    root.syncScript,
-                    root.current
-                ];
-                syncLockWallpaper.running = true;
-
                 if (root.pending) {
                     root.pending = false;
                     Qt.callLater(root.refresh);
@@ -206,10 +237,6 @@ Singleton {
             }
             stateProc.running = true;
         }
-    }
-
-    Process {
-        id: syncLockWallpaper
     }
 
     Component.onCompleted: refresh()

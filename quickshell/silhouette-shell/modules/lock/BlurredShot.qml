@@ -9,7 +9,9 @@ import qs.services
  * the lock surface carried inline, so the pill-shaped hole reveals a soft, dark
  * version of the desktop behind. Loaded asynchronously by the lock surface so
  * the cheap sharp overlay and clock are up first, which keeps the compositor
- * from showing a black gap while this instantiates.
+ * from showing a black gap while this instantiates; the minimal bar has no such
+ * overlay and sets `immediate` instead, which loads the (much smaller) mirror
+ * in the frame this is built — see the lock surface.
  *
  * Every knob here — the blur's reach and the four grade strengths laid over it —
  * is bound from a flag by the lock surface, so the whole backdrop look is a Lock
@@ -21,6 +23,15 @@ Item {
     id: root
 
     property url source: ""
+
+    /**
+     * Load `source` in the frame this is built rather than asynchronously. Off
+     * for the grabbed desktop, where a frame of empty backdrop sits behind the
+     * sharp overlay and nobody can see it; on for the minimal bar's mirror, which
+     * is the first thing on the lock's screen and is small enough to be worth
+     * decoding inline.
+     */
+    property bool immediate: false
 
     /** Blur reach, in lock-surface scale units. */
     property real spread: 2.4
@@ -57,7 +68,7 @@ Item {
         fillMode: Image.PreserveAspectCrop
         smooth: true
         cache: false
-        asynchronous: true
+        asynchronous: !root.immediate
         visible: false
     }
 
