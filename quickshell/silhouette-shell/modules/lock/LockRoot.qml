@@ -40,23 +40,42 @@ ShellRoot {
         user: root.currentUser
         onSucceeded: {
             root.revealed = false;
-            collapse.restart();
+            /**
+             * The collapse is the lock receding back into the pill. The minimal bar
+             * has no pill to recede into and nothing to animate, so the session goes
+             * straight back instead of 640ms later.
+             */
+            if (Flags.barEnabled)
+                root.finishUnlock();
+            else
+                collapse.restart();
         }
+    }
+
+    /**
+     * Hand the session back: the collapse timer's body, and the whole unlock in the
+     * minimal bar, which has no collapse to play out first. One function so the two
+     * paths cannot drift apart.
+     */
+    function finishUnlock(): void {
+        sessionLock.locked = false;
+        Cava.enabled = false;
+        root.pw.text = "";
+        root.clearGrabs();
+        root.reportLockState(false);
     }
 
     Timer {
         id: collapse
         interval: 640
-        onTriggered: {
-            sessionLock.locked = false;
-            Cava.enabled = false;
-            root.pw.text = "";
-            root.clearGrabs();
-            root.reportLockState(false);
-        }
+        onTriggered: root.finishUnlock()
     }
 
-    /** Fires as soon as the event loop frees after the lock surfaces are built, which is the earliest the grow can start without the fresh output dropping its first frames. */
+    /**
+     * Fires as soon as the event loop frees after the lock surfaces are built, which
+     * is the earliest the pill's grow can start without the fresh output dropping
+     * its first frames. The minimal bar's lock skips it — see doLock.
+     */
     Timer {
         id: reveal
         interval: 1
@@ -81,12 +100,20 @@ ShellRoot {
             return;
         collapse.stop();
         root.pw.text = "";
-        root.revealed = false;
+        /**
+         * The minimal bar's lock has no wipe to play, so it is revealed here rather
+         * than on the next tick: `reveal` exists to let a freshly built surface paint
+         * its first frame before the pill-shaped hole starts to grow, and there is no
+         * hole to grow in bar mode. Revealed before the lock flips means the surface
+         * is built already open, with nothing left to animate.
+         */
+        root.revealed = Flags.barEnabled;
         sessionLock.locked = true;
         /** Lite mode never starts the lock's cava run; the glow that reads it is
           * dropped with the blur layers (see components/effects/GlowField.qml). */
         Cava.enabled = Flags.lockViz && !Flags.liteMode;
-        reveal.restart();
+        if (!Flags.barEnabled)
+            reveal.restart();
         root.reportLockState(true);
     }
 

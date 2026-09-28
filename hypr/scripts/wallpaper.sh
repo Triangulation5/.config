@@ -178,3 +178,12 @@ else
 fi
 hyprctl reload >/dev/null 2>&1 || true
 kitty @ load-config >/dev/null 2>&1 || true
+
+# Keep the minimal bar's lock backdrop in step with the pick just applied. The
+# lock in that mode opens onto the wallpaper rather than a grab of the desktop,
+# and this is the one place every pick passes through (see lock-wallpaper.sh).
+# Last in the script on purpose: the transition, the palette and the reload are
+# what the change is for, and the mirror is only needed by the next lock. It is
+# called without the path so it re-reads the state file written above, which is
+# what keeps an overlapping pick from leaving the older picture mirrored.
+bash "$(dirname "$0")/lock-wallpaper.sh" || true
