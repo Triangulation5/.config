@@ -1,16 +1,5 @@
 # Project TODO
 
-## Core Architecture & Features
-
----
-
-# Minimal Lockscreen for DWM style
-
-Create a simple lockscreen, when the lockscreen keybind is clicked while in
-dwmstyle it should just open the lockscreen without the cutout animation.
-
-# Code Cleanup & Maintenance
-
 ## Theme Handling Verification
 
 ### AmeBody.qml Canvas Colors
