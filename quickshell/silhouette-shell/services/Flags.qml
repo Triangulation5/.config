@@ -81,6 +81,7 @@ Singleton {
     /** Minimal bar look: "theme" follows the palette, "accent" fills with it, "plain" drops the backdrop. */
     property alias barStyle: adapter.barStyle
     property alias barChips: adapter.barChips
+    property alias barFontScale: adapter.barFontScale
     property alias nightLightMode: adapter.nightLightMode
     property alias nightLightTemp: adapter.nightLightTemp
     property alias nightLightOnMin: adapter.nightLightOnMin
@@ -351,6 +352,13 @@ Singleton {
             property string barStyle: "theme"
             /** Subtle rounded backdrops behind the bar's status readouts. */
             property bool barChips: false
+            /**
+             * Multiplies every readout's type on the minimal bar — tags, title,
+             * status blocks and clock — so the strip can be read from further
+             * back. The band's height is its own flag (Bar height), so a larger
+             * type does not drag a taller strip along with it.
+             */
+            property real barFontScale: 1.0
             property string nightLightMode: "scheduled"
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200

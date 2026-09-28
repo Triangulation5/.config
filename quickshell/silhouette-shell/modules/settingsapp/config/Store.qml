@@ -138,6 +138,7 @@ Singleton {
             property real barHeight: 35
             property string barStyle: "theme"
             property bool barChips: false
+            property real barFontScale: 1.0
             property string nightLightMode: "scheduled"
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
@@ -262,7 +263,7 @@ Singleton {
         "weatherCity", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode",
-        "barEnabled", "barHeight", "barStyle", "barChips",
+        "barEnabled", "barHeight", "barStyle", "barChips", "barFontScale",
         "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
         "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
         "pillHoverH", "pillMixerH", "pillLauncherW", "pillLauncherH", "pillClipboardW",

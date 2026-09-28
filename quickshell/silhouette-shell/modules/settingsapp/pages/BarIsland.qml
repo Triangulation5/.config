@@ -20,7 +20,7 @@ import qs.modules.settingsapp.config
 QtObject {
     readonly property string name: "Bar & Island"
     readonly property string icon: "\u25AD"
-    readonly property string keywords: "pill bar island notch game mode pointer hover collapse auto hide strip wake minimal dwm status chips colour color"
+    readonly property string keywords: "pill bar island notch game mode pointer hover collapse auto hide strip wake minimal dwm status chips colour color font text size type scale"
 
     /**
      * One row for the flag `field`, with its bounds, step and default taken from
@@ -44,7 +44,10 @@ QtObject {
               caption: "Palette follows the shell theme (the live wallpaper palette included), Accent fills the strip with the palette accent, Plain drops the backdrop",
               options: ["theme", "accent", "plain"], names: ["Palette", "Accent", "Plain"], reset: "theme" },
             { key: "barChips", type: "toggle", label: "Block chips",
-              caption: "Sit the status readouts on a subtle rounded backdrop. The lit workspace tag is chipped either way", reset: false }
+              caption: "Sit the status readouts on a subtle rounded backdrop; the lit workspace tag keeps its own flat block either way", reset: false },
+            { key: "barFontScale", type: "slider", label: "Bar text size",
+              min: 0.8, max: 1.8, step: 0.05, unit: "%", displayScale: 100,
+              caption: "Scales every readout on the minimal bar — tags, window title, status blocks and clock. The strip's height is Bar height, above", reset: 1.0 }
         ]},
         { card: "Pill", rows: [
             row("topGap", "slider", "Pill gap",

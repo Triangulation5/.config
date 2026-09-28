@@ -31,26 +31,40 @@ Singleton {
 
     /** `theme` (palette backdrop), `accent` (accent fill) or `plain` (none). */
     readonly property string mode: Flags.barStyle
-    readonly property bool onAccent: mode === "accent"
+    /**
+     * Whether the strip itself is the accent. Deliberately *not* named `onAccent`:
+     * a property whose name is `on` plus a capital is read as a signal handler, and
+     * one declared that way keeps whatever it computed at creation — so the flag was
+     * read before the flags file had loaded and the accent style never came up.
+     */
+    readonly property bool accented: mode === "accent"
 
     /** Opaque dark ink that sits on an accent fill. */
     readonly property color ink: flat(Theme.tileBg)
 
+    /**
+     * What reads *on* the accent fill rather than under it — the digit of the lit
+     * workspace tag. Normally that is the dark ink above; with the whole strip
+     * filled with the accent it is the accent itself, so a blocked tag inverts
+     * against the strip instead of vanishing into it.
+     */
+    readonly property color accentInk: accented ? flat(Theme.vermLit) : ink
+
     /** The strip's backdrop. */
     readonly property color bg: mode === "plain" ? "transparent"
-        : (onAccent ? Theme.vermLit : flat(Theme.tileBg))
+        : (accented ? Theme.vermLit : flat(Theme.tileBg))
 
     /** Primary text. */
-    readonly property color fg: onAccent ? ink : Theme.cream
+    readonly property color fg: accented ? ink : Theme.cream
 
     /** Secondary text: labels, a muted sink, inactive workspaces. */
-    readonly property color dim: onAccent ? Qt.rgba(ink.r, ink.g, ink.b, 0.62) : Theme.dim
+    readonly property color dim: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.62) : Theme.dim
 
     /** The emphasis colour: the lit workspace, a charging pack. */
-    readonly property color accent: onAccent ? ink : Theme.vermLit
+    readonly property color accent: accented ? ink : Theme.vermLit
 
     /** Warning text, e.g. a battery at the low mark. */
-    readonly property color warn: onAccent ? ink : Theme.error
+    readonly property color warn: accented ? ink : Theme.error
 
     /** The focused window's title: the strip's one long reading. */
     readonly property color title: fg
@@ -74,8 +88,8 @@ Singleton {
 
     /** Opt-in chips behind the status readouts (`Flags.barChips`). */
     readonly property bool chips: Flags.barChips
-    readonly property color chipFill: onAccent ? Qt.rgba(ink.r, ink.g, ink.b, 0.16) : Theme.hair
-    readonly property color chipEdge: onAccent ? Qt.rgba(ink.r, ink.g, ink.b, 0.28) : Theme.hairSoft
+    readonly property color chipFill: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.16) : Theme.hair
+    readonly property color chipEdge: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.28) : Theme.hairSoft
 
     /** Flatten a Theme token into a definite, opaque colour. */
     function flat(c) {
