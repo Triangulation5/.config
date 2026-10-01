@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import qs.services
 import qs.modules.launcher
 import "../../utils/launcher/fuzzy.js" as Fuzzy
 
@@ -144,16 +145,36 @@ ShellRoot {
      * show/toggle flip `shown` immediately — the IPC dispatch returns without
      * blocking and the window appears the moment the build lands. Hide stays
      * immediate.
+     *
+     * While the minimal bar is the shell (`Flags.barEnabled`) the same three calls
+     * drive the bar's in-strip launcher instead of this overlay, so the one bind
+     * that opens the launcher opens whichever belongs to the presentation on
+     * screen and nothing has to be rebound when the bar is switched on. The
+     * bar's singleton is only touched behind that flag, so with the pill as the
+     * shell it is never even built. `hide` closes both, which also leaves nothing
+     * stuck open if the flag was flipped while one of them was up.
      */
     IpcHandler {
         target: "launcher"
         function show(mon: string): void {
+            if (Flags.barEnabled) {
+                BarLauncher.show(mon);
+                return;
+            }
             root.targetMonitor = mon;
             root.shown = true;
         }
-        function hide(): void { root.shown = false; }
+        function hide(): void {
+            root.shown = false;
+            if (Flags.barEnabled)
+                BarLauncher.hide();
+        }
         function toggle(mon: string): void {
             if (root.shown) { root.shown = false; return; }
+            if (Flags.barEnabled) {
+                BarLauncher.toggle(mon);
+                return;
+            }
             root.targetMonitor = mon;
             root.shown = true;
         }
