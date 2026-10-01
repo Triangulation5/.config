@@ -12,7 +12,15 @@ import qs.modules.bar.blocks as Blocks
  *
  * Everything on it is a text readout. There is deliberately no MouseArea
  * anywhere in this module: the bar is a glance, not a control surface, and the
- * only interaction it owns is the screen space it holds.
+ * only interaction it owns is the screen space it holds — plus the launcher
+ * (Dmenu), which is keyboard-driven. While it is open on this output the strip
+ * hides its readouts, draws the launcher over the whole band and takes the
+ * keyboard exclusively, and puts itself on the overlay layer for that time: on
+ * the top layer a fullscreen window covers the strip, which would leave a
+ * launcher nobody can see holding the keyboard.
+ *
+ * The layout symbol (`[]=`, `[\]`, `|||`) sits right after the workspace tags, in
+ * dwm's own place, and follows this output's active workspace.
  *
  * The status group sits on `Chip`s, which draw nothing at all unless
  * `Flags.barChips` is on, so the readouts can carry a backdrop without the
@@ -43,12 +51,16 @@ PanelWindow {
     /** What the blocks are laid out at: the geometry scale, plus the font scale. */
     readonly property real typeScale: bar.s * Flags.barFontScale
 
+    /** True on the one output whose strip is carrying the launcher right now. */
+    readonly property bool launcherHere: BarLauncher.open && BarLauncher.monitor === bar.screenName
+
     screen: modelData
     color: BarStyle.bg
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: implicitHeight
     WlrLayershell.namespace: "silhouette-bar"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.layer: bar.launcherHere ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.keyboardFocus: bar.launcherHere ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; left: true; right: true }
     implicitHeight: Math.round(Flags.barHeight * bar.s)
 
@@ -57,11 +69,38 @@ PanelWindow {
         anchors.leftMargin: 12 * bar.s
         anchors.rightMargin: 12 * bar.s
         spacing: 12 * bar.s
+        visible: !bar.launcherHere
 
-        Blocks.Workspaces {
-            s: bar.typeScale
-            screenName: bar.screenName
+        /**
+         * The tags and the layout symbol are one group, as in dwm: the symbol
+         * sits against the tags at their own tight spacing, not a block-width
+         * away. It takes a tag's padding (a transparent chip, the same trick an
+         * idle tag uses) so its text lines up with the digits' rhythm.
+         */
+        RowLayout {
+            spacing: 2 * bar.typeScale
             Layout.alignment: Qt.AlignVCenter
+
+            Blocks.Workspaces {
+                s: bar.typeScale
+                screenName: bar.screenName
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Chip {
+                s: bar.typeScale
+                radius: 0
+                fill: "transparent"
+                edge: "transparent"
+                visible: symbol.visible
+                Layout.alignment: Qt.AlignVCenter
+
+                Blocks.LayoutSymbol {
+                    id: symbol
+                    s: bar.typeScale
+                    screenName: bar.screenName
+                }
+            }
         }
 
         Blocks.WindowTitle {
@@ -103,6 +142,22 @@ PanelWindow {
             s: bar.typeScale
             Layout.alignment: Qt.AlignVCenter
             Blocks.Clock { s: bar.typeScale }
+        }
+    }
+
+    /**
+     * Built only while the launcher is open on this output, and fresh each time,
+     * so the query and the selection reset by construction. It is declared after
+     * the readouts so it draws over them, and it takes focus once it exists.
+     */
+    Loader {
+        anchors.fill: parent
+        active: bar.launcherHere
+        onLoaded: item.focusInput()
+
+        sourceComponent: Dmenu {
+            s: bar.typeScale
+            g: bar.s
         }
     }
 }
