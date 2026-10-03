@@ -180,8 +180,9 @@ Rectangle {
                     required property var modelData
 
                     readonly property bool sel: cell.index === BarPower.selected
-                    /** Armed by a first Enter, waiting on its second. */
-                    readonly property bool armed: BarPower.armedIndex === cell.index
+                    /** Armed by a first Enter, waiting on its second. Keyed, not indexed. */
+                    readonly property bool armed: BarPower.armed
+                        && cell.modelData.key === BarPower.armedKey
 
                     width: label.implicitWidth + 2 * 7 * root.s
                     height: label.implicitHeight + 2 * 3 * root.s
