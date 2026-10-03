@@ -31,6 +31,21 @@ Item {
     property bool showCursor: false
 
     /**
+     * The minimal bar squares off the password capsule. The bar's own blocks are
+     * flat chips on squared tags (see modules/bar/Chip.qml and the dwm tag block),
+     * and a fully rounded capsule here was the one pill-shaped thing left on a
+     * surface the bar has no pill for — the lock in bar mode is already a flat
+     * wallpaper with a clock on it, and it should not grow a pill out of the
+     * password field.
+     *
+     * Set on both the capsule and its chrome below: the chrome is what actually
+     * draws the fill and the hairline, and the capsule is the layout anchor the
+     * prompt stack and the profile centre themselves on, so the two have to
+     * agree or the border and the text drift apart by the corner radius.
+     */
+    readonly property bool squareCapsule: Flags.barEnabled
+
+    /**
      * The password field starts disarmed so the lock screen idles on a "press
      * any key to enter password" hint: the capsule chrome and eye are hidden and
      * only the bare prompt floats over the backdrop. Any printable key lands
@@ -265,7 +280,8 @@ Item {
         anchors.bottomMargin: parent.height * 0.09
         width: 340 * content.s
         height: 50 * content.s
-        radius: height / 2
+        /** Square in the minimal bar; a full stadium everywhere else. */
+        radius: content.squareCapsule ? 0 : height / 2
         /**
          * The capsule stays as the layout anchor for the prompt text and the
          * profile block; its chrome lives in capsuleChrome below so the text
@@ -299,7 +315,8 @@ Item {
         Rectangle {
             id: capsuleChrome
             anchors.fill: parent
-            radius: height / 2
+            /** Matches the capsule it fills, for the reason given on `squareCapsule`. */
+            radius: content.squareCapsule ? 0 : height / 2
 
             color: content.passwordArmed ? Theme.capsule : "transparent"
             border.width: content.passwordArmed ? 1 : 0

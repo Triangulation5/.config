@@ -12,12 +12,13 @@ import qs.modules.bar.blocks as Blocks
  *
  * Everything on it is a text readout. There is deliberately no MouseArea
  * anywhere in this module: the bar is a glance, not a control surface, and the
- * only interaction it owns is the screen space it holds — plus the launcher
- * (Dmenu), which is keyboard-driven. While it is open on this output the strip
- * hides its readouts, draws the launcher over the whole band and takes the
+ * only interaction it owns is the screen space it holds — plus the two things it
+ * can be asked to pick from (the launcher's Dmenu and the power list's
+ * PowerList), both keyboard-driven. While either is open on this output the strip
+ * hides its readouts, draws that surface over the whole band and takes the
  * keyboard exclusively, and puts itself on the overlay layer for that time: on
- * the top layer a fullscreen window covers the strip, which would leave a
- * launcher nobody can see holding the keyboard.
+ * the top layer a fullscreen window covers the strip, which would leave a picker
+ * nobody can see holding the keyboard.
  *
  * The layout symbol (`[]=`, `[\]`, `|||`) sits right after the workspace tags, in
  * dwm's own place, and follows this output's active workspace.
@@ -54,13 +55,23 @@ PanelWindow {
     /** True on the one output whose strip is carrying the launcher right now. */
     readonly property bool launcherHere: BarLauncher.open && BarLauncher.monitor === bar.screenName
 
+    /** True on the one output whose strip is carrying the power list right now. */
+    readonly property bool powerHere: BarPower.open && BarPower.monitor === bar.screenName
+
+    /**
+     * Either picker on this output. The readouts and the layer both key off this
+     * rather than off each surface, so the two cannot disagree about whether the
+     * strip is currently a glance or something you can pick from.
+     */
+    readonly property bool picking: bar.launcherHere || bar.powerHere
+
     screen: modelData
     color: BarStyle.bg
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: implicitHeight
     WlrLayershell.namespace: "silhouette-bar"
-    WlrLayershell.layer: bar.launcherHere ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: bar.launcherHere ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.layer: bar.picking ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.keyboardFocus: bar.picking ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; left: true; right: true }
     implicitHeight: Math.round(Flags.barHeight * bar.s)
 
@@ -69,7 +80,7 @@ PanelWindow {
         anchors.leftMargin: 12 * bar.s
         anchors.rightMargin: 12 * bar.s
         spacing: 12 * bar.s
-        visible: !bar.launcherHere
+        visible: !bar.picking
 
         /**
          * The tags and the layout symbol are one group, as in dwm: the symbol
@@ -149,6 +160,11 @@ PanelWindow {
      * Built only while the launcher is open on this output, and fresh each time,
      * so the query and the selection reset by construction. It is declared after
      * the readouts so it draws over them, and it takes focus once it exists.
+     *
+     * The power list is its own loader beside this one rather than a branch inside
+     * it, so each surface is built only while it is the one open — the same reason
+     * the readouts and each surface are separate trees rather than one item with
+     * its contents swapped.
      */
     Loader {
         anchors.fill: parent
@@ -156,6 +172,17 @@ PanelWindow {
         onLoaded: item.focusInput()
 
         sourceComponent: Dmenu {
+            s: bar.typeScale
+            g: bar.s
+        }
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: bar.powerHere
+        onLoaded: item.focusInput()
+
+        sourceComponent: PowerList {
             s: bar.typeScale
             g: bar.s
         }

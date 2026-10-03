@@ -3,4 +3,5 @@ module qs.modules.bar
 Bar 1.0 Bar.qml
 Chip 1.0 Chip.qml
 Dmenu 1.0 Dmenu.qml
+PowerList 1.0 PowerList.qml
 BarRoot 1.0 BarRoot.qml

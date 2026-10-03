@@ -9,6 +9,17 @@ import qs.services
  * Lock screen clock. Renders the time (12/24-hour, optional seconds) and date in
  * the Flags-driven formats, plays a lift-and-scale intro on first paint, and
  * reports clockClicked so the main lock can expand into the full date layout.
+ *
+ * The minimal bar gets the clock without any of its entrance: `still` is on
+ * there, and the intro and the OutBack pops are the two things it switches off.
+ * The bar's whole character is that it is already there — a strip that sits at the
+ * top edge rather than a pill that grows — so a clock that lifts into place and
+ * settles with an overshoot reads as the pill shell leaking through into the one
+ * surface that is not the pill. What is left is the clock sitting where it sits,
+ * with the press feedback still answering a click.
+ *
+ * The expand morph is untouched: that one is a response to a click rather than an
+ * entrance, and a click that does nothing visible is its own bug.
  */
 
 Item {
@@ -18,6 +29,13 @@ Item {
     property bool visibleClock: true
     property bool expanded: false
     property real pressScale: 1
+
+    /**
+     * The minimal bar's lock: no entrance animation, no overshoot. Named for what
+     * it does rather than which flag sets it, so the block below reads as the
+     * reason and not as the mechanism.
+     */
+    readonly property bool still: Flags.barEnabled
 
     signal clockClicked()
 
@@ -116,18 +134,19 @@ Item {
         font.letterSpacing: 3.85 * clock.s
         font.capitalization: Font.AllUppercase
 
-        scale: visible ? 1 : 0.85
+        /** No pop: still mode holds it at rest scale, so the change is a cut. */
+        scale: clock.still || !visible ? 1 : 0.85
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 180
+                duration: clock.still ? 0 : 180
                 easing.type: Easing.OutCubic
             }
         }
 
         Behavior on scale {
             NumberAnimation {
-                duration: 260
+                duration: clock.still ? 0 : 260
                 easing.type: Easing.OutBack
             }
         }
@@ -160,18 +179,19 @@ Item {
         font.letterSpacing: 3.85 * clock.s
         font.capitalization: Font.AllUppercase
 
-        scale: visible ? 1 : 0.8
+        /** No pop, as above — the expanded date arrives at rest scale. */
+        scale: clock.still ? 1 : (visible ? 1 : 0.8)
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 220
+                duration: clock.still ? 0 : 220
                 easing.type: Easing.OutCubic
             }
         }
 
         Behavior on scale {
             NumberAnimation {
-                duration: 320
+                duration: clock.still ? 0 : 320
                 easing.type: Easing.OutBack
             }
         }
@@ -227,10 +247,17 @@ Item {
 
         property bool introPlayed: false
 
+        /**
+         * The lift-and-scale entrance, skipped outright in the minimal bar rather
+         * than run at duration 0: the intro also fades the clock in from nothing,
+         * and a zero-duration fade still costs the frame it is absent for, so the
+         * clock would blink rather than simply be there.
+         */
         onVisibleChanged: {
             if (visible && !introPlayed) {
                 introPlayed = true
-                clockIntro.restart()
+                if (!clock.still)
+                    clockIntro.restart()
             }
         }
 

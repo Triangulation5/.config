@@ -17,13 +17,19 @@ hl.bind(mainMod .. " + F",         hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + ALT + F",         hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.pseudo())
 
+-- `launcher` and `power` are deliberately not presentation-aware here. Both are
+-- answered by the pill when the pill is the shell and by the minimal bar's
+-- stand-in handlers when the bar is (see the pillShim in
+-- modules/bar/BarRoot.qml), so one call opens whichever version of the surface
+-- belongs to what is on screen: the full launcher or the in-strip dmenu, the
+-- power tiles or the in-strip power list.
 hl.bind(mainMod .. " + SPACE",     hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
 hl.bind(mainMod .. " + B",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/record.sh"))
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(quickshell .. " record"))
-hl.bind(mainMod .. " + M",         hl.dsp.exec_cmd(quickshell .. " power"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
+hl.bind(mainMod .. " + M",         hl.dsp.exec_cmd(quickshell .. " power"))
 hl.bind(mainMod .. " + T",         hl.dsp.exec_cmd(quickshell .. " sysmon"))
 hl.bind(mainMod .. " + SHIFT + T", hl.dsp.exec_cmd(quickshell .. " battery"))
 hl.bind(mainMod .. " + I",         hl.dsp.exec_cmd(quickshell .. " keybinds"))

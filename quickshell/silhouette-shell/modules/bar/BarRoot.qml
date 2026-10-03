@@ -34,14 +34,17 @@ import qs.modules.bar
  *
  *     qs -c silhouette-shell ipc call barlauncher toggle
  *
+ * The power list's target (`barpower`) is here for exactly the same reason and on
+ * the same terms.
+ *
  * The launcher's usual bind is the pill's own call, `qs ipc call pill launcher`,
  * and with the pill unbuilt that target does not exist, so the bind would land
  * nowhere. While the bar is the shell this module therefore answers to `pill`
- * for that one function, and opens the in-strip launcher on the output the bind
- * names (an empty name means the focused one, as it does for the pill). The
- * standalone `launcher` target reaches the same launcher too (LauncherRoot routes
- * it), so whichever of the two binds is in use needs no change; `barlauncher` is
- * the explicit route that works on its own.
+ * for `launcher` and `power`, opening the in-strip version of each on the output
+ * the bind names (an empty name means the focused one, as it does for the pill).
+ * The standalone `launcher` target reaches the same launcher too (LauncherRoot
+ * routes it), so whichever of the two binds is in use needs no change;
+ * `barlauncher` is the explicit route that works on its own.
  *
  * Two handlers must never hold the name `pill` at once, and the pill's own is
  * built and torn down by shell.qml's loaders on the same flag that builds this
@@ -99,6 +102,7 @@ ShellRoot {
         BarStatus.active = false;
         BarLayout.release(root.layoutClaim);
         BarLauncher.hide();
+        BarPower.hide();
     }
 
     /**
@@ -134,15 +138,18 @@ ShellRoot {
     }
 
     /**
-     * The pill's launcher call, answered by the bar. Only `launcher` is stood in
-     * for: the other pill surfaces (mixer, calendar, ...) are the pill's own and
-     * have nothing to open on a bar.
+ * The pill's launcher and power calls, answered by the bar. Only those two are
+ * stood in for: they are the two the strip has a version of. The other pill
+ * surfaces (mixer, calendar, ...) are the pill's own and have nothing to open on
+     * a bar — a call naming one while the bar is up finds no such function, which
+     * is the honest answer rather than a silently wrong surface.
      */
     IpcHandler {
         target: "pill"
         enabled: root.pillShim
 
         function launcher(mon: string): void { BarLauncher.toggle(mon); }
+        function power(mon: string): void { BarPower.toggle(mon); }
     }
 
     IpcHandler {
@@ -151,6 +158,14 @@ ShellRoot {
         function open(): void { BarLauncher.show(root.focusedName()); }
         function hide(): void { BarLauncher.hide(); }
         function toggle(): void { BarLauncher.toggle(root.focusedName()); }
+    }
+
+    IpcHandler {
+        target: "barpower"
+
+        function open(): void { BarPower.show(root.focusedName()); }
+        function hide(): void { BarPower.hide(); }
+        function toggle(): void { BarPower.toggle(root.focusedName()); }
     }
 
     Connections {
