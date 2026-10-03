@@ -15,11 +15,16 @@ import qs.services
  *
  * Beyond the trio above it also carries the strip's per-readout roles: the bar is
  * one row of text but not one colour, so the title, the two halves of the clock
- * and each status readout have a token of their own, and the `level()`
- * ladder gives the load readouts a shared way to climb from cream to accent to
- * warning without naming a colour of their own. Everything below is derived from
- * Theme, so a dynamic palette re-tints the whole strip at once; a block that
+ * and each status readout have a token of their own. Everything below is derived
+ * from Theme, so a dynamic palette re-tints the whole strip at once; a block that
  * wanted a hue of its own would be the one thing that did not.
+ *
+ * The status group is deliberately one colour. `fg` for every readout — cpu,
+ * memory, battery, volume — rather than a ladder that tinted a hot cpu or a low
+ * pack; a strip read at a glance reads better as one voice, and the number itself
+ * already says what the load is. `warn` and `level()` stay for the readouts that
+ * genuinely mean something by changing tone (see Battery), but nothing climbs a
+ * ramp for it any more.
  *
  * The static Theme tokens are CSS `rgba(...)` strings Qt's parser does not read,
  * so they come back as an invalid colour (all-zero components). `flat()` pulls
@@ -69,14 +74,23 @@ Singleton {
     /** The focused window's title: the strip's one long reading. */
     readonly property color title: fg
 
-    /** The clock is two tones — the time is the reading, the date recedes. */
+    /**
+     * The clock is two tones: the time is the reading, the date recedes to the
+     * muted one so the eye lands on the hour first. The one deliberate exception
+     * to the status group being a single colour — the clock is the block a strip
+     * is actually read for, and greying the date is what makes the time findable
+     * at a glance rather than something the eye has to pick out of a row of equal
+     * weight. Everything beside it stays `fg`.
+     */
     readonly property color clockTime: fg
     readonly property color clockDate: dim
 
     /**
      * A readout's colour for a load in 0..1: the readable cream until it is worth
-     * noticing, the accent past `hot`, the warning tone past `boil`. CPU and
-     * memory climb the same ladder so the two blocks speak one language.
+     * noticing, the accent past `hot`, the warning tone past `boil`. Nothing on the
+     * strip climbs this any more — the status group is one colour — but the ladder
+     * stays because it is the honest way to ask the question, and a block that
+     * wants it should not have to invent one.
      */
     function level(frac, hot, boil) {
         if (frac >= boil)

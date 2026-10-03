@@ -9,8 +9,11 @@ import qs.services
  * instead of freezing one tick behind.
  *
  * Two tones in one run of type: the time takes the strip's reading colour and
- * the date recedes to the muted one, so the eye lands on the hour first. The Row
- * lays both halves out, so the block is still a single line to the bar's layout.
+ * the date recedes to the muted one, so the eye lands on the hour first. This is
+ * the one block on the strip that keeps a second tone on purpose — the clock is
+ * what the bar is read for, and the greyed date is what makes the time findable
+ * at a glance instead of one equal-weight run of type. The Row lays both halves
+ * out, so the block is still a single line to the bar's layout.
  *
  * The date is not optional — a strip read at a glance is as often asked the day
  * as the hour — and it reads `Sep 27 (Sun)` ahead of the time, the weekday in
