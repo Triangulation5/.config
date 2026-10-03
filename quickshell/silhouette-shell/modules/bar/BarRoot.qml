@@ -86,7 +86,7 @@ ShellRoot {
     Component.onCompleted: {
         root.refresh();
         BarStatus.active = true;
-        BarLayout.active = true;
+        root.layoutClaim = BarLayout.claim();
     }
 
     /**
@@ -97,9 +97,19 @@ ShellRoot {
     Component.onDestruction: {
         root.pillShim = false;
         BarStatus.active = false;
-        BarLayout.active = false;
+        BarLayout.release(root.layoutClaim);
         BarLauncher.hide();
     }
+
+    /**
+     * The token this tree holds on `BarLayout`, released on the way out. The
+     * layout service outlives this tree, so a plain bool cannot express "this bar
+     * is done with it" — on an in-place reload the outgoing bar's destruction can
+     * land after the incoming bar has already claimed, and switching the service
+     * off there would strand the symbol with no poll and no events behind it. See
+     * `BarLayout.claim`.
+     */
+    property int layoutClaim: 0
 
     /**
      * Whether this module is answering to the pill's IPC name. False from the

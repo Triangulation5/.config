@@ -2,12 +2,14 @@ import QtQuick
 import qs.services as Services
 
 /**
- * Laptop battery: charge, with the state read as colour rather than a glyph so
- * the block stays a single Text. Hidden entirely on a machine with no battery.
+ * Laptop battery: charge, kept as a single Text. Hidden entirely on a machine
+ * with no battery.
  *
- * `Battery.present` gates it, `Battery.low` is the same warning threshold the
- * shell's own battery surfaces use, and being on the AC line (not necessarily
- * charging — a pack held at a threshold is still plugged in) tints it warm.
+ * The strip's reading colour, like every other readout on it. It used to tint
+ * itself warm on the AC line and red at `Battery.low`, which made this the one
+ * block in the status group speaking in a second voice about a thing the digits
+ * already say — the pill's own battery surfaces still carry that signal, so
+ * nothing is lost by the strip staying one colour.
  *
  * The service is imported aliased because this component is itself named
  * `Battery`: an unqualified `Battery` in this file would be ambiguous between
@@ -21,8 +23,7 @@ Text {
     visible: Services.Battery.present
 
     text: "BAT " + Services.Battery.pct + "%"
-    color: Services.Battery.low ? Services.BarStyle.warn
-        : (Services.Battery.plugged ? Services.BarStyle.accent : Services.BarStyle.fg)
+    color: Services.BarStyle.fg
     font.family: Services.Theme.font
     font.pixelSize: 12 * s
     font.features: ({ "tnum": 1 })
