@@ -1,16 +1,13 @@
 -- https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        -- gaps_in  = 6,
-        -- gaps_out = 12,
-        -- border_size = 2,
         gaps_in  = 4,
         gaps_out = 8,
         border_size = 1,
 
         col = {
-            active_border   = { colors = { "rgba(205, 205, 205, 0.15)" } },
-            inactive_border = "rgba(205, 205, 205, 0.08)",
+            active_border   = { colors = { "rgba(220, 220, 224, 0.10)" } },
+            inactive_border = "rgba(128, 128, 134, 0.05)",
         },
 
         resize_on_border = true,
@@ -24,21 +21,24 @@ hl.config({
         rounding       = 0,
 
         active_opacity   = 1.00,
-        inactive_opacity = 1.00,
+        inactive_opacity = 0.94,
 
         shadow = {
-            enabled      = false,
+            enabled      = true,
             range        = 12,
             render_power = 3,
             color        = 0xee121212,
         },
 
         blur = {
-            enabled   = false,
-            size      = 8,
-            passes    = 3, -- 3 for frosted glass
+            enabled   = true,
+            size      = 3,
+            passes    = 4, -- 3 for frosted glass
             vibrancy  = 0.17,
             new_optimizations = true,
+            ignore_opacity = true,
+            xray = false,
+            special = true
         },
     },
 
