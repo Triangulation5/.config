@@ -48,11 +48,24 @@ Singleton {
     property int selected: 0
 
     /**
-     * The destructive action armed by a first press, waiting for its second.
-     * -1 is none. Expires on `armWindow`, so an item left armed by an earlier
-     * press cannot fire from a much later one.
+     * The destructive action armed by a first press, waiting for its second, held
+     * as the action's `key` and never as its position in the list.
+     *
+     * This was an index once, and an index cannot be right here: `selected` and
+     * this both count into `results`, which is a *filtered* list, so any change to
+     * the query or the selection shifts what sits under the stored number. Clear
+     * every mutation path and it works — which is exactly what the first version
+     * did, and exactly as fragile as it sounds: the safety of a reboot button came
+     * to rest on four separate functions remembering to reset a number, and any
+     * path added later that forgot would silently re-point "armed" at whatever
+     * moved into that slot and fire an action nobody picked.
+     *
+     * A key has no such failure. It names the action itself, so the second press
+     * can only ever fire the action the first press armed, whatever the list has
+     * done to its ordering or length in between — and if that action is no longer
+     * the selected one, `armed` is simply false and the press arms afresh.
      */
-    property int armedIndex: -1
+    property string armedKey: ""
 
     readonly property int armWindow: 2500
 
@@ -92,11 +105,30 @@ Singleton {
     readonly property var current: (selected >= 0 && selected < results.length)
         ? results[selected] : null
 
-    /** The action the label describes: the armed one first, else the selected. */
-    readonly property var focused: (armedIndex >= 0 && armedIndex < results.length)
-        ? results[armedIndex] : current
+    /**
+     * The action the label describes: the armed one while it is still on screen,
+     * else the selected one. Resolved by key, so an armed action the query has
+     * filtered out stops being described rather than describing a neighbour.
+     */
+    readonly property var focused: root.armedAction || current
 
-    readonly property bool armed: armedIndex >= 0 && armedIndex === selected
+    /** The armed action itself, or null when armed is stale or nothing is armed. */
+    readonly property var armedAction: {
+        if (root.armedKey.length === 0)
+            return null;
+        for (var i = 0; i < root.results.length; i++)
+            if (root.results[i].key === root.armedKey)
+                return root.results[i];
+        return null;
+    }
+
+    /**
+     * True only while the selection is still sitting on the armed action. This is
+     * the check that makes the second press safe: arm `shutdown`, filter it away,
+     * and the next Enter finds `armed` false and arms instead of firing.
+     */
+    readonly property bool armed: root.armedAction !== null && root.current !== null
+        && root.current.key === root.armedKey
 
     /**
      * The output to open on, checked against the screens that exist so the list can
@@ -118,7 +150,7 @@ Singleton {
     function show(mon) {
         root.query = "";
         root.selected = 0;
-        root.armedIndex = -1;
+        root.armedKey = "";
         armTimer.stop();
         root.monitor = root.resolve(mon);
         root.open = true;
@@ -127,7 +159,7 @@ Singleton {
     function hide() {
         root.open = false;
         root.query = "";
-        root.armedIndex = -1;
+        root.armedKey = "";
         armTimer.stop();
     }
 
@@ -138,24 +170,29 @@ Singleton {
             root.show(mon);
     }
 
-    /** Step the selection by `delta`, dropping any armed state so the two agree. */
+    /**
+     * Step the selection by `delta`, disarming. Not for safety any more — `armed`
+     * is false the moment the selection leaves the armed action on its own — but
+     * because moving off a destructive action and back should not leave a stale
+     * arm waiting behind it, which is a state the user cannot see or predict.
+     */
     function move(delta) {
         var n = root.results.length;
-        root.armedIndex = -1;
+        root.armedKey = "";
         armTimer.stop();
         root.selected = Math.max(0, Math.min(n - 1, root.selected + delta));
     }
 
     /**
-     * A new query is a new list: back to the top, and disarmed. Leaving the armed
-     * index alone here would be a bug — it indexes `results`, so a filter that
-     * drops the armed action would silently re-point it at whatever moved into
-     * that slot, and the second Enter would fire something the user never picked.
+     * A new query is a new list: back to the top, and disarmed. The disarm is not
+     * what makes this safe — the armed state is keyed and `armed` re-checks it
+     * against the selection — it is so an arm does not outlive the query that
+     * armed it into a list the user is no longer looking at.
      */
     function setQuery(text) {
         root.query = text;
         root.selected = 0;
-        root.armedIndex = -1;
+        root.armedKey = "";
         armTimer.stop();
     }
 
@@ -174,6 +211,11 @@ Singleton {
      * Enter on the selected action. A safe one fires outright; a destructive one
      * arms on the first press and fires on the second inside `armWindow`, clearing
      * the armed state before it runs so it cannot outlive the close.
+     *
+     * The second press is gated on `armed`, which is true only when the selection
+     * is still on the action that was armed — so a query or a selection change
+     * between the two presses turns the second into a fresh arm rather than a
+     * shot at something else.
      */
     function armOrAccept() {
         var a = root.current;
@@ -183,12 +225,12 @@ Singleton {
             root.run(a);
             return;
         }
-        if (root.armedIndex === root.selected) {
-            root.armedIndex = -1;
+        if (root.armed) {
+            root.armedKey = "";
             armTimer.stop();
             root.run(a);
         } else {
-            root.armedIndex = root.selected;
+            root.armedKey = a.key;
             armTimer.restart();
         }
     }
@@ -197,6 +239,6 @@ Singleton {
         id: armTimer
         interval: root.armWindow
         repeat: false
-        onTriggered: root.armedIndex = -1
+        onTriggered: root.armedKey = ""
     }
 }
