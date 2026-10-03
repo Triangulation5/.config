@@ -21,6 +21,15 @@ import qs.components.icons
  * once; on a destructive tile a held Enter drives the same heat fill as a
  * pointer hold (release before it completes drains), so the keyboard path can
  * never reboot on a single keystroke either.
+ *
+ * The minimal bar swaps the hold for a double tap (`doubleTap`). A hold is the
+ * right gesture when there is a pill to press into and a heat fill to watch
+ * climb; the bar has neither, so a hold there is a 1.5s wait on a surface the
+ * user summoned precisely because they wanted it now. Tapping a destructive tile
+ * once arms it and says so, and a second tap inside `armWindow` fires it — the
+ * same two-step guarantee, expressed as two taps rather than one long one, and
+ * the same for the keyboard (Enter, then Enter). Arming expires on its own, so
+ * a tile left armed by an earlier tap cannot fire from a much later one.
  */
 PillSurface {
     id: root
@@ -36,6 +45,27 @@ PillSurface {
 
     property int holdingIndex: -1
     property real holdProgress: 0
+
+    /**
+     * The minimal bar's confirmation gesture: tap twice rather than hold. See the
+     * header. Everything the hold drives below is gated on this, so the heat fill
+     * and the hold timers simply never run there.
+     */
+    readonly property bool doubleTap: Flags.barEnabled
+
+    /** The destructive tile armed by a first tap, waiting for its second. -1 is none. */
+    property int armedIndex: -1
+
+    /** How long an armed tile stays armed. Long enough to be deliberate, short
+     *  enough that arming is never a decision the user made minutes ago. */
+    readonly property int armWindow: 2500
+
+    Timer {
+        id: armTimer
+        interval: root.armWindow
+        repeat: false
+        onTriggered: root.armedIndex = -1
+    }
 
     Timer {
         id: lockDelay
@@ -102,13 +132,18 @@ PillSurface {
 
     /**
      * Enter pressed on the focused tile. A safe tile fires at once; a destructive
-     * tile latches keyHeld so its delegate ramps the heat fill, mirroring a
-     * pointer hold. Returns true when a tile consumed the key.
+     * tile arms or fires under the double tap, and otherwise latches keyHeld so
+     * its delegate ramps the heat fill, mirroring a pointer hold. Returns true
+     * when a tile consumed the key.
      */
     function pressFocused() {
         if (focusIndex < 0 || focusIndex >= actions.length)
             return false;
         if (actions[focusIndex].confirm) {
+            if (doubleTap) {
+                armOrRun(focusIndex);
+                return true;
+            }
             keyHeld = true;
             return true;
         }
@@ -118,10 +153,37 @@ PillSurface {
 
     /**
      * Enter released: drop the destructive hold so an early release drains the
-     * heat instead of confirming.
+     * heat instead of confirming. Nothing to undo under the double tap — there is
+     * no hold to drain, and the armed state is deliberately kept until it fires or
+     * expires, so releasing Enter does not silently disarm what the first tap set.
      */
     function releaseFocused() {
         keyHeld = false;
+    }
+
+    /**
+     * The double tap, shared by the pointer and the keyboard so both are the same
+     * two steps in the same order. A safe tile fires outright; a destructive one
+     * arms on the first call and fires on the second, disarming first so the
+     * window cannot reopen between `run` and the surface closing.
+     */
+    function armOrRun(index) {
+        if (index < 0 || index >= actions.length)
+            return false;
+        var a = actions[index];
+        if (!a.confirm) {
+            run(a);
+            return true;
+        }
+        if (armedIndex === index) {
+            armedIndex = -1;
+            armTimer.stop();
+            run(a);
+        } else {
+            armedIndex = index;
+            armTimer.restart();
+        }
+        return true;
     }
 
     onActiveChanged: if (!active) {
@@ -131,6 +193,8 @@ PillSurface {
         keyHeld = false;
         holdingIndex = -1;
         holdProgress = 0;
+        armedIndex = -1;
+        armTimer.stop();
     }
 
     /**
@@ -201,12 +265,12 @@ PillSurface {
                 spacing: 12 * root.s
 
                 Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: cell.index === root.splitAfter
-                    width: 1
-                    height: 26 * root.s
-                    color: Theme.hair
-                }
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: cell.index === root.splitAfter
+                        width: 1
+                        height: 26 * root.s
+                        color: Theme.hair
+                    }
 
                 Item {
                     id: tile
@@ -217,7 +281,9 @@ PillSurface {
                     readonly property bool kbFocus: root.focusIndex === cell.index
                     readonly property bool isHover: root.hovered === cell.modelData.key || tile.kbFocus
                     readonly property bool holding: heat.holding
-                    readonly property bool lit: isHover || tile.holding
+                    /** Armed by a first tap, waiting on its second. */
+                    readonly property bool armed: cell.modelData.confirm && root.armedIndex === cell.index
+                    readonly property bool lit: isHover || tile.holding || tile.armed
                     readonly property color accent: cell.modelData.confirm ? Theme.vermLit : Theme.cream
 
                     onKbFocusChanged: {
@@ -233,8 +299,10 @@ PillSurface {
                     /**
                      * A held Enter on the focused destructive tile drives the same
                      * heat fill as a pointer hold; dropping the key drains it.
+                     * Off under the double tap, where there is no hold at all.
                      */
-                    readonly property bool keyDriving: tile.kbFocus && root.keyHeld && cell.modelData.confirm
+                    readonly property bool keyDriving: tile.kbFocus && root.keyHeld
+                        && cell.modelData.confirm && !root.doubleTap
                     onKeyDrivingChanged: {
                         if (tile.keyDriving)
                             heat.press();
@@ -259,10 +327,12 @@ PillSurface {
                         anchors.fill: parent
                         radius: Motion.rTile * root.s
                         color: tile.isHover ? Theme.frameBg : "transparent"
-                        border.width: 1
-                        border.color: tile.isHover ? Theme.frameBorder : Theme.border
+                        border.width: tile.armed ? 2 : 1
+                        border.color: tile.armed ? Theme.vermLit
+                            : (tile.isHover ? Theme.frameBorder : Theme.border)
                         Behavior on color { ColorAnimation { duration: Motion.fast } }
                         Behavior on border.color { ColorAnimation { duration: Motion.fast } }
+                        Behavior on border.width { NumberAnimation { duration: Motion.fast } }
                     }
 
                     /**
@@ -296,7 +366,9 @@ PillSurface {
                         width: 22 * root.s
                         height: 22 * root.s
                         name: cell.modelData.glyph
-                        color: tile.holding ? Theme.flameCore : (tile.lit ? tile.accent : Theme.iconDim)
+                        /** Armed reads as hot, the same word the hold's fill used. */
+                        color: (tile.holding || tile.armed) ? Theme.flameCore
+                            : (tile.lit ? tile.accent : Theme.iconDim)
                         stroke: 1.9
                     }
 
@@ -322,10 +394,13 @@ PillSurface {
                             if (cell.modelData.confirm)
                                 heat.cancel();
                         }
-                        onPressed: if (cell.modelData.confirm) heat.press()
-                        onReleased: if (cell.modelData.confirm) heat.release()
+                        /** The heat fill is the hold's; the double tap never starts one. */
+                        onPressed: if (cell.modelData.confirm && !root.doubleTap) heat.press()
+                        onReleased: if (cell.modelData.confirm && !root.doubleTap) heat.release()
                         onClicked: {
-                            if (!cell.modelData.confirm)
+                            if (cell.modelData.confirm)
+                                root.armOrRun(cell.index);
+                            else
                                 root.run(cell.modelData);
                         }
                     }
@@ -339,15 +414,32 @@ PillSurface {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: tiles.bottom
         anchors.topMargin: 12 * root.s
-        readonly property string focusKey: root.holdingIndex >= 0
-            ? root.actions[root.holdingIndex].key : root.hovered
+        /**
+         * What the label is describing: the held tile if there is one, else the
+         * armed one, else whatever is hovered or focused. Arming outranks the
+         * hover because a tile the pointer has since left is still the tile the
+         * next tap would fire.
+         */
+        readonly property int focusIdx: root.holdingIndex >= 0
+            ? root.holdingIndex : root.armedIndex
+        readonly property string focusKey: root.focusIdx >= 0
+            ? root.actions[root.focusIdx].key : root.hovered
         readonly property var act: {
             for (var i = 0; i < root.actions.length; i++)
                 if (root.actions[i].key === label.focusKey)
                     return root.actions[i];
             return null;
         }
-        text: act ? (act.confirm ? act.label + " — hold" : act.label) : ""
+        readonly property bool armed: root.focusIdx >= 0 && root.armedIndex === root.focusIdx
+        /**
+         * The verb the destructive tiles ask for, per presentation: hold where
+         * there is a fill to watch climb, double tap in the bar, and once armed
+         * the second tap is named outright so the next press is never a guess.
+         */
+        readonly property string confirmHint: root.doubleTap
+            ? (label.armed ? "tap again" : "double tap")
+            : "hold"
+        text: act ? (act.confirm ? act.label + " — " + label.confirmHint : act.label) : ""
         color: act && act.confirm ? Theme.vermLit : Theme.subtle
         font.family: Theme.font
         font.pixelSize: 11 * root.s
