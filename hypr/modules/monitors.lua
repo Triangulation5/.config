@@ -1,3 +1,5 @@
+local dwmStyle = require("modules.style").dwmStyle
+
 -- https://wiki.hypr.land/Configuring/Basics/Monitors/
 hl.monitor({
     output   = "",
@@ -6,22 +8,18 @@ hl.monitor({
     scale    = "auto",
 })
 
-hl.workspace_rule({ workspace = "1", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "2", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "3", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "4", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "5", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "6", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "7", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "8", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "9", monitor = "", persistent = true})
-hl.workspace_rule({ workspace = "10", monitor = "", persistent = true})
+-- 10 workspaces for dwmStyle, 5 otherwise
+local workspaceCount = dwmStyle and 10 or 5
+
+for i = 1, workspaceCount do
+    hl.workspace_rule({ workspace = tostring(i), monitor = "", persistent = true })
+end
 
 hl.monitor({
     output   = "eDP-1",
     mode     = "1920x1080@60",
     position = "0x0",
-    scale    = 1.5,
+    scale    = 1.25,
 })
 
 hl.monitor({
