@@ -1,3 +1,5 @@
+local dwmStyle = require("modules.style").dwmStyle
+
 -- https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
@@ -16,9 +18,8 @@ hl.config({
     },
 
     decoration = {
-        -- rounding       = 12,
-        -- rounding_power = 4,
-        rounding       = 0,
+        rounding       = dwmStyle and 0 or 12,
+        rounding_power = 4,
 
         active_opacity   = 1.00,
         inactive_opacity = 0.94,
@@ -43,7 +44,7 @@ hl.config({
     },
 
     animations = {
-        enabled = false,
+        enabled = not dwmStyle,
     },
 })
 
