@@ -41,8 +41,36 @@ Variants {
          * Anything else — a bare hover, an idle OSD/toast — lets fullscreen
          * retract it.
          */
+        /**
+         * The pill is on its way out because the dwm bar is taking the top edge
+         * from it (`BarSwap`). While that is true the pill leaves by exactly the
+         * route a fullscreen window sends it down — up off the top edge and out
+         * of sight — so the swap borrows a motion the user already reads as
+         * "something else is here now" rather than inventing a second gesture.
+         *
+         * The overlay has to stay alive for this to be seen at all, which is why
+         * `shell.qml` holds the pill's tree until the swap has landed instead of
+         * dropping it on the frame the flag flips.
+         */
+        readonly property bool leavingForBar: Flags.barEnabled && BarSwap.swapping
+
+        /**
+         * How long the pill's leave takes.
+         *
+         * `Motion.morph` as ever — except when the dwm bar is taking the top edge,
+         * where the leave has to *finish* inside `BarSwap`'s pill slice. The swap
+         * drops this overlay's tree the moment that slice ends, so a leave still
+         * running past it was cut off in mid-air: the pill vanished part-way up
+         * the top edge instead of flying out of sight, which read as a flicker
+         * sitting in the middle of an otherwise continuous move. See
+         * `BarSwap.pillExitMs`.
+         */
+        readonly property int leaveMs: overlay.leavingForBar
+            ? BarSwap.pillExitMs
+            : Motion.morph
+
         readonly property bool summoned: modal || (pill.osdActive && pill.osdHoldsOverFullscreen) || host.peekMon === modelData.name
-        readonly property bool pillHidden: monFullscreen && !summoned
+        readonly property bool pillHidden: (monFullscreen && !summoned) || overlay.leavingForBar
 
         /**
          * Auto-hide: with the flag on, the rest pill retracts off the top
@@ -65,12 +93,24 @@ Variants {
         readonly property bool autoCollapsed: Flags.autoHide && !monFullscreen
             && pill.specialView === "" && !pill.held
 
+        /**
+         * Whether this monitor's reserved band is collapsed, which is what the
+         * pill falls back on when auto-hide is not in play. The dwm bar claims a
+         * band of its own the instant it starts to drop, so a pill still holding
+         * its reserve would have two exclusive zones over the same strip for the
+         * length of the swap and the tiled windows below would be shoved down
+         * and back up. Handing the band over at the same moment the pill starts
+         * leaving keeps the reserve going to whichever surface owns it, rather
+         * than to both.
+         */
+        readonly property bool bandCollapsed: overlay.autoCollapsed || overlay.leavingForBar
+
         /** The wake strip and the growing hover band, shared by the mask. */
         readonly property real autoStripH: Flags.pillAutoStripH * s
         readonly property real autoBandH: Math.max(autoStripH, pill.y + pill.height + autoStripH)
 
-        onAutoCollapsedChanged: host.setPillCollapsed(modelData.name, autoCollapsed)
-        Component.onCompleted: host.setPillCollapsed(modelData.name, autoCollapsed)
+        onBandCollapsedChanged: host.setPillCollapsed(modelData.name, bandCollapsed)
+        Component.onCompleted: host.setPillCollapsed(modelData.name, bandCollapsed)
 
         /**
          * True while this monitor's active workspace holds a real
@@ -452,7 +492,7 @@ Variants {
                     Behavior on opacity {
                         enabled: !slot.swiping
                         NumberAnimation {
-                            duration: Math.round(Motion.morph * 0.7)
+                            duration: Math.round(overlay.leaveMs * 0.7)
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -469,7 +509,7 @@ Variants {
                             y: (overlay.pillHidden || overlay.autoRetracted) ? -(pill.height + overlay.topGap) : 0
                             Behavior on y {
                                 NumberAnimation {
-                                    duration: Motion.morph
+                                    duration: overlay.leaveMs
                                     easing.type: Motion.easeMorph
                                     easing.bezierCurve: Motion.morphCurve
                                 }

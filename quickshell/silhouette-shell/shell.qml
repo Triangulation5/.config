@@ -16,15 +16,23 @@ import qs.modules.settingsapp
  * trigger in LockRoot and the standalone launcher's show/hide/toggle in
  * LauncherRoot. Adding or removing a module never touches this file.
  *
- * The top edge has exactly one presentation at a time. The pill is the shell;
- * the minimal DWM-style bar (`Flags.barEnabled`, toggled from Settings) is the
- * light alternative, and while it is on the pill is not built at all. Both sit
- * in LazyLoaders loaded by URL rather than as direct children: a hidden item
- * tree is still an item tree, and an import of the other module would compile
- * its whole tree besides. The inactive branch is neither instantiated nor
- * compiled. Flipping the flag tears one down and builds the other; that is rare
- * and synchronous, and nothing else in the shell is affected (the settings
- * window that flips it is a sibling that stays).
+ * The top edge still has exactly one presentation at a time. The pill is the
+ * shell; the minimal DWM-style bar (`Flags.barEnabled`, toggled from Settings) is
+ * the light alternative. Both sit in LazyLoaders loaded by URL rather than as
+ * direct children: a hidden item tree is still an item tree, and an import of
+ * the other module would compile its whole tree besides. The inactive branch is
+ * neither instantiated nor compiled.
+ *
+ * What changed is the seam between them. Neither loader keys off the flag any
+ * more; both read `BarSwap`, which holds the clock the swap is played against.
+ * So the pill's tree survives for as long as it still has somewhere to be seen
+ * — long enough to fly up off the top edge the way it does for a fullscreen
+ * window — and the bar's is built as its strip starts to fall. Without that the
+ * swap was a hard cut with a blank stretch of screen across the gap, because
+ * under a plain `!Flags.barEnabled` the pill was already gone before it could
+ * move. Once the swap has landed exactly one of the two is resident again, and
+ * nothing else in the shell is affected (the settings window that flips it is a
+ * sibling that stays).
  *
  * The root also owns one IPC surface of its own rather than leaving it to a
  * module: the minimal bar's toggle. It cannot live in `modules/bar` with the rest
@@ -44,15 +52,26 @@ import qs.modules.settingsapp
  */
 
 ShellRoot {
+    /**
+     * The bar's other half. `BarMode` mirrors `Flags.barEnabled` into
+     * `hypr/modules/style.lua` so the compositor's half of the switch follows the
+     * shell's, and nothing else here has to know that file exists. Naming it is
+     * all that is required — a QML singleton is built the first time anything
+     * reaches for it and lives as long as the engine does, so this one line is
+     * what makes the mirror run for the session, including on a shell that
+     * started with the bar already on.
+     */
+    Component.onCompleted: BarMode.active
+
     LazyLoader {
         id: pillMode
-        active: !Flags.barEnabled
+        active: BarSwap.pillWanted
         source: Qt.resolvedUrl("modules/pill/PillRoot.qml")
     }
 
     LazyLoader {
         id: barMode
-        active: Flags.barEnabled
+        active: BarSwap.barWanted
         source: Qt.resolvedUrl("modules/bar/BarRoot.qml")
     }
 

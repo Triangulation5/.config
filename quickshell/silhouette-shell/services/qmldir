@@ -4,6 +4,8 @@ singleton Backlight       1.0 Backlight.qml
 singleton BarLauncher     1.0 BarLauncher.qml
 singleton BarPower        1.0 BarPower.qml
 singleton BarLayout       1.0 BarLayout.qml
+singleton BarMode         1.0 BarMode.qml
+singleton BarSwap         1.0 BarSwap.qml
 singleton BarStatus       1.0 BarStatus.qml
 singleton BarStyle        1.0 BarStyle.qml
 singleton Battery         1.0 Battery.qml

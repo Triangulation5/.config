@@ -7,8 +7,9 @@ import qs.components.layout
 /**
  * Screen corner layer. One overlay PanelWindow per monitor paints the four
  * rounded corners over that monitor with RoundCorner, morphing their radius
- * between notch, normal, and game (collapsed) modes and evaporating them in
- * game mode.
+ * between notch, normal, and collapsed modes. Both things that take the corners
+ * away — game mode and the dwm-style bar — take them away the same way, by
+ * driving that one radius to zero: see `dissolving`.
  */
 
 Variants {
@@ -24,22 +25,16 @@ Variants {
         screen: modelData
 
         /**
-         * Keep the layer alive so the corners can animate away — except in DWM
-         * (minimal bar) mode, where they do not go away so much as cease to
-         * exist, at once.
+         * The corners belong to the pill: they are the rounding the notch and the
+         * rest pill sit inside, and the radius morph below *is* the pill changing.
+         * With the minimal bar across the top edge there is nothing for them to
+         * belong to, so switching the bar on takes them away too.
          *
-         * The corners belong to the pill's island look: the rounded screen corner
-         * is what the notch and the rest pill sit in, and the radius morph is the
-         * pill changing shape. With the minimal bar across the top edge there is
-         * nothing for them to belong to, so they are not faded out, morphed down
-         * or dissolved — the surface is dropped on the same frame `Flags.barEnabled`
-         * flips, and rebuilt the same way when the pill comes back. Fading here
-         * would be actively wrong: `Flags.cornerMorphMs` is a 1500ms evaporate, and
-         * a bar toggle trailing a corner slowly collapsing out of the old shell is
-         * exactly what makes the swap look like two shells fighting.
+         * The surface is always mapped, exactly as game mode has always left it.
+         * A zero radius paints nothing, so there is nothing to gain from dropping
+         * the window, and a fullscreen overlay that comes and goes is a second
+         * source of flicker at the top edge during the swap.
          */
-        visible: !Flags.barEnabled
-
         color: "transparent"
 
         WlrLayershell.namespace: "quickshell:screen-corners"
@@ -79,11 +74,30 @@ Variants {
         readonly property bool notchStyle: Flags.notchStyle
 
         /**
+         * True while nothing on the top edge wants the corners: game mode, or the
+         * minimal dwm-style bar.
+         *
+         * This is the whole of the bar's effect on the corners, and it is
+         * deliberately the same condition game mode uses rather than a second,
+         * separately timed mechanism. The corners used to fade out and back in on
+         * `BarSwap`'s clock, and the return was the wrong shape: fading in draws
+         * the corner at its *final* radius and merely fades the weight up, so it
+         * arrived as a pop rather than a return. Game mode has never had that
+         * problem, because it moves the radius itself and the corner grows back
+         * out of the radius it collapsed into.
+         *
+         * So turning the bar off now plays exactly the motion turning game mode
+         * off plays — the same 400ms OutCubic on the same property — and the two
+         * cannot drift apart, because they are one condition and one `Behavior`.
+         */
+        readonly property bool dissolving: corners.gameMode || Flags.barEnabled
+
+        /**
          * Active corner radius.
          *
          * Priority:
          *
-         * 1. Game mode:
+         * 1. Dissolved (game mode or the dwm bar):
          *    corners collapse away.
          *
          * 2. Notch style:
@@ -92,7 +106,7 @@ Variants {
          * 3. Normal:
          *    subtle screen rounding.
          */
-        property real cornerSize: gameMode
+        property real cornerSize: dissolving
             ? hiddenCornerSize
             : notchStyle
                 ? notchCornerSize
