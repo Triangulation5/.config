@@ -29,26 +29,50 @@ import Quickshell.Hyprland
  * when the bar is built and releases when it is torn down, so nothing is read
  * while the pill is the shell on screen.
  *
- * Everything below the glyph table exists because this symbol used to break on a
- * reload and stay broken. `hyprctl` itself is reliable across a reload — measured,
- * the workspaces and `general:layout` come back identical either side of one — so
- * the failure was always this service refusing to read again or throwing away what
- * it had. Four rules, each answering one of those:
+ * Everything below `refresh()` exists because this symbol used to break on a
+ * reload and stay broken: it came back only after the bar was switched off and on
+ * again. `hyprctl` itself is reliable across a reload — measured, the workspaces
+ * and `general:layout` come back identical either side of one — so the failure was
+ * always this service losing a read, and it lost them for one specific reason.
  *
- *   - A read that returns nothing usable never overwrites what is already known.
- *     An empty workspace list used to pass `if (list)` (an empty array is
- *     truthy) and blank every workspace at once; a `general:layout` with no `str`
- *     used to clear the fallback. A bad read now leaves the last good value alone.
- *   - A read that returns nothing usable schedules a fast retry, so the symbol
- *     comes back in a third of a second instead of waiting out the poll.
+ * `Process.running` was doing duty as "a read is in flight". It cannot. Setting
+ * `running = false` only marks the process for termination; the property keeps
+ * reading `true` until the process is actually reaped, which is milliseconds for
+ * a plain exit but unbounded when what is being killed is a `hyprctl` blocked on a
+ * compositor that is busy. So in that window `refresh()` took the "already
+ * reading" branch and queued the read in `pending` — and `pending` had exactly one
+ * servicer, `onStreamFinished`. Quickshell emits `streamFinished` from the same
+ * handler that runs when a process exits, but *not* when one fails to start, and
+ * not when the kill is the thing that ended the read. A queue whose only servicer
+ * can be skipped is a queue that is never emptied: from then on every refresh saw
+ * `running === true`, queued another, and nothing ever read. The symbol stayed
+ * blank for the life of the process, and only a bar rebuild that happened to land
+ * after the stuck read had been reaped let it start again — which is the "switch
+ * dwm style off and on to make it appear" symptom, arrived at by timing rather
+ * than by design.
+ *
+ * The rules below replace that with an arrangement that cannot wedge:
+ *
+ *   - The in-flight flag is ours (`reading`), not `Process.running`. It is set
+ *     when a read is asked for and cleared by the read itself finishing — not by
+ *     the state of a property that means something else.
+ *   - `start()` is the only way to read. It forces a real rising edge on
+ *     `running`, so a `running` left `true` with nothing behind it (a kill still
+ *     winding down) cannot swallow the start.
+ *   - A queued read is never a latch. The watchdog flushes `pending` whenever
+ *     nothing is in flight, so a lost completion costs half a second rather than
+ *     the rest of the session.
+ *   - A read that hangs is restarted. Nothing here times out on its own, so the
+ *     watchdog counts a read that has outlived its welcome and starts a new one.
+ *     The same count also covers the opposite case: a read asked for while the
+ *     engine is still assembling the config cannot start at all until the reload
+ *     settles, and the watchdog is what picks it up when that happens.
+ *   - A read that returns nothing usable never overwrites what is already known,
+ *     and schedules a fast retry. An empty workspace list is truthy, so a list
+ *     that is merely *present* used to blank every workspace at once.
  *   - `layoutOf` falls through to `lastLayout`, the last layout anything actually
  *     reported, so a transient gap reads as the layout that was there rather than
  *     as nothing. The symbol hides only before the very first read has landed.
- *   - A read that hangs cannot wedge the service. `proc.running` true means
- *     "refreshing" everywhere else in this file, so a single `hyprctl` that never
- *     returned — which is what a compositor mid-reload looks like — used to mean
- *     no read was ever attempted again. The watchdog counts a read that outlives
- *     its welcome and restarts it.
  */
 Singleton {
     id: root
@@ -81,18 +105,25 @@ Singleton {
     /** The last layout anything actually reported; the floor under `layoutOf`. */
     property string lastLayout: ""
 
+    /**
+     * True from the moment a read is asked for until that read's output has been
+     * parsed. Ours rather than `Process.running`, which reads `true` for as long
+     * as a killed process is still being reaped — the window in which reads used
+     * to be queued against something that was not going to answer.
+     */
+    property bool reading: false
+
+    /** A read asked for while another was in flight; see the watchdog. */
     property bool pending: false
 
     /** Consecutive watchdog ticks the current read has been in flight. */
     property int stuckTicks: 0
 
-    /** Set by the watchdog, acted on by the next tick (see `watchdog`). */
-    property bool restart: false
-
     /**
      * Take the service for a bar tree, returning the token that releases it.
      * Reads immediately: a bar that comes up mid-session should not wait out a
-     * poll tick to draw its symbol.
+     * poll tick to draw its symbol, and neither should one that comes up across
+     * a reload.
      */
     function claim() {
         root.claimer = ++root.nextToken;
@@ -105,8 +136,9 @@ Singleton {
         if (root.claimer !== token)
             return;
         root.claimer = 0;
+        root.reading = false;
+        root.pending = false;
         root.stuckTicks = 0;
-        root.restart = false;
         proc.running = false;
     }
 
@@ -162,11 +194,33 @@ Singleton {
         return "[" + layout.charAt(0).toUpperCase() + "]";
     }
 
+    /** Ask for a read, coalescing onto the one already running. */
     function refresh() {
-        if (!proc.running)
-            proc.running = true;
-        else
-            pending = true;
+        if (!root.active)
+            return;
+        if (root.reading) {
+            root.pending = true;
+            return;
+        }
+        root.start();
+    }
+
+    /**
+     * The only way to read. The two-step write is deliberate: `running` reads
+     * `true` both while a process is genuinely alive and in the window after one
+     * was killed but not yet reaped, and a plain `running = true` in that window
+     * is swallowed — Quickshell only starts a process on a rising edge with no
+     * process behind it. Driving it down first makes the next write a real edge,
+     * so this either starts a read now or leaves `targetRunning` set for the
+     * process wrapper to act on when the old one is finally reaped. Neither way
+     * can the request be dropped.
+     */
+    function start() {
+        root.pending = false;
+        root.reading = true;
+        root.stuckTicks = 0;
+        proc.running = false;
+        proc.running = true;
     }
 
     Process {
@@ -174,8 +228,18 @@ Singleton {
         /** Two documents, one spawn: the workspaces, a marker line, the global layout. */
         command: ["sh", "-c",
             "hyprctl -j workspaces; printf '\\n@@\\n'; hyprctl -j getoption general:layout"]
+        /**
+         * A read is over the moment its output has been handled, whether or not
+         * that output was any use. Clearing it here rather than only on a good
+         * parse is what keeps a bad read from becoming a stuck one.
+         */
+        onExited: {
+            root.reading = false;
+            root.stuckTicks = 0;
+        }
         stdout: StdioCollector {
             onStreamFinished: {
+                root.reading = false;
                 root.stuckTicks = 0;
 
                 /** Nothing usable came back: keep what we know and come back fast. */
@@ -243,10 +307,8 @@ Singleton {
                 if (!usable)
                     retry.restart();
 
-                if (root.pending) {
-                    root.pending = false;
-                    proc.running = true;
-                }
+                if (root.pending)
+                    root.start();
             }
         }
     }
@@ -264,33 +326,35 @@ Singleton {
     }
 
     /**
-     * The wedge guard. Nothing here times out on its own — a `hyprctl` blocked on a
-     * compositor that is mid-reload never returns, and `running` staying true is
-     * this file's way of saying "a read is in flight", so every later `refresh()`
-     * quietly did nothing. Count a read that is still going after a few ticks and
-     * start a new one; `restart` is applied on the following tick rather than by
-     * reassigning `running` twice in one handler, so the kill and the respawn are
-     * two separate property writes the process wrapper can see separately.
+     * The wedge guard, and the reason a lost read can no longer be fatal.
+     *
+     * Two cases, and both of them are cases where nothing else would ever act
+     * again:
+     *
+     *   - Nothing is in flight and something was asked for. A read was queued
+     *     against a process that then ended without answering — a failed start, or
+     *     a kill that was the thing that finished it — so the completion that was
+     *     supposed to drain the queue never came. Start it now.
+     *   - Something has been in flight for too long. Nothing here times out on its
+     *     own: a `hyprctl` blocked on a busy compositor never returns, and a read
+     *     asked for while the engine is still assembling the config cannot start
+     *     until the reload settles. Either way `stuckTicks` reaching the limit
+     *     means nothing else is going to, so start a new read.
      */
     Timer {
         interval: 500
         repeat: true
         running: root.active
         onTriggered: {
-            if (root.restart) {
-                root.restart = false;
+            if (!root.reading) {
                 root.stuckTicks = 0;
-                proc.running = false;
-                proc.running = true;
-                return;
-            }
-            if (!proc.running) {
-                root.stuckTicks = 0;
+                if (root.pending)
+                    root.start();
                 return;
             }
             root.stuckTicks++;
             if (root.stuckTicks >= 6)
-                root.restart = true;
+                root.start();
         }
     }
 
