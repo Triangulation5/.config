@@ -58,8 +58,35 @@ Singleton {
      * rebuilds the group list underneath it, and it is pruned in
      * rebuildGroups() so a recycled id (the server restarts its counter) can
      * never open a notification nobody opened.
+     *
+     * Mirrored into Flags so an in-place config reload does not snap the row
+     * shut. Quickshell restores tracked notifications across such a reload with
+     * their ids intact, so the ids still mean the same notifications
+     * afterwards; across a real restart they do not, which is what
+     * pruneExpandedEntries is for.
      */
     property var expandedEntries: ({})
+
+    /** Read once at startup, before the first rebuild prunes against it. */
+    function loadExpandedEntries() {
+        var raw = String(Flags.notifOpenEntries || "");
+        if (raw.length === 0)
+            return;
+        var parts = raw.split(",");
+        var m = {};
+        for (var i = 0; i < parts.length; i++) {
+            var id = parts[i].trim();
+            if (id.length > 0)
+                m[id] = true;
+        }
+        root.expandedEntries = m;
+    }
+
+    /** Write-through. Only called when the set actually changes. */
+    function saveExpandedEntries() {
+        var ids = Object.keys(root.expandedEntries);
+        Flags.notifOpenEntries = ids.join(",");
+    }
 
     function entryExpanded(e) {
         return !!(e && e.n && root.expandedEntries[String(e.n.id)]);
@@ -75,6 +102,7 @@ Singleton {
         else
             m[key] = true;
         root.expandedEntries = m;
+        root.saveExpandedEntries();
     }
 
     /** Keep only the keys whose notification is still on the list. */
@@ -92,8 +120,10 @@ Singleton {
             else
                 dropped = true;
         }
-        if (dropped)
+        if (dropped) {
             root.expandedEntries = kept;
+            root.saveExpandedEntries();
+        }
     }
 
     readonly property string liveSig: {
@@ -383,6 +413,13 @@ Singleton {
         imageSupported: true
 
         Component.onCompleted: {
+            /**
+             * Reopen whatever the reader had open before this reload. Runs
+             * before the first rebuild prunes, so the ids are compared against
+             * the notifications Quickshell just restored rather than against
+             * an empty list.
+             */
+            root.loadExpandedEntries();
             var l = trackedNotifications.values;
             var a = Object.assign({}, root.arrivalMs);
             for (var i = 0; i < l.length; i++) {

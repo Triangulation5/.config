@@ -159,6 +159,19 @@ Singleton {
     property alias notifPopupMax: adapter.notifPopupMax
     property alias notifDedupe: adapter.notifDedupe
     property alias notifSound: adapter.notifSound
+    /**
+     * Notification ids whose inbox row the reader has opened, comma separated.
+     * A string rather than a list because the adapter has no `var` property and
+     * this is the only place in the file that would need one.
+     *
+     * Scoped to a *reload*, not a reboot. Quickshell restores the tracked
+     * notifications across an in-place config reload with their ids intact, so
+     * without this a row being read snapped shut every time the shell
+     * hot-reloaded -- which it does on every file save in this repo. A restart
+     * hands out new ids, and Notifs.pruneExpandedEntries drops whatever no
+     * longer matches a live notification, so nothing stale can reopen.
+     */
+    property alias notifOpenEntries: adapter.notifOpenEntries
     /* Performance: one switch for the shell's expensive GPU layers. */
     property alias liteMode: adapter.liteMode
     property alias lockPillW: adapter.lockPillW
@@ -473,6 +486,8 @@ Singleton {
             property bool notifDedupe: true
             /** Play a blip for each notification shown. Off by default. */
             property bool notifSound: false
+            /** Open inbox rows, by notification id. See the alias above. */
+            property string notifOpenEntries: ""
             /**
              * Skip the shell's expensive GPU layers — the now-playing bleed
              * blur, the ambient aura blur, the Ame bead's blur, the pill's
