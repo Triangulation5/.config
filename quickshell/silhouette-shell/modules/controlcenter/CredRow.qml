@@ -52,6 +52,7 @@ Item {
         anchors.leftMargin: 8 * cr.scale
         anchors.verticalCenter: parent.verticalCenter
         text: cr.label
+        textFormat: Text.PlainText
         color: Theme.faint
         font.family: Theme.font
         font.pixelSize: 9 * cr.scale
@@ -66,6 +67,8 @@ Item {
         anchors.rightMargin: 8 * cr.scale
         anchors.verticalCenter: parent.verticalCenter
         text: cr.value.length ? cr.value : "tap to set"
+        /** Credentials are user-typed strings; a password must never render as markup. */
+        textFormat: Text.PlainText
         color: cr.value.length ? (cr.secret ? Theme.flameCore : Theme.cream) : Theme.faint
         font.family: Theme.font
         font.pixelSize: 12 * cr.scale

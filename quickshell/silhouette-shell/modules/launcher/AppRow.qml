@@ -180,6 +180,8 @@ Item {
                     anchors.fill: parent
                     visible: !appRow.editing
                     text: appRow.entry ? appRow.entry.name : ""
+                    /** .desktop names are third-party data. */
+                    textFormat: Text.PlainText
                     color: Theme.cream
                     font.family: Theme.font
                     font.pixelSize: 13 * s
@@ -217,6 +219,7 @@ Item {
                 width: parent.width
                 visible: appRow.secondary.length > 0
                 text: appRow.secondary
+                textFormat: Text.PlainText
                 color: appRow.selected ? Theme.dim : Theme.faint
                 font.family: Theme.font
                 font.pixelSize: 10.5 * s

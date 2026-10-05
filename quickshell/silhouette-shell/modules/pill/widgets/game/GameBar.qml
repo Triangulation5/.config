@@ -76,6 +76,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             Text {
                 text: Players.title
+                /** MPRIS metadata is app-supplied: never let a track title carry markup. */
+                textFormat: Text.PlainText
                 color: Theme.cream
                 font.family: Theme.font
                 font.pixelSize: 12.5 * root.s
@@ -85,6 +87,7 @@ Item {
             }
             Text {
                 text: Players.artist
+                textFormat: Text.PlainText
                 color: Theme.dim
                 font.family: Theme.font
                 font.pixelSize: 10.5 * root.s

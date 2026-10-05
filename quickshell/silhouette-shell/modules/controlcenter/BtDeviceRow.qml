@@ -124,6 +124,7 @@ Column {
             Text {
                 width: parent.width
                 text: dev.modelData ? (dev.modelData.deviceName || dev.modelData.name || "Unknown") : "Unknown"
+                textFormat: Text.PlainText
                 color: dev.isConnected ? Theme.cream : Theme.subtle
                 font.family: Theme.font
                 font.pixelSize: 11.5 * dev.s
@@ -135,6 +136,7 @@ Column {
                 width: parent.width
                 visible: text.length > 0
                 text: dev.meta
+                textFormat: Text.PlainText
                 color: Theme.faint
                 font.family: Theme.font
                 font.pixelSize: 9.5 * dev.s

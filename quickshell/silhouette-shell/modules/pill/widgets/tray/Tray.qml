@@ -256,6 +256,8 @@ Item {
                 anchors.right: chevron.visible ? chevron.left : parent.right
                 anchors.rightMargin: 14 * tray.s
                 text: mrow.entryData.text
+                /** Clipboard contents are arbitrary text from anywhere. */
+                textFormat: Text.PlainText
                 color: !mrow.entryData.enabled ? Theme.dim
                     : (mrowArea.containsMouse ? Theme.cream : Theme.creamMenu)
                 font.family: Theme.font

@@ -65,6 +65,7 @@ Item {
             Text {
                 width: parent.width
                 text: prow.title
+                textFormat: Text.PlainText
                 color: Theme.bright
                 font.family: Theme.font
                 font.pixelSize: 13.5 * s

@@ -49,6 +49,8 @@ Text {
     }
 
     text: title
+    /** Any app can put anything in a window title, markup included. */
+    textFormat: Text.PlainText
     visible: title.length > 0
     color: BarStyle.fg
     font.family: Theme.font

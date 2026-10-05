@@ -246,6 +246,7 @@ Item {
         anchors.topMargin: 12 * profile.s
 
         text: profile.redacted ? "locked" : profile.realName
+        textFormat: Text.PlainText
 
         color: Theme.cream
         opacity: 0.85

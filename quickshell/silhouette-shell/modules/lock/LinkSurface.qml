@@ -362,6 +362,7 @@ Item {
                 width: parent.width - statusText.width - 48 * link.s
 
                 text: title
+                textFormat: Text.PlainText
 
                 color:
                     active
