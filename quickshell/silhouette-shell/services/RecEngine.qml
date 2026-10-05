@@ -26,6 +26,7 @@ Item {
     property alias pickProc: pickProc
     property alias thumbProc: thumbProc
     property alias probeProc: probeProc
+    property alias infoProc: infoProc
 
     Process {
         id: openProc
@@ -87,6 +88,9 @@ Item {
     /**
      * ffmpeg fallback pre-flight: resolve the pulse sink / source at start
      * (they can change between recordings), then launch the portal capture.
+     * The pending file is read through this Process's id: the collector is a
+     * nested object, so an unqualified `pendingFile` does not resolve under
+     * `pragma ComponentBehavior: Bound` and the capture never starts.
      */
     Process {
         id: ffPrepProc
@@ -105,8 +109,8 @@ Item {
                     else if (line.indexOf("src=") === 0)
                         root.host.ffMicSrc = line.slice(4);
                 }
-                root.host.currentFile = pendingFile;
-                recProc.command = root.host.buildArgs(pendingToken, pendingFile);
+                root.host.currentFile = ffPrepProc.pendingFile;
+                recProc.command = root.host.buildArgs(ffPrepProc.pendingToken, ffPrepProc.pendingFile);
                 recProc.running = true;
             }
         }
@@ -124,7 +128,9 @@ Item {
         id: recProc
         stderr: StdioCollector { id: recErr }
         onStarted: {
-            root.host.recording = true;
+            root.host.ffCaptureStarted = false;
+            if (root.host.backend !== "ffmpeg")
+                root.host.recording = true;
             root.host.fallbackRetried = false;
         }
         onExited: function(exitCode) {
@@ -161,7 +167,8 @@ Item {
 
     /**
      * Backend probe: if gpu-screen-recorder is not on PATH the session records
-     * with the ffmpeg fallback from the start.
+     * with the ffmpeg fallback from the start. When it is there, the codec probe
+     * below runs right after, so a missing binary spawns nothing extra.
      */
     Process {
         id: probeProc
@@ -170,6 +177,29 @@ Item {
             onStreamFinished: {
                 if (this.text.trim().length === 0)
                     root.host.useFallback("gpu-screen-recorder not found — recording with ffmpeg via the PipeWire portal");
+                else
+                    infoProc.running = true;
+            }
+        }
+    }
+
+    /**
+     * Codec probe: gsr reports the video codecs its ffmpeg actually offers under
+     * `section=video_codecs`. Newer nvidia drivers (580xx) against ffmpeg 9 drop
+     * nvenc, leaving gsr with no native h264/hevc/av1 to pick; when that happens
+     * and vulkan h264 is available the host pins `-k h264_vulkan` so recording
+     * keeps working instead of failing over to the CPU encoder. Started by
+     * probeProc once gsr is known to be installed.
+     */
+    Process {
+        id: infoProc
+        command: ["gpu-screen-recorder", "--info"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var m = this.text.match(/section=video_codecs\n([\s\S]*?)(\nsection=|$)/);
+                var codecs = m ? m[1].split("\n") : [];
+                var native = ["h264", "hevc", "av1"].some(function(c) { return codecs.indexOf(c) >= 0; });
+                root.host.codecArgs = !native && codecs.indexOf("h264_vulkan") >= 0 ? ["-k", "h264_vulkan"] : [];
             }
         }
     }
@@ -226,9 +256,39 @@ Item {
     }
 
     /**
+     * The portal capture script drops a `<output>.capturing` sentinel next to
+     * the clip once gst and ffmpeg are really running. Until then it is still
+     * sitting on the share picker, and the shell must not call a running python
+     * process a live recording. A sentinel file is used rather than the
+     * script's stdout because StdioCollector only delivers text when the stream
+     * ends — which for a recorder is after the stop.
+     */
+    Process {
+        id: markerProc
+        command: ["sh", "-c", "test -f \"$1\" && echo yes", "_", root.host.ffMarkerPath]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (this.text.trim().length === 0)
+                    return;
+                root.host.ffCaptureStarted = true;
+                root.host.recording = true;
+            }
+        }
+    }
+
+    Timer {
+        interval: 300
+        running: root.host.backend === "ffmpeg" && recProc.running && !root.host.ffCaptureStarted
+        repeat: true
+        onTriggered: if (!markerProc.running) markerProc.running = true
+    }
+
+    /**
      * Poll the real recorder process so the flag tracks gsr started or stopped
-     * from anywhere, not just this surface. On a save the recent list re-reads so
-     * the new file appears.
+     * from anywhere, not just this surface. The ffmpeg fallback only counts as
+     * recording once its sentinel showed up, so a script sitting on the share
+     * picker never flips the UI on. On a save the recent list re-reads so the
+     * new file appears.
      */
     Process {
         id: pollProc
@@ -236,6 +296,8 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 var running = this.text.trim().length > 0;
+                if (running && root.host.backend === "ffmpeg" && !root.host.ffCaptureStarted)
+                    return;
                 if (running !== root.host.recording) {
                     root.host.recording = running;
                     if (!running)
