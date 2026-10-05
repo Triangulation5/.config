@@ -11,9 +11,12 @@ import Quickshell.Io
  * a live `recording` flag polled from the real process so an externally started
  * or stopped recorder is reflected too. gsr is launched with
  * `-fallback-cpu-encoding yes` so a machine with broken hardware encoding but a
- * working CPU encoder (libx264) degrades to CPU instead of failing; a distro
- * whose ffmpeg build omits the h264 encoders entirely still needs its full
- * ffmpeg installed (see docs/troubleshooting/commands.md).
+ * working CPU encoder (libx264) degrades to CPU instead of failing. When CPU is
+ * not the only thing left either — newer nvidia drivers (580xx) against
+ * ffmpeg 9 no longer expose the nvenc encoders gsr probes for — the startup
+ * `--info` probe pins `-k h264_vulkan` so those cards keep recording on the
+ * vulkan encoder; a distro whose ffmpeg build omits the h264 encoders entirely
+ * still needs its full ffmpeg installed (see docs/troubleshooting/commands.md).
  *
  * If gpu-screen-recorder is missing (or fails to start), the shell falls back
  * to a PipeWire capture encoded by ffmpeg: utils/recording/portal_capture.py
@@ -97,6 +100,16 @@ Singleton {
     property string backendNote: ""
     property bool fallbackRetried: false
     property bool fallbackWarned: false
+
+    /**
+     * True once the portal capture script reported `capture-started`, i.e.
+     * gst and ffmpeg are really running. Before that the run is waiting on the
+     * share picker, which the shell must not dress up as a live recording.
+     */
+    property bool ffCaptureStarted: false
+
+    /** Sentinel the capture script drops beside the clip once frames flow. */
+    readonly property string ffMarkerPath: currentFile + ".capturing"
 
     /** The capture token of the recording about to start, for the gsr retry. */
     property string lastToken: ""
@@ -280,13 +293,20 @@ Singleton {
         recEngine.windowProc.running = true;
     }
 
+    /**
+     * Codec override from the `--info` probe: empty keeps gsr's native
+     * nvenc/vaapi pick, `h264_vulkan` covers drivers the system FFmpeg's nvenc
+     * refuses (nvidia 580xx on FFmpeg 9).
+     */
+    property var codecArgs: []
+
     function buildArgs(captureToken, file) {
         if (backend === "ffmpeg")
             return buildFfmpegArgs(file);
         var args = ["gpu-screen-recorder", "-w", captureToken,
                     "-f", String(fps), "-q", qualityPreset[quality] || "high",
                     "-cursor", captureCursor ? "yes" : "no",
-                    "-fallback-cpu-encoding", "yes"];
+                    "-fallback-cpu-encoding", "yes"].concat(codecArgs);
         var a = audioArg();
         if (a.length > 0)
             args = args.concat(["-a", a]);
@@ -347,7 +367,12 @@ Singleton {
     }
 
     function stop() {
-        if (!recording)
+        /**
+         * The fallback counts as stoppable while its script is alive even if
+         * capture has not started, so a run abandoned on the share picker can
+         * be dismissed instead of being stuck.
+         */
+        if (!recording && !recEngine.recProc.running)
             return;
         if (backend === "ffmpeg") {
             /**
