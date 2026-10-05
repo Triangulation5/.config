@@ -222,13 +222,8 @@ Singleton {
      */
     function activateNotif(n) {
         if (!n) return;
-        var acts = n.actions || [];
-        for (var i = 0; i < acts.length; i++) {
-            if (acts[i].identifier === "default") {
-                acts[i].invoke();
-                break;
-            }
-        }
+        var a = defaultAction(n);
+        if (a) a.invoke();
         raiseWindow(n);
     }
 
@@ -283,6 +278,33 @@ Singleton {
                 return acts[i];
         }
         return null;
+    }
+
+    /**
+     * The notification's default action, or null. `activateNotif` already looks
+     * for this identifier; exposing it lets the inbox row offer the same jump as
+     * a labelled button instead of hiding it behind a double-click.
+     */
+    function defaultAction(n) {
+        if (!n) return null;
+        var acts = n.actions || [];
+        for (var i = 0; i < acts.length; i++) {
+            if (acts[i].identifier === "default")
+                return acts[i];
+        }
+        return null;
+    }
+
+    /**
+     * What to call the default action on the expanded row. The action's own
+     * `name` when it carries one, else "Open": "default" is an identifier, not
+     * something to put in front of a person.
+     */
+    function defaultActionLabel(n) {
+        var a = defaultAction(n);
+        if (!a) return "";
+        var label = String(a.name || "").trim();
+        return label.length > 0 ? label : "Open";
     }
 
     function toggleExpanded(app) {

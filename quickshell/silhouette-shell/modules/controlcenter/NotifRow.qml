@@ -30,6 +30,11 @@ Rectangle {
     readonly property var n: entry.n
     readonly property var replyAct: Notifs.replyAction(n)
     readonly property bool hasReply: replyAct !== null
+    /**
+     * The default action's label once the row is open, or "" when the
+     * notification has none (or the row is collapsed).
+     */
+    readonly property string actLabel: nrow.expanded ? Notifs.defaultActionLabel(n) : ""
     property bool replying: false
     /**
      * Read straight off the service map rather than through
@@ -39,13 +44,18 @@ Rectangle {
      */
     readonly property bool expanded: Notifs.expandedEntries[String(n.id)] === true
 
+    /** The action pill, exposed so a harness can measure it. */
+    readonly property var actPillItem: nrowAct
+    /** The stacked text/pill column, exposed so a harness can measure it. */
+    readonly property var stackItem: nrowStack
+
     /** Emitted when the row is hovered/unhovered, for soul-seam tracking. */
     signal reportHover(Item item, bool hovered)
     /** Emitted when the notification is activated and the surface should close. */
     signal requestClose()
 
     width: parent ? parent.width : 0
-    height: replying ? 52 * s : (expanded ? Math.max(26 * s, nrowText.implicitHeight + 18 * s) : 26 * s)
+    height: replying ? 52 * s : (expanded ? Math.max(26 * s, nrowStack.implicitHeight + 18 * s) : 26 * s)
     radius: 7 * s
     color: nrowHover.hovered ? Theme.frameBg : "transparent"
 
@@ -130,26 +140,83 @@ Rectangle {
         }
     }
 
-    Text {
-        id: nrowText
+    /**
+     * Text and action pill stacked. A Column rather than two independently
+     * positioned items because the row's height is derived from what the open
+     * content needs, and a vertically-centred Text fights an absolutely
+     * positioned pill below it as soon as the row grows past two lines.
+     */
+    Column {
+        id: nrowStack
+        // The reply field is absolutely positioned over the row's lower half,
+        // so the stack steps aside for it rather than the two overlapping.
+        visible: !nrow.replying
         anchors.left: nrowTile.right
         anchors.leftMargin: 8 * s
         anchors.right: nrowRight.left
         anchors.rightMargin: 8 * s
         anchors.verticalCenter: parent.verticalCenter
+        width: parent.width - 16 * s - nrowRight.width - 8 * s
+        spacing: nrow.expanded ? 6 * s : 0
+
+        Text {
+            id: nrowText
+            width: parent.width
+            /**
+             * Collapsed it is one elided line; open it wraps, and the row's
+             * height binding above grows to whatever this ends up needing.
+             */
+            text: n.body.length > 0 ? n.body : n.summary
+            color: nrow.critical ? Theme.cream : Theme.subtle
+            font.family: Theme.font
+            font.pixelSize: 10.5 * s
+            font.weight: nrow.critical ? Font.DemiBold : Font.Medium
+            wrapMode: nrow.expanded ? Text.Wrap : Text.NoWrap
+            elide: Text.ElideRight
+            maximumLineCount: nrow.expanded ? 20 : 1
+            textFormat: Text.PlainText
+        }
+
         /**
-         * Collapsed it is one elided line; open it wraps, and the row's height
-         * binding above grows to whatever this ends up needing.
+         * The default action, as a pill under the text. Until now it was only
+         * reachable by double-clicking the row, which the row advertises
+         * nowhere -- a long notification had no visible way to jump to the app
+         * behind it.
          */
-        text: n.body.length > 0 ? n.body : n.summary
-        color: nrow.critical ? Theme.cream : Theme.subtle
-        font.family: Theme.font
-        font.pixelSize: 10.5 * s
-        font.weight: nrow.critical ? Font.DemiBold : Font.Medium
-        wrapMode: nrow.expanded ? Text.Wrap : Text.NoWrap
-        elide: Text.ElideRight
-        maximumLineCount: nrow.expanded ? 20 : 1
-        textFormat: Text.PlainText
+        Rectangle {
+            id: nrowAct
+            visible: nrow.actLabel.length > 0
+            height: 20 * s
+            width: Math.min(nrowActText.implicitWidth + 16 * s, parent.width)
+            radius: 999
+            color: actHover.hovered ? Theme.frameBg : Theme.tileBg
+            border.width: 1
+            border.color: Theme.border
+            Behavior on color { ColorAnimation { duration: Motion.fast } }
+
+            Text {
+                id: nrowActText
+                anchors.centerIn: parent
+                text: nrow.actLabel
+                color: Theme.vermLit
+                font.family: Theme.font
+                font.pixelSize: 9.5 * s
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+                textFormat: Text.PlainText
+            }
+
+            HoverHandler { id: actHover }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    Notifs.activateEntry(nrow.entry);
+                    nrow.requestClose();
+                }
+            }
+        }
     }
 
     Row {
