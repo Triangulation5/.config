@@ -355,3 +355,42 @@ one answer.
 One watcher answering both would remove a process spawn per tick. Low value on
 its own; worth doing if the recorder is ever touched again, since the two
 pollers can disagree for a tick and show a contradictory state.
+
+---
+
+## 4. A privacy indicator dot (recording, mic, camera)
+
+A small always-present indicator — a dot or glyph in the pill or bar — that
+takes a distinct colour while something is capturing the user, and is
+otherwise invisible. At minimum:
+
+- **screen recording** — `ScreenRec.recording` already exists and is already
+  authoritative, so this is the easy one and the right one to build first
+- **microphone in use** — PipeWire, via `wpctl status` or the PipeWire node
+  list; there is no Quickshell service for it
+- **camera in use** — same source as the mic
+
+**The part that matters more than the colours.** A privacy indicator is only
+worth having if it cannot be wrong in the reassuring direction. Two rules:
+
+1. **Fail visible.** If the check cannot run — the process is missing, the
+   parse fails, the service is unreachable — show the dot in an "unknown"
+   colour, or show it outright. A `try/catch` that leaves the indicator blank
+   turns every failure into "nothing is recording", which is exactly backwards.
+2. **Show what is capturing, not just that something is.** "Something is using
+   the mic" is much weaker than "Firefox is using the mic". The app name is
+   available from the PipeWire node description in most cases.
+
+Do not infer this from the notification server, and do not poll it on a fast
+timer — that is a process spawn per tick for something that changes rarely.
+Watch a PipeWire event or `wpctl status` on a slow interval, and let a
+transient parse failure trip rule 1 rather than clear the dot.
+
+**Where it would live.** `modules/pill/widgets/…` next to the other always-on
+badges, fed by a small service the way `Notifs`/`ScreenRec` feed theirs. Give
+it its own colour constants in `Theme` rather than reusing the alert colours, so
+"recording" does not read as "something went wrong".
+
+**Note.** `Theme.qml` has seven or so deliberately-broken colour strings that
+paint pure black; see the top of this file. Whatever colour is chosen for the
+recording state, check it is not one of those.
