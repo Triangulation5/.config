@@ -52,6 +52,24 @@ Singleton {
 
     readonly property bool active: Flags.barEnabled
 
+    /**
+     * True when the compositor is in dwm style, i.e. when the bar is off and
+     * `style.lua` says `dwmStyle = true`.
+     *
+     * The QML half of that decision, for surfaces that have to change shape to
+     * match: `dwmStyle` is a compositor-side setting the shell only ever
+     * *writes*, so a lockscreen popup that squared off with the desktop would
+     * otherwise keep its rounded corners in a session with no rounded anything
+     * on it. Reading it off the same flag `style.lua` is derived from is what
+     * keeps the two halves from disagreeing.
+     *
+     * Same polarity as `wanted` below, deliberately. That is the word this
+     * service writes into `style.lua`, so the two must agree: the file says
+     * "dwm style on" exactly when the bar flag is on, and a QML surface
+     * squaring off has to square off in the same sessions the compositor does.
+     */
+    readonly property bool dwmStyle: Flags.barEnabled
+
     readonly property string stylePath: Quickshell.env("HOME") + "/.config/hypr/modules/style.lua"
 
     /**

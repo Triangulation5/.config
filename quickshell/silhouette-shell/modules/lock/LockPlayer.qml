@@ -39,7 +39,8 @@ Column {
         Rectangle {
             width: 53 * root.s
             height: 53 * root.s
-            radius: 16 * root.s
+            /** Square in dwm style, matching the desktop's window corners. */
+            radius: BarMode.dwmStyle ? 0 : 16 * root.s
             anchors.verticalCenter: parent.verticalCenter
             clip: true
             color: "#1a100c"
@@ -105,7 +106,7 @@ Column {
 
         Rectangle {
             anchors.fill: parent
-            radius: 1
+            radius: BarMode.dwmStyle ? 0 : 1
             color: Theme.trackBg
         }
         Rectangle {
@@ -120,7 +121,7 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             width: 8 * root.s
             height: 8 * root.s
-            radius: width / 2
+            radius: BarMode.dwmStyle ? 0 : width / 2
             color: Theme.cream
         }
     }
