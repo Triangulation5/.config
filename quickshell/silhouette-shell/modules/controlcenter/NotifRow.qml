@@ -44,11 +44,6 @@ Rectangle {
      */
     readonly property bool expanded: Notifs.expandedEntries[String(n.id)] === true
 
-    /** The action pill, exposed so a harness can measure it. */
-    readonly property var actPillItem: nrowAct
-    /** The stacked text/pill column, exposed so a harness can measure it. */
-    readonly property var stackItem: nrowStack
-
     /** Emitted when the row is hovered/unhovered, for soul-seam tracking. */
     signal reportHover(Item item, bool hovered)
     /** Emitted when the notification is activated and the surface should close. */
