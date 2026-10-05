@@ -31,6 +31,31 @@ Item {
     property real pressScale: 1
 
     /**
+     * Put an expanded clock away again after a pause.
+     *
+     * Without this the expanded clock is a one-way door: only Escape or a
+     * second click closed it, so an accidental click left the lockscreen in
+     * its other mode until the user noticed. Escape still works, and still
+     * closes it at once -- this is the idle path, not the only path.
+     *
+     * Restarted on every change to `expanded` rather than run free, so
+     * re-expanding gives the full interval again instead of inheriting what
+     * was left of the previous one. `interval` changing while running does not
+     * restart the timer, and the flag is a setting, so it is read once into
+     * the Timer below instead.
+     */
+    readonly property int idleMs: Flags.lockClockIdleMs
+
+    Timer {
+        id: collapseTimer
+        interval: clock.idleMs
+        // Only armed while expanded, so a collapsed clock holds no timer.
+        running: clock.expanded && clock.idleMs > 0
+        repeat: false
+        onTriggered: clock.collapseRequested()
+    }
+
+    /**
      * The minimal bar's lock: no entrance animation, no overshoot. Named for what
      * it does rather than which flag sets it, so the block below reads as the
      * reason and not as the mechanism.
@@ -38,6 +63,18 @@ Item {
     readonly property bool still: Flags.barEnabled
 
     signal clockClicked()
+
+    /**
+     * Emitted when the idle timer puts the expanded clock away.
+     *
+     * A signal rather than `clock.expanded = false` on purpose. `expanded` is
+     * *bound* to `Content.clockExpanded`, and assigning to it from in here
+     * replaces that binding with a constant — so after one idle collapse the
+     * clock could never expand again, no matter what the click did. Asking the
+     * owner to clear its own flag is what the Escape shortcut already does,
+     * and it keeps one place that decides whether the clock is expanded.
+     */
+    signal collapseRequested()
 
     scale: pressScale
 

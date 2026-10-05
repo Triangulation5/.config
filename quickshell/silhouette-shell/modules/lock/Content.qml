@@ -255,6 +255,9 @@ Item {
         onClockClicked: {
             content.clockExpanded = !content.clockExpanded;
         }
+
+        /** Idle put the expanded clock away. Same effect as the Escape shortcut. */
+        onCollapseRequested: content.clockExpanded = false
     }
 
     LockPlayer {

@@ -203,6 +203,7 @@ Singleton {
     property alias wifiScanMs: adapter.wifiScanMs
     property alias btScanMs: adapter.btScanMs
     property alias calendarIdleReturnMs: adapter.calendarIdleReturnMs
+    property alias lockClockIdleMs: adapter.lockClockIdleMs
     property alias weatherRetryMs: adapter.weatherRetryMs
     property alias weatherRefreshMs: adapter.weatherRefreshMs
     property alias recHistoryMax: adapter.recHistoryMax
@@ -520,6 +521,13 @@ Singleton {
             property int btScanMs: 25000
             /** How long the calendar strip hovers a day before gliding back to today. */
             property int calendarIdleReturnMs: 2000
+            /**
+             * How long an expanded lock clock stays up before it puts itself
+             * away again. Long enough to read the date and seconds off it,
+             * short enough that walking away from the keyboard does not leave
+             * the lockscreen stuck in its other mode.
+             */
+            property int lockClockIdleMs: 7000
             /**
              * Weather cadence, in ms: while the machine has never been located
              * it retries every `weatherRetryMs` so a transient geolocation
