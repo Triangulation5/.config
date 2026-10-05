@@ -10,12 +10,14 @@ import qs.components.controls
  * Toast content for the morphing pill body: icon tile, app eyebrow, summary
  * with critical ember dot, optional body text and action pills, dismiss glyph
  * on the right. Draws no background of its own; the pill body behind it
- * provides the washi material. Clicking the body jumps to the source app;
- * dismiss and action pills consume their clicks. Dragging the body up, left
+ * provides the washi material. Clicking the text opens it — summary and body
+ * wrap over as many lines as they need, and the card grows with the pill —
+ * while clicking the tile or the app eyebrow still jumps to the source app;
+ * dismiss and action pills consume their clicks. Dragging anywhere up, left
  * or right drags the whole host pill along 1:1 into the mask wall; past half
  * the width (0.6 height going up) or on a quick flick it flings out, shorter
  * pulls spring back. Auto-expires via Notifs.expireAt unless the notification
- * is critical.
+ * is critical or has been opened for reading.
  */
 Item {
     id: root
@@ -24,6 +26,14 @@ Item {
     property bool live: true
     required property var notif
     required property Item host
+
+    /**
+     * Opened for reading. The whole card stays swipeable in every state, so
+     * this is not a separate hit area: a plain click is resolved by where it
+     * landed (see `pressOnText`), and only the clamped-to-open rendering
+     * changes.
+     */
+    property bool expanded: false
 
     readonly property bool critical: notif.urgency === NotificationUrgency.Critical
     readonly property var acts: notif.actions.filter(function(a) { return a.text.length > 0; })
@@ -41,7 +51,12 @@ Item {
 
     Timer {
         interval: Math.max(300, root.deadline - Date.now())
-        running: root.deadline > 0 && root.live && !swipe.pressed && root.notif.urgency !== NotificationUrgency.Critical
+        /**
+         * An opened notification is being read, so it holds its place on
+         * screen; closing it (or a swipe) hands the deadline back.
+         */
+        running: root.deadline > 0 && root.live && !swipe.pressed && !root.expanded
+            && root.notif.urgency !== NotificationUrgency.Critical
         onTriggered: Notifs.removePopup(root.notif)
     }
 
@@ -55,6 +70,7 @@ Item {
         if (!notif)
             return;
         armDeadline();
+        root.expanded = false;
         if (enterX === 0 && enterY === 0)
             return;
         host.swipeX = enterX;
@@ -96,10 +112,24 @@ Item {
         property real py: 0
         property double pt: 0
         property string axis: ""
+        /** Where the press landed: text opens the notification, anywhere else opens the app. */
+        property bool pressWasText: false
         readonly property real slack: 8 * root.s
         readonly property real farX: root.host.width / 2
         readonly property real farY: root.host.height * 0.6
         function fadeFor(moved, far) { return 1 - 0.6 * Math.min(1, moved / far); }
+        /**
+         * True when the point sits over the summary or body text — the part
+         * that opens for reading. The action pills and the dismiss glyph sit
+         * outside it and consume their own clicks anyway.
+         */
+        function pressOnText(m) {
+            const p = mapToItem(col, m.x, m.y);
+            const top = toastSummaryRow.y - 3 * root.s;
+            const bottom = (root.notif.body.length > 0 ? toastBody.y + toastBody.height
+                                                      : toastSummaryRow.y + toastSummaryRow.height) + 3 * root.s;
+            return p.x >= -3 * root.s && p.x <= col.width + 3 * root.s && p.y >= top && p.y <= bottom;
+        }
         onPressed: function(m) {
             settle.stop();
             const p = mapToItem(null, m.x, m.y);
@@ -107,6 +137,7 @@ Item {
             py = p.y;
             pt = Date.now();
             axis = "";
+            pressWasText = pressOnText(m);
         }
         onPositionChanged: function(m) {
             const p = mapToItem(null, m.x, m.y);
@@ -124,6 +155,10 @@ Item {
         }
         onReleased: function(m) {
             if (axis === "") {
+                if (pressWasText) {
+                    root.expanded = !root.expanded;
+                    return;
+                }
                 Notifs.activateNotif(root.notif);
                 Notifs.removePopup(root.notif);
                 return;
@@ -216,6 +251,7 @@ Item {
         }
 
         Row {
+            id: toastSummaryRow
             width: parent.width
             spacing: 5 * root.s
 
@@ -243,19 +279,23 @@ Item {
             }
 
             Text {
+                id: toastSummary
                 width: parent.width - (root.critical ? 13 * root.s : 0)
                 text: root.notif.summary
                 color: Theme.cream
                 font.family: Theme.font
                 font.pixelSize: 11.5 * root.s
                 font.weight: Font.DemiBold
-                maximumLineCount: 1
+                /** Opened, the summary wraps too: a one-line headline often cuts the useful half off. */
+                wrapMode: root.expanded ? Text.Wrap : Text.NoWrap
+                maximumLineCount: root.expanded ? 8 : 1
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
             }
         }
 
         Text {
+            id: toastBody
             width: parent.width
             visible: root.notif.body.length > 0
             text: root.notif.body
@@ -263,7 +303,7 @@ Item {
             font.family: Theme.font
             font.pixelSize: 10.5 * root.s
             wrapMode: Text.Wrap
-            maximumLineCount: 2
+            maximumLineCount: root.expanded ? 40 : 2
             elide: Text.ElideRight
             textFormat: Text.PlainText
         }

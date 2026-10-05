@@ -13,6 +13,12 @@ import qs.components.controls
  * Critical entries gain a vermilion left hairline and cream emphasis. When a
  * reply action exists, a reply glyph appears on hover; clicking it reveals an
  * inline TextField — Enter sends the reply, Escape cancels.
+ *
+ * A click opens the row: the text wraps over as many lines as it needs and the
+ * row grows to fit, so a long message can actually be read. A double-click is
+ * what still opens the app behind the notification. The open state is held on
+ * Notifs (keyed by notification id) so a new notification rebuilding the group
+ * list does not collapse the row being read.
  */
 Rectangle {
     id: nrow
@@ -25,6 +31,13 @@ Rectangle {
     readonly property var replyAct: Notifs.replyAction(n)
     readonly property bool hasReply: replyAct !== null
     property bool replying: false
+    /**
+     * Read straight off the service map rather than through
+     * `Notifs.entryExpanded()`: a property read hidden inside a called function
+     * is not captured by this binding, so the row would never repaint (the same
+     * trap `ageLabel` sidesteps with its `tick` read).
+     */
+    readonly property bool expanded: Notifs.expandedEntries[String(n.id)] === true
 
     /** Emitted when the row is hovered/unhovered, for soul-seam tracking. */
     signal reportHover(Item item, bool hovered)
@@ -32,7 +45,7 @@ Rectangle {
     signal requestClose()
 
     width: parent ? parent.width : 0
-    height: replying ? 52 * s : 26 * s
+    height: replying ? 52 * s : (expanded ? Math.max(26 * s, nrowText.implicitHeight + 18 * s) : 26 * s)
     radius: 7 * s
     color: nrowHover.hovered ? Theme.frameBg : "transparent"
 
@@ -53,6 +66,11 @@ Rectangle {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: {
+            if (nrow.replying)
+                return;
+            Notifs.toggleEntry(nrow.entry);
+        }
+        onDoubleClicked: {
             if (nrow.replying)
                 return;
             Notifs.activateEntry(nrow.entry);
@@ -113,18 +131,24 @@ Rectangle {
     }
 
     Text {
+        id: nrowText
         anchors.left: nrowTile.right
         anchors.leftMargin: 8 * s
         anchors.right: nrowRight.left
         anchors.rightMargin: 8 * s
         anchors.verticalCenter: parent.verticalCenter
+        /**
+         * Collapsed it is one elided line; open it wraps, and the row's height
+         * binding above grows to whatever this ends up needing.
+         */
         text: n.body.length > 0 ? n.body : n.summary
         color: nrow.critical ? Theme.cream : Theme.subtle
         font.family: Theme.font
         font.pixelSize: 10.5 * s
         font.weight: nrow.critical ? Font.DemiBold : Font.Medium
+        wrapMode: nrow.expanded ? Text.Wrap : Text.NoWrap
         elide: Text.ElideRight
-        maximumLineCount: 1
+        maximumLineCount: nrow.expanded ? 20 : 1
         textFormat: Text.PlainText
     }
 

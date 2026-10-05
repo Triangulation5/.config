@@ -52,6 +52,50 @@ Singleton {
     property var groups: []
     property bool groupsPending: false
 
+    /**
+     * Inbox rows the reader has opened, keyed by notification id. It lives here
+     * rather than on the row so an entry stays open when a new notification
+     * rebuilds the group list underneath it, and it is pruned in
+     * rebuildGroups() so a recycled id (the server restarts its counter) can
+     * never open a notification nobody opened.
+     */
+    property var expandedEntries: ({})
+
+    function entryExpanded(e) {
+        return !!(e && e.n && root.expandedEntries[String(e.n.id)]);
+    }
+
+    function toggleEntry(e) {
+        if (!e || !e.n)
+            return;
+        var key = String(e.n.id);
+        var m = Object.assign({}, root.expandedEntries);
+        if (m[key])
+            delete m[key];
+        else
+            m[key] = true;
+        root.expandedEntries = m;
+    }
+
+    /** Keep only the keys whose notification is still on the list. */
+    function pruneExpandedEntries() {
+        var live = {};
+        var all = tracked.concat(history);
+        for (var i = 0; i < all.length; i++)
+            live[String(all[i].id)] = true;
+        var kept = {};
+        var keys = Object.keys(root.expandedEntries);
+        var dropped = false;
+        for (var k = 0; k < keys.length; k++) {
+            if (live[keys[k]])
+                kept[keys[k]] = true;
+            else
+                dropped = true;
+        }
+        if (dropped)
+            root.expandedEntries = kept;
+    }
+
     readonly property string liveSig: {
         var s = "";
         for (var i = 0; i < tracked.length; i++)
@@ -117,6 +161,7 @@ Singleton {
         });
         gs.sort(function(a, b) { return b.t - a.t; });
         root.groups = gs;
+        root.pruneExpandedEntries();
     }
 
     function iconFor(n) {
