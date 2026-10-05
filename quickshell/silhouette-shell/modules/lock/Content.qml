@@ -43,7 +43,7 @@ Item {
      * prompt stack and the profile centre themselves on, so the two have to
      * agree or the border and the text drift apart by the corner radius.
      */
-    readonly property bool squareCapsule: Flags.barEnabled
+    readonly property bool squareCapsule: BarMode.dwmStyle
 
     /**
      * The password field starts disarmed so the lock screen idles on a "press

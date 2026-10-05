@@ -82,9 +82,9 @@ Item {
             ? 112 * link.s
             : compact.height + 8 * link.s
 
-        radius: expanded
-            ? 18 * link.s
-            : height / 2
+        radius: BarMode.dwmStyle
+            ? 0
+            : (expanded ? 18 * link.s : height / 2)
 
         color: expanded
             ? Theme.capsule

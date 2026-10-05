@@ -75,7 +75,10 @@ Item {
             ? 105 * battery.s
             : batteryRow.height + 8 * battery.s
 
-        radius: battery.expanded ? 18 * battery.s : height / 2
+        /** Square in dwm style: the desktop has no rounded anything then. */
+        radius: BarMode.dwmStyle
+            ? 0
+            : (battery.expanded ? 18 * battery.s : height / 2)
 
         color: battery.expanded ? Theme.capsule : "transparent"
 
