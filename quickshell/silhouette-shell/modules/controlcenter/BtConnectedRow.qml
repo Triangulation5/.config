@@ -136,6 +136,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, nameRow.width - (usbTag.visible ? usbTag.width + nameRow.spacing : 0))
                     text: con.name
+                    textFormat: Text.PlainText
                     color: Theme.cream
                     font.family: Theme.font
                     font.pixelSize: 12 * con.s

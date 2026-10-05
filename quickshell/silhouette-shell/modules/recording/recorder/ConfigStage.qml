@@ -102,6 +102,7 @@ Item {
             Text {
                 width: parent.width
                 text: stage.title
+                textFormat: Text.PlainText
                 color: Theme.cream
                 font.family: Theme.font
                 font.pixelSize: 13 * stage.s

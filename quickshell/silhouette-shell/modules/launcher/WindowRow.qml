@@ -98,6 +98,7 @@ Item {
             Text {
                 width: parent.width
                 text: winRow.win ? winRow.win.title : ""
+                textFormat: Text.PlainText
                 color: Theme.cream
                 font.family: Theme.font
                 font.pixelSize: 13 * s
@@ -108,6 +109,7 @@ Item {
                 width: parent.width
                 visible: winRow.win && winRow.win.cls.length > 0
                 text: winRow.win ? winRow.win.cls : ""
+                textFormat: Text.PlainText
                 color: winRow.selected ? Theme.dim : Theme.faint
                 font.family: Theme.font
                 font.pixelSize: 10.5 * s

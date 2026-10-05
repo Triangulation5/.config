@@ -192,6 +192,7 @@ PillSurface {
                         anchors.centerIn: parent
                         visible: !(icon.status === Image.Ready && icon.source != "")
                         text: erow.title.length > 0 ? erow.title.charAt(0).toUpperCase() : "?"
+                        textFormat: Text.PlainText
                         color: Theme.dim
                         font.family: Theme.font
                         font.pixelSize: 13 * root.s
@@ -223,6 +224,7 @@ PillSurface {
                     Text {
                         width: parent.width
                         text: erow.title
+                        textFormat: Text.PlainText
                         color: Theme.cream
                         font.family: Theme.font
                         font.pixelSize: 12.5 * root.s

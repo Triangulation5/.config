@@ -51,6 +51,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
+            textFormat: Text.PlainText
             color: Theme.subtle
             font.family: Theme.font
             font.pixelSize: 10 * root.s

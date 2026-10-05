@@ -112,6 +112,7 @@ PillSurface {
         Text {
             width: parent.width
             text: Polkit.message.length > 0 ? Polkit.message : "Enter your password to continue"
+            textFormat: Text.PlainText
             color: Theme.dim
             font.family: Theme.font
             font.pixelSize: 10 * root.s
@@ -124,6 +125,7 @@ PillSurface {
             width: parent.width
             visible: Polkit.action.length > 0
             text: Polkit.action
+            textFormat: Text.PlainText
             color: Theme.faint
             font.family: Theme.font
             font.pixelSize: 9 * root.s

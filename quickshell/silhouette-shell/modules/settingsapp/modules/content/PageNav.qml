@@ -77,6 +77,7 @@ RowLayout {
 
     Text {
         text: root.title
+        textFormat: Text.PlainText
         color: Theme.text
         font.pixelSize: Theme.fontSizeTitle
         font.bold: true

@@ -361,6 +361,7 @@ ColumnLayout {
                         Layout.fillWidth: true
                         visible: !result.modelData.success
                         text: root.tail(result.modelData.output)
+                        textFormat: Text.PlainText
                         color: Theme.textSecondary
                         font.pixelSize: Theme.fontSizeSection
                         wrapMode: Text.WrapAnywhere

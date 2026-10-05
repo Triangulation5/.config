@@ -368,6 +368,8 @@ PillSurface {
                         anchors.right: sizeTag.left
                         anchors.rightMargin: 8 * root.s
                         text: row.entry === undefined ? "" : (row.entry.isImage ? row.entry.label : row.entry.preview)
+                        /** Clipboard contents can be anything, markup included. */
+                        textFormat: Text.PlainText
                         color: row.entry !== undefined && row.entry.isImage
                             ? (row.selected ? Theme.dim : Theme.faint)
                             : (row.selected ? Theme.cream : Theme.subtle)

@@ -103,6 +103,7 @@ OsdFace {
         Text {
             width: parent.width
             text: face.title.length > 0 ? face.title : "Nothing playing"
+            textFormat: Text.PlainText
             color: Theme.cream
             font.family: Theme.font
             font.pixelSize: 14 * face.s
@@ -114,6 +115,7 @@ OsdFace {
         Text {
             width: parent.width
             text: face.artist
+            textFormat: Text.PlainText
             color: Theme.dim
             font.family: Theme.font
             font.pixelSize: 11 * face.s

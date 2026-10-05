@@ -78,6 +78,7 @@ Item {
             horizontalAlignment: Text.AlignRight
             visible: rowHover.hovered && brow.kbCmd.length > 0
             text: brow.kbCmd
+            textFormat: Text.PlainText
             color: Theme.dim
             font.family: Theme.font
             font.pixelSize: 9 * s

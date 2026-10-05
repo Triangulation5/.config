@@ -96,6 +96,8 @@ Column {
             anchors.rightMargin: 8 * row.s
             anchors.verticalCenter: parent.verticalCenter
             text: row.ssid.length ? row.ssid : "Hidden"
+            /** An SSID comes off the air; treat it as hostile markup. */
+            textFormat: Text.PlainText
             color: row.isActive ? Theme.vermLit : Theme.subtle
             font.family: Theme.font
             font.pixelSize: 11.5 * row.s
