@@ -264,31 +264,79 @@ Singleton {
     readonly property color error: "#e0533f"
 
     /**
-     * Privacy: something is capturing, and we could not find out.
+     * Privacy: one tone per source, and the palette they are picked from.
      *
-     * These two are fixed in every scheme *and* in dynamic mode, which is the
+     * These are fixed in every scheme *and* in dynamic mode, which is the
      * opposite of every token above and deliberate. A capture indicator that
      * takes its colour from the wallpaper can be made invisible by a pale
      * desktop, and an indicator that can be made invisible by the wallpaper is
      * not an indicator. The same reasoning that puts `error` outside the
      * schemes applies harder here: this is a safety signal, not a style.
      *
-     * `privacyCapture` is a soft coral — warm like `flameGlow` and `todayWarm`
-     * so it sits in the palette rather than on top of it, but a shade off the
-     * rose the download ring uses, so "recording" is never confused with a
-     * download and never reads as "something went wrong". `privacyUnknown` is
-     * amber, the universal "?": clearly not the capture tone, and clearly not
-     * idle either.
+     * They are read off the **vague** palette either way, so the dot looks the
+     * same on `legacy` as on `vague` — the token a source takes is not the
+     * scheme's, it is named after where it came from. A dot that changed colour
+     * with the wallpaper would say nothing; a dot that changes colour with the
+     * palette *scheme* says "which theme am I in", which is not what anyone
+     * looking at a lit dot is asking. Vague's own hues are muted already, so
+     * they are used as published rather than pulled back the way a saturated
+     * vermilion would have to be: at full chroma a 7px dot is the loudest thing
+     * on a 38px pill.
      *
-     * Both were pulled back from fully saturated vermilion and amber. At full
-     * chroma a 7px dot is the loudest thing on a 38px pill; muted to roughly
-     * two-thirds they still read at a glance across a desk, which is the whole
-     * job, without the pill looking like an alarm.
-     *
-     * Checked against the note on `legacy` above: neither is one of the seven
-     * unparseable strings, so both render identically on both schemes.
+     * Every colour below is a real token from vague.nvim's own defaults
+     * (`lua/vague/config/internal.lua`), named in the comment beside it. Amber
+     * — vague's `warning` — is deliberately *not* in the set: it is
+     * `privacyUnknown`, and a capture wearing the "we could not check" colour
+     * would make the one state that must never be ambiguous ambiguous.
      */
-    readonly property color privacyCapture: "#e0705f"
+    readonly property var privacySwatches: ({
+        rose: "#d8647e",        /** error */
+        coral: "#e0705f",       /** the tone the dot shipped with, kept as a pick */
+        periwinkle: "#7e98e8",  /** hint */
+        lilac: "#aeaed1",       /** constant */
+        seafoam: "#b4d4cf",     /** builtin */
+        moss: "#7fa563"         /** plus */
+    })
+
+    /**
+     * What each source takes when the user has not chosen: `camera` is vague's
+     * own error rose, because a camera is the thing a privacy dot is for;
+     * `screen` is `hint`; audio *in* is `constant`, and audio *out* is `plus`
+     * because sound leaving the machine is the one row here that is not a
+     * capture and should not look like it.
+     */
+    readonly property var privacyTones: ({
+        camera: root.privacySwatches.rose,
+        screen: root.privacySwatches.periwinkle,
+        audioIn: root.privacySwatches.lilac,
+        audioOut: root.privacySwatches.moss
+    })
+
+    /**
+     * The tone for `source`, which is a key of `privacyTones`, honouring a
+     * user's `choice` when that choice names a swatch.
+     *
+     * A choice that is `"auto"`, empty, or written by a newer shell than this
+     * one falls back to the source's own tone rather than to transparent black:
+     * a dot is a safety signal, so an unreadable value must not be able to draw
+     * it invisible. An unknown `source` gets the screen tone, which is what the
+     * dot was before sources had colours at all.
+     */
+    function privacyTone(source, choice) {
+        if (typeof choice === "string" && root.privacySwatches[choice] !== undefined)
+            return root.privacySwatches[choice];
+        if (root.privacyTones[source] !== undefined)
+            return root.privacyTones[source];
+        return root.privacyTones.screen;
+    }
+
+    /**
+     * Amber, the universal "?", for the state where the check could not run.
+     * Clearly not a capture tone and clearly not idle, and the only amber in
+     * this file. Muted from vague's `warning` the same way the capture tones
+     * needed no muting: at full chroma the ring would shout over the dot it is
+     * reporting on.
+     */
     readonly property color privacyUnknown: "#dfae63"
 
     /**

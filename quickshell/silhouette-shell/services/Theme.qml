@@ -82,12 +82,12 @@ Singleton {
     readonly property color error: ColorScheme.error
 
     /**
-     * Privacy indicator tones: a capture is running, or the capture check
-     * could not be run. Fixed rather than scheme- and palette-dependent — a
-     * safety signal must not be something a pale wallpaper can hide. See the
-     * note in `ColorScheme.qml`.
+     * The privacy dot's unknown tone: the capture check could not be run.
+     * Fixed rather than scheme- and palette-dependent — a safety signal must
+     * not be something a pale wallpaper can hide. The *capture* tones are not
+     * here because there is more than one of them and which applies is the
+     * service's call: read `Privacy.tone`. See the note in `ColorScheme.qml`.
      */
-    readonly property color privacyCapture: ColorScheme.privacyCapture
     readonly property color privacyUnknown: ColorScheme.privacyUnknown
     readonly property color placeholder: ColorScheme.placeholder
     readonly property color trackBg: ColorScheme.trackBg

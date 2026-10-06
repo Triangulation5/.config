@@ -14,9 +14,13 @@ import qs.services
  *     authoritative — it is polled from the real process, so an externally
  *     started recorder is covered too. Read directly, never polled here: the
  *     dot is exact the instant a recording starts.
- *   - **Microphone and camera.** PipeWire, through `wpctl status`. There is no
- *     Quickshell service for capture state, and inventing one is out of scope;
- *     this is a slow read of the one tool that already answers the question.
+ *   - **Audio in, audio out and camera.** PipeWire, through `wpctl status`.
+ *     There is no Quickshell service for capture state, and inventing one is
+ *     out of scope; this is a slow read of the one tool that already answers
+ *     the question. "Audio in" is deliberately not named "microphone": the
+ *     arrow PipeWire reports is a direction, so a screen share that carries
+ *     system sound reads as exactly the same thing as a mic does. See
+ *     `wantAudioIn`.
  *
  * The rules this file exists to enforce are in the TODO item that asked for it,
  * and they are worth restating because both are easy to get backwards:
@@ -29,11 +33,15 @@ import qs.services
  *      question mark, but the state never quietly reverts to idle.
  *   2. **Say what is capturing.** "Something is using your microphone" is
  *      weaker than "Firefox is using your microphone", and the application name
- *      is right there in the stream header for nearly every real stream. The
- *      names are collected and kept in `micUsers` / `cameraUsers`; nothing
- *      prints them yet, because the rest surface is 38px tall and holds a mark
- *      and nothing else. A surface with room for words can read them off
- *      directly.
+ *      is right there in the stream header for nearly every real stream. The *     names are collected and kept in `audioInUsers` / `cameraUsers` /
+ *     `audioOutUsers`; nothing prints them yet, because the rest surface is 38px
+ *      tall and holds a mark and nothing else. A surface with room for words can
+ *      read them off directly.
+ *
+ * Which of those sources is worth a dot is the user's decision, so each one has
+ * its own switch and there is a master above them (`enabled`). A switched-off
+ * source is not probed at all where that is possible: audio in, camera and
+ * audio out all off leaves a screen-only indicator that costs no process spawn.
  *
  * Two things this deliberately does not do, because both were specified:
  *
@@ -74,15 +82,64 @@ import qs.services
  * The `*` on a `Sources:` line looks like the answer and is not. That star was
  * already there with nothing recording, because a monitor being consumed marks
  * the source running; reading it as "the mic is in use" pins the indicator on,
- * permanently and wrongly. The capture signal is the **Streams** section, and
- * the arrow is the direction: `<` means the stream is reading from a device
- * (capturing), `>` means it is writing to one (playback). The stream header is
- * the application name, which is rule 2 delivered for free.
+ * permanently and wrongly. The signal is the **Streams** section, and the arrow
+ * is the direction: `<` means the stream is reading from a device (capturing),
+ * `>` means it is writing to one (playback). The stream header is the
+ * application name, which is rule 2 delivered for free.
+ *
+ * Both directions are reported, separately, because what counts as worth
+ * lighting a dot about is the owner's call: a camera opening is, a speaker in
+ * use is not. See `wantAudioOut` for why that one ships off.
  */
 Singleton {
     id: root
 
-    /** -- the three sources ------------------------------------------------ */
+    /** -- what the user has switched on ------------------------------------- */
+
+    /** Master switch. Off means the dot does not exist, and nothing is probed. */
+    readonly property bool enabled: Flags.privacyDot
+
+    /** Report a screen recording. On by default; needs no probe. */
+    readonly property bool wantScreen: Flags.privacyScreen
+
+    /**
+     * Report audio *arriving* from a device. Off by default.
+     *
+     * Not named "microphone", because it is not one thing. The signal is a
+     * PipeWire stream with `<` on its link — a device feeding a process — and a
+     * microphone is only the obvious member of that set. A screen share that
+     * carries system audio, an app recording a conference call, anything
+     * looping a source back into itself: all identical on the wire, all
+     * equally a thing drawing your sound out of the machine. One flag covers
+     * them because one flag is all that can tell them apart at all.
+     *
+     * Off by default because of that same set, from the other end: the most
+     * reliable thing holding a microphone open is a visualiser like cava,
+     * which runs all session and never lets go. Left on, this row does not
+     * report the interesting capture, it reports the permanent one and the dot
+     * sits lit until it is switched off rather than ignored. It is the row to
+     * turn on if a mic you did not start is the thing you most want caught.
+     */
+    readonly property bool wantAudioIn: Flags.privacyAudioIn
+
+    /** Report a live camera. On by default. */
+    readonly property bool wantCamera: Flags.privacyCam
+
+    /**
+     * Report audio *leaving* for a device — playback. Off by default, and that
+     * is the interesting one: a speaker in use is not a privacy event, it is
+     * somebody listening to something. Any media player, a video call, a game
+     * — all of them would light a dot that means "something is playing", which
+     * is noise wearing an indicator's clothes. It is here because someone may
+     * well want to know, not because it belongs on by default.
+     *
+     * This is about *which process is sending sound*, and has nothing to do
+     * with volume: the shell's mixer, the OSD and every fader are a separate
+     * concern that this row neither reads nor changes.
+     */
+    readonly property bool wantAudioOut: Flags.privacyAudioOut
+
+    /** -- the sources ------------------------------------------------------- */
 
     /** The shell's own recorder, or one started outside it. Exact, not polled. */
     readonly property bool screen: ScreenRec.recording
@@ -93,22 +150,34 @@ Singleton {
      * Replaced wholesale rather than edited in place: a plain JS object has no
      * change signal, so mutating these arrays would leave every binding reading
      * them stale. These are the writable source; everything the UI reads
-     * (`state`, `label`) is derived below and stays readonly.
+     * (`state`) is derived below and stays readonly.
      */
-    property var micUsers: ({ apps: [], devices: [] })
+    property var audioInUsers: ({ apps: [], devices: [] })
     property var cameraUsers: ({ apps: [], devices: [] })
+    property var audioOutUsers: ({ apps: [], devices: [] })
 
     /** -- the one answer the UI reads ------------------------------------- */
 
     /**
-     * `idle` — nothing is capturing, and we know it. The dot is invisible.
+     * `off` — the master switch is off. Nothing is shown, and nothing is probed.
+     * `idle` — nothing is happening among the sources you switched on, and we
+     *   know it. The dot is invisible.
      * `capture` — something is, and the dot takes the capture colour.
      * `unknown` — the check could not run or could not be read; the dot is
      *   shown in the unknown colour, because a blank dot here would be a lie.
      *
+     * Each source is gated on its own switch, and a source that is switched off
+     * is not merely hidden — it stops being asked about. A `capture` therefore
+     * means "one of the things you asked to know about is happening", never a
+     * source you turned off resurfacing.
+     *
      * Screen is asked first and is deliberately not gated on `probeOk`: it
      * comes from a different, exact source, so a dead PipeWire must not be able
      * to downgrade a recording that is plainly happening.
+     *
+     * `unknown` needs a probe-backed source switched on to mean anything. If
+     * you asked about screen only, there is no check that can fail, so there is
+     * nothing to report amber.
      *
      * The one state that is not "fail visible" is `idle` before the very first
      * probe finishes, which draws nothing. That is not a failure being hidden —
@@ -117,23 +186,91 @@ Singleton {
      * to *complete*, successfully or not, settles it for good.
      */
     readonly property string state: {
-        if (screen)
+        if (!root.enabled)
+            return "off";
+        if ((root.screen && root.wantScreen)
+            || (root.wantAudioIn && audioInUsers.apps.length > 0)
+            || (root.wantCamera && cameraUsers.apps.length > 0)
+            || (root.wantAudioOut && audioOutUsers.apps.length > 0))
             return "capture";
-        if (!probeOk)
-            return probed ? "unknown" : "idle";
-        if (micUsers.apps.length > 0 || cameraUsers.apps.length > 0)
-            return "capture";
+        if (!probeOk) {
+            if (!probed || !root.needsProbe)
+                return "idle";
+            return "unknown";
+        }
         return "idle";
     }
 
     /** True when something is genuinely capturing. */
     readonly property bool capturing: state === "capture"
 
+    /**
+     * Which source is responsible for the capture state, as a key of
+     * `ColorScheme.privacyTones`. Empty when nothing is capturing.
+     *
+     * The dot is one dot, so when several things are capturing at once it has
+     * to pick one to be coloured by, and the order here is that pick:
+     * camera, then screen, then audio in, then audio out. Camera first because
+     * a dot that means "the camera" when it can mean it is worth more than one
+     * that means "something, somewhere"; audio out last because it is the row
+     * that is off unless asked for, and a dot that reports the thing you opted
+     * into first reads as a bug.
+     *
+     * Every source switched off is skipped, so this can never name a source the
+     * user turned off — a colour that reports a source nobody asked about is
+     * the same bug as a lit dot for a source nobody asked about.
+     */
+    readonly property string source: {
+        if (!root.capturing)
+            return "";
+        if (root.wantCamera && cameraUsers.apps.length > 0)
+            return "camera";
+        if (root.wantScreen && root.screen)
+            return "screen";
+        if (root.wantAudioIn && audioInUsers.apps.length > 0)
+            return "audioIn";
+        if (root.wantAudioOut && audioOutUsers.apps.length > 0)
+            return "audioOut";
+        return "";
+    }
+
+    /**
+     * The pick this source's row is set to: a key of
+     * `ColorScheme.privacySwatches`, or `"auto"` for the source's own tone.
+     */
+    readonly property string toneChoice: {
+        if (root.source === "camera")
+            return Flags.privacyToneCam;
+        if (root.source === "screen")
+            return Flags.privacyToneScreen;
+        if (root.source === "audioIn")
+            return Flags.privacyToneAudioIn;
+        if (root.source === "audioOut")
+            return Flags.privacyToneAudioOut;
+        return "auto";
+    }
+
+    /**
+     * The colour the dot takes while capturing: this source's tone, or whatever
+     * the user picked for it. Amber for `unknown` is not decided here — the
+     * dot asks `unknown` first, because that is a different claim.
+     */
+    readonly property color tone: ColorScheme.privacyTone(source, toneChoice)
+
     /** True when we could not find out. Deliberately never folded into idle. */
     readonly property bool unknown: state === "unknown"
 
     /** True when the dot should be drawn at all. */
-    readonly property bool visible: state !== "idle"
+    readonly property bool visible: state === "capture" || state === "unknown"
+
+    /**
+     * True when at least one PipeWire-backed source is switched on.
+     *
+     * Gates the probe outright rather than merely the dot, so turning audio in,
+     * the camera and audio out all off leaves a screen-only indicator that
+     * costs nothing at all — no `wpctl`, no process spawn, no cadence timer.
+     */
+    readonly property bool needsProbe: enabled && (wantAudioIn || wantCamera || wantAudioOut)
 
     /** -- the probe -------------------------------------------------------- */
 
@@ -210,7 +347,7 @@ Singleton {
         running: true
         triggeredOnStart: true
         onTriggered: {
-            if (probe.running)
+            if (probe.running || !root.needsProbe)
                 return;
             root.raw = "";
             probe.running = true;
@@ -229,11 +366,11 @@ Singleton {
 
     /**
      * Fold one probe result in. `parsed` is null for "the check did not run";
-     * anything else is the capture list from `parseStatus`.
+     * anything else is the stream list from `parseStatus`.
      *
-     * A null leaves `micUsers`/`cameraUsers` exactly as they were. That is the
-     * point: the previous answer is what lets the label name the last thing
-     * seen, and clearing it would turn every hiccup into "nothing there".
+     * A null leaves the three lists exactly as they were. That is the point:
+     * the previous answer is what lets a later failure say what was last seen,
+     * and clearing it would turn every hiccup into "nothing there".
      */
     function apply(parsed) {
         probed = true;
@@ -241,20 +378,25 @@ Singleton {
             probeOk = false;
             return;
         }
-        var mic = { apps: [], devices: [] };
+        var inAudio = { apps: [], devices: [] };
         var cam = { apps: [], devices: [] };
+        var outAudio = { apps: [], devices: [] };
         for (var i = 0; i < parsed.length; i++) {
-            if (parsed[i].kind === "audio")
-                collect(mic, parsed[i]);
+            var node = parsed[i];
+            if (node.dir === "out")
+                collect(outAudio, node);
+            else if (node.kind === "audio")
+                collect(inAudio, node);
             else
-                collect(cam, parsed[i]);
+                collect(cam, node);
         }
-        micUsers = mic;
+        audioInUsers = inAudio;
         cameraUsers = cam;
+        audioOutUsers = outAudio;
         probeOk = true;
     }
 
-    /** File a capture into a source's list, keeping both halves de-duplicated. */
+    /** File a stream into one source's list, keeping both halves de-duplicated. */
     function collect(into, node) {
         if (node.app.length > 0 && into.apps.indexOf(node.app) < 0)
             into.apps.push(node.app);
@@ -263,11 +405,18 @@ Singleton {
     }
 
     /**
-     * Pull the capturing streams out of `wpctl status`.
+     * Pull the live streams out of `wpctl status`.
      *
      * Only `Audio` / `Video` → `Streams` is read. Devices, sinks and sources are
      * ignored on purpose — see the header for what their `*` marker actually
      * means, which is not "in use".
+     *
+     * Every stream carries the direction it was seen going: `in` for `<`, a
+     * stream drawing from a device (a capture), and `out` for `>`, writing to
+     * one (playback). Both are returned rather than playback being dropped,
+     * because which of the two lights the dot is the owner's choice and not
+     * this file's — but it is kept *separate*, never merged, precisely because
+     * a speaker in use is not a camera.
      *
      * Returns null when the body is not the shape we expect — that is a failed
      * read, not a clean one, and the caller turns it into `unknown`.
@@ -338,40 +487,45 @@ Singleton {
                 headCol = col;
             if (col > headCol) {
                 /**
-                 * A link. `<` is the whole of the detection — the stream is
-                 * drawing from a device. `>` is playback, and a media player
-                 * sets that constantly, so mistaking it for a capture would pin
-                 * the dot on. A link with no arrow at all (an unconnected port)
-                 * says nothing either way and is left alone.
+                 * A link, and the arrow is the direction. `<` means the stream
+                 * draws from a device; `>` means it writes to one. Only the
+                 * first arrow of a stream is kept — a recorder with two input
+                 * ports is one thing happening, not two.
+                 *
+                 * A link with no arrow at all (an unconnected port) says nothing
+                 * and is left alone, so the stream falls through to the rule
+                 * below.
                  */
                 var arrow = /([<>])\s+(.+)$/.exec(num[1]);
                 if (stream !== null && arrow !== null) {
-                    if (arrow[1] === "<") {
-                        stream.device = cleanDevice(arrow[2]);
-                        out.push(stream);
-                        stream.pushed = true;
-                        stream = null;
-                    } else {
-                        stream.playback = true;
-                    }
+                    stream.dir = arrow[1] === "<" ? "in" : "out";
+                    stream.device = cleanDevice(arrow[2]);
+                    out.push(stream);
+                    stream.pushed = true;
+                    stream = null;
                 }
                 continue;
             }
 
             /** A stream header: `80. pw-record`. */
-            stream = { kind: domain, app: cleanApp(num[1]), device: "", playback: false, pushed: false };
+            stream = { kind: domain, app: cleanApp(num[1]), device: "", dir: "", pushed: false };
             pending.push(stream);
         }
 
         /**
-         * A stream that was never seen playing is treated as capturing. This is
-         * the one inference left, and it is deliberately pointed at showing the
-         * dot: if a future PipeWire stops printing arrows the cost is a dot that
-         * stays lit, not a camera that silently stops being reported.
+         * A stream that was never seen going anywhere is treated as capturing.
+         * This is the one inference left, and it is deliberately pointed at the
+         * capture side: if a future PipeWire stops printing arrows the cost is a
+         * dot that may stay lit, not a camera that silently stops being reported.
+         * It never invents *output* out of a stream it could not read a
+         * direction for, because output is opt-in and guessing at it would put
+         * the dot on for reasons the user did not ask about.
          */
         for (var k = 0; k < pending.length; k++)
-            if (!pending[k].pushed && !pending[k].playback)
+            if (!pending[k].pushed) {
+                pending[k].dir = "in";
                 out.push(pending[k]);
+            }
 
         /** No Audio or Video header means we did not read a report at all. */
         return sawDomain ? out : null;

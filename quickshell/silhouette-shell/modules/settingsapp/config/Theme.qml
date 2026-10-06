@@ -33,6 +33,8 @@ import qs.modules.settingsapp.services
  * component that needs a colour takes it from here rather than inventing one.
  */
 QtObject {
+    id: root
+
     /** Palette */
 
     /** True while the shell's palette follows the wallpaper or the manual hue. */
@@ -74,6 +76,52 @@ QtObject {
     readonly property color searchField: "#161616"
     readonly property color knob: "#101010"
     readonly property color navButton: "#161616"
+
+    /**
+     * The privacy dot's swatches, mirrored from `services/ColorScheme.qml` for
+     * the same reason `accent` is restated above: this app and the shell are
+     * separate Quickshell instances, so a row that offers a colour has to know
+     * the colours without importing them. These are vague.nvim's own hues —
+     * every value is the same string the shell paints from, so a pick here is
+     * the pick the dot shows.
+     *
+     * Amber is absent on purpose: it is the dot's "the check could not run"
+     * tone, and a capture wearing it would make the one state that must stay
+     * unambiguous ambiguous.
+     */
+    readonly property var privacySwatches: ({
+        rose: "#d8647e",
+        coral: "#e0705f",
+        periwinkle: "#7e98e8",
+        lilac: "#aeaed1",
+        seafoam: "#b4d4cf",
+        moss: "#7fa563"
+    })
+
+    /**
+     * What each source takes on "Auto", mirroring the same table in
+     * `services/ColorScheme.qml`. The Auto chip paints this, so the row shows
+     * the colour that choice will actually produce rather than the word.
+     */
+    readonly property var privacyTones: ({
+        camera: root.privacySwatches.rose,
+        screen: root.privacySwatches.periwinkle,
+        audioIn: root.privacySwatches.lilac,
+        audioOut: root.privacySwatches.moss
+    })
+
+    /**
+     * Resolve one chip's colour: the swatch it names, or the row's own default
+     * for Auto. An unknown name falls back to Auto's colour rather than to
+     * transparent, because a chip the user can pick must never be invisible.
+     */
+    function privacySwatchColor(key, source) {
+        if (key !== "auto" && root.privacySwatches[key] !== undefined)
+            return root.privacySwatches[key];
+        if (root.privacyTones[source] !== undefined)
+            return root.privacyTones[source];
+        return root.privacyTones.screen;
+    }
 
     /**
      * Radii. There is no window radius: the compositor cuts this window's

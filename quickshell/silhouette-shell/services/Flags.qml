@@ -80,6 +80,30 @@ Singleton {
      * `services/Privacy.qml`.
      */
     property alias privacyPollMs: adapter.privacyPollMs
+    /** Master switch for the pill's privacy dot; off draws nothing and stops probing. */
+    property alias privacyDot: adapter.privacyDot
+    /** Report a screen recording. Not polled, so it is free. */
+    property alias privacyScreen: adapter.privacyScreen
+    /**
+     * Report audio arriving from a device. Off by default, and deliberately so:
+     * the most reliable consumer of a microphone is a visualiser like cava,
+     * which holds it open all session, so an always-on capture row pins the dot
+     * lit and teaches you to ignore it. On for anyone who would rather see it.
+     */
+    property alias privacyAudioIn: adapter.privacyAudioIn
+    /** Report a live camera. */
+    property alias privacyCam: adapter.privacyCam
+    /**
+     * Report audio being played. Off by default: a speaker in use is somebody
+     * listening to something, and every media player would light a dot that
+     * then means nothing.
+     */
+    property alias privacyAudioOut: adapter.privacyAudioOut
+    /** Per-source dot tones: a swatch name, or "auto" for the source's own. */
+    property alias privacyToneScreen: adapter.privacyToneScreen
+    property alias privacyToneAudioIn: adapter.privacyToneAudioIn
+    property alias privacyToneCam: adapter.privacyToneCam
+    property alias privacyToneAudioOut: adapter.privacyToneAudioOut
     property alias eventChime: adapter.eventChime
     property alias eventNotify: adapter.eventNotify
     property alias musicViz: adapter.musicViz
@@ -407,6 +431,38 @@ Singleton {
              * which floors it at 500 however this is set.
              */
             property int privacyPollMs: 1000
+            /** The privacy dot itself. Off means off, not "quiet". */
+            property bool privacyDot: true
+            /** Screen recording lights the dot. Exact and unpolled. */
+            property bool privacyScreen: true
+            /**
+             * Audio *capture* lights the dot: a microphone, and also a
+             * system-audio loopback such as a screen share that carries sound.
+             * One flag for both, because PipeWire reports them identically.
+             * Off by default — a visualiser holding the mic open all session
+             * would otherwise leave the dot permanently lit.
+             */
+            property bool privacyAudioIn: false
+            /** A live camera lights the dot. */
+            property bool privacyCam: true
+            /**
+             * Audio *playback* lights the dot. Off by default, unlike
+             * everything else here: playing sound is not a capture event, and
+             * every player, call and game would light it.
+             */
+            property bool privacyAudioOut: false
+            /**
+             * The dot's tone for each source: a swatch name from
+             * `ColorScheme.privacySwatches`, or "auto" for that source's own
+             * tone. A string rather than a colour because the palette stays the
+             * palette's business — the settings app offers the same six
+             * swatches the shell paints from, so a pick can never land on a
+             * colour that no longer exists.
+             */
+            property string privacyToneScreen: "auto"
+            property string privacyToneAudioIn: "auto"
+            property string privacyToneCam: "auto"
+            property string privacyToneAudioOut: "auto"
             /**
              * Calendar reminder effects, read by services/Events.qml: a timed
              * event's start plays an alarm chime and posts a desktop
