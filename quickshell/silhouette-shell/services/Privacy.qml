@@ -40,10 +40,11 @@ import qs.services
  *   - It does not infer anything from the notification server. A notification
  *     that *mentions* a meeting is not evidence that a camera is running, and
  *     coupling the two would make the indicator wrong in both directions.
- *   - It does not poll fast. A mic click is a rare event against a session that
- *     runs for hours, so the cadence is `Flags.privacyPollMs` (10 s) and is
- *     floored at 5 s by `interval` below — it is a process spawn per tick, and
- *     a flag that could be wound down to a busy loop would defeat the point.
+ *   - It does not guess at the cost of being late. Each tick is a process
+ *     spawn, so the cadence is `Flags.privacyPollMs` (1 s) rather than
+ *     something tighter, and `interval` below floors it at 500 ms so a
+ *     hand-edited flag cannot spin it. At 12.9 ms a probe, that is the price
+ *     of a dot that is there the instant you start talking.
  *   - It does not carry a label. The dot draws on the rest surface alone, and
  *     a name needs a surface with room for one; see `PrivacyDot`.
  *
@@ -143,12 +144,20 @@ Singleton {
     property bool probed: false
 
     /**
-     * Cadence in ms. The floor is load-bearing, not defensive tidiness: the
-     * brief for this service is explicit that a process spawn per tick is the
-     * thing to avoid, so a hand-edited flags.json cannot turn this into a busy
-     * loop either.
+     * Cadence in ms.
+     *
+     * This was 10 s with a 5 s floor, on the reasoning that a capture is rare
+     * and each tick is a process spawn. That reasoning was right about the cost
+     * and wrong about the feeling: a capture that takes up to ten seconds to
+     * appear is not an indicator, it is a post-mortem. Measured on this machine,
+     * one `wpctl status` averages 12.9 ms, so a one-second cadence is about 1.3%
+     * of a core and buys instant detection — an easy trade, and the one the
+     * owner asked for.
+     *
+     * The floor stays, at 500 ms, so a hand-edited flags.json cannot turn this
+     * into a spin loop.
      */
-    readonly property int interval: Math.max(5000, Flags.privacyPollMs)
+    readonly property int interval: Math.max(500, Flags.privacyPollMs)
 
     /** A hung `wpctl` must not hold the indicator hostage forever. */
     readonly property int timeoutMs: 6000

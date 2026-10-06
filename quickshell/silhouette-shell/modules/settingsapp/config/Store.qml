@@ -187,9 +187,9 @@ Singleton {
             property string weatherCity: "WELLAND"
             /**
              * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
-             * which floors it at 5000 however this is set.
+             * which floors it at 500 however this is set.
              */
-            property int privacyPollMs: 10000
+            property int privacyPollMs: 1000
             property bool eventChime: true
             property bool eventNotify: true
             property bool musicViz: true
