@@ -137,8 +137,10 @@ Singleton {
             return trimmed + " is reserved";
         if (byId(id))
             return trimmed + " already exists";
-        // A space the user bound by hand is not in the store, but its id is
-        // taken: adding it here would write a second toggle for the same name.
+        /**
+         * A space the user bound by hand is not in the store, but its id is
+         * taken: adding it here would write a second toggle for the same name.
+         */
         if (SpaceBinds.has(root.bindsText, id))
             return trimmed + " is already bound";
         if (key.length === 0)

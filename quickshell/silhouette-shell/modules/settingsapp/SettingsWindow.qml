@@ -55,13 +55,14 @@ FloatingWindow {
                 Layout.preferredWidth: 260
                 Layout.fillHeight: true
 
-                // A page row opens the page; a hit opens the page *and*
-                // names the setting to show. Both go through the rail's own
-                // selection rather than assigning to the content area's
-                // bound `pageIndex`, which would break that binding for
-                // good. Opening a page by name deliberately clears the
-                // target, so a ring can never outlive the search that made
-                // it.
+                /**
+                 * A page row opens the page; a hit opens the page *and* names
+                 * the setting to show. Both go through the rail's own selection
+                 * rather than assigning to the content area's bound
+                 * `pageIndex`, which would break that binding for good. Opening
+                 * a page by name deliberately clears the target, so a ring can
+                 * never outlive the search that made it.
+                 */
                 onPageSelected: function(pageIndex) {
                     sidebar.currentIndex = pageIndex;
                     content.targetKey = "";
@@ -77,9 +78,11 @@ FloatingWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                // The rail owns the selection: the chevrons ask it to move
-                // rather than assigning the index themselves, which would
-                // break this binding for good.
+                /**
+                 * The rail owns the selection: the chevrons ask it to move
+                 * rather than assigning the index themselves, which would break
+                 * this binding for good.
+                 */
                 pageIndex: sidebar.currentIndex
                 onNavigate: function(step) {
                     sidebar.currentIndex += step;

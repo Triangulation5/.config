@@ -52,8 +52,10 @@ function insertField(text, blockName, name, valueLiteral) {
     var body = text.slice(open + 1, i);
     var indent = firstIndent(body);
     var entry = "\n" + indent + name + " = " + valueLiteral + ",";
-    // Splice in before the whitespace that sets the closing brace on its own
-    // line, so the new entry lands after the last existing one.
+    /**
+     * Splice in before the whitespace that sets the closing brace on its own
+     * line, so the new entry lands after the last existing one.
+     */
     var trailing = /(\n[ \t]*)$/.exec(body);
     var at = trailing ? open + 1 + trailing.index : i;
     return { text: text.slice(0, at) + entry + text.slice(at), ok: true };

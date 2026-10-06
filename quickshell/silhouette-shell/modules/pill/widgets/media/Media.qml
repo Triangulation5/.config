@@ -465,10 +465,12 @@ PillSurface {
 
     Row {
         id: transport
-        // The dedicated surface puts its (smaller) transport at the card's
-        // bottom-left, under the title/artist column, with the brush line above
-        // it; the hover bud keeps the right-anchored row and the nudge tuned to
-        // the bigger controls.
+        /**
+         * The dedicated surface puts its (smaller) transport at the card's
+         * bottom-left, under the title/artist column, with the brush line above
+         * it; the hover bud keeps the right-anchored row and the nudge tuned to
+         * the bigger controls.
+         */
         anchors.right: root.compact ? undefined : parent.right
         anchors.rightMargin: root.compact ? 0 : root.edgePad
         anchors.left: root.compact ? parent.left : undefined
@@ -651,7 +653,10 @@ PillSurface {
 
         anchors.left: parent.left
         anchors.leftMargin: root.textX
-        // Runs the full column width: the readout sits above it, not at its end.
+        /**
+         * Runs the full column width: the readout sits above it, not at its
+         * end.
+         */
         anchors.right: parent.right
         anchors.rightMargin: root.edgePad
         anchors.bottom: parent.bottom
@@ -730,9 +735,11 @@ PillSurface {
          */
         MouseArea {
             anchors.fill: parent
-            // Wider and taller to grab, but only downwards: the extra room above
-            // would reach into the transport's own hit areas and, being drawn
-            // after them, would swallow the bottom of the play seal.
+            /**
+             * Wider and taller to grab, but only downwards: the extra room
+             * above would reach into the transport's own hit areas and, being
+             * drawn after them, would swallow the bottom of the play seal.
+             */
             anchors.leftMargin: -8 * root.s
             anchors.rightMargin: -8 * root.s
             anchors.bottomMargin: -6 * root.s

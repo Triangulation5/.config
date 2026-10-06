@@ -18,6 +18,10 @@ written with AI assistance, and features take code or ideas from other
 Quickshell projects. See [CREDITS.md](CREDITS.md) for the base and the full
 list.
 
+The design language this shell is written in — what it is called, which
+systems it drew from, what it refused from each, and the checklist a surface
+is held to — is [DESIGN.md](DESIGN.md).
+
 There is no `docs/` beside this file on purpose. Every surface, service and
 script carries its reasoning in a header comment where it lives, and prose
 written a directory away is prose that drifts. What follows is only what the

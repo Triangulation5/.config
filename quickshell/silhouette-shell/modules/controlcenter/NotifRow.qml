@@ -143,8 +143,10 @@ Rectangle {
      */
     Column {
         id: nrowStack
-        // The reply field is absolutely positioned over the row's lower half,
-        // so the stack steps aside for it rather than the two overlapping.
+        /**
+         * The reply field is absolutely positioned over the row's lower half,
+         * so the stack steps aside for it rather than the two overlapping.
+         */
         visible: !nrow.replying
         anchors.left: nrowTile.right
         anchors.leftMargin: 8 * s

@@ -491,15 +491,18 @@ configures reads as a different app: `accent` (the pill's `#d8647e` on the stati
 palette, the generated `Dyn.primary` otherwise) and `window`/`sidebar`, the
 backdrop the rail and the cards sit on.
 
-On the static palette that backdrop is **black**, and deliberately so: it is what
-the pill actually paints. The shell assigns its static surfaces the string
-`"rgba(37,37,48,1.00)"`, which Qt's colour parser cannot read, so `Theme.cardTop`
-keeps its black default and the pill, its cards, its tiles and its capsules all
-come out black. Matching the pill means matching the pixels, so `window` is
-`#000000` until those strings are repaired; the note on the token itself says so,
-where the next person will look. On dynamic or manual the pill paints the
-generated palette — valid hex, so it lands — and this window follows it token for
-token. The cards stay the app's own `#100d0d` either way.
+On the static palette that backdrop follows whichever static colourscheme the
+shell is on, because it is what the pill actually paints. There are two, and the
+shell keeps both in `services/ColorScheme.qml` under the `colorScheme` flag.
+`legacy` — the default — is the shell's original palette with its unparseable
+strings left alone; Qt cannot read `"rgba(37,37,48,1.00)"`, so those tokens
+resolve to transparent black and that scheme's body is `#000000`. `vague` is the
+vague.nvim palette ported properly, so `Theme.cardTop` is `#252530` and the pill's
+body is the grey-blue it was written for. The row on Appearance › Palette
+switches between the two and the window follows immediately, which is the easiest
+way to see what the second one actually is. On dynamic or manual the pill paints
+the generated palette — valid hex, so it lands — and this window follows it token
+for token. The cards stay the app's own `#100d0d` either way.
 
 Two tokens are worth knowing: `knob` is the ink that sits on a solid accent fill
 (the toggle knob, a lit chip's label), and `border` is a hairline meant to be

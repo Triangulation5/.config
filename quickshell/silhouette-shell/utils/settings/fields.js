@@ -30,7 +30,7 @@
  * be *settled* instead; those entries say so, and why, where they are listed.
  */
 var FIELDS = {
-    // decoration.lua: the shell's Look surface and the app's Look page.
+    /** decoration.lua: the shell's Look surface and the app's Look page. */
     "deco.gapsIn":         { min: 0,   max: 40,  step: 1,    reset: 6 },
     "deco.gapsOut":        { min: 0,   max: 60,  step: 1,    reset: 12 },
     "deco.rounding":       { min: 0,   max: 30,  step: 1,    reset: 12 },
@@ -48,33 +48,52 @@ var FIELDS = {
     "deco.shadowPower":    { min: 1,   max: 4,   step: 1,    reset: 3 },
     "deco.activeOpacity":  { min: 0.5, max: 1,   step: 0.05, reset: 1.0 },
     "deco.inactiveOpacity":{ min: 0.5, max: 1,   step: 0.05, reset: 1.0 },
-    // decorations.lua, animations table: the shell's Animation surface and the
-    // app's Motion page. The style the app also offers is not here — the shell's
-    // surface shapes the curve itself instead and never picks a style.
+    /**
+     * decorations.lua, animations table: the shell's Animation surface and the
+     * app's Motion page. The style the app also offers is not here — the
+     * shell's surface shapes the curve itself instead and never picks a style.
+     */
     "deco.animOn":         { reset: true },
     "deco.animSpeed":      { min: 1,   max: 10,  step: 0.5,  reset: 3 },
 
-    // flags.json: values the shell reads straight from Flags, edited by its own
-    // Pill and Night light groups and by the settings app's Bar & Island and
-    // Control Center pages.
+    /**
+     * flags.json: values the shell reads straight from Flags, edited by its own
+     * Pill and Night light groups and by the settings app's Bar & Island and
+     * Control Center pages.
+     */
     "flags.topGap":         { min: -1,   max: 2,    step: 0.1,  reset: 0.7 },
     "flags.appGap":         { min: 0,    max: 2,    step: 0.1,  reset: 1.0 },
     "flags.pillOpacity":    { min: 0.55, max: 1,    step: 0.05, reset: 1.0 },
     "flags.notchFlare":     { min: -7,   max: 10,   step: 0.25, reset: 1 },
-    // The three night-light bounds are settled rather than copied: the two UIs had
-    // already drifted apart, and a bound cannot be both. services/NightLight.qml
-    // clamps the temperature to 2200-6000 and the app's old 2500-6500 reached past
-    // that (buildConf clamped it back), so 2200-6000 is what both offer now. The
-    // two times run the whole minute-of-day, 0-1439: the app shipped 1439, and
-    // narrowing to the shell's 1425 would leave a value it had already written
-    // unreachable from the shell side. Both already used the same step.
+    /**
+     * The three night-light bounds are settled rather than copied: the two UIs
+     * had already drifted apart, and a bound cannot be both.
+     * services/NightLight.qml clamps the temperature to 2200-6000 and the app's
+     * old 2500-6500 reached past that (buildConf clamped it back), so 2200-6000
+     * is what both offer now. The two times run the whole minute-of-day,
+     * 0-1439: the app shipped 1439, and narrowing to the shell's 1425 would
+     * leave a value it had already written unreachable from the shell side.
+     * Both already used the same step.
+     */
     "flags.nightLightMode": { options: ["off", "on", "scheduled"], names: ["Off", "On", "Scheduled"], reset: "scheduled" },
     "flags.nightLightTemp": { min: 2200, max: 6000, step: 100,  reset: 3600 },
     "flags.nightLightOnMin":{ min: 0,    max: 1439, step: 15,   reset: 1200 },
     "flags.nightLightOffMin":{ min: 0,   max: 1439, step: 15,   reset: 420 },
-    // The palette and the shell's own motion budget: the shell's Appearance
-    // surface and the app's Appearance, Motion pages.
+    /**
+     * The palette and the shell's own motion budget: the shell's Appearance
+     * surface and the app's Appearance, Motion pages.
+     */
     "flags.paletteMode":    { options: ["static", "dynamic", "manual"], names: ["Static", "Dynamic", "Manual"], reset: "static" },
+    /**
+     * Which static palette that mode paints from: the shell's original theme
+     * ("legacy", and the default, so adding this flag changes nothing until it
+     * is touched) or a proper port of the vague.nvim palette (see
+     * services/ColorScheme.qml). It is listed here because both UIs edit it,
+     * not only the app — the same reason paletteMode above is. It sits next to
+     * paletteMode rather than in a card of its own because it means nothing
+     * without it.
+     */
+    "flags.colorScheme":    { options: ["vague", "legacy"], names: ["Vague", "Legacy"], reset: "legacy" },
     "flags.manualHue":      { min: 0,   max: 359, step: 5,    reset: 0 },
     "flags.manualSat":      { min: 0,   max: 1,   step: 0.05, reset: 0.5 },
     "flags.manualDark":     { reset: true },
@@ -82,8 +101,10 @@ var FIELDS = {
                              options: [0.9, 1.0, 1.1, 1.25], names: ["90%", "100%", "110%", "125%"] },
     "flags.uiFont":         { reset: "JetBrainsMono Nerd Font Mono" },
     "flags.mediaStyle":     { options: ["bleed", "wash", "none"], names: ["Bleed", "Wash", "None"], reset: "bleed" },
-    // The pill clock and the shell's glyph headers: the shell's Appearance surface
-    // and the app's Clock & Date page.
+    /**
+     * The pill clock and the shell's glyph headers: the shell's Appearance
+     * surface and the app's Clock & Date page.
+     */
     "flags.time12h":        { reset: true },
     "flags.clockSeconds":   { reset: false },
     "flags.showGlyphs":     { reset: false },
@@ -93,15 +114,19 @@ var FIELDS = {
     "flags.vizFps":         { min: 15,  max: 120, step: 15,   reset: 60,
                              options: [15, 30, 60, 120], names: ["15", "30", "60", "120"] },
 
-    // input.lua / env.lua: the shell's Input surface and the app's Input page.
-    // These ranges had drifted apart too, and are the union of the two, so no
-    // value either UI could already have written is left unreachable (the finer
-    // step is kept where the two differed — 0.05 over 0.1, 2px over 4px — since
-    // it can reach every value the coarser one could and more).
+    /**
+     * input.lua / env.lua: the shell's Input surface and the app's Input page.
+     * These ranges had drifted apart too, and are the union of the two, so no
+     * value either UI could already have written is left unreachable (the finer
+     * step is kept where the two differed — 0.05 over 0.1, 2px over 4px — since
+     * it can reach every value the coarser one could and more).
+     */
     "input.sensitivity":    { min: -1,  max: 1,   step: 0.05, reset: 0 },
     "input.accelProfile":   { options: ["flat", "adaptive"], names: ["Flat", "Adaptive"], reset: "flat" },
-    // The layout row's names are the options upper-cased, which the app derives,
-    // so this entry carries the list and the default and no name list.
+    /**
+     * The layout row's names are the options upper-cased, which the app
+     * derives, so this entry carries the list and the default and no name list.
+     */
     "input.kbLayout":       { options: ["us", "de", "gb", "fr", "es", "it", "tr"], reset: "us" },
     "input.repeatRate":     { min: 1,   max: 100, step: 1,    reset: 25 },
     "input.repeatDelay":    { min: 100, max: 1000, step: 25,  reset: 600 },
@@ -109,9 +134,11 @@ var FIELDS = {
     "input.cursorSize":     { min: 12,  max: 96,  step: 2,    reset: 24 },
     "input.cursorTheme":    { reset: "Bibata-Modern-Ice" },
 
-    // Not a field either UI writes: the fractional-scale choices both Display
-    // surfaces draw, stated once so the two lists cannot drift. Only `options`
-    // and `names` are meaningful here.
+    /**
+     * Not a field either UI writes: the fractional-scale choices both Display
+     * surfaces draw, stated once so the two lists cannot drift. Only `options`
+     * and `names` are meaningful here.
+     */
     "monitor.scales":       { options: [1, 1.25, 1.5, 2], names: ["1.0", "1.25", "1.5", "2.0"] }
 };
 

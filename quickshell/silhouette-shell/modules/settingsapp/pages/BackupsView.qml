@@ -39,7 +39,7 @@ ColumnLayout {
     readonly property string headline: Backups.busy
         ? (Backups.action === "restore" ? "Restoring\u2026"
             : Backups.action === "create" ? "Saving\u2026"
-            : "Deleting\u2026")  // the service's third verb is `remove`
+            : "Deleting\u2026")  /** the service's third verb is `remove` */
         : root.count === 0 ? (Backups.ready ? "No backups yet" : "Reading\u2026")
         : root.count + " backup" + (root.count === 1 ? "" : "s") + " saved"
 
@@ -235,7 +235,7 @@ ColumnLayout {
                             }
                         }
 
-                        // The question, asked in the row it is about.
+                        /** The question, asked in the row it is about. */
                         Text {
                             Layout.alignment: Qt.AlignVCenter
                             visible: entry.asking
@@ -298,7 +298,10 @@ ColumnLayout {
                             }
                         }
 
-                        // Restore and Delete: what the row is for, until it asks.
+                        /**
+                         * Restore and Delete: what the row is for, until it
+                         * asks.
+                         */
                         Rectangle {
                             Layout.alignment: Qt.AlignVCenter
                             visible: !entry.asking

@@ -18,6 +18,7 @@ MonthGrid 1.0 calendar/MonthGrid.qml
 Mixer 1.0 mixer/Mixer.qml
 PolkitPrompt 1.0 polkit/PolkitPrompt.qml
 Pomodoro 1.0 timer/Pomodoro.qml
+PrivacyDot 1.0 privacy/PrivacyDot.qml
 SpaceApps 1.0 tray/SpaceApps.qml
 Stash 1.0 tray/Stash.qml
 Toast 1.0 toast/Toast.qml

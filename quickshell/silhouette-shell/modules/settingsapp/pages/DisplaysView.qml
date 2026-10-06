@@ -108,8 +108,10 @@ ColumnLayout {
                 onPicked: root.pick(block.monName)
             }
 
-            // No `card` heading: the portrait above already names this monitor,
-            // and the card's own label would say the same thing twice.
+            /**
+             * No `card` heading: the portrait above already names this monitor,
+             * and the card's own label would say the same thing twice.
+             */
             SettingGroup {
                 Layout.fillWidth: true
                 group: root.groupFor(block.modelData)
@@ -188,8 +190,10 @@ ColumnLayout {
             rateNames.push(rates[i] + "Hz");
         }
 
-        // The fractions, and their labels, come from the table the shell's own
-        // Display surface reads too (see the Monitors service).
+        /**
+         * The fractions, and their labels, come from the table the shell's own
+         * Display surface reads too (see the Monitors service).
+         */
         var scaleOptions = Monitors.scales;
         var scaleNames = Monitors.scaleNames;
 

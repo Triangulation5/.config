@@ -80,8 +80,10 @@ QtObject {
             { key: "pillDragOverH", type: "slider", label: "Drop overlay height", min: 80, max: 220, step: 2, unit: "px", reset: 126 },
             { key: "pillGameH", type: "slider", label: "Game-mode bar height", min: 20, max: 60, step: 1, unit: "px", reset: 34 },
         ] },
-        // The lifecycle timers moved to the Timers page, next to the shell's other
-        // durations. This page is sizes, and a timeout among forty-eight of them is
-        // the one row nobody finds.
+        /**
+         * The lifecycle timers moved to the Timers page, next to the shell's
+         * other durations. This page is sizes, and a timeout among forty-eight
+         * of them is the one row nobody finds.
+         */
     ]
 }

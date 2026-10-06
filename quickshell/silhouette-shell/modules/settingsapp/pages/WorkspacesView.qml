@@ -89,8 +89,10 @@ ColumnLayout {
         root.listening = false;
     }
 
-    // Key capture: it only takes focus while the form is listening, so the panel's
-    // own keys are never swallowed by a field waiting for a letter.
+    /**
+     * Key capture: it only takes focus while the form is listening, so the
+     * panel's own keys are never swallowed by a field waiting for a letter.
+     */
     Item {
         id: catcher
         focus: root.listening
@@ -184,7 +186,7 @@ ColumnLayout {
                                 }
                             }
 
-                            // The chord, in the shell's keychip shape.
+                            /** The chord, in the shell's keychip shape. */
                             Rectangle {
                                 Layout.alignment: Qt.AlignVCenter
                                 implicitWidth: keyLabel.implicitWidth + 16
@@ -204,7 +206,7 @@ ColumnLayout {
                                 }
                             }
 
-                            // Remove, for the spaces this page owns.
+                            /** Remove, for the spaces this page owns. */
                             Item {
                                 Layout.alignment: Qt.AlignVCenter
                                 visible: entry.managed
@@ -238,7 +240,7 @@ ColumnLayout {
                                 }
                             }
 
-                            // Unfold chevron.
+                            /** Unfold chevron. */
                             Text {
                                 Layout.alignment: Qt.AlignVCenter
                                 visible: entry.managed
@@ -249,8 +251,10 @@ ColumnLayout {
                         }
                     }
 
-                    // The apps that open straight into this space — the shell's
-                    // app manager, under the space it belongs to.
+                    /**
+                     * The apps that open straight into this space — the shell's
+                     * app manager, under the space it belongs to.
+                     */
                     ColumnLayout {
                         Layout.fillWidth: true
                         Layout.leftMargin: 12
@@ -353,8 +357,11 @@ ColumnLayout {
                                         visible: appField.text.length === 0
                                     }
 
-                                    // Enter adds and clears, so a list of classes
-                                    // can be typed without reaching for the button.
+                                    /**
+                                     * Enter adds and clears, so a list of
+                                     * classes can be typed without reaching for
+                                     * the button.
+                                     */
                                     onAccepted: {
                                         Spaces.addApp(entry.modelData.id, text);
                                         text = "";
@@ -403,7 +410,7 @@ ColumnLayout {
 
             Item { Layout.preferredHeight: 4 }
 
-            // The dashed "Add Workspace" bar, as the shell's hub has it.
+            /** The dashed "Add Workspace" bar, as the shell's hub has it. */
             Item {
                 Layout.fillWidth: true
                 Layout.topMargin: 2
@@ -459,7 +466,7 @@ ColumnLayout {
         }
     }
 
-    // Create form: replaces the list, the way the shell's hub does.
+    /** Create form: replaces the list, the way the shell's hub does. */
     Rectangle {
         Layout.fillWidth: true
         visible: root.formOpen

@@ -14,8 +14,10 @@ author:
 What sits in `quickshell/silhouette-shell` now is that base with a lot of local
 work on it: reworked modules, a settings app and IPC surface of its own, extra
 surfaces, and scripts pulled apart and rebuilt. The design language (pill, washi
-material) is kept. The static theme is a port of vague.nvim, replacing the warm
-vermilion theme Ricelin shipped.
+material) is kept. The static theme comes from vague.nvim, replacing the warm
+vermilion theme Ricelin shipped; it ships as the `legacy` colour scheme, with a
+cleaner port of the same palette available as `vague` (see
+`services/ColorScheme.qml`).
 
 Not all of it traces to Ricelin. One part came from
 [Ukishima](https://github.com/amanhex/ukishima) by
@@ -34,7 +36,7 @@ projects below.
 
 Specific features drew on other projects:
 
-- [vague.nvim](https://github.com/vague-theme/vague.nvim) by the vague-theme org. The static color theme is a direct port of its palette.
+- [vague.nvim](https://github.com/vague-theme/vague.nvim) by the vague-theme org. Both static colour schemes come from its palette — `vague` a direct port, `legacy` the shell's older and partly broken transcription of it.
 
 - [Ambxst](https://github.com/Axenide/Ambxst) by
   [Axenide](https://github.com/Axenide). The rounded screen corners and related

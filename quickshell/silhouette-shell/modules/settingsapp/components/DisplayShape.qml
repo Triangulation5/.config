@@ -68,9 +68,11 @@ Item {
      */
     readonly property real chrome: root.stand ? root.gap + root.standH : 0
     readonly property real roomH: Math.max(12, root.maxHeight - root.chrome)
-    // Fitted, never forced: the floors are there so a screen stays drawable, but
-    // they are still clamped to the box, because a shape that ignored its caller's
-    // rect would overlap its neighbour in the map.
+    /**
+     * Fitted, never forced: the floors are there so a screen stays drawable,
+     * but they are still clamped to the box, because a shape that ignored its
+     * caller's rect would overlap its neighbour in the map.
+     */
     readonly property real screenW: Math.min(root.maxWidth, Math.max(16, root.roomH * root.aspect))
     readonly property real screenH: Math.min(root.roomH, Math.max(9, root.screenW / root.aspect))
 
@@ -119,8 +121,10 @@ Item {
             }
 
             Text {
-                // A screen too short to hold two lines says the name alone rather
-                // than clipping the mode in half.
+                /**
+                 * A screen too short to hold two lines says the name alone
+                 * rather than clipping the mode in half.
+                 */
                 visible: screen.height > 46 && text.length > 0
                 width: parent.width
                 text: root.modeLine
@@ -131,8 +135,10 @@ Item {
             }
         }
 
-        // A dot rather than a star glyph: the marker has to draw in whatever font
-        // stack this config has installed.
+        /**
+         * A dot rather than a star glyph: the marker has to draw in whatever
+         * font stack this config has installed.
+         */
         Rectangle {
             visible: root.main
             anchors.top: parent.top
@@ -145,7 +151,7 @@ Item {
         }
     }
 
-    // Desk panel: a neck and a foot.
+    /** Desk panel: a neck and a foot. */
     Rectangle {
         visible: root.stand && !root.builtin
         anchors.top: screen.bottom
@@ -167,7 +173,7 @@ Item {
         color: Qt.rgba(1, 1, 1, 0.09)
     }
 
-    // Laptop: the lid's deck, with the opening notch in the middle.
+    /** Laptop: the lid's deck, with the opening notch in the middle. */
     Rectangle {
         visible: root.stand && root.builtin
         anchors.top: screen.bottom

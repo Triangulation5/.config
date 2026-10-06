@@ -483,6 +483,29 @@ Item {
                 scale: 0.9 + 0.1 * face.mediaMorph
             }
 
+            /**
+             * The privacy dot, in the size that says *what* is capturing rather
+             * than merely that something is. The rest pill's dot has no room for
+             * a name; here there is, so this is where "Firefox is using your
+             * microphone" replaces "something is using your microphone" — the
+             * difference between an indicator and a piece of information.
+             *
+             * It sits beside the download chip because the two answer the same
+             * question in the same place: something is happening that you would
+             * otherwise not know about. Neither is in the keyboard focus ring
+             * set, deliberately — both are read-only indicators with nothing to
+             * activate, and adding them would make the arrow keys stop on text.
+             */
+            PrivacyDot {
+                anchors.verticalCenter: parent.verticalCenter
+
+                s: host.s
+                variant: "full"
+
+                opacity: face.mediaMorph * face.faceHush
+                scale: 0.9 + 0.1 * face.mediaMorph
+            }
+
             MinimizedTray {
                 id: minimized
 

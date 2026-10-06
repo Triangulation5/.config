@@ -31,8 +31,10 @@ Item {
 
     Rectangle {
         id: body
-        // Floor the size: a fractional width would leave a hairline of background
-        // showing along the right and bottom edges.
+        /**
+         * Floor the size: a fractional width would leave a hairline of
+         * background showing along the right and bottom edges.
+         */
         width: Math.floor(panel.width)
         height: Math.floor(panel.height)
         color: Theme.window

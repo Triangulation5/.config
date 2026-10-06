@@ -129,7 +129,9 @@ function readable(action) {
     if (focusWs)
         return workspaceTarget(focusWs[1], false);
 
-    // Relative moves (the nudge keys) carry x/y, not a workspace or direction.
+    /**
+     * Relative moves (the nudge keys) carry x/y, not a workspace or direction.
+     */
     if (/^window\.move\(\s*\{[^}]*relative\s*=\s*true[^}]*\}\s*\)$/.test(a))
         return "Nudge window";
 
@@ -141,7 +143,10 @@ function readable(action) {
     if (moveWs)
         return workspaceTarget(moveWs[1], true);
 
-    // Bare `window.resize()` is the mouse-drag form; the keyboard one carries x/y.
+    /**
+     * Bare `window.resize()` is the mouse-drag form; the keyboard one carries
+     * x/y.
+     */
     if (/^window\.resize\(/.test(a))
         return "Resize window";
 

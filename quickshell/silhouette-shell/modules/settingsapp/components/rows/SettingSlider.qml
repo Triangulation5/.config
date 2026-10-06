@@ -71,15 +71,20 @@ SettingRow {
         text: root.displayText()
         color: Theme.textSecondary
         font.pixelSize: Theme.fontSizeNormal
-        // Fixed width, so the name beside it does not shift as the digits grow.
+        /**
+         * Fixed width, so the name beside it does not shift as the digits grow.
+         */
         Layout.preferredWidth: 72
         horizontalAlignment: Text.AlignRight
     }
 
     below: Item {
         Layout.fillWidth: true
-        // A little taller than the resting knob so the pressed knob (which grows)
-        // still has a pixel to spare instead of touching the slot's edges.
+        /**
+         * A little taller than the resting knob so the pressed knob (which
+         * grows) still has a pixel to spare instead of touching the slot's
+         * edges.
+         */
         implicitHeight: 20
 
         Rectangle {
@@ -110,8 +115,10 @@ SettingRow {
             anchors.verticalCenter: parent.verticalCenter
             x: ((root.value - root.from) / (root.to - root.from)) * (track.width - width)
 
-            // Animated only for programmatic moves (Reset, or the shell writing
-            // the flag); while the pointer holds it the handle must not lag.
+            /**
+             * Animated only for programmatic moves (Reset, or the shell writing
+             * the flag); while the pointer holds it the handle must not lag.
+             */
             Behavior on x {
                 enabled: !dragArea.pressed
                 NumberAnimation { duration: Theme.animFast; easing.type: Easing.OutCubic }
@@ -173,9 +180,11 @@ SettingRow {
             readonly property real span: track.width - handle.width
 
             function update(mx) {
-                // A groove with no width yet — the first frame after a page
-                // switch — would divide by zero, and the NaN would land in
-                // flags.json as a 0. Nothing to drag against, nothing to write.
+                /**
+                 * A groove with no width yet — the first frame after a page
+                 * switch — would divide by zero, and the NaN would land in
+                 * flags.json as a 0. Nothing to drag against, nothing to write.
+                 */
                 if (track.width <= 0 || span <= 0)
                     return;
                 var ratio = Math.max(0, Math.min(1, (mx - grabOffset) / span));
@@ -190,9 +199,11 @@ SettingRow {
                 if (!onKnob)
                     update(mouse.x);
             }
-            // positionChanged keeps firing while a button is held without
-            // hoverEnabled, which is what makes this draggable anywhere on the
-            // groove rather than click-to-jump only.
+            /**
+             * positionChanged keeps firing while a button is held without
+             * hoverEnabled, which is what makes this draggable anywhere on the
+             * groove rather than click-to-jump only.
+             */
             onPositionChanged: mouse => { if (pressed) update(mouse.x); }
             onReleased: dragArea.grabOffset = 0
         }

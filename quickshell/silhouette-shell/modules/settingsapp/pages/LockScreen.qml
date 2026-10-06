@@ -56,9 +56,11 @@ QtObject {
             { key: "lockFailLimit", type: "slider", label: "Allowed failures",
               min: 1, max: 20, step: 1, unit: "",
               caption: "Consecutive wrong passwords before that action runs; a successful unlock resets the streak", reset: 10 },
-            // The timed lockout under the escalation: after this many failures the
-            // field locks for the first wait below, doubling per repeat. It applies
-            // whether or not the escalation above is armed.
+            /**
+             * The timed lockout under the escalation: after this many failures
+             * the field locks for the first wait below, doubling per repeat. It
+             * applies whether or not the escalation above is armed.
+             */
             { key: "lockoutThreshold", type: "slider", label: "Lockout after",
               min: 1, max: 20, step: 1, unit: "",
               caption: "Consecutive failures before the field is locked out", reset: 5 },

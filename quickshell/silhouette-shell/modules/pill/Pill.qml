@@ -393,15 +393,15 @@ Item {
 
     /** Tail (ms) before a closed surface is freed, keyed by surface name. */
     readonly property var unloadIdleMs: ({
-        // heaviest, evict first
+        /** heaviest, evict first */
         wallpaper:   unloadS * 1000,
         mixer:       unloadS * 1000,
-        // thirsty frequent fliers: one generous reset, then reclaim
+        /** thirsty frequent fliers: one generous reset, then reclaim */
         clipboard:   unloadS * 2 * 1000,
         media:       unloadS * 2 * 1000,
         recorder:    unloadS * 2 * 1000,
         calendar:    unloadS * 2 * 1000,
-        // everything else: a double-length reset for quick re-toggles
+        /** everything else: a double-length reset for quick re-toggles */
         default:     unloadS * 2 * 1000
     })
 
@@ -1828,6 +1828,27 @@ Item {
                 font.pixelSize: 16 * pill.s
                 font.weight: Font.DemiBold
             }
+        }
+
+        /**
+         * The privacy dot, mirrored from the download ring on the other side:
+         * the rest pill is 38px tall and has room for a mark and nothing else,
+         * so the name waits for the hover face, which has space for it. It sits
+         * on the right because the left already carries the download ring and
+         * the rest row runs from the left, so the right edge is the only place
+         * a second badge can go without the two colliding as either appears.
+         *
+         * `PrivacyDot` is its own always-on widget rather than a row in the
+         * rest row: it must not reflow the clock when it appears, the same
+         * reason the download ring keeps a constant footprint.
+         */
+        PrivacyDot {
+            id: restPrivacy
+            anchors.right: parent.right
+            anchors.rightMargin: 8 * pill.s
+            anchors.verticalCenter: parent.verticalCenter
+            s: pill.s
+            variant: "compact"
         }
 
         /**

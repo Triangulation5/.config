@@ -105,10 +105,12 @@ Rectangle {
           * the end of the list as the only place the row could be seen. */
         if (view <= 0)
             return;
-        // Wholly in view, edge to edge, is the one case that moves nothing — a
-        // tolerance, not a comfort band: a row flush against either edge is
-        // *seen*, and rolling to a row that is already there is what a click on
-        // it would do to itself.
+        /**
+         * Wholly in view, edge to edge, is the one case that moves nothing — a
+         * tolerance, not a comfort band: a row flush against either edge is
+         * seen*, and rolling to a row that is already there is what a click on
+         * it would do to itself.
+         */
         if (y >= flick.contentY - 1 && y + entry.height <= flick.contentY + view + 1)
             return;
         roll.to = Math.max(0, Math.min(flick.contentHeight - view, y + entry.height / 2 - view / 2));
@@ -142,20 +144,24 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            // No bar and no trough: the default Qt scrollbar is a light grey slab
-            // that has nothing to do with this panel, and it is drawn as an
-            // overlay *on* the rows. The list still scrolls — wheel, trackpad,
-            // and a drag that started over it — and a cut-off row is the hint
-            // that there is more below.
+            /**
+             * No bar and no trough: the default Qt scrollbar is a light grey
+             * slab that has nothing to do with this panel, and it is drawn as
+             * an overlay *on* the rows. The list still scrolls — wheel,
+             * trackpad, and a drag that started over it — and a cut-off row is
+             * the hint that there is more below.
+             */
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 id: navColumn
 
-                // The viewport's own width: a layout inside a scroll view is
-                // handed its implicit width, which would leave the rows as wide
-                // as their longest label and the highlight short of the edge.
+                /**
+                 * The viewport's own width: a layout inside a scroll view is
+                 * handed its implicit width, which would leave the rows as wide
+                 * as their longest label and the highlight short of the edge.
+                 */
                 width: list.availableWidth
                 spacing: 2
 
@@ -178,10 +184,12 @@ Rectangle {
                             Layout.fillWidth: true
                             label: entry.modelData.page.name
                             icon: entry.modelData.page.icon
-                            // modelData.index is the page's real position in
-                            // the index, so a filtered rail still opens the page
-                            // it shows rather than the row's position in the
-                            // filter.
+                            /**
+                             * modelData.index is the page's real position in
+                             * the index, so a filtered rail still opens the
+                             * page it shows rather than the row's position in
+                             * the filter.
+                             */
                             selected: entry.current
                             onClicked: root.pageSelected(entry.modelData.index)
                         }
@@ -202,8 +210,10 @@ Rectangle {
                     }
                 }
 
-                // Nothing matched the query: say so instead of leaving a silent
-                // gap where the nav list used to be.
+                /**
+                 * Nothing matched the query: say so instead of leaving a silent
+                 * gap where the nav list used to be.
+                 */
                 Text {
                     Layout.fillWidth: true
                     Layout.topMargin: 10
@@ -249,7 +259,7 @@ Rectangle {
         onTriggered: root.rollToCurrent()
     }
 
-    // Divider between the rail and the content area.
+    /** Divider between the rail and the content area. */
     Rectangle {
         anchors.right: parent.right
         width: 1

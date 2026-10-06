@@ -54,9 +54,11 @@ Rectangle {
         anchors.margins: 16
         spacing: 18
 
-        // The shape carries the click, not the whole card: the card is a heading,
-        // and a heading that swallows clicks would eat the pointer everywhere the
-        // user might expect to select text or just aim.
+        /**
+         * The shape carries the click, not the whole card: the card is a
+         * heading, and a heading that swallows clicks would eat the pointer
+         * everywhere the user might expect to select text or just aim.
+         */
         Item {
             Layout.alignment: Qt.AlignVCenter
             implicitWidth: shape.implicitWidth

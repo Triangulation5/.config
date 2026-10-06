@@ -85,7 +85,7 @@ Singleton {
     }
 
     /** The first thing a source had to say about a failed write, or "". */
-    readonly property string note: Hypr.note || Deco.note || Input.note || Monitors.note || Spaces.note
+    readonly property string note: Store.note || Hypr.note || Deco.note || Input.note || Monitors.note || Spaces.note
 
     /**
      * The pill's frost is expressed as a layer rule in the config file, but the
