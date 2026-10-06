@@ -452,14 +452,32 @@ like it should be — both found by measuring, and both corrected:
   machine with no `wpctl` on PATH waits forever and reports all clear — the
   exact inversion rule 1 forbids, and it was observed before being fixed.
 
-Cadence is `Flags.privacyPollMs` (10 s, floored at 5 s so a hand-edited flag
-cannot turn a spawn-per-tick into a busy loop). The dot lives on the rest
-surface only: a version carrying the application name was built for the hover
-face and taken back out, because the hover row is sized by its contents and
-reserving room for a name indented the pill on every hover for a dot that is
-idle almost always. Colours are `Theme.privacyCapture` / `Theme.privacyUnknown`,
-fixed across both colourschemes and neither one of the seven unparseable
-`legacy` strings.
+Cadence is `Flags.privacyPollMs` — 1 s, floored at 500 ms so a hand-edited
+flag cannot turn a spawn-per-tick into a busy loop. It started at 10 s and was
+lowered because a dot that takes ten seconds to appear is a post-mortem, not an
+indicator; one probe measures 12.9 ms here, so the tick is about 1.3% of a
+core. Worth remembering that the first attempt to fix it changed only the
+default and appeared to do nothing: the stored value always wins, and the flag
+had been written to disk at 10 s already. `Flags` now migrates a row off a
+superseded default on load, which is what actually reaches an existing machine.
+
+The dot lives on the rest surface only: a version carrying the application name
+was built for the hover face and taken back out, because the hover row is sized
+by its contents and reserving room for a name indented the pill on every hover
+for a dot that is idle almost always.
+
+The mark is 6.6px, and the two tones are pulled back from full chroma —
+`#ff5a4e` → `#e0705f` and `#ffb84d` → `#dfae63`. At full saturation a 7px dot
+was the loudest thing on a 38px pill; muted to about two thirds it still reads
+across a desk, and the capture tone sits a shade off the rose the download ring
+uses so the two are never confused. Both are fixed across the colourschemes and
+neither is one of the seven unparseable `legacy` strings.
+
+Deliberately **not** built: a warning for a video-call app running on a
+workspace *before* it opens the camera. The dot already lights the moment any
+app opens the camera, Jitsi included, and a pre-camera warning would mean
+guessing from the app list, which is a guess in the direction of crying wolf.
+Asked and declined — recorded so it is not re-litigated as an oversight.
 
 A small always-present indicator — a dot or glyph in the pill or bar — that
 takes a distinct colour while something is capturing the user, and is otherwise
