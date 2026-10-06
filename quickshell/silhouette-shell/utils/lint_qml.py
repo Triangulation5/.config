@@ -19,6 +19,13 @@ was invisible: no error, no warning, the UI just quietly did not update.
                    — never re-evaluates on its own. QML *does* capture a
                    property read made inside a called function, so calling a
                    helper is fine; reading a clock through one is not.
+  4. doc-comment   A comment that is not a `/** ... */` doc comment. Not a bug
+                   in itself — it is a rule about how this shell is written,
+                   so it belongs beside the ones that are: a file whose
+                   comments are half one style and half another reads as
+                   though nobody decided, and the next reader cannot tell a
+                   deliberate note from a leftover. Covers QML *and* JS, since
+                   both carry the convention.
 
 Exit code 0 when clean, 1 when anything is reported, so it can gate a commit.
 
@@ -183,6 +190,49 @@ def object_members(src, start, end):
     return names
 
 
+def check_doc_comments(src, path, report):
+    """Every comment must be a `/** ... */` doc comment.
+
+    Walks the same string-aware scan strip_comments() uses, so a `//` inside a
+    string literal is not mistaken for a comment. `/*` that is not already
+    `/**` is reported too, including a one-line `/* x */`.
+
+    Two forms are explicitly not comments and would otherwise be reported on
+    every audit, which is how a check gets switched off:
+
+      - `://` — a URL;
+      - the tail of a regex literal, `replace(/^file:\\/\\//, ...)`, whose
+        closing is `\\/\\/` and therefore *ends* in two slashes.
+
+    Rather than enumerate them, note that a real comment marker is always
+    preceded by whitespace or by the start of a line. Anything else — a letter,
+    a dot, a colon, a backslash — means the slashes belong to something else.
+    """
+    i, n = 0, len(src)
+    while i < n:
+        if src.startswith('//', i):
+            if i == 0 or src[i - 1] in ' \t':
+                report(path, line_of(src, i), 'doc-comment',
+                       'line comment: use /** ... */')
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+        elif src.startswith('/*', i):
+            j = src.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            if not src.startswith('/**', i) and src[max(0, i - 1):i] != ':':
+                report(path, line_of(src, i), 'doc-comment',
+                       'block comment: use /** ... */')
+            i = j
+        elif src[i] in '"\'':
+            q = src[i]
+            j = i + 1
+            while j < n and src[j] != q:
+                j += 2 if src[j] == '\\' else 1
+            i = min(j + 1, n)
+        else:
+            i += 1
+
+
 def check_bound_scope(src, path, report):
     """Bare identifiers in a nested handler that belong to an enclosing object.
 
@@ -292,6 +342,18 @@ def reads_state(body, props, root_id):
         if tm.group(1) in props:
             return True
     return False
+
+
+def load_raw(path):
+    """Unmodified text, for checks that look at comments themselves.
+
+    `load_source` blanks them, which is right for every semantic check and
+    useless for the one whose subject *is* the comment.
+    """
+    try:
+        return path.read_text()
+    except (OSError, UnicodeDecodeError):
+        return None
 
 
 def load_source(path):
@@ -424,6 +486,13 @@ def main():
         p = pathlib.Path(root)
         files.extend(sorted(p.rglob('*.qml')) if p.is_dir() else [p])
 
+    # The comment convention is the shell's rule for QML and JS alike, so this
+    # one check runs over both; the rest are QML semantics and stay on QML.
+    comments = list(files)
+    for root in args.paths or ['.']:
+        p = pathlib.Path(root)
+        comments.extend(sorted(p.rglob('*.js')) if p.is_dir() else [])
+
     singletons = build_singletons(files)
     for path in files:
         src = load_source(path)
@@ -432,6 +501,11 @@ def main():
         check_plain_text(src, path, report, args.all)
         check_bound_scope(src, path, report)
         check_untracked(src, path, report, singletons)
+    for path in comments:
+        src = load_raw(path)
+        if src is None:
+            continue
+        check_doc_comments(src, path, report)
 
     if not findings:
         print(f'qml lint: clean ({len(files)} files)')

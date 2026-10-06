@@ -38,7 +38,7 @@ Singleton {
 
         JsonAdapter {
             id: adapter
-            // == the shell's Dyn defaults - keep in sync ==
+            /** == the shell's Dyn defaults - keep in sync == */
             property string primary: "#f5bd6f"
             property string surface_container_high: "#302921"
         }

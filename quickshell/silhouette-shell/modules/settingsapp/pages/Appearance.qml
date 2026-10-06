@@ -10,7 +10,10 @@ import "../utils/rows.js" as Rows
  *
  * Mode is the switch that matters: static keeps the curated set, while dynamic
  * and manual hand the job to the wallpaper palette, which is also what re-tints
- * this window (see config/Theme.qml).
+ * this window (see config/Theme.qml). The scheme row above it only decides
+ * *which* curated set static paints — the vague.nvim port or the shell's
+ * original one — so it does nothing on the other two, and is written to say so
+ * rather than to pretend otherwise.
  *
  * The aura is a card of its own rather than three rows under the backdrop,
  * because it is the one group here that is a *shape* of another setting: the
@@ -30,7 +33,7 @@ import "../utils/rows.js" as Rows
 QtObject {
     readonly property string name: "Appearance"
     readonly property string icon: "\u25D0"
-    readonly property string keywords: "theme colour color palette wallpaper font scale ui tint backdrop media aura glow shadow strength"
+    readonly property string keywords: "theme colour color palette scheme colorscheme wallpaper font scale ui tint backdrop media aura glow shadow strength"
 
     /** One row for a flag, its bounds read from the shared table (see utils/rows.js). */
     function row(field, type, label, caption, unit, extra) {
@@ -39,6 +42,8 @@ QtObject {
 
     readonly property var groups: [
         { card: "Palette", rows: [
+            row("colorScheme", "segmented", "Colorscheme",
+                "Which static palette the shell paints from — the vague.nvim port, or the original black-bodied one. Static mode only", ""),
             row("paletteMode", "segmented", "Mode", "Static washi, live wallpaper colours, or pick a hue", ""),
             row("manualHue", "slider", "Hue", "", "\u00B0"),
             row("manualSat", "slider", "Saturation", "", "%", { displayScale: 100 }),
@@ -52,9 +57,11 @@ QtObject {
             row("mediaStyle", "segmented", "Now-playing backdrop",
                 "Blurred album-art bleed, the warm wash, or fully transparent", "")
         ]},
-        // The aura card is the one group here that answers to another row: the
-        // backdrop above has to be something other than None for any of these to
-        // do anything, and its own capture says so.
+        /**
+         * The aura card is the one group here that answers to another row: the
+         * backdrop above has to be something other than None for any of these
+         * to do anything, and its own capture says so.
+         */
         { card: "Ambient aura", rows: [
             { key: "auraOn", type: "toggle", label: "Ambient aura",
               caption: "Cover colour bleeds around the rest pill. Off by default", reset: false },

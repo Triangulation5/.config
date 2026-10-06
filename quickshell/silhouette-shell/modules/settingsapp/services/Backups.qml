@@ -134,8 +134,10 @@ Singleton {
         else
             root.message = "";
 
-        // The directory is the truth, and a create or a delete has just changed
-        // it: re-read rather than patch the list.
+        /**
+         * The directory is the truth, and a create or a delete has just changed
+         * it: re-read rather than patch the list.
+         */
         root.refreshSoon();
     }
 
@@ -219,8 +221,10 @@ Singleton {
         }
     }
 
-    // Nothing is read up front. The list is asked for when the page opens (the
-    // view's own `Component.onCompleted`), so a shell that boots and never opens
-    // this page never spawns the script at all — the same reason the Updates page
-    // checks on open rather than on a timer.
+    /**
+     * Nothing is read up front. The list is asked for when the page opens (the
+     * view's own `Component.onCompleted`), so a shell that boots and never
+     * opens this page never spawns the script at all — the same reason the
+     * Updates page checks on open rather than on a timer.
+     */
 }

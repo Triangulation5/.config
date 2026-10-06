@@ -50,11 +50,13 @@ QtObject {
         { card: "Pill", rows: [
             { key: "memorySaver", type: "toggle", label: "Memory saver",
               caption: "Free a closed surface once its tail has passed (off = keep every surface resident until pill unloadAll)", reset: true },
-            // The one row in this app whose subject is the running shell rather
-            // than a file: it runs the same function the `pill unloadAll` IPC
-            // does, in this process, so there is no `qs ipc call` subprocess and
-            // no guessing which instance to talk to. It carries a key only so a
-            // rail search can ring it (Reset skips rows with no `reset`).
+            /**
+             * The one row in this app whose subject is the running shell rather
+             * than a file: it runs the same function the `pill unloadAll` IPC
+             * does, in this process, so there is no `qs ipc call` subprocess
+             * and no guessing which instance to talk to. It carries a key only
+             * so a rail search can ring it (Reset skips rows with no `reset`).
+             */
             { key: "unloadAll", type: "action", label: "Unload closed surfaces",
               button: "Unload", done: "Unloaded",
               caption: "Drop every closed surface on every monitor now instead of waiting out its tail. The open surface, a running timer and a pending polkit prompt are left alone",
@@ -65,12 +67,14 @@ QtObject {
             { key: "pillCleanupSec", type: "slider", label: "Cleanup sweep",
               min: 2, max: 60, step: 1, unit: "s",
               caption: "How often the pill looks for closed surfaces to evict", reset: 10 },
-            // Game mode's override of the two rows above: while the mode is on,
-            // Pill.qml frees a closed surface at this one tail whatever its tier
-            // and runs the sweep at most this often, even with the saver off. Two
-            // rows rather than a read-only line, because the override is a setting
-            // in its own right — the numbers Pill.qml applies are the ones chosen
-            // here.
+            /**
+             * Game mode's override of the two rows above: while the mode is on,
+             * Pill.qml frees a closed surface at this one tail whatever its
+             * tier and runs the sweep at most this often, even with the saver
+             * off. Two rows rather than a read-only line, because the override
+             * is a setting in its own right — the numbers Pill.qml applies are
+             * the ones chosen here.
+             */
             { key: "pillGameUnloadMs", type: "slider", label: "Game-mode tail",
               min: 0, max: 5000, step: 100, unit: "ms",
               caption: "While game mode is on, how long a closed surface lingers before it is freed (0 frees it at the very next sweep, which can clip its close)", reset: 1000 },

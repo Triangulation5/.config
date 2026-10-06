@@ -20,6 +20,15 @@ Singleton {
     property alias clockSeconds: adapter.clockSeconds
     property alias showGlyphs: adapter.showGlyphs
     property alias paletteMode: adapter.paletteMode
+    /**
+     * Which static palette the shell draws from when paletteMode is "static":
+     * "legacy" (the shell's original theme, whose unparseable colour strings
+     * paint the body black, and the default so nothing changes until you ask)
+     * or "vague" (a proper port of the vague.nvim palette). Read by
+     * services/ColorScheme.qml; dynamic and manual ignore it, because those
+     * palettes are generated from the wallpaper and are already valid. /
+     */
+    property alias colorScheme: adapter.colorScheme
     property alias wallpaperDir: adapter.wallpaperDir
     property alias uiScale: adapter.uiScale
     property alias reduceMotion: adapter.reduceMotion
@@ -60,6 +69,14 @@ Singleton {
     property alias lockBattery: adapter.lockBattery
     property alias lockLink: adapter.lockLink
     property alias weatherCity: adapter.weatherCity
+    /**
+     * How often the privacy indicator re-reads PipeWire, in ms. Slow on
+     * purpose: a microphone or camera opening is rare against a session that
+     * runs for hours, and this is a process spawn per tick. Screen capture does
+     * not go through this at all — it reads the recorder directly and is exact
+     * the instant a recording starts. See `services/Privacy.qml`.
+     */
+    property alias privacyPollMs: adapter.privacyPollMs
     property alias eventChime: adapter.eventChime
     property alias eventNotify: adapter.eventNotify
     property alias musicViz: adapter.musicViz
@@ -70,10 +87,10 @@ Singleton {
     property alias auraStrength: adapter.auraStrength
     property alias auraShadow: adapter.auraShadow
     property alias gameMode: adapter.gameMode
-    /*
+    /**
      * The shell's second presentation: the minimal DWM-style bar in
      * modules/bar. While it is on the pill is not built at all, so the two
-     * never share the top edge and the bar does not pay for the pill's tree.
+     * never share the top edge and the bar does not pay for the pill's tree. /
      */
     property alias barEnabled: adapter.barEnabled
     /** Minimal bar strip height, in logical px, scaled by uiScale where it draws. */
@@ -86,7 +103,10 @@ Singleton {
     property alias nightLightTemp: adapter.nightLightTemp
     property alias nightLightOnMin: adapter.nightLightOnMin
     property alias nightLightOffMin: adapter.nightLightOffMin
-    // pill geometry and lifecycle: one flag per tunable size the pill ships with
+    /**
+     * pill geometry and lifecycle: one flag per tunable size the pill ships
+     * with
+     */
     property alias pillRestW: adapter.pillRestW
     property alias pillRestH: adapter.pillRestH
     property alias pillRestCorner: adapter.pillRestCorner
@@ -135,12 +155,12 @@ Singleton {
     property alias pillAutoStripH: adapter.pillAutoStripH
     property alias memorySaver: adapter.memorySaver
     property alias pillSurfaceIdleTimeout: adapter.pillSurfaceIdleTimeout
-    /*
+    /**
      * The shell's own timings, sizes and motion — constants that used to be
      * minutes-of-thought baked into the components that use them (the corner
-     * overlay's radii, the lock surface's box, every duration Motion hands out).
-     * Same reason the pill's geometry is flags: what the settings app cannot
-     * reach is not a setting, it is a rebuild.
+     * overlay's radii, the lock surface's box, every duration Motion hands
+     * out). Same reason the pill's geometry is flags: what the settings app
+     * cannot reach is not a setting, it is a rebuild. /
      */
     property alias cornerNotchRadius: adapter.cornerNotchRadius
     property alias cornerNormalRadius: adapter.cornerNormalRadius
@@ -172,30 +192,30 @@ Singleton {
      * longer matches a live notification, so nothing stale can reopen.
      */
     property alias notifOpenEntries: adapter.notifOpenEntries
-    /* Performance: one switch for the shell's expensive GPU layers. */
+    /** Performance: one switch for the shell's expensive GPU layers. */
     property alias liteMode: adapter.liteMode
     property alias lockPillW: adapter.lockPillW
     property alias lockPillH: adapter.lockPillH
     property alias lockAvatarSize: adapter.lockAvatarSize
     property alias lockBeadMs: adapter.lockBeadMs
-    /*
+    /**
      * The lock backdrop's blur and grade. Spread is the blur's reach; darken,
      * saturation, vignette and grain are what BlurredShot's grade shader lays
      * over the blurred grab — the constants that used to live in
      * modules/lock/BlurredShot.qml and its grade.frag. All five are Lock Screen
-     * settings, so the whole backdrop look is tunable from the settings app.
+     * settings, so the whole backdrop look is tunable from the settings app. /
      */
     property alias lockBlurSpread: adapter.lockBlurSpread
     property alias lockBlurDarken: adapter.lockBlurDarken
     property alias lockBlurSaturation: adapter.lockBlurSaturation
     property alias lockBlurVignette: adapter.lockBlurVignette
     property alias lockBlurGrain: adapter.lockBlurGrain
-    /*
+    /**
      * Thresholds and cadences that used to be literals in the components that
      * use them: the two battery warnings, the wifi/bluetooth rescan gaps, the
      * calendar strip's idle return, the weather refresh pair and the recording
      * list's cap. Same reason the lock's own numbers are flags — what the
-     * settings app cannot reach is not a setting.
+     * settings app cannot reach is not a setting. /
      */
     property alias battLowPct: adapter.battLowPct
     property alias periphLowNotify: adapter.periphLowNotify
@@ -237,6 +257,8 @@ Singleton {
             property bool clockSeconds: false
             property bool showGlyphs: false
             property string paletteMode: "static"
+            /** Which static palette the shell paints from: "legacy" or "vague". */
+            property string colorScheme: "legacy"
             /**
              * Folder the wallpaper strip reads and picks land in. Kept exactly
              * as typed, so a leading ~ is expanded by whoever reads it —
@@ -340,6 +362,11 @@ Singleton {
             property bool lockLink: true
             property string weatherCity: "WELLAND"
             /**
+             * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
+             * which floors it at 5000 however this is set.
+             */
+            property int privacyPollMs: 10000
+            /**
              * Calendar reminder effects, read by services/Events.qml: a timed
              * event's start plays an alarm chime and posts a desktop
              * notification. Each can be switched off on its own; the event is
@@ -377,10 +404,11 @@ Singleton {
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
             property int nightLightOffMin: 420
-            /*
+            /**
              * Pill geometry and lifecycle. Each is the shipped size in logical
-             * pixels, multiplied by uiScale where the pill draws it, so the app's
-             * sliders change the surface itself rather than a global zoom.
+             * pixels, multiplied by uiScale where the pill draws it, so the
+             * app's sliders change the surface itself rather than a global
+             * zoom. /
              */
             property real pillRestW: 160
             property real pillRestH: 38

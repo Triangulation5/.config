@@ -12,44 +12,55 @@ import qs.modules.settingsapp.services
  * highlights in a different colour from the thing it configures reads as a
  * different app, which is exactly how this one read.
  *
- * "Belong to the pill" means the pill's *mode*, not one frozen snapshot. On the
- * static palette the accent is the pill's curated highlight `#d8647e`, and the
- * body is **black**: the shell's Theme writes its static surfaces as
- * `"rgba(37,37,48,1.00)"`, which Qt's colour parser cannot read, so `cardTop`
- * falls back to `#000000` and that is what the pill actually paints. Matching the
- * pill means matching the pixels, so this window is black too — see the note on
- * `window` below. On dynamic or manual the pill paints the generated palette the
- * shell's Dyn service watches (those tokens are valid hex, so they land), and
- * this window follows it, re-tinting the moment a wallpaper change re-tints the
- * pill. Everything else, the cards included, stays as designed: a card is the
- * app's own surface, and `#100d0d` is what the rows were laid out against.
+ * "Belong to the pill" means the pill's *mode*, not one frozen snapshot. On a
+ * dynamic or manual palette the pill paints the generated colours the shell's
+ * Dyn service watches (those tokens are valid hex, so they land), and this window
+ * follows it, re-tinting the moment a wallpaper change re-tints the pill. On the
+ * static palette the pill paints whichever scheme is selected, and so does this
+ * window — see the note on `window` below. Everything else, the cards included,
+ * stays as designed: a card is the app's own surface, and `#100d0d` is what the
+ * rows were laid out against.
+ *
+ * The shell's two static schemes are defined in the shell's own
+ * `services/ColorScheme.qml`, and the accent and body colour each one paints are
+ * restated here. They have to be: the app and the shell are separate Quickshell
+ * instances (see `services/Dyn.qml`), so the flags file is the only thing they
+ * share and a scheme cannot be imported across that boundary. Only the two
+ * values the pill-facing tokens below actually use are restated — the same rule
+ * that keeps `Dyn` to two keys.
  *
  * These are the values the panel was designed around, so keep them together: a
  * component that needs a colour takes it from here rather than inventing one.
  */
 QtObject {
-    // Palette
+    /** Palette */
 
     /** True while the shell's palette follows the wallpaper or the manual hue. */
     readonly property bool dyn: Store.adapter.paletteMode !== "static"
 
-    /** The pill's highlight. */
+    /**
+     * True when the shell is on its original static palette rather than the port.
+     * Only an explicit "vague" turns it off, so a value that is neither name
+     * renders as legacy — the same default the flag itself carries, and the same
+     * fallback the shell's own `services/ColorScheme.qml` applies.
+     */
+    readonly property bool legacy: Store.adapter.colorScheme !== "vague"
+
+    /** The pill's highlight. Both static schemes agree on it, so only dyn branches. */
     readonly property color accent: dyn ? Dyn.primary : "#d8647e"
     /**
      * The pill's own body colour: the backdrop the rail and the cards sit on.
      *
-     * Static is `#000000`, not the `#252530` the shell's token is named for,
-     * because the shell never manages to paint the latter: `Theme.cardTop` is
-     * assigned the string `"rgba(37,37,48,1.00)"`, which is not a colour Qt can
-     * parse, so the property keeps its black default and the pill, its cards and
-     * its capsules all come out black. Verified against the running shell: the
-     * pill's body pixels read `(0,0,1)` while its text reads `(205,205,205)`,
-     * the static `Theme.cream` — so the palette is static and the body is the
-     * fallback. If the shell's strings are ever repaired, this value is the one
-     * line in this app that has to follow, and the comment above the singleton
-     * says so.
+     * The pill paints this as its `Theme.cardTop`, so this follows whichever
+     * static scheme is selected. `legacy` — the default — is `#000000`, because
+     * that scheme keeps the shell's original `"rgba(37,37,48,1.00)"`, which Qt's
+     * colour parser cannot read and which therefore resolves to transparent
+     * black; `vague` is `#252530`, the colour that scheme ports from vague.nvim's
+     * `line`. That is the whole difference between the two schemes as far as this
+     * window is concerned, and it is visible the moment the scheme row on the
+     * Appearance page is touched.
      */
-    readonly property color window: dyn ? Dyn.surfaceContainerHigh : "#000000"
+    readonly property color window: dyn ? Dyn.surfaceContainerHigh : (legacy ? "#000000" : "#252530")
     readonly property color sidebar: window
     readonly property color card: "#100d0d"
     readonly property color text: "#d0d0d0"
@@ -64,18 +75,20 @@ QtObject {
     readonly property color knob: "#101010"
     readonly property color navButton: "#161616"
 
-    // Radii. There is no window radius: the compositor cuts this window's corners
-    // (see Panel), so a token here would only be a second opinion.
+    /**
+     * Radii. There is no window radius: the compositor cuts this window's
+     * corners (see Panel), so a token here would only be a second opinion.
+     */
     readonly property int radiusCard: 14
     readonly property int radiusRow: 10
 
-    // Typography
+    /** Typography */
     readonly property int fontSizeTitle: 20
     readonly property int fontSizeNormal: 14
     readonly property int fontSizeSmall: 13
     readonly property int fontSizeSection: 11
 
-    // Motion
+    /** Motion */
     readonly property int animFast: 120
     readonly property int animNormal: 150
     readonly property int animWindow: 220

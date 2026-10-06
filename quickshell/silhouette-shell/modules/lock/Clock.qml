@@ -49,7 +49,7 @@ Item {
     Timer {
         id: collapseTimer
         interval: clock.idleMs
-        // Only armed while expanded, so a collapsed clock holds no timer.
+        /** Only armed while expanded, so a collapsed clock holds no timer. */
         running: clock.expanded && clock.idleMs > 0
         repeat: false
         onTriggered: clock.collapseRequested()

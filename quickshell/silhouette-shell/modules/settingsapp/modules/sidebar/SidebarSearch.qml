@@ -51,11 +51,11 @@ Rectangle {
                 ctx.lineWidth = 1.5;
                 ctx.lineCap = "round";
                 ctx.strokeStyle = glass.stroke;
-                // Ring, centred a touch up-left so the handle has room.
+                /** Ring, centred a touch up-left so the handle has room. */
                 ctx.beginPath();
                 ctx.arc(6.1, 6.1, 4.3, 0, Math.PI * 2);
                 ctx.stroke();
-                // Handle, out of the ring's lower-right at 45°.
+                /** Handle, out of the ring's lower-right at 45°. */
                 ctx.beginPath();
                 ctx.moveTo(9.5, 9.5);
                 ctx.lineTo(13.1, 13.1);

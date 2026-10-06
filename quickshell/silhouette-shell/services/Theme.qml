@@ -2,10 +2,19 @@
  * Shared colour and font tokens for the shell. Every surface and widget reads
  * its palette from here so a single swap re-tints the whole shell. In dynamic
  * palette mode the tokens follow the live wallpaper-derived palette (Dyn);
- * otherwise they use the static set ported from vague.nvim (replacing the
- * warm vermilion theme Ricelin shipped). Also carries the UI font
- * (Flags-driven, defaulting to Inter) and a small artist-list helper for
- * media labels.
+ * otherwise they come from the selected colour scheme — by default the shell's own
+ * original palette, or `vague`, a proper port of that palette (see
+ * `ColorScheme.qml`, which is where a scheme is defined and chosen). Also carries
+ * the UI font (Flags-driven, defaulting to Inter) and a small artist-list helper
+ * for media labels.
+ *
+ * The colours below are a façade, not a palette. They were the palette once, and
+ * they are kept as named properties anyway because every surface in the shell
+ * binds to them: folding the schemes in here would mean editing every consumer
+ * each time one was added, and renaming a token is a shell-wide search. So the
+ * scheme lives in its own file and this one reads it — which also means a widget
+ * that wants the whole palette can read `ColorScheme` directly, while one that
+ * just wants a colour keeps saying `Theme.<token>` as it always has.
  */
 pragma Singleton
 import QtQuick
@@ -13,64 +22,79 @@ import Quickshell
 import qs.services
 
 Singleton {
-    readonly property bool dyn: Flags.paletteMode !== "static"
+    /** True while the shell's palette follows the wallpaper or the manual hue. */
+    readonly property bool dyn: ColorScheme.dyn
 
-    readonly property color onGlow: dyn ? Dyn.primary : "#d8647e"
+    /** The colour scheme the palette is drawn from: "legacy" or "vague". */
+    readonly property string colorScheme: ColorScheme.name
 
-    readonly property color verm:     dyn ? Qt.darker(Dyn.primary, 1.18) : "#d8647e"
-    readonly property color vermLit:  dyn ? Dyn.primary : "#d8647e"
-    readonly property color vermDeep: dyn ? Dyn.primaryContainer : "#d8647e"
+    /** Palette */
 
-    readonly property color cream:    dyn ? Dyn.cream : "#cdcdcd"
-    readonly property color bright:   dyn ? Dyn.bright : "#cdcdcd"
-    readonly property color dim:      dyn ? Dyn.dim : "#878787"
+    readonly property color onGlow: ColorScheme.onGlow
 
-    readonly property color cardTop:  dyn ? Dyn.surfaceContainerHigh : "rgba(37,37,48,1.00)"
-    readonly property color cardBot:  dyn ? Dyn.surfaceContainerLow : "rgba(37,37,48,1.00)"
+    readonly property color verm:     ColorScheme.verm
+    readonly property color vermLit:  ColorScheme.vermLit
+    readonly property color vermDeep: ColorScheme.vermDeep
 
-    readonly property color border: dyn ? Qt.rgba(Dyn.outlineVariant.r, Dyn.outlineVariant.g, Dyn.outlineVariant.b, 1.00) : "rgba(96,96,121,1.00)"
+    readonly property color cream:    ColorScheme.cream
+    readonly property color bright:   ColorScheme.bright
+    readonly property color dim:      ColorScheme.dim
+
+    readonly property color cardTop:  ColorScheme.cardTop
+    readonly property color cardBot:  ColorScheme.cardBot
+
+    readonly property color border: ColorScheme.border
 
     readonly property color shadow: Qt.rgba(0, 0, 0, 1.00)
 
-    readonly property color tileBg: dyn ? Dyn.surface : "rgba(20,20,21,1.00)"
+    readonly property color tileBg: ColorScheme.tileBg
 
-    readonly property color subtle: dyn ? Dyn.subtle : "#878787"
-    readonly property color faint: dyn ? Dyn.faint : "#606079"
-    readonly property color iconDim: dyn ? Dyn.iconDim : "#878787"
+    readonly property color subtle: ColorScheme.subtle
+    readonly property color faint: ColorScheme.faint
+    readonly property color iconDim: ColorScheme.iconDim
 
-    readonly property color hair:     Qt.alpha(cream, 0.13)
-    readonly property color hairSoft: Qt.alpha(cream, 0.08)
-    readonly property color sheen:    Qt.alpha(cream, 0.07)
+    readonly property color hair:     ColorScheme.hair
+    readonly property color hairSoft: ColorScheme.hairSoft
+    readonly property color sheen:    ColorScheme.sheen
 
-    readonly property color vermDim: dyn ? Qt.darker(Dyn.primary, 1.5) : "#606079"
-    readonly property color vermDimDeep: dyn ? Qt.darker(Dyn.primary, 2.2) : "#606079"
-    readonly property color vermBurn: dyn ? Qt.darker(Dyn.primaryContainer, 1.1) : "#d8647e"
+    readonly property color vermDim: ColorScheme.vermDim
+    readonly property color vermDimDeep: ColorScheme.vermDimDeep
+    readonly property color vermBurn: ColorScheme.vermBurn
 
-    readonly property color tickRest: dyn ? Dyn.tickRest : "#cdcdcd"
+    readonly property color tickRest: ColorScheme.tickRest
 
-    readonly property color threadBg: Qt.alpha(cream, 0.13)
+    readonly property color threadBg: ColorScheme.threadBg
 
-    readonly property color flameCore: dyn ? Qt.lighter(onGlow, 1.03) : "#d8647e"
-    readonly property color flameGlow: dyn ? onGlow : "#d8647e"
+    readonly property color flameCore: ColorScheme.flameCore
+    readonly property color flameGlow: ColorScheme.flameGlow
 
-    readonly property string flameInk:   dyn ? Dyn.primary : "#d8647e"
-    readonly property string flameEmber: dyn ? Dyn.primaryContainer : "#d8647e"
-    readonly property string flameBurn:  dyn ? Dyn.primaryContainer : "#d8647e"
-    readonly property string flameTip:   dyn ? Dyn.primaryContainerInk : "#cdcdcd"
+    readonly property string flameInk:   ColorScheme.flameInk
+    readonly property string flameEmber: ColorScheme.flameEmber
+    readonly property string flameBurn:  ColorScheme.flameBurn
+    readonly property string flameTip:   ColorScheme.flameTip
 
-    readonly property color todayWarm: dyn ? onGlow : "#f3be7c"
+    readonly property color todayWarm: ColorScheme.todayWarm
 
-    readonly property color ghost: dyn ? Dyn.surfaceContainerHighest : "rgba(37,37,48,1.00)"
+    readonly property color ghost: ColorScheme.ghost
 
-    readonly property color capsule: dyn ? Dyn.surfaceContainerHigh : "rgba(34,34,44,1.00)"
-    readonly property color capsuleBorder: dyn ? Qt.rgba(Dyn.outline.r, Dyn.outline.g, Dyn.outline.b, 1.00) : "rgba(96,96,121,1.00)"
-    readonly property color error: "#e0533f"
-    readonly property color placeholder: dyn ? Dyn.dim : "#6a6a7a"
-    readonly property color trackBg: Qt.alpha(cream, 0.10)
+    readonly property color capsule: ColorScheme.capsule
+    readonly property color capsuleBorder: ColorScheme.capsuleBorder
+    readonly property color error: ColorScheme.error
 
-    readonly property color frameBg: Qt.alpha(cream, 0.055)
-    readonly property color frameBorder: Qt.alpha(cream, 0.10)
-    readonly property color creamMenu: Qt.alpha(cream, 0.82)
+    /**
+     * Privacy indicator tones: a capture is running, or the capture check
+     * could not be run. Fixed rather than scheme- and palette-dependent — a
+     * safety signal must not be something a pale wallpaper can hide. See the
+     * note in `ColorScheme.qml`.
+     */
+    readonly property color privacyCapture: ColorScheme.privacyCapture
+    readonly property color privacyUnknown: ColorScheme.privacyUnknown
+    readonly property color placeholder: ColorScheme.placeholder
+    readonly property color trackBg: ColorScheme.trackBg
+
+    readonly property color frameBg: ColorScheme.frameBg
+    readonly property color frameBorder: ColorScheme.frameBorder
+    readonly property color creamMenu: ColorScheme.creamMenu
 
     readonly property real shadowOpacity: 0.5
 

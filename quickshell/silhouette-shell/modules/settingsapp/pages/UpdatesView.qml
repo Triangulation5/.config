@@ -92,7 +92,9 @@ ColumnLayout {
                     wrapMode: Text.WordWrap
                 }
 
-                // Check: available in every settled state, disabled while busy.
+                /**
+                 * Check: available in every settled state, disabled while busy.
+                 */
                 Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     implicitWidth: checkLabel.implicitWidth + 24
@@ -132,8 +134,10 @@ ColumnLayout {
                 wrapMode: Text.WordWrap
             }
 
-            // The install affordance lives here, so it is never on screen when
-            // there is nothing to install.
+            /**
+             * The install affordance lives here, so it is never on screen when
+             * there is nothing to install.
+             */
             ColumnLayout {
                 Layout.fillWidth: true
                 visible: Updates.behind
@@ -258,7 +262,7 @@ ColumnLayout {
         }
     }
 
-    // The pending packages: what "42 updates" is made of.
+    /** The pending packages: what "42 updates" is made of. */
     Rectangle {
         Layout.fillWidth: true
         visible: Updates.packages.length > 0
@@ -317,7 +321,7 @@ ColumnLayout {
         }
     }
 
-    // What the last install did, per command the script ran.
+    /** What the last install did, per command the script ran. */
     Rectangle {
         Layout.fillWidth: true
         visible: Updates.results.length > 0
@@ -355,8 +359,10 @@ ColumnLayout {
                         wrapMode: Text.WordWrap
                     }
 
-                    // Only a failure's tail is worth showing: the last lines are
-                    // where a package manager says what it refused and why.
+                    /**
+                     * Only a failure's tail is worth showing: the last lines
+                     * are where a package manager says what it refused and why.
+                     */
                     Text {
                         Layout.fillWidth: true
                         visible: !result.modelData.success

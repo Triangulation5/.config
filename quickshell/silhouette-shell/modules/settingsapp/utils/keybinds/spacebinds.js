@@ -175,8 +175,10 @@ function add(text, id, key) {
             break;
         }
     }
-    // No special in the file: land after the last line that has content, so the
-    // pair is never wedged into the file's trailing blank lines.
+    /**
+     * No special in the file: land after the last line that has content, so the
+     * pair is never wedged into the file's trailing blank lines.
+     */
     if (at === lines_.length) {
         var last = -1;
         for (var j = 0; j < lines_.length; j++)

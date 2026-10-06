@@ -89,9 +89,11 @@ Item {
             });
         }
 
-        // A stand under a screen that has another screen under it would be
-        // painted across the neighbour, so those tiles drop theirs. The test is
-        // overlap in x plus a tile that starts at this one's bottom edge.
+        /**
+         * A stand under a screen that has another screen under it would be
+         * painted across the neighbour, so those tiles drop theirs. The test is
+         * overlap in x plus a tile that starts at this one's bottom edge.
+         */
         for (var a = 0; a < tiles.length; a++)
             for (var b = 0; b < tiles.length; b++) {
                 if (a === b)
@@ -116,13 +118,18 @@ Item {
 
             required property var modelData
 
-            // A tile only labels itself when there is room for the text inside the
-            // screen it draws: at six monitors wide the names would be a smear.
+            /**
+             * A tile only labels itself when there is room for the text inside
+             * the screen it draws: at six monitors wide the names would be a
+             * smear.
+             */
             readonly property bool roomy: tile.modelData.w > 74 && tile.modelData.h > 32
 
-            // Placed by its screen's top-left corner, not by the middle of the
-            // item: the screen inside the item is the tile rect, and only the
-            // stand hangs past it.
+            /**
+             * Placed by its screen's top-left corner, not by the middle of the
+             * item: the screen inside the item is the tile rect, and only the
+             * stand hangs past it.
+             */
             x: tile.modelData.x
             y: tile.modelData.y
             width: tile.implicitWidth

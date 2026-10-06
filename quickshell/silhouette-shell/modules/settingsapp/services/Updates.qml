@@ -131,8 +131,10 @@ Singleton {
         root.applied = data.applied === true;
         root.rebootNeeded = data.rebootNeeded === true;
         if (root.applied) {
-            // A landed upgrade answers its own question, so the pending list is
-            // cleared rather than left showing what was just installed.
+            /**
+             * A landed upgrade answers its own question, so the pending list is
+             * cleared rather than left showing what was just installed.
+             */
             root.status = "ok";
             root.pending = 0;
             root.packages = [];
@@ -161,8 +163,10 @@ Singleton {
             onStreamFinished: {
                 root.applying = false;
                 root.ingestApply(this.text);
-                // The pending list is stale either way: an apply that failed
-                // part-way still installed something.
+                /**
+                 * The pending list is stale either way: an apply that failed
+                 * part-way still installed something.
+                 */
                 checkProc.running = true;
             }
         }

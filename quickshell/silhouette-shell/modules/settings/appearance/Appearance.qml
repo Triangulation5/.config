@@ -13,9 +13,9 @@ import qs.components.layout
 /**
  * 相 APPEARANCE sub-surface: the clock format and seconds, the Japanese-glyph
  * toggle that gates every surface header, the palette mode (static flame, dynamic
- * per-wallpaper, or a manually chosen hue), the UI scale and a reduce-motion
- * switch. Reached from the settings index and morphs back to it on an empty click
- * or the back chevron.
+ * per-wallpaper, or a manually chosen hue) and which static palette that mode
+ * paints from, the UI scale and a reduce-motion switch. Reached from the settings
+ * index and morphs back to it on an empty click or the back chevron.
  *
  * Manual palette mode reveals a rainbow hue strip and a dark/light choice; moving
  * either rebuilds the rice colour set from that hue through wallcolors.py --hue
@@ -113,6 +113,7 @@ SettingsSurface {
         { item: mediaBgRow, kind: "seg", vals: ["bleed", "wash", "none"], get: function () { return Flags.mediaStyle; }, set: function (v) { Flags.mediaStyle = v; } },
         { item: notchRow, kind: "toggle", get: function () { return Flags.notchStyle; }, set: function (v) { Flags.notchStyle = v; } },
         { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
+        { item: schemeRow, kind: "seg", vals: ["vague", "legacy"], get: function () { return Flags.colorScheme; }, set: function (v) { Flags.colorScheme = v; } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
         { item: motionRow, kind: "toggle", get: function () { return Flags.reduceMotion; }, set: function (v) { Flags.reduceMotion = v; } },
         { item: autoHideRow, kind: "toggle", get: function () { return Flags.autoHide; }, set: function (v) { Flags.autoHide = v; } },
@@ -241,6 +242,29 @@ SettingsSurface {
             options: root.options("flags", "paletteMode")
             value: Flags.paletteMode
             onPicked: (v) => root.applyMode(v)
+        }
+    }
+
+    /**
+     * Which static palette the shell paints from — the vague.nvim port, or the
+     * shell's original theme whose unparseable colour strings left every surface
+     * black. Reads and writes the flag directly, like every other row here: the
+     * two schemes differ only in colours, so there is nothing to regenerate and
+     * nothing to shell out to. It has no effect while the palette is on Dynamic
+     * or Manual, because those are generated from the wallpaper and are already
+     * valid colours.
+     */
+    SettingsRow {
+        id: schemeRow
+        surface: root
+        name: "Colorscheme"
+        icon: "palette"
+
+        SettingsSeg {
+            s: root.s
+            options: root.options("flags", "colorScheme")
+            value: Flags.colorScheme
+            onPicked: (v) => Flags.colorScheme = v
         }
     }
 

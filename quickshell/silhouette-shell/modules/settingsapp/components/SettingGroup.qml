@@ -97,9 +97,11 @@ ColumnLayout {
 
                     Layout.fillWidth: true
                     implicitWidth: editor.implicitWidth
-                    // Sized by its editor, which is a layout: the editor is
-                    // given the width explicitly instead of being anchored, so
-                    // this implicit height has something to resolve against.
+                    /**
+                     * Sized by its editor, which is a layout: the editor is
+                     * given the width explicitly instead of being anchored, so
+                     * this implicit height has something to resolve against.
+                     */
                     implicitHeight: editor.implicitHeight
 
                     /**

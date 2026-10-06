@@ -1,3 +1,96 @@
+<!--toc:start-->
+- [Project TODO](#project-todo)
+  - [Theme Handling Verification](#theme-handling-verification)
+    - [AmeBody.qml Canvas Colors](#amebodyqml-canvas-colors)
+    - [Broken color strings inside the Theme.qml**Done — both halves, and the blacks are still the default.**](#broken-color-strings-inside-the-themeqmldone-both-halves-and-the-blacks-are-still-the-default)
+- [UI / UX Improvements](#ui-ux-improvements)
+  - [Clock on the pill Rest surface](#clock-on-the-pill-rest-surface)
+- [Notification System Improvements](#notification-system-improvements)
+  - [Goal](#goal)
+  - [Requirements](#requirements)
+    - [Notification Collection](#notification-collection)
+    - [Notification Sound](#notification-sound)
+    - [Settings Integration](#settings-integration)
+- [Toast Surface Artifact Fixes](#toast-surface-artifact-fixes)
+  - [Problem](#problem)
+  - [Requirements](#requirements-1)
+- [Workspace Switching Through Pill Drag](#workspace-switching-through-pill-drag)
+  - [Goal](#goal-1)
+  - [Interaction Requirements](#interaction-requirements)
+    - [Drag Behavior](#drag-behavior)
+    - [Visual Behavior](#visual-behavior)
+    - [Lazy Loading](#lazy-loading)
+    - [Hover Integration](#hover-integration)
+- [Documentation](#documentation)
+- [Shell Design Language](#shell-design-language)
+  - [Goal](#goal-2)
+  - [Include](#include)
+    - [Design Goals](#design-goals)
+    - [Architecture Decisions](#architecture-decisions)
+    - [UI Philosophy](#ui-philosophy)
+    - [Performance Goals](#performance-goals)
+    - [Animation Principles](#animation-principles)
+    - [Minimalism vs Functionality](#minimalism-vs-functionality)
+    - [Future Feature Guidelines](#future-feature-guidelines)
+- [Shell-improvement survey (2026-10-04) — not done](#shell-improvement-survey-2026-10-04-not-done)
+  - [Verification setup (needed by both)](#verification-setup-needed-by-both)
+  - [1. Toast expansion should follow the notification, not the toast](#1-toast-expansion-should-follow-the-notification-not-the-toast)
+  - [2. Real frame rate for the portal recording fallback](#2-real-frame-rate-for-the-portal-recording-fallback)
+  - [3. Coalesce the recorder's two pollers](#3-coalesce-the-recorders-two-pollers)
+  - [4. A privacy indicator dot (recording, mic, camera)](#4-a-privacy-indicator-dot-recording-mic-camera)
+  - [Create documentatoin and note down design style](#create-documentatoin-and-note-down-design-style)
+  - [Comment style should be the same everywhere inside the shell](#comment-style-should-be-the-same-everywhere-inside-the-shell)
+<!--toc:end-->
+
+<!--toc:start-->
+- [Project TODO](#project-todo)
+  - [Theme Handling Verification](#theme-handling-verification)
+    - [AmeBody.qml Canvas Colors](#amebodyqml-canvas-colors)
+    - [Broken color strings inside the
+      Theme.qml](#broken-color-strings-inside-the-themeqml)
+- [UI / UX Improvements](#ui-ux-improvements)
+  - [Clock on the pill Rest surface](#clock-on-the-pill-rest-surface)
+- [Notification System Improvements](#notification-system-improvements)
+  - [Goal](#goal)
+  - [Requirements](#requirements)
+    - [Notification Collection](#notification-collection)
+    - [Notification Sound](#notification-sound)
+    - [Settings Integration](#settings-integration)
+- [Toast Surface Artifact Fixes](#toast-surface-artifact-fixes)
+  - [Problem](#problem)
+  - [Requirements](#requirements-1)
+- [Workspace Switching Through Pill
+  Drag](#workspace-switching-through-pill-drag)
+  - [Goal](#goal-1)
+  - [Interaction Requirements](#interaction-requirements)
+    - [Drag Behavior](#drag-behavior)
+    - [Visual Behavior](#visual-behavior)
+    - [Lazy Loading](#lazy-loading)
+    - [Hover Integration](#hover-integration)
+- [Documentation](#documentation)
+- [Shell Design Language](#shell-design-language)
+  - [Goal](#goal-2)
+  - [Include](#include)
+    - [Design Goals](#design-goals)
+    - [Architecture Decisions](#architecture-decisions)
+    - [UI Philosophy](#ui-philosophy)
+    - [Performance Goals](#performance-goals)
+    - [Animation Principles](#animation-principles)
+    - [Minimalism vs Functionality](#minimalism-vs-functionality)
+    - [Future Feature Guidelines](#future-feature-guidelines)
+- [Shell-improvement survey (2026-10-04) — not
+  done](#shell-improvement-survey-2026-10-04-not-done)
+  - [Verification setup (needed by both)](#verification-setup-needed-by-both)
+  - [1. Toast expansion should follow the notification, not the
+    toast](#1-toast-expansion-should-follow-the-notification-not-the-toast)
+  - [2. Real frame rate for the portal recording
+    fallback](#2-real-frame-rate-for-the-portal-recording-fallback)
+  - [3. Coalesce the recorder's two
+    pollers](#3-coalesce-the-recorders-two-pollers)
+  - [4. A privacy indicator dot (recording, mic,
+    camera)](#4-a-privacy-indicator-dot-recording-mic-camera)
+  - [](#) <!--toc:end-->
+
 # Project TODO
 
 ## Theme Handling Verification
@@ -14,18 +107,37 @@ Notes:
 
 * These are valid CSS color strings.
 * Canvas accepts these values correctly.
-* This differs from the incorrect `Theme.qml` usage and should not be grouped
-  together.
+* This differs from the broken strings kept in the `legacy` scheme
+  (`services/ColorScheme.qml`) and should not be grouped together — those are
+  in a `color` property, where Qt's parser rejects them, not in a Canvas
+  `fillStyle`, where the browser-style syntax is correct.
 
-### Broken color strings inside the Theme.qml
+### Broken color strings inside the Theme.qml**Done — both halves, and the blacks are still the default.**
 
-Seven or so color strings inside the Theme.qml paint pure black this is because
-the theming string for them is broken. Instead of faking it just make it print
-pure black this would make it much nicer to look at but would these broken
-theming strings make it so that the dynamic theme that matches the wallpaper
-breaks? If so keep them for that. Don't fix them and get the other colors I
-like having those blacks, but for the dynamic theme fix them for that and make
-it match up nicely so that the theme is not horrid.
+Seven color strings were painting pure black because the strings themselves were
+broken (`rgba(37,37,48,1.00)` and friends are CSS, not something Qt's color
+parser reads). The question was whether to repair them, and the answer turned out
+to be *both*: the broken strings were kept **and** a working palette was written.
+
+`flags.json`'s `colorScheme` picks between two static schemes, defined in
+`services/ColorScheme.qml`:
+
+- **`legacy`** (default) — the original palette, byte for byte, broken strings
+  and all. The default on purpose: the black-bodied look is the one this shell
+  has always had, so shipping the flag changes nothing until it is touched.
+- **`vague`** — a faithful port of the vague.nvim palette, taken from the
+  colorscheme's own defaults rather than from the shell's transcription of them.
+  Every token is a color Qt can parse, so the surfaces that used to fall back to
+  black paint the vague grey-blue they were written for: the pill's body is
+  `#252530`, its tiles `#141415`, its capsules `#1c1c24`.
+
+The dynamic/wallpaper palette was never broken — those tokens are valid hex, so
+they always landed — and it still bypasses the scheme entirely, because a
+generated palette is not something a flag should get to override.
+
+Switching is instant: the flag is watched, so both the shell and the settings
+window re-tint from the same file the moment the row is touched. The row is
+Settings › Appearance › Palette › Colorscheme.
 
 ---
 
@@ -160,78 +272,37 @@ Required:
 
 ---
 
-# Shell Design Philosophy Document
+# Shell Design Language
 
-## Goal
+**Done — [`DESIGN.md`](DESIGN.md).**
 
-Create a single Markdown document describing the principles behind Silhouette
-Shell.
+The design language is named **Washi**: one body of translucent paper that
+morphs into whatever the moment needs, and gets out of the way again.
 
-Suggested file:
+It replaces the "Shell Design Philosophy Document" this section used to ask for.
+That draft wanted seven headings — design goals, architecture decisions, UI
+philosophy, performance goals, animation principles, minimalism vs functionality,
+future feature guidelines. `DESIGN.md` covers six of them as seven ordered
+principles plus a token system, which is the same material organised as rules
+rather than as an essay.
 
-``` DESIGN_PHILOSOPHY.md ```
+One heading was deliberately dropped: **Architecture Decisions**. Module
+boundaries, why a singleton owns a value, why the settings app edits flags rather
+than defining them — all of that is already written where it is decided, in the
+header comment of the file that decides it. Moving it here would have made it
+drift, which is the whole reason there is no `docs/` directory.
 
-## Include
+What `DESIGN.md` adds that the code cannot say is the part nobody would ever
+write down: which design systems the shell drew from, **what was refused from
+each**, and the checklist a new or redesigned surface is held to.
 
-### Design Goals
-
-Document:
-
-* What the shell is trying to achieve.
-* What problems it solves.
-* What it intentionally avoids.
-
-### Architecture Decisions
-
-Explain:
-
-* Why systems are separated.
-* Why certain modules exist.
-* Why certain approaches were rejected.
-
-### UI Philosophy
-
-Document:
-
-* Interaction principles.
-* Visual hierarchy.
-* Minimal interaction philosophy.
-* Relationship between information density and usability.
-
-### Performance Goals
-
-Include:
-
-* Memory targets.
-* Startup expectations.
-* Runtime efficiency principles.
-
-### Animation Principles
-
-Document:
-
-* Motion philosophy.
-* Timing principles.
-* How transitions should feel.
-* When animation should and should not be used.
-
-### Minimalism vs Functionality
-
-Explain:
-
-* How features should justify their existence.
-* How complexity should be controlled.
-* How useful functionality can exist without becoming clutter.
-
-### Future Feature Guidelines
-
-Define:
-
-* How new features should integrate.
-* What standards new modules must meet.
-* How future expansion should preserve the shell's identity.
+The philosophy itself is enforced rather than described where it can be. See
+"Enforcement" in `DESIGN.md` — `utils/lint_qml.py` now fails the build on a
+non-doc comment, which is the one rule of the language that was purely a
+convention until now.
 
 ---
+
 
 # Shell-improvement survey (2026-10-04) — not done
 
@@ -246,9 +317,9 @@ Both items are recorder/toast work and need more than an offscreen harness:
 - The recorder items need a real portal run. The picker is detected with
   `hyprctl clients -j`, and the **user has to click it** — it cannot be
   automated.
-- Run the shell's own config so the paths under test are the real ones:
-  `qs -p ~/.config/quickshell/silhouette-shell -d`, then watch
-  `quickshell log -i <instance>`.
+- Run the shell's own config so the paths under test are the real ones: `qs -p
+  ~/.config/quickshell/silhouette-shell -d`, then watch `quickshell log -i
+  <instance>`.
 - `console.log` does **not** reach stderr under Quickshell; `console.warn`
   does. Harnesses must use `console.warn` or their output is silently lost.
 - For the recorder, the `.capturing` sentinel file and the recent-list entry
@@ -278,9 +349,9 @@ the moment the notification is reused.
 same way `Notifs.expandedEntries` already does for the inbox rows. The inbox
 side is done and is the pattern to copy:
 
-- `services/Notifs.qml` — `expandedEntries`, `entryExpanded(e)`, `toggleEntry(e)`,
-  `pruneExpandedEntries()`. Reuse it; a notification open in the inbox and
-  open in its toast should agree.
+- `services/Notifs.qml` — `expandedEntries`, `entryExpanded(e)`,
+  `toggleEntry(e)`, `pruneExpandedEntries()`. Reuse it; a notification open in
+  the inbox and open in its toast should agree.
 - `Toast.qml:36` — replace the local `expanded` with a binding onto that map,
   read **directly** rather than through a function. See the comment at
   `NotifRow.qml` for why: `readonly property bool expanded:
@@ -289,8 +360,8 @@ side is done and is the pattern to copy:
   is what the row does and matching it keeps one idiom.
 - `Toast.qml:159` — the tap that toggles should call the service, not assign
   the local property.
-- `Toast.qml:73` — the reset-on-`notif`-change must not fire for the *same*
-  id, or it fights the reload persistence now in `Flags.notifOpenEntries`.
+- `Toast.qml:73` — the reset-on-`notif`-change must not fire for the *same* id,
+  or it fights the reload persistence now in `Flags.notifOpenEntries`.
 
 **Verify.** Expand a toast, let it expire, reopen the same notification: it
 should still be open. Then send a *different* notification and confirm it comes
@@ -301,15 +372,15 @@ when collapsed (that behaviour is already tested — do not regress it).
 
 ## 2. Real frame rate for the portal recording fallback
 
-**Where:** `utils/recording/portal_capture.py`, and
-`services/RecEngine.qml` / `services/ScreenRec.qml` for the flags.
+**Where:** `utils/recording/portal_capture.py`, and `services/RecEngine.qml` /
+`services/ScreenRec.qml` for the flags.
 
 **The measured problem.** The XDG Desktop Portal screencast node on this
 machine delivers roughly **1–1.7 fps**. It is damage-driven: it only produces a
 frame when the screen content actually changes. A static screen therefore
 yields almost nothing, and the recording is choppy even though everything
-"works" — the recent-list entry and thumbnail are both produced correctly, which
-is why this hid for so long.
+"works" — the recent-list entry and thumbnail are both produced correctly,
+which is why this hid for so long.
 
 The existing code already stopped faking a rate. `portal_capture.py` measures
 the true rate from the head of the stream (`RATE_PROBE_SECONDS = 2.0`,
@@ -322,19 +393,19 @@ rate, and it is why the fallback now produces a correct file. It does not
 source that does not timestamp them — i.e. dropping to `pw-loop`/libspa and
 self-timestamping on arrival. That is a rewrite of the capture path, not an
 adjustment to it, and it changes the failure modes: what happens when the
-portal stalls for two seconds, how the file duration is derived, whether
-`-vf fps=N` is still wanted, and what `ScreenRec` shows while the real rate is
-being measured.
+portal stalls for two seconds, how the file duration is derived, whether `-vf
+fps=N` is still wanted, and what `ScreenRec` shows while the real rate is being
+measured.
 
 **Suggested order.**
 
 1. Decide whether to hold frames client-side (duplicate the last frame to reach
-   a target rate) or to let ffmpeg do it (`-vf fps=60`). The latter is a
-   one-line change and buys smooth playback for a static screen, at the cost of
-   a file whose wall-clock duration is right but whose content is mostly
-   duplicates. Worth doing first precisely because it is cheap and reversible.
+a target rate) or to let ffmpeg do it (`-vf fps=60`). The latter is a one-line
+change and buys smooth playback for a static screen, at the cost of a file
+whose wall-clock duration is right but whose content is mostly duplicates.
+Worth doing first precisely because it is cheap and reversible.
 2. Only then consider `pw-loop`, and measure before and after: record 10s of a
-   static screen and a 10s scroll, and compare frame counts with `ffprobe`.
+static screen and a 10s scroll, and compare frame counts with `ffprobe`.
 
 **Do not** re-add a hardcoded `-framerate` cap. The probe exists because a
 capped rate desynchronised audio from video.
@@ -346,11 +417,11 @@ capped rate desynchronised audio from video.
 Smaller than the two above, and only listed here for completeness — it is a
 tidiness item, not a bug.
 
-`services/RecEngine.qml:295` spawns `pgrep -f "(^|/)gpu-screen-recorder|portal_capture.py"`
-on a timer, and the fallback path separately watches for the `.capturing`
-sentinel file (`ScreenRec.qml:112`, `ffMarkerPath`). Two processes and two
-timers watching the same question — "has the recorder actually started?" — for
-one answer.
+`services/RecEngine.qml:295` spawns `pgrep -f
+"(^|/)gpu-screen-recorder|portal_capture.py"` on a timer, and the fallback path
+separately watches for the `.capturing` sentinel file (`ScreenRec.qml:112`,
+`ffMarkerPath`). Two processes and two timers watching the same question — "has
+the recorder actually started?" — for one answer.
 
 One watcher answering both would remove a process spawn per tick. Low value on
 its own; worth doing if the recorder is ever touched again, since the two
@@ -360,9 +431,35 @@ pollers can disagree for a tick and show a contradictory state.
 
 ## 4. A privacy indicator dot (recording, mic, camera)
 
+**Done — `services/Privacy.qml` + `modules/pill/widgets/privacy/PrivacyDot.qml`.**
+
+Both rules are enforced rather than merely intended. Fail-visible covers a
+missing `wpctl`, a non-zero exit, a hang and unparseable output; each was run
+against the real service, and each shows the dot amber rather than blank.
+Saying what is capturing comes from the PipeWire stream header, so the hover
+face reads "Recording: Microphone (Firefox)" rather than "something is".
+
+Two places where reading a live `wpctl status` contradicted the shape it looks
+like it should be — both found by measuring, and both corrected:
+
+- **The `*` on a `Sources:` line is not "in use".** It was already set with
+  nothing recording, because a consumed monitor marks the source running.
+  Reading it pins the indicator permanently on. The real signal is a stream in
+  `Streams:` whose links use `<` (capturing); `>` is playback and is ignored.
+- **A missing binary never emits `exited`.** The watchdog is therefore armed
+  from the cadence timer rather than from `onStarted`. Armed in `onStarted`, a
+  machine with no `wpctl` on PATH waits forever and reports all clear — the
+  exact inversion rule 1 forbids, and it was observed before being fixed.
+
+Cadence is `Flags.privacyPollMs` (10 s, floored at 5 s so a hand-edited flag
+cannot turn a spawn-per-tick into a busy loop). The dot is `compact` in the rest
+pill and `full` in the hover face, where there is room for the name. Colours are
+`Theme.privacyCapture` / `Theme.privacyUnknown`, fixed across both colourschemes
+and neither one of the seven unparseable `legacy` strings.
+
 A small always-present indicator — a dot or glyph in the pill or bar — that
-takes a distinct colour while something is capturing the user, and is
-otherwise invisible. At minimum:
+takes a distinct colour while something is capturing the user, and is otherwise
+invisible. At minimum:
 
 - **screen recording** — `ScreenRec.recording` already exists and is already
   authoritative, so this is the easy one and the right one to build first
@@ -374,12 +471,12 @@ otherwise invisible. At minimum:
 worth having if it cannot be wrong in the reassuring direction. Two rules:
 
 1. **Fail visible.** If the check cannot run — the process is missing, the
-   parse fails, the service is unreachable — show the dot in an "unknown"
-   colour, or show it outright. A `try/catch` that leaves the indicator blank
-   turns every failure into "nothing is recording", which is exactly backwards.
+parse fails, the service is unreachable — show the dot in an "unknown" colour,
+or show it outright. A `try/catch` that leaves the indicator blank turns every
+failure into "nothing is recording", which is exactly backwards.
 2. **Show what is capturing, not just that something is.** "Something is using
-   the mic" is much weaker than "Firefox is using the mic". The app name is
-   available from the PipeWire node description in most cases.
+the mic" is much weaker than "Firefox is using the mic". The app name is
+available from the PipeWire node description in most cases.
 
 Do not infer this from the notification server, and do not poll it on a fast
 timer — that is a process spawn per tick for something that changes rarely.
@@ -388,9 +485,23 @@ transient parse failure trip rule 1 rather than clear the dot.
 
 **Where it would live.** `modules/pill/widgets/…` next to the other always-on
 badges, fed by a small service the way `Notifs`/`ScreenRec` feed theirs. Give
-it its own colour constants in `Theme` rather than reusing the alert colours, so
-"recording" does not read as "something went wrong".
+it its own colour constants in `Theme` rather than reusing the alert colours,
+so "recording" does not read as "something went wrong".**Note.** The `legacy`
+colourscheme in `services/ColorScheme.qml` carries seven
+deliberately-unparseable colour strings that paint pure black; see the top of
+this file. Whatever colour is chosen for the recording state, check it is not
+one of those — or put it on the `vague` scheme, which has no broken tokens at
+all. (That is advice for a *new* colour, not a fix: `legacy` is the default,
+and its blacks are a look, not a defect.)
 
-**Note.** `Theme.qml` has seven or so deliberately-broken colour strings that
-paint pure black; see the top of this file. Whatever colour is chosen for the
-recording state, check it is not one of those.
+## Create documentatoin and note down design style
+
+The shell has many surfaces by now and now we need to define and name our
+design style. Like Google's Material 3 Expressive and Apple's Liquid Glass, we
+too need to pull from all these sources, chose which ones we are taking
+inspiration from and define our own design language that we will meticulously
+follow when implementing and redesigning surfaces.
+
+## Comment style should be the same everywhere inside the shell
+
+Everysingle comment in this codebase should be a docstyle comment.

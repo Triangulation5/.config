@@ -21,7 +21,7 @@ import QtQuick
 QtObject {
     readonly property string name: "System"
     readonly property string icon: "\u2B21"
-    readonly property string keywords: "recording recorder capture gpu-screen-recorder quality ffmpeg crf replay fps audio volume loud boost battery power charge low warn peripheral system monitor sysmon speed test network throughput"
+    readonly property string keywords: "recording recorder capture gpu-screen-recorder quality ffmpeg crf replay fps audio volume loud boost battery power charge low warn peripheral system monitor sysmon speed test network throughput privacy indicator microphone camera capture dot recording privacy"
 
     readonly property var groups: [
         { card: "Power", rows: [
@@ -55,6 +55,15 @@ QtObject {
             { key: "recHistoryMax", type: "slider", label: "Recent recordings",
               min: 10, max: 200, step: 10, unit: "",
               caption: "How many saved recordings the recorder's list looks up", reset: 40 }
+        ]},
+        { card: "Privacy indicator", rows: [
+            { key: "privacyPollMs", type: "slider", label: "Check every",
+              min: 5000, max: 60000, step: 1000, displayScale: 1000, unit: "s", reset: 10000,
+              caption: "How often the pill's dot re-reads PipeWire for a live microphone or "
+                + "camera. Rare against a long session, so this is deliberately slow — it costs "
+                + "a process spawn per tick, and cannot be wound below 5s. Screen recording is "
+                + "not polled at all and lights the dot the instant it starts. If the check "
+                + "cannot run, the dot shows amber rather than going quiet." }
         ]}
     ]
 }

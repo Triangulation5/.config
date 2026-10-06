@@ -20,6 +20,26 @@ import Quickshell.Io
  * through set(key, value), which also snapshots into `doc` so the reload
  * diff can ignore our own echoes; `changed(key)` fires only for real
  * external changes.
+ *
+ * Writes are gated on `ready`, and that gate is the whole reason this file is
+ * not a one-liner. The singleton is built the first time a row touches it, but
+ * the document is read a beat *after* that - so for the first moment the adapter
+ * holds its own declared defaults rather than the user's settings, and anything
+ * written in that window persists those defaults over the real file. Measured on
+ * a cold start: at 0 ms the adapter read `JetBrainsMono Nerd Font Mono`, at 50 ms
+ * it read the `SF Pro` that was actually in the file. An edit made in that window
+ * is therefore held, applied to the adapter so the control still moves under the
+ * user's finger, and replayed onto the reloaded document by `syncFromDisk` - late,
+ * never lost, and never a write of defaults over a file we have not read.
+ *
+ * One hazard this does *not* cover, recorded here because it looks like it
+ * should: a flags.json that exists but cannot be parsed. Quickshell reports
+ * `loaded` for that case - not `loadFailed` - and hands back a document that is
+ * the adapter's own defaults, which is indistinguishable here from a real file
+ * that happens to hold the defaults. The first write after that therefore still
+ * replaces the unreadable file with defaults. Distinguishing the two needs a
+ * look at the bytes rather than at FileView's signals, and nothing in this
+ * module can see them; it wants its own read, not a guess.
  */
 Singleton {
     id: root
@@ -27,12 +47,27 @@ Singleton {
     /** Emitted per key whose value actually changed from outside the app. */
     signal changed(string key)
 
-    /** True once the first load has populated the adapter. */
-    readonly property bool ready: loaded
+    /**
+     * True once writing the document is safe: either it has been read, or the
+     * file is confirmed absent and so there is nothing on disk to lose.
+     *
+     * Deliberately *not* the same moment as "this object exists" - see the note
+     * at the top of this file.
+     */
+    readonly property bool ready: loaded || absent
 
     /** The live flag document: rows bind Store.adapter.<key>. */
     readonly property alias adapter: dataAdapter
+    /** The document was read from disk. */
     property bool loaded: false
+    /** The file is not there, so writing defaults creates it rather than destroys it. */
+    property bool absent: false
+    /** Edits made before `ready`, replayed onto the adapter once the load lands. */
+    property var unsaved: ({})
+
+    /** The first thing that went wrong, or "". The app shows this (see Sources). */
+    property string note: ""
+
     /** Snapshot of the last-known document, for the reload diff. */
     property var doc: ({})
     /** Monotonic stamp bumped on every external diff change. */
@@ -42,6 +77,11 @@ Singleton {
      * The one write path. Writing the adapter property updates the JSON
      * document and (after a short debounce that coalesces slider drags)
      * hits disk.
+     *
+     * Before the document has been read the edit is held instead of written -
+     * see `ready`. The adapter is still updated, so the control moves under the
+     * user's finger straight away; `syncFromDisk` puts the value back on the
+     * reloaded document and persists it.
      */
     function set(key, value) {
         if (dataAdapter[key] === value)
@@ -49,6 +89,11 @@ Singleton {
         dataAdapter[key] = value;
         root.doc[key] = value;
         root.changed(key);
+        if (!root.ready) {
+            root.unsaved[key] = value;
+            return;
+        }
+        delete root.unsaved[key];
         saveTimer.restart();
     }
 
@@ -66,16 +111,31 @@ Singleton {
 
         onFileChanged: reload()
         onLoadFailed: function(error) {
-            if (error === FileViewError.FileNotFound)
-                writeAdapter();
+            if (error === FileViewError.FileNotFound) {
+                /**
+                 * Genuinely nothing there: the mirror's defaults *are* the
+                 * document, and this is how flags.json comes into existence.
+                 */
+                root.absent = true;
+                saveTimer.restart();
+            } else {
+                /**
+                 * A file we could not read. Writing now would replace whatever
+                 * is actually in it with the adapter's defaults, so nothing is
+                 * written - say so instead of destroying the file quietly.
+                 */
+                root.note = "flags.json could not be read, so settings are not being saved";
+            }
         }
         onLoaded: root.syncFromDisk()
 
         JsonAdapter {
             id: dataAdapter
-            // == mirrored from the shell's Flags.qml - keep in sync ==
-            // The defaults below are the shipped values; Pages' row `reset`
-            // fields mirror them for the "Reset to Defaults" button.
+            /**
+             * == mirrored from the shell's Flags.qml - keep in sync == The
+             * defaults below are the shipped values; Pages' row `reset` fields
+             * mirror them for the "Reset to Defaults" button.
+             */
             property bool dnd: false
             property bool dndCritical: true
             property bool keepAwake: false
@@ -83,6 +143,8 @@ Singleton {
             property bool clockSeconds: false
             property bool showGlyphs: false
             property string paletteMode: "static"
+            /** Which static palette the shell paints from: "legacy" or "vague". */
+            property string colorScheme: "legacy"
             property string wallpaperDir: ""
             property real uiScale: 1.1
             property bool reduceMotion: false
@@ -123,6 +185,11 @@ Singleton {
             property bool lockBattery: true
             property bool lockLink: true
             property string weatherCity: "WELLAND"
+            /**
+             * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
+             * which floors it at 5000 however this is set.
+             */
+            property int privacyPollMs: 10000
             property bool eventChime: true
             property bool eventNotify: true
             property bool musicViz: true
@@ -133,7 +200,7 @@ Singleton {
             property real auraStrength: 1.0
             property bool auraShadow: true
             property bool gameMode: false
-            // -- the minimal bar, mirrored from Flags.qml --
+            /** -- the minimal bar, mirrored from Flags.qml -- */
             property bool barEnabled: false
             property real barHeight: 35
             property string barStyle: "theme"
@@ -143,7 +210,7 @@ Singleton {
             property int nightLightTemp: 3600
             property int nightLightOnMin: 1200
             property int nightLightOffMin: 420
-            // -- pill geometry and lifecycle, mirrored from Flags.qml --
+            /** -- pill geometry and lifecycle, mirrored from Flags.qml -- */
             property real pillRestW: 160
             property real pillRestH: 38
             property real pillRestCorner: 28
@@ -192,7 +259,10 @@ Singleton {
             property real pillAutoStripH: 5
             property bool memorySaver: true
             property int pillSurfaceIdleTimeout: 12
-            // -- the shell's own timing, geometry and motion, mirrored from Flags.qml --
+            /**
+             * -- the shell's own timing, geometry and motion, mirrored from
+             * Flags.qml --
+             */
             property real cornerNotchRadius: 12
             property real cornerNormalRadius: 8
             property real cornerGameRadius: 0
@@ -233,7 +303,14 @@ Singleton {
         }
     }
 
-    /** Diff the freshly loaded document against our snapshot. */
+    /**
+     * Diff the freshly loaded document against our snapshot, then put back any
+     * edit `set` held while this load was in flight.
+     *
+     * The replay is not optional: the reload has just written the file's values
+     * over the adapter, so without it an edit made before the load landed would
+     * be silently reverted and never persisted - the other half of the same bug.
+     */
     function syncFromDisk() {
         for (var i = 0; i < keys.length; i++) {
             var k = keys[i];
@@ -245,12 +322,23 @@ Singleton {
             }
         }
         root.loaded = true;
+        root.note = "";
+
+        var held = 0;
+        for (var key in root.unsaved) {
+            dataAdapter[key] = root.unsaved[key];
+            root.doc[key] = root.unsaved[key];
+            held++;
+        }
+        root.unsaved = ({});
+        if (held > 0)
+            saveTimer.restart();
     }
 
     /** Every mirrored flag key, in schema order. */
     readonly property var keys: [
         "dnd", "dndCritical", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
-        "paletteMode", "wallpaperDir", "uiScale", "reduceMotion",
+        "paletteMode", "colorScheme", "wallpaperDir", "uiScale", "reduceMotion",
         "manualHue", "manualDark", "manualSat", "uiFont",
         "pillOpacity", "pillBlur", "topGap", "appGap",
         "notchStyle", "notchFlare", "autoHide", "vimKeys",
@@ -260,7 +348,7 @@ Singleton {
         "lockFailAction", "lockFailLimit",
         "lockoutThreshold", "lockoutSeconds", "lockoutMax", "lockMedia", "lockViz",
         "lockClock", "lockBattery", "lockLink",
-        "weatherCity", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
+        "weatherCity", "privacyPollMs", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode",
         "barEnabled", "barHeight", "barStyle", "barChips", "barFontScale",

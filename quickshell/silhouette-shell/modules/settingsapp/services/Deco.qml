@@ -218,9 +218,11 @@ Singleton {
         root.animOn = SetAnim.getEnabled(t) === "true";
         var style = SetDeco.getField(t, "animationStyle");
         root.animStyle = style.length > 0 ? style : "macos";
-        // The file defines a whole set of curves and leaves per style, one
-        // branch after another, so the leaves of the *active* branch are the
-        // ones to read: scope the search from the active style's marker.
+        /**
+         * The file defines a whole set of curves and leaves per style, one
+         * branch after another, so the leaves of the *active* branch are the
+         * ones to read: scope the search from the active style's marker.
+         */
         var branchAt = t.indexOf('animationStyle == "' + root.animStyle + '"');
         var scoped = branchAt >= 0 ? t.slice(branchAt) : t;
         root.animSpeed = realOr(SetAnim.getLeafSpeed(scoped, "global"), 3);

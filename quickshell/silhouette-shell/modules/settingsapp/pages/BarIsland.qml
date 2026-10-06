@@ -55,8 +55,11 @@ QtObject {
             row("appGap", "slider", "App gap",
                 "Gap between the pill and tiled windows; 0 tucks them flush underneath", ""),
             row("pillOpacity", "slider", "Pill opacity", "", "%", { displayScale: 100 }),
-            // The pill's frost is a layer rule in the Hyprland config, not a flag:
-            // toggling it adds or removes that rule, which is what the shell does.
+            /**
+             * The pill's frost is a layer rule in the Hyprland config, not a
+             * flag: toggling it adds or removes that rule, which is what the
+             * shell does.
+             */
             { source: "deco", field: "pillBlur", type: "toggle", label: "Pill blur",
               caption: "Frosts the pill body; needs opacity under 100% to show", reset: true },
             { key: "autoHide", type: "toggle", label: "Auto hide",

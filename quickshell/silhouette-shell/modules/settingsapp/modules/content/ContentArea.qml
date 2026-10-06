@@ -179,15 +179,20 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            // Same reason as the rail: the default bar is a foreign grey slab laid
-            // over the cards. Scrolling is the wheel and the trackpad here.
+            /**
+             * Same reason as the rail: the default bar is a foreign grey slab
+             * laid over the cards. Scrolling is the wheel and the trackpad
+             * here.
+             */
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 id: contentColumn
-                // The scroll view's viewport is inset by the layout's own
-                // margins on both sides.
+                /**
+                 * The scroll view's viewport is inset by the layout's own
+                 * margins on both sides.
+                 */
                 width: root.width - 56
                 spacing: 22
 
@@ -230,9 +235,11 @@ Item {
                     asynchronous: true
                 }
 
-                // What a source had to say about the last write ("Hyprland
-                // reload failed", "added it to input.lua"), so a refused write
-                // is never silent.
+                /**
+                 * What a source had to say about the last write ("Hyprland
+                 * reload failed", "added it to input.lua"), so a refused write
+                 * is never silent.
+                 */
                 Text {
                     Layout.fillWidth: true
                     visible: Sources.note.length > 0
@@ -242,8 +249,10 @@ Item {
                     wrapMode: Text.WordWrap
                 }
 
-                // Breathing room so the floating reset button never sits on top
-                // of the last card while scrolled to the bottom.
+                /**
+                 * Breathing room so the floating reset button never sits on top
+                 * of the last card while scrolled to the bottom.
+                 */
                 Item { Layout.preferredHeight: 56 }
             }
         }
@@ -317,8 +326,10 @@ Item {
         source: Qt.resolvedUrl("../../components/HintLayer.qml")
     }
 
-    // Pinned to the bottom-right of the content area on every page, independent
-    // of scroll position.
+    /**
+     * Pinned to the bottom-right of the content area on every page, independent
+     * of scroll position.
+     */
     SettingResetButton {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
