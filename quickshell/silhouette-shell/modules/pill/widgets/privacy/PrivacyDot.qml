@@ -9,10 +9,12 @@ import qs.services
  *
  * Three states, and the third is the one that matters. `idle` draws nothing at
  * all — not a grey dot, which would train the eye to ignore it. `capture` is a
- * filled vermilion. `unknown` is an amber ring, drawn because the check could
- * not be run, and it is deliberately *louder* than the quiet state rather than
- * quieter: an indicator that fails to a blank is the one failure mode that
- * makes this worse than having no indicator at all.
+ * filled dot, coloured by *which* source is capturing — camera, screen, audio
+ * in, audio out each have their own tone — so a glance says what is happening
+ * and not only that something is. `unknown` is an amber ring, drawn because the
+ * check could not be run, and it is deliberately *louder* than the quiet state
+ * rather than quieter: an indicator that fails to a blank is the one failure
+ * mode that makes this worse than having no indicator at all.
  *
  * The capture state breathes. A static red dot on a top edge is easy to stop
  * seeing, and this one has to be noticed at a glance from across a desk; a slow
@@ -27,9 +29,10 @@ import qs.services
  * reserving room for a name indented the pill on every hover for a dot that is
  * idle almost always.
  *
- * Everything it draws comes from `Theme`, so it follows the colourscheme
- * automatically. The two tones are fixed across schemes on purpose — see the
- * note on `privacyCapture` in `services/ColorScheme.qml`.
+ * Everything it draws comes from `Theme` or from `Privacy`, and the tones are
+ * fixed across schemes on purpose — a dot that took its colour from the
+ * wallpaper could be made invisible by a pale desktop. See the note on
+ * `privacySwatches` in `services/ColorScheme.qml`.
  */
 Item {
     id: root
@@ -58,6 +61,13 @@ Item {
 
     /** True when the capture check could not be run. */
     readonly property bool unknown: Privacy.unknown
+
+    /**
+     * The colour this source takes, from the service rather than from `Theme`:
+     * which tone applies depends on *which* source is capturing, which is the
+     * service's answer and nobody else's.
+     */
+    readonly property color tone: Privacy.tone
 
     Item {
         id: dot
@@ -95,7 +105,7 @@ Item {
             width: parent.width * (2.1 + dot.pulse * 0.9)
             height: width
             radius: width / 2
-            color: root.unknown ? Theme.privacyUnknown : Theme.privacyCapture
+            color: root.unknown ? Theme.privacyUnknown : root.tone
             opacity: root.unknown ? 0.28 : 0.10 + dot.pulse * 0.22
             visible: opacity > 0.01
             Behavior on color { ColorAnimation { duration: Motion.standard } }
@@ -108,7 +118,7 @@ Item {
             width: parent.width
             height: parent.height
             radius: width / 2
-            color: root.unknown ? "transparent" : Theme.privacyCapture
+            color: root.unknown ? "transparent" : root.tone
             border.width: root.unknown ? Math.max(1.5, 1.6 * root.s) : 0
             border.color: Theme.privacyUnknown
             Behavior on color { ColorAnimation { duration: Motion.standard } }

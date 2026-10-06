@@ -190,6 +190,35 @@ Singleton {
              * which floors it at 500 however this is set.
              */
             property int privacyPollMs: 1000
+            /** The privacy dot itself. Off means off, not "quiet". */
+            property bool privacyDot: true
+            /** Screen recording lights the dot. Exact and unpolled. */
+            property bool privacyScreen: true
+            /**
+             * Audio *capture* lights the dot: a microphone, and also a
+             * system-audio loopback such as a screen share that carries sound.
+             * One flag for both, because PipeWire reports them identically.
+             * Off by default — a visualiser holding the mic open all session
+             * would otherwise leave the dot permanently lit.
+             */
+            property bool privacyAudioIn: false
+            /** A live camera lights the dot. */
+            property bool privacyCam: true
+            /**
+             * Audio *playback* lights the dot. Off by default, unlike
+             * everything else here: playing sound is not a capture event, and
+             * every player, call and game would light it.
+             */
+            property bool privacyAudioOut: false
+            /**
+             * The dot's tone for each source: a swatch name, or "auto" for the
+             * source's own tone. Mirrored from Flags.qml; the swatches
+             * themselves are in this app's own `Theme`.
+             */
+            property string privacyToneScreen: "auto"
+            property string privacyToneAudioIn: "auto"
+            property string privacyToneCam: "auto"
+            property string privacyToneAudioOut: "auto"
             property bool eventChime: true
             property bool eventNotify: true
             property bool musicViz: true
@@ -348,7 +377,9 @@ Singleton {
         "lockFailAction", "lockFailLimit",
         "lockoutThreshold", "lockoutSeconds", "lockoutMax", "lockMedia", "lockViz",
         "lockClock", "lockBattery", "lockLink",
-        "weatherCity", "privacyPollMs", "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
+        "weatherCity", "privacyPollMs", "privacyDot", "privacyScreen", "privacyAudioIn", "privacyCam", "privacyAudioOut",
+        "privacyToneScreen", "privacyToneAudioIn", "privacyToneCam", "privacyToneAudioOut",
+        "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode",
         "barEnabled", "barHeight", "barStyle", "barChips", "barFontScale",
