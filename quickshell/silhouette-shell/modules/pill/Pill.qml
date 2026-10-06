@@ -1831,24 +1831,23 @@ Item {
         }
 
         /**
-         * The privacy dot, mirrored from the download ring on the other side:
-         * the rest pill is 38px tall and has room for a mark and nothing else,
-         * so the name waits for the hover face, which has space for it. It sits
-         * on the right because the left already carries the download ring and
-         * the rest row runs from the left, so the right edge is the only place
-         * a second badge can go without the two colliding as either appears.
+         * The privacy dot, mirrored from the download ring on the other side.
+         * It sits on the right because the left already carries the download
+         * ring and the rest row runs from the left, so the right edge is the
+         * only place a second badge can go without the two colliding as either
+         * appears.
          *
-         * `PrivacyDot` is its own always-on widget rather than a row in the
-         * rest row: it must not reflow the clock when it appears, the same
-         * reason the download ring keeps a constant footprint.
+         * Anchored rather than a row in `restRow`, for the same reason the
+         * download ring is: it must not reflow the clock when it comes and
+         * goes. It lives on the rest surface only — see `PrivacyDot` for why
+         * the hover face does not carry it.
          */
         PrivacyDot {
             id: restPrivacy
             anchors.right: parent.right
-            anchors.rightMargin: 8 * pill.s
+            anchors.rightMargin: 10 * pill.s
             anchors.verticalCenter: parent.verticalCenter
             s: pill.s
-            variant: "compact"
         }
 
         /**
