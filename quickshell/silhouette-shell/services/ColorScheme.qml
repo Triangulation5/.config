@@ -273,16 +273,23 @@ Singleton {
      * not an indicator. The same reasoning that puts `error` outside the
      * schemes applies harder here: this is a safety signal, not a style.
      *
-     * `privacyCapture` is a bright vermilion — close enough to `error` to be
-     * read instantly, distinct enough that "recording" never reads as
-     * "something went wrong". `privacyUnknown` is amber, the universal "?":
-     * clearly not the capture tone, and clearly not idle either.
+     * `privacyCapture` is a soft coral — warm like `flameGlow` and `todayWarm`
+     * so it sits in the palette rather than on top of it, but a shade off the
+     * rose the download ring uses, so "recording" is never confused with a
+     * download and never reads as "something went wrong". `privacyUnknown` is
+     * amber, the universal "?": clearly not the capture tone, and clearly not
+     * idle either.
+     *
+     * Both were pulled back from fully saturated vermilion and amber. At full
+     * chroma a 7px dot is the loudest thing on a 38px pill; muted to roughly
+     * two-thirds they still read at a glance across a desk, which is the whole
+     * job, without the pill looking like an alarm.
      *
      * Checked against the note on `legacy` above: neither is one of the seven
      * unparseable strings, so both render identically on both schemes.
      */
-    readonly property color privacyCapture: "#ff5a4e"
-    readonly property color privacyUnknown: "#ffb84d"
+    readonly property color privacyCapture: "#e0705f"
+    readonly property color privacyUnknown: "#dfae63"
 
     /**
      * Translucent inks, derived from `cream` rather than picked. A hairline is

@@ -58,12 +58,13 @@ QtObject {
         ]},
         { card: "Privacy indicator", rows: [
             { key: "privacyPollMs", type: "slider", label: "Check every",
-              min: 5000, max: 60000, step: 1000, displayScale: 1000, unit: "s", reset: 10000,
+              min: 500, max: 60000, step: 500, displayScale: 1000, unit: "s", reset: 1000,
               caption: "How often the pill's dot re-reads PipeWire for a live microphone or "
-                + "camera. Rare against a long session, so this is deliberately slow — it costs "
-                + "a process spawn per tick, and cannot be wound below 5s. Screen recording is "
-                + "not polled at all and lights the dot the instant it starts. If the check "
-                + "cannot run, the dot shows amber rather than going quiet." }
+                + "camera. Each check is a process spawn, so this trades a little idle CPU for "
+                + "a dot that appears the moment you start talking; raise it if you would rather "
+                + "have the CPU. It cannot be wound below 0.5s. Screen recording is not polled "
+                + "at all and lights the dot the instant it starts. If the check cannot run, the "
+                + "dot shows amber rather than going quiet." }
         ]}
     ]
 }

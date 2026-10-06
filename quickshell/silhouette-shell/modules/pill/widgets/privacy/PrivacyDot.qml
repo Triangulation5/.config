@@ -63,8 +63,8 @@ Item {
         id: dot
         anchors.verticalCenter: parent.verticalCenter
 
-        /** A 10px mark at 62%: at full size it crowds the 38px rest pill. */
-        width: 6.2 * root.s
+        /** A 10px mark at two-thirds: at full size it crowds the 38px rest pill. */
+        width: 6.6 * root.s
         height: width
 
         opacity: root.active ? 1 : 0

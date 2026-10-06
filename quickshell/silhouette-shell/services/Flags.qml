@@ -70,11 +70,14 @@ Singleton {
     property alias lockLink: adapter.lockLink
     property alias weatherCity: adapter.weatherCity
     /**
-     * How often the privacy indicator re-reads PipeWire, in ms. Slow on
-     * purpose: a microphone or camera opening is rare against a session that
-     * runs for hours, and this is a process spawn per tick. Screen capture does
-     * not go through this at all — it reads the recorder directly and is exact
-     * the instant a recording starts. See `services/Privacy.qml`.
+     * How often the privacy indicator re-reads PipeWire, in ms. One second by
+     * default: a dot that takes ten seconds to appear is not an indicator, and
+     * a probe measures 12.9 ms, so the tick is affordable. Each check is a
+     * process spawn — raise this to trade detection speed back for idle CPU.
+     *
+     * Screen capture does not go through this at all: it reads the recorder
+     * directly and is exact the instant a recording starts. See
+     * `services/Privacy.qml`.
      */
     property alias privacyPollMs: adapter.privacyPollMs
     property alias eventChime: adapter.eventChime
@@ -233,6 +236,43 @@ Singleton {
      */
     property alias sysmonAutoTest: adapter.sysmonAutoTest
 
+    /**
+     * Values that are on disk only because an older default wrote them, as
+     * `{key: {from, to}}`.
+     *
+     * The stored value always beats the declared default, so moving a default
+     * in the schema reaches only a fresh install -- which is precisely not the
+     * machine that needs it. Anyone who ran the shell since a flag was
+     * introduced carries that flag's first default on disk until something
+     * moves it, and this is that something.
+     *
+     * It lives here rather than in the settings app's mirror because this
+     * singleton is built by the shell on every session, while the mirror is
+     * only built once the settings window is opened -- a migration that waited
+     * on that would leave the dot slow for as long as nobody visited Settings.
+     *
+     * Narrow on purpose: a row moves only when it holds exactly the old
+     * default, so a value someone deliberately picked is left alone unless it
+     * happens to be that number.
+     */
+    readonly property var superseded: ({
+        privacyPollMs: { from: 10000, to: 1000 }
+    })
+
+    /**
+     * Move any row still holding a superseded default. Assigning goes through
+     * `onAdapterUpdated`, so the file is rewritten on the spot and the next
+     * read sees the new value; running twice is a no-op because the guard is
+     * the old value.
+     */
+    function migrateSuperseded() {
+        for (var key in root.superseded) {
+            var rule = root.superseded[key];
+            if (adapter[key] === rule.from)
+                adapter[key] = rule.to;
+        }
+    }
+
     FileView {
         id: file
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/flags.json"
@@ -242,6 +282,7 @@ Singleton {
 
         onFileChanged: reload()
         onAdapterUpdated: writeAdapter()
+        onLoaded: root.migrateSuperseded()
         onLoadFailed: function(error) {
             if (error === FileViewError.FileNotFound)
                 writeAdapter();
@@ -363,9 +404,9 @@ Singleton {
             property string weatherCity: "WELLAND"
             /**
              * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
-             * which floors it at 5000 however this is set.
+             * which floors it at 500 however this is set.
              */
-            property int privacyPollMs: 10000
+            property int privacyPollMs: 1000
             /**
              * Calendar reminder effects, read by services/Events.qml: a timed
              * event's start plays an alarm chime and posts a desktop
