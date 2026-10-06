@@ -20,11 +20,12 @@ import qs.services
  * step in the ladder — and it collapses to nothing under `reduceMotion`, which
  * multiplies every duration in the shell at once (see `services/Motion.qml`).
  *
- * Two sizes, one component. `compact` is a bare dot for the rest pill, which is
- * 38px tall and has room for exactly that. `full` adds the application name
- * for the hover face, where there is space and where rule 2 of the brief
- * actually gets paid off: "something is using your microphone" is much weaker
- * than "Firefox is using your microphone".
+ * This is a mark and nothing else: no label, no variant, no size switch. The
+ * rest surface is 38px tall and holds a dot, which is all a badge that size
+ * should carry. A fuller version with the application name was tried on the
+ * hover face and taken back out — the hover row is sized by what is in it, and
+ * reserving room for a name indented the pill on every hover for a dot that is
+ * idle almost always.
  *
  * Everything it draws comes from `Theme`, so it follows the colourscheme
  * automatically. The two tones are fixed across schemes on purpose — see the
@@ -36,50 +37,19 @@ Item {
     /** Uniform scale from the pill, as every other widget takes. */
     property real s: 1
 
-    /** `compact` is a dot alone; `full` adds the label. */
-    property string variant: "compact"
-
-    /** Layout scale for the two variants. The rest pill takes a bare dot. */
-    readonly property real scaleFactor: variant === "full" ? 1 : 0.62
-
-    /**
-     * The width reserved for the label in `full`, fixed rather than measured.
-     *
-     * Measuring the label instead would tie the pill's width to the length of
-     * an application name, so the hover pill would resize between "Chrome" and
-     * "Firefox and 1 more". A fixed slot makes the pill's width depend on
-     * whether something is capturing and not on what, and the label elides
-     * inside it.
-     */
-    readonly property real labelSlot: 150 * s
-
-    /**
-     * Zero width while idle, so an inactive dot reserves nothing.
-     *
-     * A Row skips invisible children when measuring itself — checked, not
-     * assumed: a Row of 50px and 30px children reports implicitWidth 50 with
-     * the second hidden and 90 with it shown — so `visible` alone would be
-     * enough in the hover row. The width follows anyway, because an always-
-     * reserved 168px block in `statusRow` put a permanent gap on the left of
-     * the hover pill for a dot that is idle almost all of the time. That was
-     * tried, and it is worse than the thing it was avoiding: a resize when a
-     * capture starts costs one small shift, once, and the download chip in the
-     * same row has always behaved that way.
-     */
-    implicitWidth: variant === "full"
-        ? (active ? dot.width + 8 * s + labelSlot : 0)
-        : dot.width
-    implicitHeight: Math.max(dot.height, label.implicitHeight)
+    implicitWidth: dot.width
+    implicitHeight: dot.height
 
     /**
      * True when the service has something to say. False is the idle state,
-     * which draws nothing at all and takes up no room.
+     * which draws nothing at all.
      */
     readonly property bool active: Privacy.visible
 
     /**
-     * Hidden when idle, so the hover row measures without it. This is what
-     * keeps the pill's left edge tight instead of permanently indented.
+     * Hidden when idle. On the rest surface this changes no layout — the dot is
+     * anchored to the pill's right edge — but it keeps an idle dot out of any
+     * measurement it might later be dragged into.
      */
     visible: active
 
@@ -89,33 +59,12 @@ Item {
     /** True when the capture check could not be run. */
     readonly property bool unknown: Privacy.unknown
 
-    /**
-     * The line under the dot in `full`. `Privacy.label` already names the
-     * capturing application and distinguishes a still-running capture from an
-     * unanswerable check, so this does not have to re-derive any of it.
-     */
-    Text {
-        id: label
-        visible: root.variant === "full" && root.active
-        anchors.left: dot.right
-        anchors.leftMargin: 8 * root.s
-        anchors.verticalCenter: dot.verticalCenter
-        text: Privacy.label
-        color: Theme.cream
-        font.family: Theme.font
-        font.pixelSize: Math.round(11 * root.s)
-        font.weight: Font.DemiBold
-        elide: Text.ElideRight
-        width: root.labelSlot
-        /** A brief lift so a newly started capture is noticed, not just seen. */
-        opacity: root.active ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-    }
-
     Item {
         id: dot
         anchors.verticalCenter: parent.verticalCenter
-        width: 10 * root.s * root.scaleFactor
+
+        /** A 10px mark at 62%: at full size it crowds the 38px rest pill. */
+        width: 6.2 * root.s
         height: width
 
         opacity: root.active ? 1 : 0

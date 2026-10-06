@@ -436,8 +436,9 @@ pollers can disagree for a tick and show a contradictory state.
 Both rules are enforced rather than merely intended. Fail-visible covers a
 missing `wpctl`, a non-zero exit, a hang and unparseable output; each was run
 against the real service, and each shows the dot amber rather than blank.
-Saying what is capturing comes from the PipeWire stream header, so the hover
-face reads "Recording: Microphone (Firefox)" rather than "something is".
+Saying what is capturing comes from the PipeWire stream header: the names are
+collected and kept, though the rest surface is 38px tall and has nowhere to
+print them, so a surface with room for words still has to read them off.
 
 Two places where reading a live `wpctl status` contradicted the shape it looks
 like it should be — both found by measuring, and both corrected:
@@ -452,10 +453,13 @@ like it should be — both found by measuring, and both corrected:
   exact inversion rule 1 forbids, and it was observed before being fixed.
 
 Cadence is `Flags.privacyPollMs` (10 s, floored at 5 s so a hand-edited flag
-cannot turn a spawn-per-tick into a busy loop). The dot is `compact` in the rest
-pill and `full` in the hover face, where there is room for the name. Colours are
-`Theme.privacyCapture` / `Theme.privacyUnknown`, fixed across both colourschemes
-and neither one of the seven unparseable `legacy` strings.
+cannot turn a spawn-per-tick into a busy loop). The dot lives on the rest
+surface only: a version carrying the application name was built for the hover
+face and taken back out, because the hover row is sized by its contents and
+reserving room for a name indented the pill on every hover for a dot that is
+idle almost always. Colours are `Theme.privacyCapture` / `Theme.privacyUnknown`,
+fixed across both colourschemes and neither one of the seven unparseable
+`legacy` strings.
 
 A small always-present indicator — a dot or glyph in the pill or bar — that
 takes a distinct colour while something is capturing the user, and is otherwise

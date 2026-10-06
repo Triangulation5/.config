@@ -29,8 +29,11 @@ import qs.services
  *      question mark, but the state never quietly reverts to idle.
  *   2. **Say what is capturing.** "Something is using your microphone" is
  *      weaker than "Firefox is using your microphone", and the application name
- *      is right there in the stream header for nearly every real stream. When
- *      it is missing the device is shown rather than nothing.
+ *      is right there in the stream header for nearly every real stream. The
+ *      names are collected and kept in `micUsers` / `cameraUsers`; nothing
+ *      prints them yet, because the rest surface is 38px tall and holds a mark
+ *      and nothing else. A surface with room for words can read them off
+ *      directly.
  *
  * Two things this deliberately does not do, because both were specified:
  *
@@ -41,6 +44,8 @@ import qs.services
  *     runs for hours, so the cadence is `Flags.privacyPollMs` (10 s) and is
  *     floored at 5 s by `interval` below — it is a process spawn per tick, and
  *     a flag that could be wound down to a busy loop would defeat the point.
+ *   - It does not carry a label. The dot draws on the rest surface alone, and
+ *     a name needs a surface with room for one; see `PrivacyDot`.
  *
  * A transient parse failure trips rule 1 rather than clearing the dot, so the
  * indicator can blink to amber and settle back, but it cannot blink to nothing.
@@ -128,57 +133,6 @@ Singleton {
 
     /** True when the dot should be drawn at all. */
     readonly property bool visible: state !== "idle"
-
-    /**
-     * One line saying what is happening, for the hover face and the tooltip.
-     * The capturing application is named wherever PipeWire knew it, because a
-     * generic "recording" tells the reader nothing they can act on.
-     *
-     * Mic and camera are only claimed when `probeOk` — they are the half that
-     * can be stale — so a dead probe alongside a real screen recording says
-     * "Screen" and nothing else, rather than repeating a mic that stopped
-     * minutes ago.
-     */
-    readonly property string label: {
-        var parts = [];
-        if (screen)
-            parts.push(qsTr("Screen"));
-        if (probeOk) {
-            if (micUsers.apps.length > 0)
-                parts.push(qsTr("Microphone (%1)").arg(root.appName(root.micUsers)));
-            if (cameraUsers.apps.length > 0)
-                parts.push(qsTr("Camera (%1)").arg(root.appName(root.cameraUsers)));
-        } else {
-            /** Rule 1 with teeth: name the last thing seen, and admit it is old. */
-            if (micUsers.apps.length > 0)
-                parts.push(qsTr("Microphone (%1)").arg(root.appName(root.micUsers)));
-            if (cameraUsers.apps.length > 0)
-                parts.push(qsTr("Camera (%1)").arg(root.appName(root.cameraUsers)));
-        }
-
-        if (state === "capture")
-            return parts.length === 0 ? qsTr("Recording") : qsTr("Recording: %1").arg(parts.join(", "));
-        if (state === "unknown")
-            return parts.length === 0
-                ? qsTr("Capture check unavailable")
-                : qsTr("Last seen: %1 — check unavailable").arg(parts.join(", "));
-        return "";
-    }
-
-    /**
-     * The best available name for a set of capturing nodes: the application if
-     * any stream gave one, else the device, else a generic word. Never empty —
-     * an indicator with nothing to say is worse than a clumsy one.
-     */
-    function appName(users) {
-        if (users.apps.length > 0)
-            return users.apps.length === 1
-                ? users.apps[0]
-                : qsTr("%1 and %2 more").arg(users.apps[0]).arg(users.apps.length - 1);
-        if (users.devices.length > 0)
-            return users.devices[0];
-        return qsTr("unknown source");
-    }
 
     /** -- the probe -------------------------------------------------------- */
 
