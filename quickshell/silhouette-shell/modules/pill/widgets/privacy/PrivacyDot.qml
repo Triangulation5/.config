@@ -45,33 +45,43 @@ Item {
     /**
      * The width reserved for the label in `full`, fixed rather than measured.
      *
-     * The hover face sizes the pill from `statusRow`'s implicitWidth, and that
-     * row re-measures the clock's flight origin whenever its width changes
-     * (`onImplicitWidthChanged` in HoverFace.qml). The label is measured, not
-     * reserved, a capture would shove the clock sideways every time a
-     * microphone opened — and shove it back when it closed. The slot is
-     * constant and the label elides inside it, exactly as the download chip
-     * keeps a constant footprint in the same row.
+     * Measuring the label instead would tie the pill's width to the length of
+     * an application name, so the hover pill would resize between "Chrome" and
+     * "Firefox and 1 more". A fixed slot makes the pill's width depend on
+     * whether something is capturing and not on what, and the label elides
+     * inside it.
      */
     readonly property real labelSlot: 150 * s
 
-    implicitWidth: variant === "full" ? dot.width + 8 * s + labelSlot : dot.width
+    /**
+     * Zero width while idle, so an inactive dot reserves nothing.
+     *
+     * A Row skips invisible children when measuring itself — checked, not
+     * assumed: a Row of 50px and 30px children reports implicitWidth 50 with
+     * the second hidden and 90 with it shown — so `visible` alone would be
+     * enough in the hover row. The width follows anyway, because an always-
+     * reserved 168px block in `statusRow` put a permanent gap on the left of
+     * the hover pill for a dot that is idle almost all of the time. That was
+     * tried, and it is worse than the thing it was avoiding: a resize when a
+     * capture starts costs one small shift, once, and the download chip in the
+     * same row has always behaved that way.
+     */
+    implicitWidth: variant === "full"
+        ? (active ? dot.width + 8 * s + labelSlot : 0)
+        : dot.width
     implicitHeight: Math.max(dot.height, label.implicitHeight)
 
     /**
      * True when the service has something to say. False is the idle state,
-     * which draws nothing at all.
-     *
-     * This is deliberately *not* the item's own `visible`. A Row skips its
-     * invisible children when measuring itself — checked, not assumed: a Row
-     * of 50px and 30px children reports implicitWidth 50 with the second
-     * hidden and 90 with it shown — so hiding this item would change
-     * `hoverRow`'s implicitWidth on every capture start and stop, and
-     * `refreshClockStart` would re-measure the clock's flight origin under the
-     * user's finger. The item stays visible and holds its footprint; only what
-     * it draws comes and goes.
+     * which draws nothing at all and takes up no room.
      */
     readonly property bool active: Privacy.visible
+
+    /**
+     * Hidden when idle, so the hover row measures without it. This is what
+     * keeps the pill's left edge tight instead of permanently indented.
+     */
+    visible: active
 
     /** True while something is capturing. */
     readonly property bool capturing: Privacy.capturing
