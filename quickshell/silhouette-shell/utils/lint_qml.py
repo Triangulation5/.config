@@ -24,8 +24,11 @@ was invisible: no error, no warning, the UI just quietly did not update.
                    so it belongs beside the ones that are: a file whose
                    comments are half one style and half another reads as
                    though nobody decided, and the next reader cannot tell a
-                   deliberate note from a leftover. Covers QML *and* JS, since
-                   both carry the convention.
+                   deliberate note from a leftover. Covers QML, JS and the GLSL
+                   shaders, the three languages here where `/** */` is legal.
+                   It does not cover Python, Lua or shell: there `/** */` is a
+                   syntax error, not a comment, and their own idiom applies
+                   (Python documents with `""" """` docstrings).
 
 Exit code 0 when clean, 1 when anything is reported, so it can gate a commit.
 
@@ -41,6 +44,27 @@ import argparse
 import pathlib
 import re
 import sys
+
+# The shell this linter belongs to: `utils/lint_qml.py`'s grandparent.
+#
+# Used as the default scan root so the result does not depend on where the
+# command was run from. With a CWD-relative default, invoking it as
+# `python3 quickshell/silhouette-shell/utils/lint_qml.py` from the dotfiles
+# root swept the whole tree and reported Firefox's own generated profile
+# `prefs.js` -- untracked, owned by the browser, and headed "DO NOT EDIT THIS
+# FILE". A linter that fails on a file no one can fix is a linter that gets
+# ignored, which is worse than not having it.
+#
+# Written in `#` rather than the shell's `/** */`: this is Python, and `/** */`
+# is not a comment here. The convention covers QML and JS, which are the
+# languages the shell actually writes.
+SHELL_ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+# Suffixes the comment convention also covers. QML and JS because the shell is
+# written in them; the GLSL shaders because they are the one other language here
+# where `/** ... */` is a legal comment -- unlike Lua and shell, where it is a
+# syntax error, so those are deliberately absent rather than overlooked.
+COMMENT_SUFFIXES = ('.qml', '.js', '.frag', '.vert')
 
 # Property bindings whose right-hand side may be a bare function call on an id.
 CALL_BINDING = re.compile(r'^[ \t]*(?:readonly\s+)?property\s+\w+\s+(\w+)\s*:[ \t]*([^\n]*)$',
@@ -473,7 +497,11 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--all', action='store_true',
                     help='report every non-literal text binding, not just external ones')
-    ap.add_argument('paths', nargs='*', default=['.'])
+    # No `default`: with nargs='*' an omitted list comes back empty, which is
+    # what lets the SHELL_ROOT fallback below actually run. Defaulting it to
+    # ['.'] here made the list truthy and silently defeated that.
+    ap.add_argument('paths', nargs='*',
+                    help='files or directories to check (default: the shell)')
     args = ap.parse_args()
 
     findings = []
@@ -482,16 +510,23 @@ def main():
         findings.append((str(path), line, kind, detail))
 
     files = []
-    for root in args.paths or ['.']:
+    for root in args.paths or [SHELL_ROOT]:
         p = pathlib.Path(root)
         files.extend(sorted(p.rglob('*.qml')) if p.is_dir() else [p])
 
     # The comment convention is the shell's rule for QML and JS alike, so this
     # one check runs over both; the rest are QML semantics and stay on QML.
+    # The shaders join the comment check for the reason on COMMENT_SUFFIXES --
+    # they are the one non-QML language here where `/** */` parses.
     comments = list(files)
-    for root in args.paths or ['.']:
+    for root in args.paths or [SHELL_ROOT]:
         p = pathlib.Path(root)
-        comments.extend(sorted(p.rglob('*.js')) if p.is_dir() else [])
+        if not p.is_dir():
+            continue
+        for suffix in COMMENT_SUFFIXES:
+            if suffix == '.qml':
+                continue
+            comments.extend(sorted(p.rglob(f'*{suffix}')))
 
     singletons = build_singletons(files)
     for path in files:
@@ -508,7 +543,11 @@ def main():
         check_doc_comments(src, path, report)
 
     if not findings:
-        print(f'qml lint: clean ({len(files)} files)')
+        # Both numbers: `files` is the QML the semantic checks ran over, and
+        # `comments` is wider, because the doc-comment rule also covers the JS
+        # and the shaders. Printing only the first made it look as though they
+        # were not being checked at all.
+        print(f'qml lint: clean ({len(files)} qml, {len(comments)} comment-checked)')
         return 0
 
     for path, line, kind, detail in findings:
