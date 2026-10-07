@@ -2311,8 +2311,13 @@ Item {
                 }
             }
         }
-        onExited: (exitCode) => {
-            if (exitCode === 0 && pill.installProto.length > 0) {
+        onExited: function(exitCode) {
+            var failed = exitCode !== undefined && exitCode !== 0;
+            if (failed) {
+                pill.installFailed = true;
+                if (pill.installLine.length > 0)
+                    pill.installFailLine = pill.installLine;
+            } else if (exitCode === 0 && pill.installProto.length > 0) {
                 pill.installedAny = true;
                 var parts = pill.installProto.split("\t");
                 pill.installKind = parts[0];
@@ -2321,10 +2326,6 @@ Item {
                     pill.installedApp = true;
                 if (parts[0] === "font" && parts.length >= 4)
                     droppedFont.source = "file://" + parts[3];
-            } else {
-                pill.installFailed = true;
-                if (pill.installLine.length > 0)
-                    pill.installFailLine = pill.installLine;
             }
             pill.runNextInstall();
         }

@@ -25,6 +25,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
+    signal entriesUpdated
+
     property var entries: []
     readonly property int count: entries.length
     property bool pending: false
@@ -55,6 +57,7 @@ Singleton {
 
     function wipe() {
         entries = [];
+        root.entriesUpdated();
         wipeProc.running = true;
     }
 
@@ -76,6 +79,7 @@ Singleton {
             if (entries[i].id !== id)
                 kept.push(entries[i]);
         entries = kept;
+        root.entriesUpdated();
         delQueue.push(id);
         pumpDeletes();
     }
@@ -180,6 +184,7 @@ Singleton {
             });
         }
         root.entries = out;
+        root.entriesUpdated();
         root.loaded = true;
     }
 
@@ -196,8 +201,15 @@ Singleton {
          * attempt; a second consecutive failure waits for the next clipboard
          * event instead of looping.
          */
-        onExited: (exitCode) => {
-            if (exitCode !== 0) {
+        onExited: function(exitCode) {
+            /**
+             * Quickshell's Process.onExited carries the exit code as the signal
+             * argument, but the value is only present when the platform reports one.
+             * Treat a missing / undefined code as success so a clean `cliphist list`
+             * is applied instead of being mistaken for a failure (undefined !== 0).
+             */
+            var failed = exitCode !== undefined && exitCode !== 0;
+            if (failed) {
                 console.warn("cliphist list failed with exit code " + exitCode + ", retrying once");
                 root.pending = false;
                 if (root.listFailures < 1) {
