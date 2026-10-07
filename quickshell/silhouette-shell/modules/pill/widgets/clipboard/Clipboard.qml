@@ -37,28 +37,20 @@ PillSurface {
 
     implicitHeight: content.implicitHeight
 
-    readonly property var results: {
-        var all = Cliphist.entries;
-        var q = query.trim().toLowerCase();
-        if (!q.length) return all;
-        var out = [];
-        for (var i = 0; i < all.length; i++) {
-            var hay = (all[i].isImage ? all[i].label + " " + all[i].sizeLabel : all[i].preview).toLowerCase();
-            if (hay.indexOf(q) !== -1) out.push(all[i]);
-        }
-        return out;
-    }
+    property var results: []
 
     /**
      * Real height of every row at its actual size plus the list spacing, so the
      * ListView's height tracks its content instead of a guessed 36·s per row.
      */
-    readonly property real listContentH: {
+    property real listContentH: 0
+
+    function updateListContentH() {
         var rs = results;
         var h = 0;
         for (var i = 0; i < rs.length; i++)
             h += (rs[i] && rs[i].isImage ? 44 : 28) * root.s;
-        return rs.length ? h + (rs.length - 1) * 2 * root.s : 0;
+        listContentH = rs.length ? h + (rs.length - 1) * 2 * root.s : 0;
     }
 
     /**
@@ -88,6 +80,24 @@ PillSurface {
         Cliphist.remove(results[index]);
     }
 
+    function updateResults() {
+        var all = Cliphist.entries;
+        var q = query.trim().toLowerCase();
+        var filtered = [];
+        if (!q.length) {
+            for (var i = 0; i < all.length; i++)
+                filtered.push(all[i]);
+        } else {
+            for (var i = 0; i < all.length; i++) {
+                var hay = (all[i].isImage ? all[i].label + " " + all[i].sizeLabel : all[i].preview).toLowerCase();
+                if (hay.indexOf(q) !== -1) filtered.push(all[i]);
+            }
+        }
+        // Replace the array entirely to trigger ListView model update
+        results = filtered;
+        updateListContentH();
+    }
+
     onActiveChanged: {
         if (active) {
             query = "";
@@ -96,7 +106,18 @@ PillSurface {
             Cliphist.refresh();
             Qt.callLater(root.focusField);
         }
+        updateResults();
     }
+
+    onQueryChanged: updateResults()
+
+    Connections {
+        target: Cliphist
+        function onEntriesUpdated() { updateResults(); }
+    }
+
+    onCompleted: updateResults()
+
     onResultsChanged: if (selectedIndex >= results.length) selectedIndex = Math.max(0, results.length - 1)
 
     Column {
