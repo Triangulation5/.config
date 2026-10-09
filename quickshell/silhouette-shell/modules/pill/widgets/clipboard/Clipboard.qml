@@ -304,7 +304,7 @@ PillSurface {
             spacing: 2 * root.s
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            model: resultsModel
+            model: Cliphist.entries.length > 0 ? resultsModel : null
             interactive: root.listContentH > root.listMaxH
 
             /**
