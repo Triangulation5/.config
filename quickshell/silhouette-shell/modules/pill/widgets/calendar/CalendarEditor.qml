@@ -71,10 +71,19 @@ Item {
         titleField.text = "";
     }
 
-    /** A time is kept only when it reads as HH:MM, otherwise it drops to an all-day blank. */
+    /**
+     * Normalize a typed time to zero-padded HH:MM so alert matching and the
+     * raw-string sort agree; anything outside 00:00-23:59 drops to blank.
+     */
     function cleanTime(t) {
-        var v = t.trim();
-        return /^\d{1,2}:\d{2}$/.test(v) ? v : "";
+        var m = /^(\d{1,2}):(\d{1,2})$/.exec(t.trim());
+        if (!m)
+            return "";
+        var h = parseInt(m[1], 10);
+        var min = parseInt(m[2], 10);
+        if (h > 23 || min > 59)
+            return "";
+        return (h < 10 ? "0" : "") + h + ":" + (min < 10 ? "0" : "") + min;
     }
 
     /** Add the form's event when a title is set, then reset the inputs. */
