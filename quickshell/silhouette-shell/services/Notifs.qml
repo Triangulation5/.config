@@ -92,10 +92,17 @@ Singleton {
         return !!(e && e.n && root.expandedEntries[String(e.n.id)]);
     }
 
+    /** Toggle one inbox row; the toast toggles the notification directly. */
     function toggleEntry(e) {
-        if (!e || !e.n)
+        if (e && e.n)
+            toggleNotifOpen(e.n);
+    }
+
+    /** Toggle a notification's open state, shared by the inbox and the toast. */
+    function toggleNotifOpen(n) {
+        if (!n)
             return;
-        var key = String(e.n.id);
+        var key = String(n.id);
         var m = Object.assign({}, root.expandedEntries);
         if (m[key])
             delete m[key];

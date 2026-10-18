@@ -28,12 +28,13 @@ Item {
     required property Item host
 
     /**
-     * Opened for reading. The whole card stays swipeable in every state, so
-     * this is not a separate hit area: a plain click is resolved by where it
-     * landed (see `pressOnText`), and only the clamped-to-open rendering
-     * changes.
+     * Opened for reading. Held on Notifs by notification id, so the toast and
+     * the inbox agree and reopening the same notification comes back open.
+     * The whole card stays swipeable in every state, so this is not a separate
+     * hit area: a plain click is resolved by where it landed (see
+     * `pressOnText`), and only the clamped-to-open rendering changes.
      */
-    property bool expanded: false
+    readonly property bool expanded: Notifs.expandedEntries[String(notif.id)] === true
 
     readonly property bool critical: notif.urgency === NotificationUrgency.Critical
     readonly property var acts: notif.actions.filter(function(a) { return a.text.length > 0; })
@@ -70,7 +71,6 @@ Item {
         if (!notif)
             return;
         armDeadline();
-        root.expanded = false;
         if (enterX === 0 && enterY === 0)
             return;
         host.swipeX = enterX;
@@ -156,7 +156,7 @@ Item {
         onReleased: function(m) {
             if (axis === "") {
                 if (pressWasText) {
-                    root.expanded = !root.expanded;
+                    Notifs.toggleNotifOpen(root.notif);
                     return;
                 }
                 Notifs.activateNotif(root.notif);
