@@ -95,8 +95,8 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
+                        /** The host closes openPicker in onPick; never assign open here, or its binding dies. */
                         menu.pick(devRow.modelData);
-                        menu.open = false;
                     }
                 }
             }
