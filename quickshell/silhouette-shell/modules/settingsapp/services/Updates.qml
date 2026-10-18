@@ -167,6 +167,7 @@ Singleton {
                  * The pending list is stale either way: an apply that failed
                  * part-way still installed something.
                  */
+                root.checking = true;
                 checkProc.running = true;
             }
         }
