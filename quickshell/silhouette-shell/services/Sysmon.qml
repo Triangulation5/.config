@@ -51,6 +51,9 @@ Singleton {
 
     property string tempPath: ""
 
+    /** Hardware detection runs once; without this, an absent sensor loops it. */
+    property bool detected: false
+
     property real prevCpuTotal: 0
     property real prevCpuIdle: 0
     property real prevRx: 0
@@ -58,8 +61,9 @@ Singleton {
     property real prevNetTime: 0
 
     function primeAll() {
-        if (tempPath.length === 0 || gpuVendor.length === 0) {
-            detectProc.running = true;
+        if (!detected) {
+            if (!detectProc.running)
+                detectProc.running = true;
             return;
         }
         prevCpuTotal = 0;
@@ -114,6 +118,7 @@ Singleton {
                 }
                 if (root.gpuVendor.length === 0)
                     root.gpuVendor = "none";
+                root.detected = true;
                 if (root.open)
                     root.primeAll();
             }
