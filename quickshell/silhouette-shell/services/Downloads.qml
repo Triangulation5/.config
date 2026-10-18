@@ -53,6 +53,8 @@ Singleton {
 
     /** Watched downloads.json, the on-disk file to stat, prior size and its timestamp. */
     property var _watch: ({ path: "", target: "", last: 0, time: 0 })
+    /** True once a downloads.json is known; stops the fast re-probe. */
+    property bool probeSettled: false
 
     function probeProfiles() {
         if (probeProc.running)
@@ -78,8 +80,10 @@ Singleton {
                 if (p.length === 0) {
                     root.active = false;
                     root._watch.path = "";
+                    root.probeSettled = false;
                     return;
                 }
+                root.probeSettled = true;
                 if (p !== root._watch.path) {
                     root._watch.path = p;
                     watcher.path = p;
@@ -98,6 +102,7 @@ Singleton {
         onLoaded: root.parse()
         onLoadFailed: {
             root.active = false;
+            root.probeSettled = false;
             root.probeProfiles();
         }
     }
@@ -193,7 +198,7 @@ Singleton {
         id: probeRetry
         interval: 4000
         repeat: true
-        running: root._watch.path.length === 0
+        running: !root.probeSettled
         onTriggered: root.probeProfiles()
     }
 
