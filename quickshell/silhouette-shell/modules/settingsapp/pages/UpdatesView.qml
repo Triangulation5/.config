@@ -75,8 +75,7 @@ ColumnLayout {
                     width: 8
                     height: 8
                     radius: 4
-                    color: Updates.statusKind === "error" ? Theme.textSecondary
-                        : Updates.statusKind === "behind" ? Theme.accent
+                    color: Updates.statusKind === "behind" ? Theme.accent
                         : Theme.textSecondary
                     opacity: Updates.busy ? 0.5 : 1
 
@@ -304,6 +303,7 @@ ColumnLayout {
                             id: pkgLabel
                             anchors.centerIn: parent
                             text: pkg.modelData
+                            textFormat: Text.PlainText
                             color: Theme.text
                             font.pixelSize: Theme.fontSizeSection
                         }
@@ -354,6 +354,7 @@ ColumnLayout {
                     Text {
                         Layout.fillWidth: true
                         text: (result.modelData.success ? "\u2713  " : "\u00D7  ") + result.modelData.command
+                        textFormat: Text.PlainText
                         color: result.modelData.success ? Theme.text : Theme.accent
                         font.pixelSize: Theme.fontSizeSection
                         wrapMode: Text.WordWrap

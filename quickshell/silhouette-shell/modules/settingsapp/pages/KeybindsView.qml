@@ -95,6 +95,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: "Read from " + Binds.path + ". This page only reads \u2014 nothing here changes a bind;"
                     + " edit the file or open the shell's keybinds surface to do that."
+                textFormat: Text.PlainText
                 color: Theme.textSecondary
                 font.pixelSize: Theme.fontSizeSection
                 wrapMode: Text.WordWrap
@@ -217,6 +218,7 @@ ColumnLayout {
                                             id: chipText
                                             anchors.centerIn: parent
                                             text: root.pretty(chip.modelData)
+                                            textFormat: Text.PlainText
                                             color: Theme.text
                                             font.pixelSize: Theme.fontSizeSection
                                             font.weight: Font.DemiBold
@@ -241,6 +243,7 @@ ColumnLayout {
                             Text {
                                 Layout.fillWidth: true
                                 text: bindRow.modelData.label
+                                textFormat: Text.PlainText
                                 color: Theme.text
                                 font.pixelSize: Theme.fontSizeNormal
                                 elide: Text.ElideRight
@@ -252,6 +255,7 @@ ColumnLayout {
                                 text: bindRow.modelData.action
                                     + (bindRow.modelData.locked ? "  \u00B7  locked" : "")
                                     + (bindRow.modelData.repeating ? "  \u00B7  repeating" : "")
+                                textFormat: Text.PlainText
                                 color: Theme.textSecondary
                                 font.pixelSize: Theme.fontSizeSection
                                 elide: Text.ElideRight

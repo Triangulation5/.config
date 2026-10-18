@@ -229,6 +229,7 @@ ColumnLayout {
                             Text {
                                 Layout.fillWidth: true
                                 text: Backups.sizeText(entry.modelData.bytes) + "  \u00B7  " + entry.modelData.name
+                                textFormat: Text.PlainText
                                 color: Theme.textSecondary
                                 font.pixelSize: Theme.fontSizeSection
                                 elide: Text.ElideMiddle

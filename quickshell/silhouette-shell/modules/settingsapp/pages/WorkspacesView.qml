@@ -170,6 +170,7 @@ ColumnLayout {
                                 Text {
                                     Layout.fillWidth: true
                                     text: entry.modelData.name
+                                    textFormat: Text.PlainText
                                     color: Theme.text
                                     font.pixelSize: Theme.fontSizeNormal
                                     elide: Text.ElideRight
@@ -180,6 +181,7 @@ ColumnLayout {
                                     text: entry.managed
                                         ? (entry.modelData.desc.length > 0 ? entry.modelData.desc : "No description")
                                         : "Bound in binds.lua by hand"
+                                    textFormat: Text.PlainText
                                     color: Theme.textSecondary
                                     font.pixelSize: Theme.fontSizeSection
                                     elide: Text.ElideRight
@@ -200,6 +202,7 @@ ColumnLayout {
                                     id: keyLabel
                                     anchors.centerIn: parent
                                     text: entry.modelData.key.length > 0 ? entry.modelData.key : "unbound"
+                                    textFormat: Text.PlainText
                                     color: Theme.text
                                     font.pixelSize: Theme.fontSizeSection
                                     font.bold: true
@@ -295,6 +298,7 @@ ColumnLayout {
                                         Text {
                                             id: chipLabel
                                             text: chip.modelData
+                                            textFormat: Text.PlainText
                                             color: Theme.text
                                             font.pixelSize: Theme.fontSizeSection
                                         }

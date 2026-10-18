@@ -96,6 +96,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     text: root.mon ? root.mon.name : ""
+                    textFormat: Text.PlainText
                     color: Theme.text
                     font.pixelSize: Theme.fontSizeTitle - 4
                     font.weight: Font.Bold
@@ -127,6 +128,7 @@ Rectangle {
                 Layout.fillWidth: true
                 visible: text.length > 0
                 text: Monitors.identity(root.mon)
+                textFormat: Text.PlainText
                 color: Theme.text
                 font.pixelSize: Theme.fontSizeSmall
                 elide: Text.ElideRight
