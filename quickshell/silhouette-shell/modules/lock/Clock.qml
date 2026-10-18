@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import qs.services
+import qs.components.animation
 
 /**
  * Lock screen clock. Renders the time (12/24-hour, optional seconds) and date in
@@ -61,6 +62,25 @@ Item {
      * reason and not as the mechanism.
      */
     readonly property bool still: Flags.barEnabled
+
+    /**
+     * The locked surface opens by growing a pill-shaped hole from the pill's
+     * resting spot, and the clock's lift-and-fade intro is the one thing that
+     * starts the moment the surface mounts. Run then, it plays inside the
+     * still-forming hole: the hole's edge sweeps down through the time as it
+     * lifts, so the entrance reads as a bounce and leaves a hard edge across
+     * the letters at the start of the pill. Holding the whole clock back for
+     * the shared latch delay puts its entrance after the hole has taken shape.
+     *
+     * The minimal bar has no hole to grow -- its lock is open on the frame it
+     * is built -- so `still` bypasses the latch and the clock is simply there.
+     */
+    RevealLatch {
+        id: introReveal
+        shown: clock.visibleClock && !clock.still
+    }
+
+    readonly property bool introReady: clock.still || introReveal.ready
 
     signal clockClicked()
 
@@ -155,7 +175,7 @@ Item {
     Text {
         id: compactDate
 
-        visible: clock.visibleClock && !clock.expanded
+        visible: clock.visibleClock && !clock.expanded && clock.introReady
 
         x: parent.width * 0.055
         y: parent.height * 0.065
@@ -245,7 +265,7 @@ Item {
     Text {
         id: clockText
 
-        visible: clock.visibleClock
+        visible: clock.visibleClock && clock.introReady
 
         anchors.horizontalCenter: parent.horizontalCenter
 
@@ -375,7 +395,7 @@ Item {
     Text {
         id: period
 
-        visible: clock.visibleClock && !clock.expanded && Flags.time12h
+        visible: clock.visibleClock && !clock.expanded && Flags.time12h && clock.introReady
 
         anchors.left: clockText.right
         anchors.leftMargin: 13 * clock.s
