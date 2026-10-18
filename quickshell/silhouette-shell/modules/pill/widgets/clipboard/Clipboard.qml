@@ -37,9 +37,15 @@ PillSurface {
 
     implicitHeight: content.implicitHeight
 
-    ListModel { id: resultsModel }
-
-    property var results: []  // kept for code that reads results directly
+    /**
+     * The visible (filtered) rows, and the ListView's model directly. An array,
+     * not a ListModel: a multi-role ListModel exposes its roles to the delegate
+     * by name but leaves `modelData` undefined, and the row delegate reads the
+     * whole entry as `modelData`. Reassigning the array is what re-evaluates the
+     * view's model binding, so every filter change is one wholesale replacement
+     * rather than a clear-and-reappend of a parallel store.
+     */
+    property var results: []
 
     /**
      * Real height of every row at its actual size plus the list spacing, so the
@@ -85,22 +91,15 @@ PillSurface {
     function updateResults() {
         var all = Cliphist.entries;
         var q = query.trim().toLowerCase();
-        // Clear and repopulate the ListModel for proper ListView integration
-        resultsModel.clear();
         var filtered = [];
-        if (!q.length) {
-            for (var i = 0; i < all.length; i++) {
-                resultsModel.append(all[i]);
-                filtered.push(all[i]);
+        for (var i = 0; i < all.length; i++) {
+            var e = all[i];
+            if (q.length) {
+                var hay = (e.isImage ? e.label + " " + e.sizeLabel : e.preview).toLowerCase();
+                if (hay.indexOf(q) === -1)
+                    continue;
             }
-        } else {
-            for (var i = 0; i < all.length; i++) {
-                var hay = (all[i].isImage ? all[i].label + " " + all[i].sizeLabel : all[i].preview).toLowerCase();
-                if (hay.indexOf(q) !== -1) {
-                    resultsModel.append(all[i]);
-                    filtered.push(all[i]);
-                }
-            }
+            filtered.push(e);
         }
         results = filtered;
         updateListContentH();
@@ -124,7 +123,7 @@ PillSurface {
         function onEntriesUpdated() { updateResults(); }
     }
 
-    onCompleted: updateResults()
+    Component.onCompleted: updateResults()
 
     onResultsChanged: if (selectedIndex >= results.length) selectedIndex = Math.max(0, results.length - 1)
 
@@ -304,7 +303,7 @@ PillSurface {
             spacing: 2 * root.s
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            model: Cliphist.entries.length > 0 ? resultsModel : null
+            model: root.results
             interactive: root.listContentH > root.listMaxH
 
             /**
@@ -322,6 +321,13 @@ PillSurface {
             delegate: Item {
                 id: row
                 required property int index
+                /**
+                 * Required, not inherited: this component is bound, and without
+                 * the declaration `modelData` resolves to the screen context
+                 * property the surface is instantiated under, so every row
+                 * would read a QuickshellScreenInfo instead of its entry.
+                 */
+                required property var modelData
                 width: list.width
                 height: (entry && entry.isImage ? 44 : 28) * root.s
 
@@ -407,7 +413,6 @@ PillSurface {
                         font.weight: row.selected ? Font.DemiBold : Font.Medium
                         elide: Text.ElideRight
                         maximumLineCount: 1
-                        textFormat: Text.PlainText
                         Behavior on color { ColorAnimation { duration: 150 } }
                     }
 
