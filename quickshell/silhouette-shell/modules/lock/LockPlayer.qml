@@ -80,6 +80,7 @@ Column {
                 text: root.redacted
                     ? "Media hidden"
                     : (host.trackTitle.length > 0 ? host.trackTitle : "Unknown")
+                textFormat: Text.PlainText
                 color: Theme.bright
                 font.family: Theme.font
                 font.pixelSize: 12 * root.s
@@ -90,6 +91,7 @@ Column {
             Text {
                 visible: host.metaLine.length > 0 && !root.redacted
                 text: host.metaLine
+                textFormat: Text.PlainText
                 color: Theme.dim
                 font.family: Theme.font
                 font.pixelSize: 11 * root.s
