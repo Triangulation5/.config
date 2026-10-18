@@ -510,6 +510,7 @@ LinkDrillIn {
                 revealedPw: root.revealedPw
                 revealResolved: root.revealResolved
                 pwDraft: root.pwDraft
+                onPwDraftEdited: root.pwDraft = text
                 connecting: root.connecting
                 connectFailed: root.connectFailed
                 list: listFrame

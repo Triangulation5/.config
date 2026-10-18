@@ -48,6 +48,7 @@ Column {
     signal requestForget()
     signal requestReveal()
     signal requestConnectWithPassword(string pw)
+    signal pwDraftEdited(string text)
     signal requestFocus()
 
     width: parent ? parent.width : 0
@@ -268,7 +269,7 @@ Column {
             placeholderTextColor: Theme.faint
             selectByMouse: true
             selectionColor: Theme.verm
-            onTextEdited: row.pwDraft = text
+            onTextEdited: row.pwDraftEdited(text)
             onAccepted: row.requestConnectWithPassword(text)
         }
 
