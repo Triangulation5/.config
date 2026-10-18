@@ -1,5 +1,4 @@
 import QtQml
-import Quickshell.Services.SystemTray
 
 /**
  * Hover-face navigation for the pill: the ordered list of focusable faces
@@ -12,15 +11,8 @@ QtObject {
 
     required property var host
 
-    readonly property var faceTargets: {
-        var out = [];
-        if (host.hasMedia) out.push("media");
-        if (host.minimizedRow.count > 0) out.push("minimized");
-        if (SystemTray.items.values.length > 0) out.push("tray");
-        out.push("clock");
-        return out;
-    }
-    readonly property int faceCount: faceTargets.length
+    readonly property var faceTargets: host.faceTargets
+    readonly property int faceCount: host.faceCount
 
     function faceMove(dir) {
         if (host.surfaceOpen || host.mode !== "hover" || faceCount < 2)

@@ -52,6 +52,9 @@ PillSurface {
 
     property int focusIndex: 0
 
+    /** The tile index whose keyboard hold is in flight, so key-up stops it. */
+    property int holdIndex: -1
+
     /**
      * Search mode. While off the strip browses local files and bare keys are
      * watched for the first printable character; while on the search field is
@@ -157,7 +160,24 @@ PillSurface {
     function holdPress() {
         if (focusIndex < 0 || focusIndex >= itemCount) return;
         var tile = tileRepeater.itemAt(focusIndex);
-        if (tile && tile.trashHeat) tile.trashHeat.press();
+        if (tile && tile.trashHeat) {
+            holdIndex = focusIndex;
+            tile.trashHeat.press();
+        }
+    }
+
+    /**
+     * Stop the keyboard hold on key-up. Cancel, not release: the initial
+     * key-down already activated, and a release under the tap threshold would
+     * apply the wallpaper a second time.
+     */
+    function holdCancel() {
+        var i = holdIndex;
+        holdIndex = -1;
+        if (i < 0 || i >= itemCount) return;
+        var tile = tileRepeater.itemAt(i);
+        if (tile && tile.trashHeat)
+            tile.trashHeat.cancel();
     }
 
     function centerOnCurrent() {
@@ -181,6 +201,8 @@ PillSurface {
 
     function exitSearch() {
         searching = false;
+        webProc.running = false;
+        whProc.running = false;
         query = "";
         remoteResults = [];
         thumbQueue = [];
@@ -295,6 +317,9 @@ PillSurface {
         id: webProc
         stdout: StdioCollector {
             onStreamFinished: {
+                /** A query the user already left must not move the strip. */
+                if (!root.searching)
+                    return;
                 var out = [];
                 try {
                     var parsed = JSON.parse(this.text);
@@ -338,6 +363,9 @@ PillSurface {
         id: whProc
         stdout: StdioCollector {
             onStreamFinished: {
+                /** A query the user already left must not move the strip. */
+                if (!root.searching)
+                    return;
                 var parsed = null;
                 try {
                     parsed = JSON.parse(this.text);

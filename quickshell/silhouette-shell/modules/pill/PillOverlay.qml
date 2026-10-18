@@ -427,9 +427,15 @@ Variants {
                 if (e.isAutoRepeat)
                     return;
                 if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter || e.key === Qt.Key_Space) {
-                    /** Re-arm the wallpaper hold latch so the next press-hold re-fires the delete hold. */
-                    if (pill.wallpaperOpen)
+                    /**
+                     * Re-arm the wallpaper hold latch and stop the heat: a
+                     * key-up that leaves it filling can still trash the
+                     * wallpaper.
+                     */
+                    if (pill.wallpaperOpen && pill._wpHoldStarted) {
                         pill._wpHoldStarted = false;
+                        pill.wallpaperHoldCancel();
+                    }
                     if (pill.powerOpen) {
                         pill.powerRelease();
                         e.accepted = true;
