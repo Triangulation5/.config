@@ -310,6 +310,7 @@ PillSurface {
                         width: parent.width
                         visible: erow.named
                         text: erow.modelData
+                        textFormat: Text.PlainText
                         color: Theme.faint
                         font.family: Theme.font
                         font.pixelSize: 10 * root.s

@@ -85,6 +85,7 @@ Item {
 
                         Text {
                             text: evRow.modelData.text
+                            textFormat: Text.PlainText
                             width: parent.width
                             color: Theme.cream
                             font.family: Theme.font

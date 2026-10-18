@@ -63,6 +63,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         x: Math.round(root.scrollX)
         text: root.text
+        textFormat: Text.PlainText
         color: root.color
         renderType: root.renderType
         font.family: Theme.font
