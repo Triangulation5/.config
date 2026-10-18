@@ -57,6 +57,8 @@ Item {
     property bool dirty: false
     property bool cooling: false
     property int holdExtends: 0
+    /** This flash's hold, derived from the user setting; 0 falls back to it. */
+    property int flashHold: 0
 
     /**
      * The player the current flash speaks for. Normally the active source, but an
@@ -226,7 +228,8 @@ Item {
         kind = which;
         flashing = true;
         startedOnSurface = root.surfaceOpen;
-        hideTimer.interval = (which === "battery" || which === "record" || which === "download") ? 2000 : 1800;
+        root.flashHold = Math.max(200, Flags.osdHoldMs
+            + ((which === "battery" || which === "record" || which === "download") ? 200 : 0));
         hideTimer.restart();
         return true;
     }
@@ -291,13 +294,14 @@ Item {
      */
     Timer {
         id: hideTimer
-        interval: Math.max(200, Flags.osdHoldMs)
+        interval: root.flashHold > 0 ? root.flashHold : Math.max(200, Flags.osdHoldMs)
         onTriggered: {
             if (root.kind === "track" && !trackFace.coverReady && root.liveArt.length > 0 && root.holdExtends < 5) {
                 root.holdExtends++;
-                hideTimer.interval = 350;
+                root.flashHold = 350;
                 hideTimer.restart();
             } else {
+                root.flashHold = 0;
                 root.flashing = false;
             }
         }
