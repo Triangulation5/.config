@@ -51,7 +51,7 @@ Canvas {
                     host.swirl * (0.5 + k * 0.25) + k * 2.6,
                     host.swirl * (0.5 + k * 0.25) + k * 2.6 + 2.4);
             ctx.strokeStyle = k ? Theme.flameBurn : Theme.flameTip;
-            ctx.lineWidth = 1.6 * root.s;
+            ctx.lineWidth = 1.6 * canvas.s;
             ctx.stroke();
         }
         ctx.restore();
@@ -60,9 +60,9 @@ Canvas {
         ctx.fillStyle = "rgba(255,246,240,0.6)";
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(0, 0, Math.max(0.5, R - 0.8 * root.s), Math.PI * 0.25, Math.PI * 0.75);
+        ctx.arc(0, 0, Math.max(0.5, R - 0.8 * canvas.s), Math.PI * 0.25, Math.PI * 0.75);
         ctx.strokeStyle = "rgba(255,217,194,0.45)";
-        ctx.lineWidth = 1.2 * root.s;
+        ctx.lineWidth = 1.2 * canvas.s;
         ctx.stroke();
         ctx.restore();
     }
@@ -73,7 +73,7 @@ Canvas {
         if (!host.visible)
             return;
 
-        const S = root.s;
+        const S = canvas.s;
         const bx = host.bx;
         const by = host.by;
         const baseR = host.restR;
