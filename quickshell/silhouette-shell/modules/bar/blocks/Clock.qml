@@ -29,7 +29,9 @@ Row {
     spacing: 6 * s
 
     readonly property string timeText: Qt.formatTime(root.now,
-        (Flags.time12h ? "h:mm AP" : "HH:mm") + (Flags.clockSeconds ? ":ss" : ""))
+        Flags.time12h
+            ? (Flags.clockSeconds ? "h:mm:ss AP" : "h:mm AP")
+            : (Flags.clockSeconds ? "HH:mm:ss" : "HH:mm"))
     /** The day-of-month is `d`, not `dd`: `Sep 7`, never `Sep 07`. */
     readonly property string dateText: (Qt.formatDate(root.now, "MMM d")
         + " (" + Qt.formatDate(root.now, "ddd") + ")")
