@@ -113,6 +113,7 @@ Item {
             Text {
                 width: parent.width
                 text: root.mon ? root.mon.name : ""
+                textFormat: Text.PlainText
                 color: root.sel ? Theme.accent : Theme.text
                 font.pixelSize: root.labelSize
                 font.weight: Font.DemiBold

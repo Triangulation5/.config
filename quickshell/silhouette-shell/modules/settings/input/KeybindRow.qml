@@ -65,6 +65,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignRight
             text: brow.kbLabel
+            textFormat: Text.PlainText
             color: brow.focused ? Theme.subtle : Theme.faint
             font.family: Theme.font
             font.pixelSize: 11 * s

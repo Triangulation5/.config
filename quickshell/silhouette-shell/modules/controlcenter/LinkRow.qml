@@ -81,6 +81,7 @@ Item {
         Text {
             width: parent.width
             text: row.sub
+            textFormat: Text.PlainText
             color: row.subColor
             font.family: Theme.font
             font.pixelSize: 10 * s
