@@ -30,8 +30,8 @@ import Quickshell.Io
  * singleton — a bad read just leaves the last good `events` in place.
  *
  * Ids come from a monotonic counter seeded past the highest id already on disk,
- * never Date.now() or Math.random() (both throw in this engine), so every add is
- * uniquely addressable for remove() even within the same minute.
+ * never Date.now() or Math.random(), so every add is uniquely addressable for
+ * remove() even within the same minute.
  */
 Singleton {
     id: root

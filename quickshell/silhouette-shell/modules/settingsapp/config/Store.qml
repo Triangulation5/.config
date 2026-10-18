@@ -44,7 +44,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    /** Emitted per key whose value actually changed from outside the app. */
+    /** Emitted per key whose value actually changed, from disk or `set()`. */
     signal changed(string key)
 
     /**

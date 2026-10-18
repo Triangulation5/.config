@@ -137,8 +137,6 @@ PillSurface {
             root.openAdd();
             return;
         }
-        if (root.focusIndex < 0 || root.focusIndex >= root.filtered.length)
-            return;
         openEdit(root.filtered[root.focusIndex]);
     }
 
