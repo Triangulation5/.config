@@ -84,9 +84,9 @@ SettingsSurface {
         return out;
     }
 
+    /** Rewrite the config; FileView's onSaved restarts hypridle after the write lands. */
     function apply() {
         confWriter.setText(buildConf());
-        restartProc.running = true;
     }
 
     FileView {
@@ -94,6 +94,7 @@ SettingsSurface {
         path: root.confPath
         atomicWrites: true
         printErrors: false
+        onSaved: restartProc.running = true
     }
 
     Process {
