@@ -226,7 +226,7 @@ Singleton {
             spacesFile.reload();
             root.refresh();
         }
-        onSaveFailed: (err) => console.log("spaces: write failed: " + err)
+        onSaveFailed: (err) => console.warn("spaces: write failed: " + err)
     }
 
     Process {

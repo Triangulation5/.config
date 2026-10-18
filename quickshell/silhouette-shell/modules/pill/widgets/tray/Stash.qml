@@ -172,7 +172,7 @@ PillSurface {
             stashFile.reload();
             root.refresh();
         }
-        onSaveFailed: (err) => console.log("stash: write failed: " + err)
+        onSaveFailed: (err) => console.warn("stash: write failed: " + err)
     }
 
     Process {
