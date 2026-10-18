@@ -518,7 +518,7 @@ affected components read them the way they read every other flag:
 
 | what | where it was | flag(s) | page |
 | --- | --- | --- | --- |
-| Screen-corner radii, bezel shadow, collapse time | `modules/screencorner/ScreenCornerRoot.qml` | `cornerNotchRadius`, `cornerNormalRadius`, `cornerGameRadius`, `cornerShadowSize`, `cornerMorphMs` | Corners |
+| Screen-corner radii | `modules/screencorner/ScreenCornerRoot.qml` | `cornerNotchRadius`, `cornerNormalRadius`, `cornerGameRadius` | Corners |
 | Every shell animation duration | one multiplier in `services/Motion.qml` | `motionSpeed` | Motion |
 | Pill eviction sweep, hover grace, game mode's harsher override | `modules/pill/Pill.qml` timers | `pillCleanupSec`, `pillGameUnloadMs`, `pillGameSweepSec`, `pillHoverGraceMs` | Timers |
 | OSD hold | `widgets/osd/Osd.qml` | `osdHoldMs` | Timers |

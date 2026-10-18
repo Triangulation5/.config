@@ -3,8 +3,8 @@ import QtQuick
 /**
  * One rounded corner segment drawn on a canvas. Used wherever a pill-like corner
  * is needed: the pill's notch ears, the screen corners, and the lock mask's
- * growing pill. Supports an inner bezel shadow and an evaporating collapse for
- * game mode.
+ * growing pill. The host animates `size`; this component paints the current
+ * radius and color.
  */
 
 Item {
@@ -20,12 +20,6 @@ Item {
     property int corner: RoundCorner.CornerEnum.TopLeft
     property real size: 40
     property color color: "white"
-    property bool evaporating: false
-    property string edgeDirection: ""
-    property int morphDuration: 1500
-    property bool innerShadow: false
-    property color innerShadowColor: Qt.rgba(0, 0, 0, 0)
-    property real innerShadowSize: 0
 
     /**
      * Repaint the corner canvas when its painted inputs change, not just on

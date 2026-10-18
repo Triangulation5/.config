@@ -124,52 +124,27 @@ Variants {
          */
         readonly property color cornerColor: Theme.capsule
 
-        /**
-         * The corner disappearance animation.
-         *
-         * Geometry changes are handled by cornerSize.
-         * The RoundCorner component still receives the
-         * evaporating state for its collapse animation.
-         */
-        readonly property bool evaporating: gameMode
-
-        /**
-         * Animation tuning.
-         */
-        readonly property int morphDuration: Flags.cornerMorphMs
-
-        /**
-         * Inner bezel shadow only.
-         */
-        readonly property bool innerShadow: Flags.cornerShadowSize > 0
-        readonly property color innerShadowColor: Qt.rgba(0, 0, 0, 0.28)
-        readonly property real innerShadowSize: Flags.cornerShadowSize
-
         Repeater {
             model: [
                 {
                     h: Qt.AlignLeft,
                     v: Qt.AlignTop,
-                    c: RoundCorner.CornerEnum.TopLeft,
-                    edge: "topLeft"
+                    c: RoundCorner.CornerEnum.TopLeft
                 },
                 {
                     h: Qt.AlignRight,
                     v: Qt.AlignTop,
-                    c: RoundCorner.CornerEnum.TopRight,
-                    edge: "topRight"
+                    c: RoundCorner.CornerEnum.TopRight
                 },
                 {
                     h: Qt.AlignLeft,
                     v: Qt.AlignBottom,
-                    c: RoundCorner.CornerEnum.BottomLeft,
-                    edge: "bottomLeft"
+                    c: RoundCorner.CornerEnum.BottomLeft
                 },
                 {
                     h: Qt.AlignRight,
                     v: Qt.AlignBottom,
-                    c: RoundCorner.CornerEnum.BottomRight,
-                    edge: "bottomRight"
+                    c: RoundCorner.CornerEnum.BottomRight
                 }
             ]
 
@@ -179,25 +154,6 @@ Variants {
                 size: corners.cornerSize
                 corner: modelData.c
                 color: corners.cornerColor
-
-                /**
-                 * Shared collapse animation.
-                 *
-                 * Used for game mode transitions.
-                 *
-                 * Notch style changes use corner radius
-                 * interpolation through cornerSize.
-                 */
-                evaporating: corners.evaporating
-                edgeDirection: modelData.edge
-                morphDuration: corners.morphDuration
-
-                /**
-                 * Inner shadow control.
-                 */
-                innerShadow: corners.innerShadow
-                innerShadowColor: corners.innerShadowColor
-                innerShadowSize: corners.innerShadowSize
 
                 anchors {
                     left: modelData.h === Qt.AlignLeft
