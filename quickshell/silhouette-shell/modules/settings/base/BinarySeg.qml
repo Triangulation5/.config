@@ -19,12 +19,13 @@ Rectangle {
     property string label: ""
     property bool on: false
     property int corner: 0
+    property real s: 1
 
     signal clicked()
 
-    width: segText.implicitWidth + 18 * root.s
-    height: 24 * root.s
-    radius: 7 * root.s
+    width: segText.implicitWidth + 18 * seg.s
+    height: 24 * seg.s
+    radius: 7 * seg.s
     topLeftRadius: corner === -1 ? radius : 0
     bottomLeftRadius: corner === -1 ? radius : 0
     topRightRadius: corner === 1 ? radius : 0
@@ -41,7 +42,7 @@ Rectangle {
         text: seg.label
         color: seg.on ? Theme.bright : Theme.dim
         font.family: Theme.font
-        font.pixelSize: 10 * root.s
+        font.pixelSize: 10 * seg.s
         font.weight: seg.on ? Font.DemiBold : Font.Medium
     }
 

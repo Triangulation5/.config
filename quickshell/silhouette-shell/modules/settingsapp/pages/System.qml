@@ -83,7 +83,7 @@ QtObject {
                 + "nothing to do with volume — the mixer and the OSD are separate settings",
               reset: false },
             { key: "privacyPollMs", type: "slider", label: "Check every",
-              min: 500, max: 60000, step: 500, displayScale: 1000, unit: "s", reset: 1000,
+              min: 500, max: 60000, step: 500, displayScale: 0.001, unit: "s", reset: 1000,
               caption: "How often the dot re-reads PipeWire for the audio capture, camera and "
                 + "audio playback rows above. Each check is a process spawn, so this trades a "
                 + "little idle CPU for a dot that appears the moment you start talking; raise "

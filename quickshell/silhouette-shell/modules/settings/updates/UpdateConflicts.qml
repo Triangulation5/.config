@@ -60,6 +60,7 @@ Column {
                     label: "Keep mine"
                     on: !confRow.takeNew
                     corner: -1
+                    s: root.s
                     onClicked: Updates.takePaths = Object.assign({}, Updates.takePaths, { [confRow.rel]: false })
                 }
 
@@ -67,6 +68,7 @@ Column {
                     label: "Take new"
                     on: confRow.takeNew
                     corner: 1
+                    s: root.s
                     onClicked: Updates.takePaths = Object.assign({}, Updates.takePaths, { [confRow.rel]: true })
                 }
             }
