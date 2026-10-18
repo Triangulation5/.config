@@ -89,6 +89,12 @@ PillSurface {
         onExited: ScreenRec.refreshRecent()
     }
 
+    /** The strip's delete path; ids are not properties, so this is the API. */
+    function removeClip(path) {
+        rmClipProc.command = ["rm", "--", path];
+        rmClipProc.running = true;
+    }
+
     function press() {
         if (ScreenRec.recording) {
             ScreenRec.stop();

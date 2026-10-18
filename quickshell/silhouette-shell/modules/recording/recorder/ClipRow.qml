@@ -189,10 +189,8 @@ Item {
                     return;
                 }
                 frame.armed = false;
-                if (surface && surface.rmClipProc) {
-                    surface.rmClipProc.command = ["rm", "--", frame.clipPath];
-                    surface.rmClipProc.running = true;
-                }
+                if (surface && surface.removeClip)
+                    surface.removeClip(frame.clipPath);
             }
         }
     }
