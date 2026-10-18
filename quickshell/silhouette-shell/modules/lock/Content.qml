@@ -203,7 +203,7 @@ Item {
         id: batteryIndicator
 
         z: 20
-        visible: Flags.lockBattery
+        visible: Flags.lockBattery && Battery.dev !== null
         opacity: content.clockExpanded ? 0 : 1
 
         Behavior on opacity {
@@ -586,7 +586,7 @@ Item {
                     var pamMsg = content.auth ? content.auth.lastError : "";
                     return pamMsg.length > 0 ? pamMsg.toLowerCase() : "wrong password";
                 }
-                textFormat: Text.RichText
+                textFormat: Text.PlainText
                 color: Theme.error
                 font.family: Theme.font
                 font.pixelSize: 14 * content.s
