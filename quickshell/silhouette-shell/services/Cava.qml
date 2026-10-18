@@ -195,8 +195,15 @@ Singleton {
         }
     }
 
+    /** Single gate for the lock capture, re-evaluated when playback changes. */
+    function syncLock() {
+        lockProc.running = enabled && available && root.playbackWanted;
+    }
+
+    onPlaybackWantedChanged: syncLock()
+
     onEnabledChanged: {
-        lockProc.running = enabled && available && root.playbackWanted
+        syncLock();
 
         if (!enabled) {
             lockLevels = Array(lockBars).fill(0)
@@ -206,7 +213,7 @@ Singleton {
 
     onAvailableChanged: {
         cavaProc.running = wanted
-        lockProc.running = enabled && available && root.playbackWanted
+        syncLock();
     }
 
     Component.onCompleted: {
@@ -227,7 +234,7 @@ Singleton {
             root.pillCaptureWanted = true
 
         cavaProc.running = wanted
-        lockProc.running = enabled && available && root.playbackWanted
+        syncLock();
     }
 
     /**
@@ -392,7 +399,7 @@ Singleton {
         }
 
         onExited:
-            if (root.enabled && root.available)
+            if (root.enabled && root.available && root.playbackWanted)
                 lockRelaunch.restart()
     }
 
@@ -402,7 +409,7 @@ Singleton {
         interval: 1500
 
         onTriggered:
-            if (root.enabled && root.available)
+            if (root.enabled && root.available && root.playbackWanted)
                 lockProc.running = true
     }
 
