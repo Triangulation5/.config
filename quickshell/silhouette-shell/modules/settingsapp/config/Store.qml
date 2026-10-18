@@ -295,8 +295,6 @@ Singleton {
             property real cornerNotchRadius: 12
             property real cornerNormalRadius: 8
             property real cornerGameRadius: 0
-            property int cornerMorphMs: 1500
-            property real cornerShadowSize: 8
             property real motionSpeed: 1.0
             property int pillCleanupSec: 10
             property int pillGameUnloadMs: 1000
@@ -394,8 +392,7 @@ Singleton {
         "pillFontpickerW", "pillWeatherW", "pillPolkitW", "pillOpenCorner", "pillToastW",
         "pillQuickChooseW", "pillQuickChooseH", "pillQuickCountW", "pillQuickCountH",
         "pillDragOverW", "pillDragOverH", "pillGameH", "pillAutoStripH", "memorySaver", "pillSurfaceIdleTimeout",
-        "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius",
-        "cornerMorphMs", "cornerShadowSize", "motionSpeed",
+        "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius", "motionSpeed",
         "pillCleanupSec", "pillGameUnloadMs", "pillGameSweepSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",
         "notifHistoryMax", "notifPopupMax", "notifDedupe", "notifSound", "liteMode",
         "battLowPct", "periphLowNotify", "maxVolume", "wifiScanMs", "btScanMs",

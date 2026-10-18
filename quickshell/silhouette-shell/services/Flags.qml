@@ -192,8 +192,6 @@ Singleton {
     property alias cornerNotchRadius: adapter.cornerNotchRadius
     property alias cornerNormalRadius: adapter.cornerNormalRadius
     property alias cornerGameRadius: adapter.cornerGameRadius
-    property alias cornerMorphMs: adapter.cornerMorphMs
-    property alias cornerShadowSize: adapter.cornerShadowSize
     property alias motionSpeed: adapter.motionSpeed
     property alias pillCleanupSec: adapter.pillCleanupSec
     property alias pillGameUnloadMs: adapter.pillGameUnloadMs
@@ -573,10 +571,6 @@ Singleton {
             property real cornerNotchRadius: 12
             property real cornerNormalRadius: 8
             property real cornerGameRadius: 0
-            /** How long the corners take to collapse in and out of game mode. */
-            property int cornerMorphMs: 1500
-            /** The inner bezel shadow the corner overlay paints, in px (0 = none). */
-            property real cornerShadowSize: 8
             /** Multiplier on every duration the shell's own motion hands out. */
             property real motionSpeed: 1.0
             /** How often the pill sweeps for surfaces to evict, in seconds. */
