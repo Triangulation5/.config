@@ -142,6 +142,12 @@ Item {
             itemFor("wallpaper").holdPress();
     }
 
+    /** Key-up stops the hold; the keydown already activated, so no tap fires. */
+    function wallpaperHoldCancel() {
+        if (host.wallpaperOpen && itemFor("wallpaper"))
+            itemFor("wallpaper").holdCancel();
+    }
+
     /**
      * Route the first printable keystroke over the open wallpaper strip into a
      * DuckDuckGo search seeded with that character. No-op unless the wallpaper

@@ -731,6 +731,20 @@ Item {
     property alias minimizedRow: hoverFace.minimizedRow
     property alias trayRow: hoverFace.trayRow
 
+    /**
+     * Hover faces in keyboard order. Kept here rather than on Nav because both
+     * Nav and HoverFace's focus rings read it, and a second copy would drift.
+     */
+    readonly property var faceTargets: {
+        var out = [];
+        if (hasMedia) out.push("media");
+        if (minimizedRow.count > 0) out.push("minimized");
+        if (SystemTray.items.values.length > 0) out.push("tray");
+        out.push("clock");
+        return out;
+    }
+    readonly property int faceCount: faceTargets.length
+
     /** Keyboard routing + hover-face navigation, extracted to its own file. */
     Nav {
         id: navHost
@@ -759,6 +773,7 @@ Item {
     function wallpaperMove(dir) { return navHost.wallpaperMove(dir); }
     function wallpaperActivate() { return navHost.wallpaperActivate(); }
     function wallpaperHoldPress() { return navHost.wallpaperHoldPress(); }
+    function wallpaperHoldCancel() { return navHost.wallpaperHoldCancel(); }
     function wallpaperType(ch) { return navHost.wallpaperType(ch); }
     function powerMove(dir) { return navHost.powerMove(dir); }
     function powerPress() { return navHost.powerPress(); }
