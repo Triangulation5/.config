@@ -35,7 +35,7 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 ;; 'doom-nord, 'doom-gruvbox, 'doom-tomorrow-night
-(setq doom-theme 'doom-tomorrow-night)
+(setq doom-theme 'doom-vague)
 
 ;; Custom splash image
 (setq fancy-splash-image "~/.config/doom/assets/aerial-view-of-pine-trees-macos-resized.png")
@@ -49,8 +49,8 @@
     (set-face-background 'line-number-current-line "unspecified-bg" nil)))
 
 ;; Set frame transparency
-(set-frame-parameter nil 'alpha-background 80)
-(add-to-list 'default-frame-alist '(alpha-background . 80))
+(set-frame-parameter nil 'alpha-background 1.00)
+(add-to-list 'default-frame-alist '(alpha-background . 1.00))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
