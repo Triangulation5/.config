@@ -6,6 +6,7 @@ import Quickshell.Networking
 import Quickshell.Bluetooth
 import qs.services
 import qs.components.icons
+import qs.components.animation
 
 /**
  * Lock screen connectivity glance. A compact capsule shows the wifi network (or
@@ -19,6 +20,21 @@ Item {
     property real s: 1.1
     property bool expanded: false
     property real pressScale: 1
+
+    /** Open/close choreography: clear one face before the geometry moves. */
+    readonly property int compactFadeMs: 140
+    readonly property int openDelayMs: 160
+    readonly property int contentFadeMs: 220
+    readonly property int closeDelayMs: 240
+    readonly property int compactReturnMs: 300
+
+    /**
+     * The panel's geometry target, deliberately separate from `expanded`.
+     * Opening waits for the compact face to clear; closing waits for the
+     * expanded rows to clear, so the two faces never overlap in the capsule.
+     */
+    property bool panelOpen: false
+    property bool compactShown: true
 
     /**
      * Redaction gate (Flags.lockPrivacy): a network name is an address the room
@@ -67,6 +83,57 @@ Item {
         }
     }
 
+    /**
+     * Content reveal latch: the rows stay hidden for the shared latch delay
+     * after the panel starts expanding, so their text doesn't pop in while the
+     * capsule is still growing. On close the latch drops immediately, letting
+     * the rows fade completely before the panel starts shrinking.
+     */
+    RevealLatch {
+        id: contentReveal
+        shown: link.panelOpen && link.expanded
+    }
+
+    onExpandedChanged: {
+        if (expanded) {
+            closeTimer.stop();
+            compactTimer.stop();
+            compactShown = false;
+            if (!panelOpen)
+                openTimer.restart();
+        } else {
+            openTimer.stop();
+            compactTimer.stop();
+            if (panelOpen)
+                closeTimer.restart();
+            else
+                compactShown = true;
+        }
+    }
+
+    Timer {
+        id: openTimer
+        interval: link.openDelayMs
+        onTriggered: if (link.expanded) link.panelOpen = true
+    }
+
+    Timer {
+        id: closeTimer
+        interval: link.closeDelayMs
+        onTriggered: {
+            if (!link.expanded) {
+                link.panelOpen = false;
+                compactTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: compactTimer
+        interval: link.compactReturnMs
+        onTriggered: if (!link.expanded && !link.panelOpen) link.compactShown = true
+    }
+
     Rectangle {
         id: panel
 
@@ -74,23 +141,23 @@ Item {
 
         transformOrigin: Item.Center
 
-        width: expanded
+        width: link.panelOpen
             ? 240 * link.s
             : compact.width + 14 * link.s
 
-        height: expanded
+        height: link.panelOpen
             ? 112 * link.s
             : compact.height + 8 * link.s
 
         radius: BarMode.dwmStyle
             ? 0
-            : (expanded ? 18 * link.s : height / 2)
+            : (link.panelOpen ? 18 * link.s : height / 2)
 
-        color: expanded
+        color: link.panelOpen
             ? Theme.capsule
             : "transparent"
 
-        border.width: expanded ? 1 : 0
+        border.width: link.panelOpen ? 1 : 0
         border.color: Theme.capsuleBorder
 
         Behavior on width {
@@ -133,12 +200,13 @@ Item {
 
             spacing: 7 * link.s
 
-            opacity: expanded ? 0 : 1
-            scale: expanded ? 0.78 : 1
+            opacity: link.compactShown ? 1 : 0
+            scale: link.compactShown ? 1 : 0.78
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 140
+                    duration: link.compactFadeMs
+                    easing.type: Easing.OutCubic
                 }
             }
 
@@ -227,12 +295,13 @@ Item {
 
             spacing: 6 * link.s
 
-            opacity: expanded ? 1 : 0
-            scale: expanded ? 1 : 0.82
+            opacity: link.panelOpen && link.expanded && contentReveal.ready ? 1 : 0
+            scale: link.expanded ? 1 : 0.82
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 220
+                    duration: link.contentFadeMs
+                    easing.type: Easing.OutCubic
                 }
             }
 
@@ -263,13 +332,8 @@ Item {
                 height: 1
 
                 color: Theme.cream
-                opacity: expanded ? 0.4 : 0
-
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 220
-                    }
-                }
+                /** Fades with the parent Column; no independent exit. */
+                opacity: 0.4
             }
 
             LinkRow {
@@ -285,19 +349,6 @@ Item {
                 active: link.bluetoothOn
             }
         }
-
-        states: [
-            State {
-                name: "expanded"
-                when: expanded
-
-                PropertyChanges {
-                    target: expandedContent
-                    opacity: 1
-                    scale: 1
-                }
-            }
-        ]
     }
 
     component LinkRow: Item {

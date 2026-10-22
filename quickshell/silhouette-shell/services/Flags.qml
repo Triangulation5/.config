@@ -259,6 +259,24 @@ Singleton {
     property alias sysmonAutoTest: adapter.sysmonAutoTest
 
     /**
+     * True once the flag file has been read, or has been found absent and the
+     * defaults written in its place. Surfaces that have to be right on their
+     * first frame — the bar/pill choice in `BarSwap` is the one — wait on this
+     * rather than acting on the adapter's declared defaults.
+     *
+     * `blockLoading` does not make the adapter synchronous: it only blocks a
+     * direct `text()`/`data()` read, and the JsonAdapter is filled from the
+     * load's `dataChanged` signal without ever asking for one. The file is read
+     * on a worker thread, so the shell's root is built before the real values
+     * land. This latches on the load's own completion, which is after the
+     * adapter has been deserialized.
+     */
+    readonly property bool ready: root.loadSettled
+
+    /** Latched by the FileView handlers below; see `ready`. */
+    property bool loadSettled: false
+
+    /**
      * Values that are on disk only because an older default wrote them, as
      * `{key: {from, to}}`.
      *
@@ -304,10 +322,14 @@ Singleton {
 
         onFileChanged: reload()
         onAdapterUpdated: writeAdapter()
-        onLoaded: root.migrateSuperseded()
+        onLoaded: {
+            root.migrateSuperseded();
+            root.loadSettled = true;
+        }
         onLoadFailed: function(error) {
             if (error === FileViewError.FileNotFound)
                 writeAdapter();
+            root.loadSettled = true;
         }
 
         JsonAdapter {
