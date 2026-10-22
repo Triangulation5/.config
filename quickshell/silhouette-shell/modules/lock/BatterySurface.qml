@@ -68,7 +68,7 @@ Item {
         anchors.centerIn: parent
 
         width: battery.expanded
-            ? 220 * battery.s
+            ? 280 * battery.s
             : batteryRow.width + 12 * battery.s
 
         height: battery.expanded
@@ -202,7 +202,6 @@ Item {
 
                 GlyphIcon {
                     anchors.centerIn: parent
-                    anchors.horizontalCenterOffset: -6 * battery.s
 
                     name: battery.icon
 
