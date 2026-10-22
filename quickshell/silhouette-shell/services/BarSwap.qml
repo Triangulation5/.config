@@ -47,15 +47,33 @@ import qs.services
  * frame it finishes flying off, which is also why the fly-out can happen at all
  * — under a plain `!Flags.barEnabled` the pill was gone before it could move.
  *
- * A session that starts with the bar already on is not a swap: `progress` opens
- * at 1, so both presences are settled on the first frame and the bar is simply
- * up, the way it is after a config reload rather than after a press.
+ * A session that starts with the bar already on does not replay the pill's
+ * departure: there is no pill to dismiss on a reload, and building one just to
+ * fly it out is the flash this avoids. The bar's half of the clock still plays,
+ * so the strip drops in from the top edge as it does after a press, but the
+ * clock starts at `handoff` rather than 0 — the point where the pill would
+ * already be gone. That start waits on `Flags.ready`, because the flag file is
+ * read asynchronously and a shell that acted on the adapter's defaults would
+ * build the pill first and then swap to the bar.
  */
 Singleton {
     id: root
 
     /** Where the top edge is going: the bar, or the pill. */
     readonly property bool toBar: Flags.barEnabled
+
+    /**
+     * The flag file has landed, so `toBar` is the session's real destination
+     * rather than the adapter's default. See `Flags.ready`.
+     */
+    readonly property bool ready: Flags.ready
+
+    /**
+     * True once `boot()` has settled the opening state. `shell.qml` keeps both
+     * trees unbuilt until then, so a reload in bar mode never gets a frame of
+     * pill before the bar arrives.
+     */
+    property bool booted: false
 
     /** The swap's clock, 0 at the moment of the switch and 1 when it has landed. */
     property real progress: 1
@@ -125,7 +143,36 @@ Singleton {
         return Math.max(0, Math.min(1, (p - a) / (b - a)));
     }
 
-    onToBarChanged: root.play()
+    Component.onCompleted: root.boot()
+
+    onReadyChanged: root.boot()
+
+    onToBarChanged: if (root.booted)
+        root.play()
+
+    /**
+     * Settle the opening state once the real destination is known.
+     *
+     * Starting on the pill is simply the resting state: progress 1, no swap.
+     * Starting on the bar plays only the bar's share of the clock, from
+     * `handoff` to 1, so the strip drops in without a pill to dismiss first.
+     * Running this before `booted` turns the loaders on is what keeps the
+     * default `toBar: false` from being mistaken for a session that has to
+     * swap away from the pill.
+     */
+    function boot() {
+        if (root.booted || !root.ready)
+            return;
+
+        if (root.toBar) {
+            root.progress = root.handoff;
+            root.booted = true;
+            bootDrop.restart();
+        } else {
+            root.progress = 1;
+            root.booted = true;
+        }
+    }
 
     /** Re-run the clock from the top whenever the destination changes. */
     function play() {
@@ -140,6 +187,22 @@ Singleton {
         from: 0
         to: 1
         duration: root.totalMs
+        easing.type: Easing.InOutQuad
+    }
+
+    /**
+     * The startup drop when the session is already in bar mode: no pill slice,
+     * just the bar's share of the same clock. Its duration is the slice the
+     * normal swap gives the bar, so a reload and a press feel like the same
+     * arrival.
+     */
+    NumberAnimation {
+        id: bootDrop
+        target: root
+        property: "progress"
+        from: root.handoff
+        to: 1
+        duration: Math.round(root.totalMs * (1 - root.handoff))
         easing.type: Easing.InOutQuad
     }
 }

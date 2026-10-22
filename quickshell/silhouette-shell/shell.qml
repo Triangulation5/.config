@@ -34,6 +34,12 @@ import qs.modules.settingsapp
  * nothing else in the shell is affected (the settings window that flips it is a
  * sibling that stays).
  *
+ * Both loaders also wait for `BarSwap.booted`. The flag file is read off the
+ * main thread, so a tree built before it lands would pick the pill from the
+ * adapter's default even in a session that starts on the bar; the boot clock
+ * settles the real destination first, then plays only the bar's drop when the
+ * bar is where the session is starting.
+ *
  * The root also owns one IPC surface of its own rather than leaving it to a
  * module: the minimal bar's toggle. It cannot live in `modules/bar` with the rest
  * of that module, because the bar is built only while `Flags.barEnabled` is set —
@@ -65,13 +71,13 @@ ShellRoot {
 
     LazyLoader {
         id: pillMode
-        active: BarSwap.pillWanted
+        active: BarSwap.booted && BarSwap.pillWanted
         source: Qt.resolvedUrl("modules/pill/PillRoot.qml")
     }
 
     LazyLoader {
         id: barMode
-        active: BarSwap.barWanted
+        active: BarSwap.booted && BarSwap.barWanted
         source: Qt.resolvedUrl("modules/bar/BarRoot.qml")
     }
 

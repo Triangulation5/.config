@@ -131,3 +131,19 @@ the recorder actually started?" — for one answer.
 One watcher answering both would remove a process spawn per tick. Low value on
 its own; worth doing if the recorder is ever touched again, since the two
 pollers can disagree for a tick and show a contradictory state.
+
+## Next ideas
+### Make sure to fix the errors
+
+The reload icon when in dwmstyle bar should have rectangular corners and be
+lower down a little bit more following the window spacing rules of the
+compositor, on the top left corner matching ontop of the window. This will make
+it more uniform and looking less out of place. Also inside the settings
+application give users the option to put the dwm style bar on the bottom. Can
+you also add a scrollbar to the settings application since it is starting to
+get big? The scrollbar should use one of the grey colors (your choice) from the
+palette and when hovered should increase in width by like 4px, then go back
+down when not hovered.  The WiFi morph looks amazing but I think that you
+should also do the text movement thing to whatever thing is inside the wifi
+thing like the text inside the wifi thing too wheter it s a bluetooth thing and
+then expands or wifi name and then expands.
