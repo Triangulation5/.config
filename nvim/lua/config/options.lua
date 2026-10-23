@@ -9,7 +9,7 @@ for k, v in pairs({
     tabstop = 4, softtabstop = 4, shiftwidth = 4, expandtab = true,
     smartindent = true, breakindent = true, showtabline = 1,
     ignorecase = true, smartcase = true, hlsearch = false,
-    updatetime = 50, timeoutlen = 250, guicursor = "a:block",
+    updatetime = 50, timeoutlen = 250, -- guicursor = "a:block",
     scrolloff = 8, sidescrolloff = 8,
     winborder = "rounded", clipboard = "unnamedplus",
     completeopt = { "menuone", "noselect" },
