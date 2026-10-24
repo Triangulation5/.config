@@ -1,8 +1,8 @@
 # .zshrc
 
 autoload -U colors && colors
-PS1="%B%{$fg[red]%}[%{$fg[yellow]%}%n%{$fg[green]%}@%{$fg[blue]%}%M %{$fg[magenta]%}%~%{$fg[red]%}]%{$reset_color%}$%b "
-# PS1="%{$fg[magenta]%}%~%{$fg[red]%} %{$reset_color%}$%b "
+# PS1="%B%{$fg[red]%}[%{$fg[yellow]%}%n%{$fg[green]%}@%{$fg[blue]%}%M %{$fg[magenta]%}%~%{$fg[red]%}]%{$reset_color%}$%b "
+PS1="%{$fg[magenta]%}%~%{$fg[red]%} %{$reset_color%}$%b "
 
 setopt autocd
 stty stop undef
@@ -45,11 +45,13 @@ export MANPAGER='nvim +Man!'
 alias v='nvim'
 alias vi='vim'
 
-alias fingerprint="bash ~/.config/hypr/scripts/fingerprint.sh" # Run fingerprint script
+# Not based at all but temporary
+alias cc="gcc -Wall -Wextra -std=c23 -pedantic "
 
 export PATH="$HOME/.local/bin:$PATH"
 
-bindkey -s '^f' '^ucd "$(dirname "$(fzf)")"\n'
+bindkey -s '^F' 'cd "$(dirname "$(fzf)")"\n'
+bindkey -s $'\e\C-f' '~/.config/hypr/scripts/tmux-session-dispensary.sh\n'
 
 # Load the plugin last
 source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
