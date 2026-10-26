@@ -1,12 +1,13 @@
 /**
  * Shared colour and font tokens for the shell. Every surface and widget reads
  * its palette from here so a single swap re-tints the whole shell. In dynamic
- * palette mode the tokens follow the live wallpaper-derived palette (Dyn);
- * otherwise they come from the selected colour scheme — by default the shell's own
- * original palette, or `vague`, a proper port of that palette (see
- * `ColorScheme.qml`, which is where a scheme is defined and chosen). Also carries
- * the UI font (Flags-driven, defaulting to Inter) and a small artist-list helper
- * for media labels.
+ * or manual palette mode the tokens follow the live wallpaper-derived palette
+ * (Dyn); in accented mode only the accent tokens do, while surfaces and text
+ * stay on the selected scheme. Otherwise they come from the selected colour
+ * scheme — by default the shell's own original palette, or `vague`, a proper
+ * port of that palette (see `ColorScheme.qml`, which is where a scheme is
+ * defined and chosen). Also carries the UI font (Flags-driven, defaulting to
+ * Inter) and a small artist-list helper for media labels.
  *
  * The colours below are a façade, not a palette. They were the palette once, and
  * they are kept as named properties anyway because every surface in the shell
@@ -22,7 +23,7 @@ import Quickshell
 import qs.services
 
 Singleton {
-    /** True while the shell's palette follows the wallpaper or the manual hue. */
+    /** True while the whole palette follows the wallpaper or the manual hue. */
     readonly property bool dyn: ColorScheme.dyn
 
     /** The colour scheme the palette is drawn from: "legacy" or "vague". */

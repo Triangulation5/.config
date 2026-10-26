@@ -8,6 +8,7 @@ import qs.modules.settingsapp.config
  */
 Text {
     color: Theme.textSecondary
+    font.family: Theme.fontFamily
     font.pixelSize: Theme.fontSizeSection
     leftPadding: 4
 }

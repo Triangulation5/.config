@@ -70,6 +70,7 @@ SettingRow {
     control: Text {
         text: root.displayText()
         color: Theme.textSecondary
+        font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSizeNormal
         /**
          * Fixed width, so the name beside it does not shift as the digits grow.

@@ -32,6 +32,7 @@ Rectangle {
         Text {
             text: "\u27F2"
             color: Theme.textSecondary
+            font.family: Theme.fontFamily
             font.pixelSize: 14
             rotation: mouse.pressed ? -60 : 0
             Behavior on rotation { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
@@ -40,6 +41,7 @@ Rectangle {
         Text {
             text: "Reset to Defaults"
             color: Theme.textSecondary
+            font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
         }
     }

@@ -7,12 +7,13 @@ import qs.services
 /**
  * The choreography of the swap between the pill and the minimal dwm-style bar.
  *
- * The top edge has one presentation at a time, but the change between them used
- * to be a hard cut: `Flags.barEnabled` flipped, the pill's LazyLoader emptied and
- * the bar's filled in the same frame, and the only thing that crossed the gap
- * was a blank stretch of screen. This service is the clock that gap is played
- * against, so every surface involved in the swap can read the same instant and
- * nothing has to time itself.
+ * The shell has one presentation at a time — the pill on the top edge, or the
+ * bar on whichever edge `Flags.barBottom` gives it — but the change between them
+ * used to be a hard cut: `Flags.barEnabled` flipped, the pill's LazyLoader
+ * emptied and the bar's filled in the same frame, and the only thing that
+ * crossed the gap was a blank stretch of screen. This service is the clock that
+ * gap is played against, so every surface involved in the swap can read the same
+ * instant and nothing has to time itself.
  *
  * The order is the one the eye wants. To the bar: the pill leaves first — it
  * flies up off the top edge and fades exactly as it does for a fullscreen
@@ -50,7 +51,7 @@ import qs.services
  * A session that starts with the bar already on does not replay the pill's
  * departure: there is no pill to dismiss on a reload, and building one just to
  * fly it out is the flash this avoids. The bar's half of the clock still plays,
- * so the strip drops in from the top edge as it does after a press, but the
+ * so the strip slides in from its edge as it does after a press, but the
  * clock starts at `handoff` rather than 0 — the point where the pill would
  * already be gone. That start waits on `Flags.ready`, because the flag file is
  * read asynchronously and a shell that acted on the adapter's defaults would
@@ -59,7 +60,7 @@ import qs.services
 Singleton {
     id: root
 
-    /** Where the top edge is going: the bar, or the pill. */
+    /** Where the shell's status edge is going: the bar, or the pill. */
     readonly property bool toBar: Flags.barEnabled
 
     /**
@@ -155,7 +156,8 @@ Singleton {
      *
      * Starting on the pill is simply the resting state: progress 1, no swap.
      * Starting on the bar plays only the bar's share of the clock, from
-     * `handoff` to 1, so the strip drops in without a pill to dismiss first.
+     * `handoff` to 1, so the strip slides in from its edge without a pill to
+     * dismiss first.
      * Running this before `booted` turns the loaders on is what keeps the
      * default `toBar: false` from being mistaken for a session that has to
      * swap away from the pill.

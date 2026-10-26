@@ -51,6 +51,7 @@ Item {
                     anchors.centerIn: parent
                     text: root.icon
                     color: Theme.accent
+                    font.family: Theme.fontFamily
                     font.pixelSize: 13
                 }
             }
@@ -58,6 +59,7 @@ Item {
             Text {
                 text: root.label
                 color: root.selected ? Theme.text : Theme.textSecondary
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeNormal
                 Layout.fillWidth: true
                 Behavior on color { ColorAnimation { duration: Theme.animNormal } }

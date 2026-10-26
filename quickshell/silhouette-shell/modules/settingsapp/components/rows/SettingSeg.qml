@@ -57,6 +57,7 @@ SettingRow {
                     anchors.centerIn: parent
                     text: parent.modelData
                     color: parent.on ? Theme.knob : Theme.textSecondary
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSection
                     font.bold: true
                 }

@@ -38,6 +38,7 @@ SettingRow {
         placeholderText: root.row && root.row.placeholder ? root.row.placeholder : ""
         placeholderTextColor: Theme.textSecondary
         color: Theme.text
+        font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSizeSmall
         selectByMouse: true
 

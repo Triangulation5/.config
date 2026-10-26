@@ -26,9 +26,30 @@ Singleton {
      * paint the body black, and the default so nothing changes until you ask)
      * or "vague" (a proper port of the vague.nvim palette). Read by
      * services/ColorScheme.qml; dynamic and manual ignore it, because those
-     * palettes are generated from the wallpaper and are already valid. /
+     * palettes are generated from the wallpaper and are already valid. Accented
+     * keeps it: the wallpaper supplies only the accents, and this picks the
+     * body and text they sit on.
      */
     property alias colorScheme: adapter.colorScheme
+    /**
+     * Material You options for the Dynamic palette. `dynamicScheme` is one of
+     * matugen's scheme variants (tonal-spot, vibrant, expressive, …),
+     * `dynamicContrast` its -1..1 contrast level, `dynamicMode` auto/light/dark
+     * (auto becomes matugen's `smart`), and `dynamicPrefer` which colour
+     * matugen takes when an image offers several. `surfaceRole` re-centres the
+     * shell's surface ramp on an M3 role, and `containerSaturation` scales the
+     * container chroma (0 flat grey, 1 the vague default, 2 Material's tint).
+     * Static and manual palettes ignore all six. Accented uses the four that
+     * shape the accent (scheme, contrast, prefer, container saturation); it
+     * pins the mode to dark and the surface role to the neutral default, since
+     * its surfaces come from the static scheme.
+     */
+    property alias dynamicScheme: adapter.dynamicScheme
+    property alias dynamicContrast: adapter.dynamicContrast
+    property alias dynamicMode: adapter.dynamicMode
+    property alias dynamicPrefer: adapter.dynamicPrefer
+    property alias containerSaturation: adapter.containerSaturation
+    property alias surfaceRole: adapter.surfaceRole
     property alias wallpaperDir: adapter.wallpaperDir
     property alias uiScale: adapter.uiScale
     property alias reduceMotion: adapter.reduceMotion
@@ -120,6 +141,8 @@ Singleton {
      * never share the top edge and the bar does not pay for the pill's tree. /
      */
     property alias barEnabled: adapter.barEnabled
+    /** Anchor the minimal bar to the bottom edge instead of the top. */
+    property alias barBottom: adapter.barBottom
     /** Minimal bar strip height, in logical px, scaled by uiScale where it draws. */
     property alias barHeight: adapter.barHeight
     /** Minimal bar look: "theme" follows the palette, "accent" fills with it, "plain" drops the backdrop. */
@@ -344,6 +367,19 @@ Singleton {
             property string paletteMode: "static"
             /** Which static palette the shell paints from: "legacy" or "vague". */
             property string colorScheme: "legacy"
+            /** Material You options for the Dynamic palette. */
+            property string dynamicScheme: "auto"
+            property real dynamicContrast: 0
+            property string dynamicMode: "auto"
+            property string dynamicPrefer: "saturation"
+            /** Container saturation multiplier (0.0-2.0) — 1.0 = default vague blend. */
+            property real containerSaturation: 1.0
+            /**
+             * Which M3 role the shell's base surface uses. "default" is the
+             * neutral elevation ramp; the container roles tint the window and
+             * the text ramp is rebuilt from that role's own on-container ink.
+             */
+            property string surfaceRole: "default"
             /**
              * Folder the wallpaper strip reads and picks land in. Kept exactly
              * as typed, so a leading ~ is expanded by whoever reads it —
@@ -506,6 +542,12 @@ Singleton {
             property bool auraShadow: true
             property bool gameMode: false
             property bool barEnabled: false
+            /**
+             * Which edge the minimal bar owns. The bar still replaces the pill
+             * either way; this only decides whether its band is reserved at the
+             * top or the bottom of the output.
+             */
+            property bool barBottom: false
             property real barHeight: 35
             property string barStyle: "theme"
             /** Subtle rounded backdrops behind the bar's status readouts. */

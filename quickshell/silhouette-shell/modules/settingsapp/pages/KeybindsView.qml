@@ -86,6 +86,7 @@ ColumnLayout {
                         ? "No shortcuts found"
                         : Binds.count + " shortcut" + (Binds.count === 1 ? "" : "s") + " bound"
                     color: Theme.text
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeNormal
                     font.bold: true
                 }
@@ -97,6 +98,7 @@ ColumnLayout {
                     + " edit the file or open the shell's keybinds surface to do that."
                 textFormat: Text.PlainText
                 color: Theme.textSecondary
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSection
                 wrapMode: Text.WordWrap
             }
@@ -122,6 +124,7 @@ ColumnLayout {
             anchors.rightMargin: 12
             verticalAlignment: TextInput.AlignVCenter
             color: Theme.text
+            font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
             clip: true
             selectByMouse: true
@@ -131,6 +134,7 @@ ColumnLayout {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Filter shortcuts"
                 color: Theme.textSecondary
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
                 visible: filter.text.length === 0
             }
@@ -220,6 +224,7 @@ ColumnLayout {
                                             text: root.pretty(chip.modelData)
                                             textFormat: Text.PlainText
                                             color: Theme.text
+                                            font.family: Theme.fontFamily
                                             font.pixelSize: Theme.fontSizeSection
                                             font.weight: Font.DemiBold
                                         }
@@ -230,6 +235,7 @@ ColumnLayout {
                                         visible: !chip.isKey
                                         text: "+"
                                         color: Theme.textSecondary
+                                        font.family: Theme.fontFamily
                                         font.pixelSize: Theme.fontSizeSection
                                     }
                                 }
@@ -245,6 +251,7 @@ ColumnLayout {
                                 text: bindRow.modelData.label
                                 textFormat: Text.PlainText
                                 color: Theme.text
+                                font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSizeNormal
                                 elide: Text.ElideRight
                             }
@@ -257,6 +264,7 @@ ColumnLayout {
                                     + (bindRow.modelData.repeating ? "  \u00B7  repeating" : "")
                                 textFormat: Text.PlainText
                                 color: Theme.textSecondary
+                                font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSizeSection
                                 elide: Text.ElideRight
                             }

@@ -153,6 +153,13 @@ quickshell`. On Arch: `quickshell` or `quickshell-git`. The installer checks
 and tells you what is missing rather than guessing. Then start a Hyprland
 session, from a display manager or a TTY.
 
+The installer also knows the package names for Alpine and Void. Two gaps are
+reported rather than guessed at: Void does not carry Hyprland in its official
+repositories (the installer points at the `hyprland-void` repo), and Alpine's
+`cava` and `cliphist` live in `edge/testing` while `quickshell` has to be built
+from source. Both distros need `bash`; a minimal install may not have it yet
+(`apk add bash`, or `xbps-install -S bash`).
+
 Silhouette shell is a hyprland shell. I would not expect it to work on anything
 else.
 

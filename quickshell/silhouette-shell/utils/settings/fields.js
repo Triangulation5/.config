@@ -83,7 +83,7 @@ var FIELDS = {
      * The palette and the shell's own motion budget: the shell's Appearance
      * surface and the app's Appearance, Motion pages.
      */
-    "flags.paletteMode":    { options: ["static", "dynamic", "manual"], names: ["Static", "Dynamic", "Manual"], reset: "static" },
+    "flags.paletteMode":    { options: ["static", "dynamic", "accented", "manual"], names: ["Static", "Dynamic", "Accented", "Manual"], reset: "static" },
     /**
      * Which static palette that mode paints from: the shell's original theme
      * ("legacy", and the default, so adding this flag changes nothing until it
@@ -94,6 +94,34 @@ var FIELDS = {
      * without it.
      */
     "flags.colorScheme":    { options: ["vague", "legacy"], names: ["Vague", "Legacy"], reset: "legacy" },
+    /**
+     * Material You generation for the Dynamic palette (and, for the four that
+     * shape the accent, for Accented). The scheme names are matugen's variants,
+     * the same nine caelestia's launcher offers and the set DMS exposes, plus
+     * "auto" which picks a variant from the wallpaper's own
+     * colourfulness; contrast is matugen's -1..1 (shown as -100%..100%); Auto
+     * mode maps to matugen's `smart`, which picks light or dark from the
+     * wallpaper. `dynamicPrefer` is which colour matugen takes when an image
+     * offers more than one — the app's "largest area" is a scoring heuristic,
+     * so the names say what matugen actually does rather than pretending it
+     * reads area.
+     */
+    "flags.dynamicScheme":  { options: ["auto", "tonal-spot", "vibrant", "expressive", "fidelity", "content", "fruit-salad", "rainbow", "neutral", "monochrome"],
+                             names: ["Auto", "Tonal Spot", "Vibrant", "Expressive", "Fidelity", "Content", "Fruit Salad", "Rainbow", "Neutral", "Monochrome"],
+                             reset: "auto" },
+    "flags.dynamicContrast":{ min: -1, max: 1, step: 0.05, reset: 0 },
+    "flags.dynamicMode":    { options: ["auto", "light", "dark"], names: ["Auto", "Light", "Dark"], reset: "auto" },
+    "flags.dynamicPrefer":  { options: ["saturation", "lightness", "darkness", "value"],
+                             names: ["Saturated", "Light", "Dark", "Value"], reset: "saturation" },
+    "flags.containerSaturation": { min: 0.0, max: 2.0, step: 0.05, reset: 1.0 },
+    /**
+     * Which M3 role the shell's base surface sits on. `default` is the neutral
+     * elevation ramp; the container roles tint the whole window, and the
+     * generator rebuilds the text ramp from that role's on-container ink.
+     */
+    "flags.surfaceRole":    { options: ["default", "surface_container_low", "surface_container", "surface_container_high", "surface_container_highest", "primary_container", "secondary_container", "tertiary_container"],
+                             names: ["Default", "Surface Low", "Surface Container", "Surface High", "Surface Highest", "Primary Container", "Secondary Container", "Tertiary Container"],
+                             reset: "default" },
     "flags.manualHue":      { min: 0,   max: 359, step: 5,    reset: 0 },
     "flags.manualSat":      { min: 0,   max: 1,   step: 0.05, reset: 0.5 },
     "flags.manualDark":     { reset: true },

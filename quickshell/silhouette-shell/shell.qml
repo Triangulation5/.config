@@ -77,8 +77,34 @@ ShellRoot {
 
     LazyLoader {
         id: barMode
-        active: BarSwap.booted && BarSwap.barWanted
+
+        /**
+         * The bar's edge is a layer-shell anchor, and the compositor fixes the
+         * anchor when the surface is mapped: rebinding `anchors` on a live
+         * PanelWindow does not move it. So a change of edge rebuilds the bar
+         * tree rather than re-anchoring it. `edgeRekey` is the momentary drop
+         * the connection below uses to unload and then reload this loader
+         * without destroying its `active` binding — once the new tree is built,
+         * Bar.qml reads the already-current flag and comes up on the new edge.
+         */
+        property bool edgeRekey: false
+
+        active: BarSwap.booted && BarSwap.barWanted && !barMode.edgeRekey
         source: Qt.resolvedUrl("modules/bar/BarRoot.qml")
+    }
+
+    /**
+     * Rebuild the bar when it switches edges. Toggling the flag while the bar
+     * is not built needs no work: the next build reads the new value.
+     */
+    Connections {
+        target: Flags
+        function onBarBottomChanged() {
+            if (!barMode.active)
+                return;
+            barMode.edgeRekey = true;
+            Qt.callLater(function() { barMode.edgeRekey = false; });
+        }
     }
 
     IpcHandler {

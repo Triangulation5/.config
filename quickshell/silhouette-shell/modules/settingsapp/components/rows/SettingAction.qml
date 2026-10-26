@@ -64,6 +64,7 @@ SettingRow {
             anchors.centerIn: parent
             text: root.justDone ? root.doneText : root.buttonText
             color: root.justDone ? Theme.text : Theme.textSecondary
+            font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
             Behavior on color { ColorAnimation { duration: Theme.animFast } }
         }

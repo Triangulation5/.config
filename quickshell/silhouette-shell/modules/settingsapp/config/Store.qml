@@ -145,6 +145,15 @@ Singleton {
             property string paletteMode: "static"
             /** Which static palette the shell paints from: "legacy" or "vague". */
             property string colorScheme: "legacy"
+            /** Material You options for the Dynamic palette. See services/Flags.qml. */
+            property string dynamicScheme: "auto"
+            property real dynamicContrast: 0
+            property string dynamicMode: "auto"
+            property string dynamicPrefer: "saturation"
+            /** Container saturation multiplier (0.0-2.0) — 1.0 = default vague blend. */
+            property real containerSaturation: 1.0
+            /** M3 role used as the shell's base surface. See services/Flags.qml. */
+            property string surfaceRole: "default"
             property string wallpaperDir: ""
             property real uiScale: 1.1
             property bool reduceMotion: false
@@ -231,6 +240,7 @@ Singleton {
             property bool gameMode: false
             /** -- the minimal bar, mirrored from Flags.qml -- */
             property bool barEnabled: false
+            property bool barBottom: false
             property real barHeight: 35
             property string barStyle: "theme"
             property bool barChips: false
@@ -365,7 +375,9 @@ Singleton {
     /** Every mirrored flag key, in schema order. */
     readonly property var keys: [
         "dnd", "dndCritical", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
-        "paletteMode", "colorScheme", "wallpaperDir", "uiScale", "reduceMotion",
+        "paletteMode", "colorScheme", "dynamicScheme", "dynamicContrast", "dynamicMode", "dynamicPrefer",
+        "containerSaturation", "surfaceRole",
+        "wallpaperDir", "uiScale", "reduceMotion",
         "manualHue", "manualDark", "manualSat", "uiFont",
         "pillOpacity", "pillBlur", "topGap", "appGap",
         "notchStyle", "notchFlare", "autoHide", "vimKeys",
@@ -380,7 +392,7 @@ Singleton {
         "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",
         "gameMode",
-        "barEnabled", "barHeight", "barStyle", "barChips", "barFontScale",
+        "barEnabled", "barBottom", "barHeight", "barStyle", "barChips", "barFontScale",
         "nightLightMode", "nightLightTemp", "nightLightOnMin", "nightLightOffMin",
         "pillRestW", "pillRestH", "pillRestCorner", "pillNotchCorner", "pillHoverPad",
         "pillHoverH", "pillMixerH", "pillLauncherW", "pillLauncherH", "pillClipboardW",

@@ -78,6 +78,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     text: root.layoutCaption
                     color: Theme.textSecondary
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSmall
                     wrapMode: Text.WordWrap
                 }

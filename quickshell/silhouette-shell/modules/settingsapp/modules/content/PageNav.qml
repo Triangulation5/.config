@@ -61,6 +61,7 @@ RowLayout {
                 anchors.centerIn: parent
                 text: chevron.modelData.glyph
                 color: chevron.ink
+                font.family: Theme.fontFamily
                 font.pixelSize: 15
                 Behavior on color { ColorAnimation { duration: Theme.animNormal } }
             }
@@ -79,6 +80,7 @@ RowLayout {
         text: root.title
         textFormat: Text.PlainText
         color: Theme.text
+        font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSizeTitle
         font.bold: true
         Layout.leftMargin: 10

@@ -67,6 +67,7 @@ ColumnLayout {
             id: labelText
             text: root.label
             color: Theme.text
+            font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeNormal
             wrapMode: Text.WordWrap
             Layout.fillWidth: true

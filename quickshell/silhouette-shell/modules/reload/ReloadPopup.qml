@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import qs.services
 import qs.components.icons
@@ -40,6 +41,33 @@ Item {
             ? "qs log -i " + id
             : "qs log --pid " + Quickshell.processId;
     }
+
+    /**
+     * The compositor's outer gap, read from the running config rather than
+     * assumed. In dwm style the popup is placed on the top-left corner of the
+     * first tiled window, so it has to use the same spacing that corner uses:
+     * `general:gaps_out` from `hypr/modules/decorations.lua`. Parsing the CSS
+     * form (`top right bottom left`) keeps a per-side gap honest too; the
+     * fallback is the shipped 8px when hyprctl is unavailable.
+     */
+    property int gapTop: 8
+    property int gapLeft: 8
+
+    /** True in the bar's dwm presentation: square corners, window spacing. */
+    readonly property bool dwm: BarMode.dwmStyle
+
+    /**
+     * The band the bar reserves. When the bar owns the top edge the window's
+     * corner is below it; on the bottom edge the corner is still at the top of
+     * the usable area, which is why this only contributes in top mode.
+     */
+    readonly property real barBand: (Flags.barEnabled && !Flags.barBottom)
+        ? Math.round(Flags.barHeight * root.s)
+        : 0
+
+    /** Top-left of the popup: the window corner in dwm style. */
+    readonly property real edgeX: root.dwm ? root.gapLeft : 36 * root.s
+    readonly property real edgeY: root.dwm ? root.barBand + root.gapTop : 32 * root.s
     /**
      * Build the popup window and start its show animation (the window's
      * own Component.onCompleted kicks the sequence off). The loader is torn
@@ -47,8 +75,31 @@ Item {
      * rebuilds it fresh instead of being a no-op on the loaded item.
      */
     function show() {
+        /** Refresh the compositor spacing before the card is measured. */
+        gapsProc.running = true;
         popupLoader.active = false;
         popupLoader.active = true;
+    }
+
+    Process {
+        id: gapsProc
+        command: ["hyprctl", "-j", "getoption", "general:gaps_out"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var option = JSON.parse(this.text);
+                    var parts = String(option.css || "").trim().split(/\s+/).map(Number);
+                    if (parts.length >= 1 && isFinite(parts[0]))
+                        root.gapTop = parts[0];
+                    if (parts.length >= 4 && isFinite(parts[3]))
+                        root.gapLeft = parts[3];
+                    else if (parts.length >= 1 && isFinite(parts[0]))
+                        root.gapLeft = parts[0];
+                } catch (e) {
+                    /** Keep the shipped gap; the popup still reads. */
+                }
+            }
+        }
     }
     Connections {
         target: Quickshell
@@ -83,11 +134,16 @@ Item {
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "quickshell:reload-popup"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-            /** Anchored to the top-left with generous breathing room from the
-             * screen edges so it doesn't feel cramped against the corner. */
+            /**
+             * Top-left. In dwm style the card sits on the first tiled window's
+             * corner — below the bar when it owns the top edge, using the
+             * compositor's own outer gap on both axes — so it reads as a window
+             * rather than a floating pill. The pill's rounded presentation keeps
+             * its old roomier inset.
+             */
             anchors { left: true; top: true }
             Component.onCompleted: seq.restart()
-        margins { left: 36 * root.s; top: 32 * root.s }
+        margins { left: root.edgeX; top: root.edgeY }
         implicitWidth: card.implicitWidth
         implicitHeight: card.implicitHeight
         Rectangle {
@@ -96,7 +152,8 @@ Item {
             /** Slight upward/leftward settle on entry, matching the top-left anchor. */
             scale: 0.96
             transformOrigin: Item.TopLeft
-            radius: 20 * root.s
+            /** The dwm bar squares everything; the card is no exception. */
+            radius: root.dwm ? 0 : 20 * root.s
             border.width: 1
             border.color: root.failed ? Theme.error : Theme.border
             gradient: Gradient {
@@ -143,7 +200,7 @@ Item {
                     Rectangle {
                         width: 24 * root.s
                         height: 24 * root.s
-                        radius: 7 * root.s
+                        radius: root.dwm ? 0 : 7 * root.s
                         anchors.verticalCenter: parent.verticalCenter
                         color: root.failed ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.16) : Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.16)
                         GlyphIcon {
@@ -168,7 +225,7 @@ Item {
                     visible: root.failed
                     width: 400 * root.s
                     color: Theme.tileBg
-                    radius: 12 * root.s
+                    radius: root.dwm ? 0 : 12 * root.s
                     border.width: 1
                     border.color: Theme.border
                     implicitHeight: errText.implicitHeight + 18 * root.s
@@ -205,7 +262,7 @@ Item {
                         }
                         Rectangle {
                             anchors.fill: parent
-                            radius: 9 * root.s
+                            radius: root.dwm ? 0 : 9 * root.s
                             color: root.copied ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, 0.18) : (copyBtn.containsMouse ? Theme.capsule : Theme.tileBg)
                             border.width: 1
                             border.color: root.copied ? Theme.verm : (copyBtn.containsMouse ? Theme.capsuleBorder : Theme.border)
@@ -257,7 +314,7 @@ Item {
                         }
                         Rectangle {
                             anchors.fill: parent
-                            radius: 6 * root.s
+                            radius: root.dwm ? 0 : 6 * root.s
                             color: logBtn.containsMouse ? Theme.capsule : Theme.tileBg
                             border.width: 1
                             border.color: logBtn.containsMouse ? Theme.capsuleBorder : "transparent"
@@ -296,7 +353,7 @@ Item {
                 anchors.bottomMargin: card.trackBottomGap
                 width: parent.width - (card.trackSideMargin * 2)
                 height: card.trackHeight
-                radius: height / 2
+                radius: root.dwm ? 0 : height / 2
                 color: Theme.threadBg
                 clip: true
                 Rectangle {
@@ -305,7 +362,7 @@ Item {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     width: parent.width
-                    radius: height / 2
+                    radius: root.dwm ? 0 : height / 2
                     color: root.failed ? Theme.error : Theme.verm
                     /** Faint glow riding the leading edge of the fill for a
                      * little more polish than a flat bar. */
@@ -314,7 +371,7 @@ Item {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 10 * root.s
-                        radius: height / 2
+                        radius: root.dwm ? 0 : height / 2
                         visible: fill.width > width
                         gradient: Gradient {
                             orientation: Gradient.Horizontal

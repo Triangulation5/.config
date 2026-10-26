@@ -220,6 +220,7 @@ Rectangle {
                     visible: root.entries.length === 0
                     text: "No settings match \u201C" + root.query.trim() + "\u201D"
                     color: Theme.textSecondary
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSmall
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter

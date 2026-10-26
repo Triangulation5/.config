@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
+import qs.components.animation
 import qs.modules.settingsapp.config
 import qs.modules.settingsapp.pages
 import qs.modules.settingsapp.components
@@ -84,6 +85,16 @@ Item {
 
     /** How many of the open page's rows exist so far. See rowBuilder. */
     property int builtRows: 0
+
+    /**
+     * The open page has finished arriving: every row of a data page has been
+     * built, and a page with a body of its own has compiled and loaded it.
+     * Only then is the content height — and so the scrollbar's `size` — the
+     * size it will keep; measuring earlier is what used to show a full-length
+     * handle that then shrank while the rows landed.
+     */
+    readonly property bool pageSettled: root.builtRows >= root.pageRows.length
+        && (root.pageView === null || pageLoader.status === Loader.Ready)
 
     /** Reveal attempts left before the timer gives up on a key that is not here. */
     property int revealTries: 0
@@ -179,13 +190,91 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
+
             /**
-             * Same reason as the rail: the default bar is a foreign grey slab
-             * laid over the cards. Scrolling is the wheel and the trackpad
-             * here.
+             * The app's own scrollbar: a thin grey handle on the palette rather
+             * than the default controls slab. It is 4px at rest and opens to 6px
+             * under the pointer, so the width change itself is the hover cue and
+             * the handle never needs a full track behind it. A page whose
+             * content only just overflows would leave a handle filling most of
+             * the track — a bar that says "almost nothing to scroll" is noise,
+             * so it is hidden once the handle reaches 95% of it.
+             *
+             * A handle is not shown until the page has settled, either. While
+             * rows are still being built the content is short, so `size` reads
+             * high and the handle comes up full-length only to shrink as the
+             * page fills; the reveal latch holds it back through that window.
+             * Once the final size is known the bar grows out of the viewport's
+             * right edge: `width` is driven by `reveal`, and `x` keeps the right
+             * edge pinned, so the handle widens leftwards rather than fading in
+             * at its final size. The reveal is deliberately slower than the
+             * theme's control timings — this is an entrance, not a hover.
              */
+            ScrollBar.vertical: ScrollBar {
+                id: verticalBar
+
+                /**
+                 * The bar is a child of the ScrollView, not of its content, so
+                 * it stays pinned to the viewport rather than scrolling away
+                 * with the cards. `x`/`height` mirror the Basic style's own bar.
+                 */
+                parent: scroll
+                x: scroll.width - width
+                y: scroll.topPadding
+                height: scroll.availableHeight
+
+                policy: ScrollBar.AlwaysOn
+                hoverEnabled: true
+                /**
+                 * `size` is the visible fraction of the content. Hide the bar
+                 * when there is nearly nothing to scroll; `> 0` also keeps it
+                 * out of the first frame, before ScrollView has measured the
+                 * page and reported a size.
+                 */
+                visible: root.pageSettled && revealLatch.ready && size > 0 && size < 0.95
+                /**
+                 * 0 before the page settles and while it fits; 1 once the latch
+                 * opens. Leaving a page drops the bar at once instead of
+                 * animating the old page's handle away under the new one.
+                 */
+                property real reveal: visible ? 1 : 0
+                width: implicitWidth * reveal
+                implicitWidth: hovered ? 6 : 4
+                /** Need the whole 4px at rest; the default 2px inset would halve it. */
+                padding: 0
+
+                Behavior on reveal {
+                    enabled: root.pageSettled
+                    NumberAnimation {
+                        duration: 420
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Behavior on implicitWidth {
+                    NumberAnimation {
+                        duration: Theme.animFast
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                contentItem: Rectangle {
+                    radius: width / 2
+                    color: Theme.textSecondary
+                    opacity: verticalBar.pressed ? 1.0 : (verticalBar.hovered ? 0.85 : 0.5)
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: Theme.animFast
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+
+                background: Item {}
+            }
+
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 id: contentColumn
@@ -229,6 +318,8 @@ Item {
                  * is compiled off the UI thread rather than during the switch.
                  */
                 Loader {
+                    id: pageLoader
+
                     Layout.fillWidth: true
                     visible: root.pageView !== null
                     source: root.pageView !== null ? root.pageView : ""
@@ -245,6 +336,7 @@ Item {
                     visible: Sources.note.length > 0
                     text: Sources.note
                     color: Theme.textSecondary
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSection
                     wrapMode: Text.WordWrap
                 }
@@ -281,6 +373,21 @@ Item {
             while (root.builtRows < root.pageRows.length && Date.now() < deadline)
                 root.builtRows += 1;
         }
+    }
+
+    /**
+     * Holds the scrollbar back until the open page has settled (see
+     * `pageSettled`), then one short delay more so the content layout has
+     * reported its final height. Without it the handle was measured while the
+     * page was still short: it appeared full-length and shrank as the rows
+     * landed. The jitter keeps successive page opens from reading mechanical.
+     */
+    RevealLatch {
+        id: revealLatch
+
+        shown: root.pageSettled
+        delay: 120
+        jitter: 80
     }
 
     /**

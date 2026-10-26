@@ -10,6 +10,10 @@ import qs.modules.bar
  * `Flags.barEnabled` is set — shell.qml keeps the bar and the pill in
  * LazyLoaders and builds whichever of the two the flag names, so this whole
  * module is absent, not merely hidden, while the pill is the shell on screen.
+ * The strip owns the top edge by default, or the bottom edge when
+ * `Flags.barBottom` is set; shell.qml rebuilds this tree to move it, since a
+ * mapped layer-shell anchor is fixed, and the two presentation-swap services do
+ * not care which edge it is, since the strip's arrival is expressed in Bar.qml.
  *
  * The bar is a readout, so the only state it owns is the two things a readout
  * needs to stay honest: the Hyprland models it draws from, and the vitals

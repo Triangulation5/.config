@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls
-import Quickshell.Io
 import "../../../utils/settings/fields.js" as Fields
 import qs.services
 import qs.modules.settings
@@ -12,15 +11,22 @@ import qs.components.layout
 
 /**
  * 相 APPEARANCE sub-surface: the clock format and seconds, the Japanese-glyph
- * toggle that gates every surface header, the palette mode (static flame, dynamic
- * per-wallpaper, or a manually chosen hue) and which static palette that mode
- * paints from, the UI scale and a reduce-motion switch. Reached from the settings
- * index and morphs back to it on an empty click or the back chevron.
+ * toggle that gates every surface header, the palette mode (static flame,
+ * wallpaper accents, full wallpaper colours, or a manually chosen hue), the UI
+ * scale and a reduce-motion switch. Reached from the settings index and morphs
+ * back to it on an empty click or the back chevron.
  *
- * Manual palette mode reveals a rainbow hue strip and a dark/light choice; moving
- * either rebuilds the rice colour set from that hue through wallcolors.py --hue
- * and reloads Hyprland and the terminal, debounced so a drag does not spawn a
- * build per pixel.
+ * The static Colorscheme choice (Vague / Legacy) deliberately lives only in the
+ * Silhouette Settings window's Appearance page: it changes nothing on Dynamic or
+ * Manual, and on Accented it still picks the body every wallpaper accent is
+ * painted onto — so the quick settings surface keeps the mode switch that does.
+ *
+ * Manual palette mode reveals a rainbow hue strip and a dark/light choice; the
+ * flag writes are picked up by services/Dyn.qml, which rebuilds the rice colour
+ * set from that hue through wallcolors.py --hue and reloads Hyprland and the
+ * terminal, debounced so a drag does not spawn a build per pixel. Keeping the
+ * generator in Dyn means the settings window can change the same flags and get
+ * the same result.
  */
 SettingsSurface {
     id: root
@@ -45,10 +51,6 @@ SettingsSurface {
     /** The hue strip's span, from the table shared with the app's Appearance page. */
     readonly property real hueMax: Fields.get("flags", "manualHue").max
 
-    property string hueArg: String(Math.round(Flags.manualHue))
-    property string modeArg: Flags.manualDark ? "dark" : "light"
-    property string satArg: String(Flags.manualSat)
-
     readonly property color accentColor: Qt.hsla(Flags.manualHue / 360, Flags.manualSat, Flags.manualDark ? 0.5 : 0.62, 1)
     readonly property string currentHex: {
         var c = accentColor;
@@ -56,51 +58,14 @@ SettingsSurface {
         return ("#" + h(c.r) + h(c.g) + h(c.b)).toUpperCase();
     }
 
-    function applyManual() {
-        hueArg = String(Math.round(Flags.manualHue));
-        modeArg = Flags.manualDark ? "dark" : "light";
-        satArg = String(Flags.manualSat);
-        applyTimer.restart();
-    }
-
     function applyMode(v) {
+        /**
+         * The flag is the whole action: services/Dyn.qml owns regeneration for
+         * both Dynamic and Manual, so this surface (and the settings window)
+         * only writes the choice. Running a second generator here raced that
+         * one and wrote the same file twice for nothing.
+         */
         Flags.paletteMode = v;
-        if (v === "manual")
-            applyManual();
-        else if (v === "dynamic")
-            dynamicProc.running = true;
-    }
-
-    Timer {
-        id: applyTimer
-        interval: 260
-        repeat: false
-        onTriggered: paletteProc.running = true
-    }
-
-    Process {
-        id: paletteProc
-        command: ["sh", "-c",
-            "python3 \"$HOME/.config/hypr/scripts/wallcolors.py\" --hue \"$1\" \"$2\" \"$3\" && hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
-            "sh", root.hueArg, root.modeArg, root.satArg]
-    }
-
-    Process {
-        id: dynamicProc
-        command: ["sh", "-c",
-            "f=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper\"; pic=$(cat \"$f\" 2>/dev/null); [ -f \"$pic\" ] && python3 \"$HOME/.config/hypr/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true"]
-    }
-
-    Connections {
-        target: Flags
-        function onManualHueChanged() {
-            if (Flags.paletteMode === "manual")
-                root.applyManual();
-        }
-        function onManualSatChanged() {
-            if (Flags.paletteMode === "manual")
-                root.applyManual();
-        }
     }
 
     rows: [
@@ -112,8 +77,7 @@ SettingsSurface {
         { item: vizFpsRow, kind: "seg", vals: [15, 30, 60, 120], get: function () { return Flags.vizFps; }, set: function (v) { Flags.vizFps = v; } },
         { item: mediaBgRow, kind: "seg", vals: ["bleed", "wash", "none"], get: function () { return Flags.mediaStyle; }, set: function (v) { Flags.mediaStyle = v; } },
         { item: notchRow, kind: "toggle", get: function () { return Flags.notchStyle; }, set: function (v) { Flags.notchStyle = v; } },
-        { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
-        { item: schemeRow, kind: "seg", vals: ["vague", "legacy"], get: function () { return Flags.colorScheme; }, set: function (v) { Flags.colorScheme = v; } },
+        { item: paletteRow, kind: "seg", vals: ["static", "dynamic", "accented", "manual"], get: function () { return Flags.paletteMode; }, set: function (v) { root.applyMode(v); } },
         { item: scaleRow, kind: "seg", vals: [0.9, 1.0, 1.1, 1.25], get: function () { return Flags.uiScale; }, set: function (v) { Flags.uiScale = v; } },
         { item: motionRow, kind: "toggle", get: function () { return Flags.reduceMotion; }, set: function (v) { Flags.reduceMotion = v; } },
         { item: autoHideRow, kind: "toggle", get: function () { return Flags.autoHide; }, set: function (v) { Flags.autoHide = v; } },
@@ -246,29 +210,6 @@ SettingsSurface {
     }
 
     /**
-     * Which static palette the shell paints from — the vague.nvim port, or the
-     * shell's original theme whose unparseable colour strings left every surface
-     * black. Reads and writes the flag directly, like every other row here: the
-     * two schemes differ only in colours, so there is nothing to regenerate and
-     * nothing to shell out to. It has no effect while the palette is on Dynamic
-     * or Manual, because those are generated from the wallpaper and are already
-     * valid colours.
-     */
-    SettingsRow {
-        id: schemeRow
-        surface: root
-        name: "Colorscheme"
-        icon: "palette"
-
-        SettingsSeg {
-            s: root.s
-            options: root.options("flags", "colorScheme")
-            value: Flags.colorScheme
-            onPicked: (v) => Flags.colorScheme = v
-        }
-    }
-
-    /**
      * Manual hue editor, folded shut unless the palette is on Manual. Holds a
      * rainbow strip with a draggable thumb, then a single line pairing a live
      * accent swatch and its hex caption with the dark/light choice, and a hex
@@ -387,7 +328,7 @@ SettingsSurface {
                     s: root.s
                     options: [{ label: "Dark", value: true }, { label: "Light", value: false }]
                     value: Flags.manualDark
-                    onPicked: (v) => { Flags.manualDark = v; root.applyManual(); }
+                    onPicked: (v) => Flags.manualDark = v
                 }
             }
 
@@ -439,7 +380,6 @@ SettingsSurface {
                             } else {
                                 Flags.manualSat = 0;
                             }
-                            root.applyManual();
                         }
                         text = "";
                         focus = false;

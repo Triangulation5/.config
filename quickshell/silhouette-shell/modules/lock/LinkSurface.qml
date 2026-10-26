@@ -12,6 +12,14 @@ import qs.components.animation
  * Lock screen connectivity glance. A compact capsule shows the wifi network (or
  * Bluetooth/offline state) and expands on click into rows with wifi and bluetooth
  * status toggles.
+ *
+ * The compact identity — its glyph and its label, whichever network state is
+ * current — travels into the row it belongs to as the capsule opens, the same
+ * travelling-glyph idea the battery glance uses, instead of fading out in place.
+ * The label is part of that unit on purpose: a glyph that flies while its name
+ * dissolves reads as two things, and which name it is (the wifi network, or
+ * "Bluetooth" when that is what the capsule speaks for) must not change that.
+ * The identity hands over to the expanded row's own copy once the rows reveal.
  */
 
 Item {
@@ -71,6 +79,19 @@ Item {
         ? activeWifi.name
         : "Not Connected"
 
+    /**
+     * Which face the capsule is speaking for. Wifi needs a network to name, not
+     * just a live radio: an on-but-unconnected wifi makes the capsule fall
+     * through to Bluetooth, or to Offline when that is off too. Keeping this in
+     * one pair of properties is what makes the glyph, the label and the row the
+     * identity travels to agree in every radio state.
+     */
+    readonly property bool showsWifi: link.wifiOn && link.activeWifi !== null
+    readonly property bool showsBluetooth: !link.showsWifi && link.bluetoothOn
+
+    /** The expanded row the compact identity flies toward; see showsWifi. */
+    readonly property int identityRow: link.showsWifi ? 0 : (link.showsBluetooth ? 1 : 0)
+
     implicitWidth: panel.width
     implicitHeight: panel.height
 
@@ -94,11 +115,25 @@ Item {
         shown: link.panelOpen && link.expanded
     }
 
+    /**
+     * The compact identity stays up through the geometry change so it can travel
+     * into the row it belongs to; it hands over exactly when the expanded rows
+     * latch in. Hiding it on the click (the old behaviour) cleared the label
+     * before the capsule had moved at all, which is what made the open read as a
+     * fade rather than a morph.
+     */
+    Connections {
+        target: contentReveal
+        function onReadyChanged() {
+            if (contentReveal.ready && link.panelOpen && link.expanded)
+                link.compactShown = false;
+        }
+    }
+
     onExpandedChanged: {
         if (expanded) {
             closeTimer.stop();
             compactTimer.stop();
-            compactShown = false;
             if (!panelOpen)
                 openTimer.restart();
         } else {
@@ -196,12 +231,51 @@ Item {
         Row {
             id: compact
 
-            anchors.centerIn: parent
+            /**
+             * The compact identity, positioned by hand rather than centred: at
+             * rest it sits in the middle of the capsule, and once the panel
+             * opens it travels to the row it speaks for. The expanded card is
+             * 112*s tall with its row column centred, so the wifi row's icon
+             * centre is at 29.5*s and Bluetooth's at 82.5*s. The glyph also
+             * grows to the row's 24*s so the identity lands exactly on the
+             * row's own icon and title — same left edge, same centre, same text
+             * inset — rather than a smaller copy a few pixels adrift.
+             */
+            width: implicitWidth
+            height: implicitHeight
 
-            spacing: 7 * link.s
+            x: link.panelOpen
+                ? 15 * link.s
+                : (panel.width - width) / 2
+            y: link.panelOpen
+                ? (link.identityRow === 1 ? 82.5 : 29.5) * link.s - height / 2
+                : (panel.height - height) / 2
+
+            spacing: link.panelOpen ? 12 * link.s : 7 * link.s
+
+            Behavior on spacing {
+                NumberAnimation {
+                    duration: link.panelOpen ? 420 : link.compactReturnMs
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             opacity: link.compactShown ? 1 : 0
             scale: link.compactShown ? 1 : 0.78
+
+            Behavior on x {
+                NumberAnimation {
+                    duration: link.panelOpen ? 420 : link.compactReturnMs
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Behavior on y {
+                NumberAnimation {
+                    duration: link.panelOpen ? 420 : link.compactReturnMs
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             Behavior on opacity {
                 NumberAnimation {
@@ -220,13 +294,20 @@ Item {
             Loader {
                 anchors.verticalCenter: parent.verticalCenter
 
-                width: 18 * link.s
-                height: 18 * link.s
+                width: link.panelOpen ? 24 * link.s : 18 * link.s
+                height: width
+
+                Behavior on width {
+                    NumberAnimation {
+                        duration: link.panelOpen ? 420 : link.compactReturnMs
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 sourceComponent:
-                    link.wifiOn
+                    link.showsWifi
                     ? wifiCompact
-                    : link.bluetoothOn
+                    : link.showsBluetooth
                         ? bluetoothCompact
                         : offlineCompact
             }
@@ -271,9 +352,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
 
                 text:
-                    link.wifiOn && link.activeWifi
+                    link.showsWifi
                     ? (link.redacted ? "WiFi" : link.wifiName)
-                    : link.bluetoothOn
+                    : link.showsBluetooth
                         ? "Bluetooth"
                         : "Offline"
 

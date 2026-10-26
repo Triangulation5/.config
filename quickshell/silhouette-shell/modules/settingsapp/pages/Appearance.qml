@@ -10,10 +10,25 @@ import "../utils/rows.js" as Rows
  *
  * Mode is the switch that matters: static keeps the curated set, while dynamic
  * and manual hand the job to the wallpaper palette, which is also what re-tints
- * this window (see config/Theme.qml). The scheme row above it only decides
- * *which* curated set static paints — the vague.nvim port or the shell's
- * original one — so it does nothing on the other two, and is written to say so
- * rather than to pretend otherwise.
+ * this window (see config/Theme.qml). Accented sits between them: it keeps the
+ * selected static scheme's surfaces and text and takes only the accent from the
+ * wallpaper, so the theme someone tuned stays put while the highlights follow
+ * the image. The scheme row above it only decides *which* curated set static
+ * paints — the vague.nvim port or the shell's original one — so it does nothing
+ * on Dynamic and Manual; Accented keeps it as the body its wallpaper accent
+ * sits on, which is the point of that mode.
+ *
+ * Dynamic is Material You. Its options are the generation controls: the M3
+ * scheme variant (the nine caelestia and DMS both list, plus Auto), matugen's
+ * contrast level, Auto/Light/Dark (Auto is matugen's `smart`, which reads the
+ * wallpaper), which colour matugen prefers when an image offers several, the
+ * M3 role the base surface sits on, and how saturated the containers are. They
+ * write flags only; the shell's Dyn watcher regenerates the palette and this
+ * window re-tints from the same colors.json it already reads. Accented shares
+ * the accent-producing four (scheme, contrast, preferred colour, container
+ * saturation); Appearance and Surface role belong to Dynamic alone, because
+ * Accented keeps the static surfaces and always asks for the dark-scheme accent
+ * that reads on them.
  *
  * The aura is a card of its own rather than three rows under the backdrop,
  * because it is the one group here that is a *shape* of another setting: the
@@ -43,11 +58,34 @@ QtObject {
     readonly property var groups: [
         { card: "Palette", rows: [
             row("colorScheme", "segmented", "Colorscheme",
-                "Which static palette the shell paints from — the vague.nvim port, or the original black-bodied one. Static mode only", ""),
-            row("paletteMode", "segmented", "Mode", "Static washi, live wallpaper colours, or pick a hue", ""),
+                "Which static palette the shell paints from — the vague.nvim port, or the original black-bodied one. Static mode, and the body Accented puts wallpaper accents on", ""),
+            row("paletteMode", "segmented", "Mode", "Static washi, full wallpaper colours, wallpaper accents on the static theme, or pick a hue", ""),
             row("manualHue", "slider", "Hue", "", "\u00B0"),
             row("manualSat", "slider", "Saturation", "", "%", { displayScale: 100 }),
             row("manualDark", "toggle", "Dark accent", "Dark instead of light accent tones in manual mode", "")
+        ]},
+        /**
+         * Dynamic is the Material You path: these are generation options, not
+         * palette tokens, so they only mean anything while Mode above is
+         * Dynamic. The card stays visible on the other modes and the captions
+         * say so, matching how the Colorscheme row above describes its own
+         * static-only reach rather than disappearing.
+         */
+        { card: "Material You \u00B7 Dynamic", rows: [
+            row("dynamicScheme", "select", "Scheme",
+                "Auto picks a Material 3 variant from the wallpaper's colourfulness; tonal spot is Google's default, vibrant and expressive push chroma, neutral and monochrome drain it. Dynamic and Accented modes", ""),
+            row("dynamicMode", "segmented", "Appearance",
+                "Auto reads light or dark from the wallpaper; Light and Dark force one. Dynamic mode only — Accented always keeps the dark-scheme accent for the static dark theme", ""),
+            row("dynamicContrast", "slider", "Contrast",
+                "Material's -100% to 100% contrast level. Positive separates text and surfaces further; Dynamic and Accented modes",
+                "%", { displayScale: 100 }),
+            row("dynamicPrefer", "select", "Wallpaper accent",
+                "Which colour matugen takes when the wallpaper offers several: the most saturated, the lightest, the darkest, or the highest value. Dynamic and Accented modes", ""),
+            row("surfaceRole", "select", "Surface role",
+                "Which Material 3 role the shell's base surface sits on. Default is the neutral elevation ramp; a container role tints the window and its text is rebuilt from that role's own ink. Dynamic mode only — Accented keeps the static surfaces", ""),
+            row("containerSaturation", "slider", "Container saturation",
+                "Chroma on the surface and accent containers: flat grey at 0%, the vague-tuned default at 100%, Material's own tint at 200%. Dynamic and Accented modes",
+                "%", { displayScale: 100 })
         ]},
         { card: "Typography & scale", rows: [
             row("uiFont", "text", "UI font", "Font family for every surface", "", { placeholder: "Inter" }),

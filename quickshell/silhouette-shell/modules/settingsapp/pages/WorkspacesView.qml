@@ -172,6 +172,7 @@ ColumnLayout {
                                     text: entry.modelData.name
                                     textFormat: Text.PlainText
                                     color: Theme.text
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: Theme.fontSizeNormal
                                     elide: Text.ElideRight
                                 }
@@ -183,6 +184,7 @@ ColumnLayout {
                                         : "Bound in binds.lua by hand"
                                     textFormat: Text.PlainText
                                     color: Theme.textSecondary
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: Theme.fontSizeSection
                                     elide: Text.ElideRight
                                 }
@@ -204,6 +206,7 @@ ColumnLayout {
                                     text: entry.modelData.key.length > 0 ? entry.modelData.key : "unbound"
                                     textFormat: Text.PlainText
                                     color: Theme.text
+                                    font.family: Theme.fontFamily
                                     font.pixelSize: Theme.fontSizeSection
                                     font.bold: true
                                 }
@@ -226,6 +229,7 @@ ColumnLayout {
                                         anchors.centerIn: parent
                                         text: "\u00D7"
                                         color: removeMouse.containsMouse ? Theme.accent : Theme.textSecondary
+                                        font.family: Theme.fontFamily
                                         font.pixelSize: 15
                                     }
                                 }
@@ -300,6 +304,7 @@ ColumnLayout {
                                             text: chip.modelData
                                             textFormat: Text.PlainText
                                             color: Theme.text
+                                            font.family: Theme.fontFamily
                                             font.pixelSize: Theme.fontSizeSection
                                         }
 
@@ -307,6 +312,7 @@ ColumnLayout {
                                             id: chipRemove
                                             text: "\u00D7"
                                             color: chipMouse.containsMouse ? Theme.accent : Theme.textSecondary
+                                            font.family: Theme.fontFamily
                                             font.pixelSize: 13
 
                                             MouseArea {
@@ -326,6 +332,7 @@ ColumnLayout {
                                 visible: entry.modelData.apps.length === 0
                                 text: "Nothing yet"
                                 color: Theme.textSecondary
+                                font.family: Theme.fontFamily
                                 font.pixelSize: Theme.fontSizeSection
                             }
                         }
@@ -409,6 +416,7 @@ ColumnLayout {
                 visible: root.entries.length === 0
                 text: "No special workspaces. Add one below."
                 color: Theme.textSecondary
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
             }
 
@@ -455,6 +463,7 @@ ColumnLayout {
                     anchors.centerIn: parent
                     text: "+   Add Workspace"
                     color: Theme.accent
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSmall
                     font.bold: true
                 }
@@ -515,6 +524,7 @@ ColumnLayout {
                         anchors.rightMargin: 10
                         verticalAlignment: TextInput.AlignVCenter
                         color: Theme.text
+                        font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSizeNormal
                         selectByMouse: true
                         onTextEdited: root.formName = text
@@ -524,6 +534,7 @@ ColumnLayout {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Chat"
                             color: Theme.textSecondary
+                            font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSizeNormal
                             visible: nameField.text.length === 0
                         }
@@ -538,6 +549,7 @@ ColumnLayout {
                 Text {
                     text: "DESCRIPTION"
                     color: Theme.textSecondary
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSection
                     font.letterSpacing: 1
                 }
@@ -557,6 +569,7 @@ ColumnLayout {
                         anchors.rightMargin: 10
                         verticalAlignment: TextInput.AlignVCenter
                         color: Theme.text
+                        font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSizeNormal
                         selectByMouse: true
                         onTextEdited: root.formDesc = text
@@ -566,6 +579,7 @@ ColumnLayout {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Chat windows (optional)"
                             color: Theme.textSecondary
+                            font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontSizeNormal
                             visible: descField.text.length === 0
                         }
@@ -580,6 +594,7 @@ ColumnLayout {
                 Text {
                     text: "KEY"
                     color: Theme.textSecondary
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeSection
                     font.letterSpacing: 1
                 }
@@ -600,6 +615,7 @@ ColumnLayout {
                         text: root.listening ? "press a letter\u2026  esc cancels"
                             : (root.formKey.length > 0 ? "Super + " + root.formKey : "tap to set a key")
                         color: root.listening || root.formKey.length > 0 ? Theme.text : Theme.textSecondary
+                        font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSizeNormal
                         font.bold: root.formKey.length > 0
                     }
@@ -620,6 +636,7 @@ ColumnLayout {
                 visible: root.formProblem.length > 0
                 text: root.formProblem
                 color: Theme.accent
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSection
                 wrapMode: Text.WordWrap
             }
@@ -641,6 +658,7 @@ ColumnLayout {
                         anchors.centerIn: parent
                         text: "Cancel"
                         color: Theme.textSecondary
+                        font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSizeNormal
                     }
 
@@ -666,6 +684,7 @@ ColumnLayout {
                         anchors.centerIn: parent
                         text: "Create"
                         color: Theme.knob
+                        font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSizeNormal
                         font.bold: true
                     }

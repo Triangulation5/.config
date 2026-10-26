@@ -24,6 +24,15 @@
 #      code path as a real run, printing every command instead of running it.
 #
 # Usage is in --help, or in the README's Install section.
+
+# This installer is bash: arrays, namerefs and pipefail are not accidentals.
+# If someone runs `sh install.sh`, say what to install instead of dying on a
+# syntax error hundreds of lines later. This test is itself POSIX.
+if [ -z "${BASH_VERSION:-}" ]; then
+    printf '%s\n' "install.sh needs bash. Alpine: apk add bash; Void: xbps-install -S bash" >&2
+    exit 1
+fi
+
 set -euo pipefail
 
 INSTALLER_VERSION="1.0.0"
@@ -68,39 +77,75 @@ HOME_REWRITE=(
 # Core packages: what the session and the shell actually call out to. Names are
 # per distro family because they genuinely differ (libnotify vs libnotify-bin,
 # python3-dbus vs python-dbus).
+# shellcheck disable=SC2034 # selected through the CORE_${FAMILY} nameref
 CORE_fedora=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp NetworkManager bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus)
+# shellcheck disable=SC2034
 CORE_arch=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager bluez upower
     wireplumber xdg-utils ffmpeg imagemagick python-dbus)
+# shellcheck disable=SC2034
 CORE_debian=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-bin slurp network-manager bluez upower
     wireplumber xdg-utils ffmpeg imagemagick python3-dbus)
+# shellcheck disable=SC2034
 CORE_suse=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-tools slurp NetworkManager bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python)
+# shellcheck disable=SC2034
 CORE_gentoo=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager bluez upower
     wireplumber xdg-utils ffmpeg imagemagick dbus-python)
+# Alpine's stable repos carry the desktop stack in community, but cava and
+# cliphist only exist in edge/testing. They are left out on purpose: pulling a
+# testing repo in would make an install less predictable than a missing
+# visualiser, and report_missing names them at the end instead.
+# shellcheck disable=SC2034
+CORE_alpine=(hyprland kitty jq curl python3 brightnessctl ddcutil playerctl
+    wl-clipboard libnotify slurp networkmanager bluez upower
+    wireplumber xdg-utils ffmpeg imagemagick py3-dbus)
+# Hyprland is not in Void's official repositories (see the hyprland-void repo
+# in report_missing). Everything else here is in the current repo, spelled the
+# way xbps spells it: NetworkManager and ImageMagick keep their capitals, and
+# the Python bindings are python3-dbus rather than dbus-python.
+# shellcheck disable=SC2034
+CORE_void=(kitty jq curl python3 brightnessctl ddcutil cava playerctl
+    cliphist wl-clipboard libnotify slurp NetworkManager bluez upower
+    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus quickshell)
 # Nothing to guess from. The generic names are listed so the report is concrete
 # and the user can map them to whatever their package manager calls them.
+# shellcheck disable=SC2034
 CORE_unknown=(hyprland quickshell kitty jq curl python3 brightnessctl ddcutil cava
     playerctl cliphist wl-clipboard libnotify slurp networkmanager bluez upower
     wireplumber xdg-utils ffmpeg imagemagick)
 
 # --full: the daily apps on top of the core, plus yazi's helpers so the file
 # manager previews instead of erroring on every file type.
+# shellcheck disable=SC2034
 FULL_fedora=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
     poppler-utils p7zip fd-find ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
 FULL_arch=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
     p7zip fd ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
 FULL_debian=(nautilus firefox-esr yazi mpd ncmpcpp btop ffmpegthumbnailer
     poppler-utils p7zip-full fd-find ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
 FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
     poppler-tools p7zip fd ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
 FULL_gentoo=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
     p7zip fd ripgrep fzf zoxide bat chafa)
+# Alpine does not package p7zip; the upstream 7zip package provides both 7z
+# and 7zz, which is what yazi looks for.
+# shellcheck disable=SC2034
+FULL_alpine=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
+    poppler-utils 7zip fd ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
+FULL_void=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
+    poppler-utils p7zip fd ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
 FULL_unknown=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
     p7zip fd ripgrep fzf zoxide bat chafa)
 
@@ -120,12 +165,16 @@ FULL=0
 KEEP_MONITORS=0
 SRC_OVERRIDE=""
 FAILED_ENTRIES=()
+# Filled in by detect_privilege. Kept as a plain command name so the same
+# variable works for sudo and doas, and so --dry-run can print the command it
+# would really run.
+SUDO="sudo"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'
-    GREEN=$'\033[32m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
+    YELLOW=$'\033[33m'; RESET=$'\033[0m'
 else
-    BOLD=""; DIM=""; RED=""; GREEN=""; YELLOW=""; RESET=""
+    BOLD=""; DIM=""; RED=""; YELLOW=""; RESET=""
 fi
 
 say()  { printf '%s\n' "$*"; }
@@ -169,7 +218,7 @@ Options:
 What it will touch:
   configs      $CONFIG_DIR
   backups      $STATE_DIR/backups/<timestamp>
-  dependencies through your distro's package manager (sudo)
+  dependencies through your distro's package manager (sudo or doas)
 EOF
 }
 
@@ -232,31 +281,67 @@ detect_distro() {
 
     case " $id $like " in
         *fedora*|*rhel*|*centos*) FAMILY="fedora" ;;
+        *alpine*)                 FAMILY="alpine" ;;
         *arch*)                   FAMILY="arch" ;;
         *debian*|*ubuntu*)        FAMILY="debian" ;;
-        *suse*|*opensuse*)        FAMILY="suse" ;;
+        *suse*)                   FAMILY="suse" ;;
         *gentoo*)                 FAMILY="gentoo" ;;
+        *void*)                   FAMILY="void" ;;
         *)                        FAMILY="unknown" ;;
     esac
 
     case "$FAMILY" in
         fedora) PM="dnf" ;;
+        alpine) PM="apk" ;;
         arch)   PM="pacman" ;;
         debian) PM="apt" ;;
         suse)   PM="zypper" ;;
         gentoo) PM="emerge" ;;
+        void)   PM="xbps" ;;
         *)      PM="" ;;
     esac
+}
+
+# sudo is the default on the distros this script grew up with, but Alpine and
+# a fair number of Void installs use doas instead. Probe once, and only make it
+# fatal on a real run: --dry-run should still print the plan on a machine with
+# neither installed.
+detect_privilege() {
+    if command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    elif command -v doas >/dev/null 2>&1; then
+        SUDO="doas"
+    elif [ "$DRY_RUN" = "1" ]; then
+        SUDO="sudo"
+        warn "neither sudo nor doas is installed; a real run would need one"
+    else
+        die "need sudo or doas to install packages (or re-run with --no-deps)"
+    fi
+}
+
+# Alpine's archive is split: main has the base, community has hyprland, kitty,
+# wireplumber and most of the desktop stack. A minimal install can enable only
+# main, which would make the whole batch fail for a reason the user can fix in
+# one line, so name it up front instead of after the retries.
+check_distro_repos() {
+    [ "$FAMILY" = "alpine" ] || return 0
+    [ -r /etc/apk/repositories ] || return 0
+    if ! grep -Eq '^[^#]*community/?[[:space:]]*$' /etc/apk/repositories; then
+        warn "Alpine: community is not enabled in /etc/apk/repositories; most desktop packages live there."
+        note "Enable it with 'setup-apkrepos', or add .../alpine/<release>/community."
+    fi
 }
 
 # One package-manager invocation. Kept separate from install_packages so the
 # batch can be retried per package when a single name is wrong for a release.
 pm_install() {
     case "$PM" in
-        dnf)    sudo dnf install -y "$@" ;;
-        pacman) sudo pacman -S --needed --noconfirm "$@" ;;
-        apt)    sudo apt-get install -y "$@" ;;
-        zypper) sudo zypper --non-interactive install "$@" ;;
+        dnf)    "$SUDO" dnf install -y "$@" ;;
+        apk)    "$SUDO" apk add --no-cache "$@" ;;
+        pacman) "$SUDO" pacman -S --needed --noconfirm "$@" ;;
+        apt)    "$SUDO" apt-get install -y "$@" ;;
+        zypper) "$SUDO" zypper --non-interactive install "$@" ;;
+        xbps)   "$SUDO" xbps-install -Sy "$@" ;;
         *)      return 1 ;;
     esac
 }
@@ -265,10 +350,12 @@ pm_install() {
 # of the name of the function that would have run it.
 pm_plan() {
     case "$PM" in
-        dnf)    echo "sudo dnf install -y $*" ;;
-        pacman) echo "sudo pacman -S --needed --noconfirm $*" ;;
-        apt)    echo "sudo apt-get install -y $*" ;;
-        zypper) echo "sudo zypper --non-interactive install $*" ;;
+        dnf)    echo "$SUDO dnf install -y $*" ;;
+        apk)    echo "$SUDO apk add --no-cache $*" ;;
+        pacman) echo "$SUDO pacman -S --needed --noconfirm $*" ;;
+        apt)    echo "$SUDO apt-get install -y $*" ;;
+        zypper) echo "$SUDO zypper --non-interactive install $*" ;;
+        xbps)   echo "$SUDO xbps-install -Sy $*" ;;
         *)      echo "(no package manager detected) $*" ;;
     esac
 }
@@ -294,6 +381,9 @@ install_packages() {
 
     if ! pm_install "${pkgs[@]}"; then
         warn "the batch failed, retrying one at a time so one bad name does not sink the rest"
+        if [ "$PM" = "xbps" ]; then
+            note "Void: if xbps itself is out of date, run '$SUDO xbps-install -Suy xbps' first."
+        fi
         for p in "${pkgs[@]}"; do
             pm_install "$p" || warn "skipped, not found in your repos: $p"
         done
@@ -309,10 +399,12 @@ ensure_bootstrap_tools() {
     step "Installing bootstrap tools: ${missing[*]}"
     # These have the same name everywhere Silhouette claims to support.
     case "$PM" in
-        dnf)    run sudo dnf install -y "${missing[@]}" ;;
-        pacman) run sudo pacman -S --needed --noconfirm "${missing[@]}" ;;
-        apt)    run sudo apt-get update && run sudo apt-get install -y "${missing[@]}" ;;
-        zypper) run sudo zypper --non-interactive install "${missing[@]}" ;;
+        dnf)    run "$SUDO" dnf install -y "${missing[@]}" ;;
+        apk)    run "$SUDO" apk add --no-cache "${missing[@]}" ;;
+        pacman) run "$SUDO" pacman -S --needed --noconfirm "${missing[@]}" ;;
+        apt)    run "$SUDO" apt-get update && run "$SUDO" apt-get install -y "${missing[@]}" ;;
+        zypper) run "$SUDO" zypper --non-interactive install "${missing[@]}" ;;
+        xbps)   run "$SUDO" xbps-install -Sy "${missing[@]}" ;;
         *)      die "need ${missing[*]} and do not know how to install it on this distro" ;;
     esac
     command -v git >/dev/null 2>&1 || [ "$DRY_RUN" = "1" ] || die "git is still missing"
@@ -488,6 +580,17 @@ install_portable_monitors() {
     note "monitor layout: portable default written, original kept as monitors.lua.example"
 }
 
+# Small membership test for a plain array. The missing-tool list is tiny, so a
+# loop is clearer than a pipeline and cannot be affected by SIGPIPE.
+has_item() {
+    local needle="$1" item
+    shift
+    for item in "$@"; do
+        [ "$item" = "$needle" ] && return 0
+    done
+    return 1
+}
+
 # What the shell calls out to. Reported, never installed here: the packages are
 # the ones above, and anything on this list that is still missing has a reason.
 report_missing() {
@@ -504,13 +607,33 @@ report_missing() {
     warn "${missing[*]}"
     # Quickshell gets its own line because it is the one dependency no distro
     # ships in its main repos, so it is the one people actually get stuck on.
-    if printf '%s\n' "${missing[@]}" | grep -qx qs; then
+    if has_item qs "${missing[@]}"; then
         printf '\n'
         case "$FAMILY" in
-            fedora) note "quickshell: sudo dnf copr enable errornointernet/quickshell && sudo dnf install quickshell" ;;
-            arch)   note "quickshell: sudo pacman -S quickshell (or quickshell-git from the AUR for the newest)" ;;
+            fedora) note "quickshell: $SUDO dnf copr enable errornointernet/quickshell && $SUDO dnf install quickshell" ;;
+            arch)   note "quickshell: $SUDO pacman -S quickshell (or quickshell-git from the AUR for the newest)" ;;
+            void)   note "quickshell: $SUDO xbps-install -S quickshell" ;;
+            alpine) note "quickshell: not packaged for Alpine; build it from source: https://quickshell.org/docs/" ;;
             *)      note "quickshell is not in most distro repos, see https://quickshell.org/docs/ for your options" ;;
         esac
+    fi
+    # Void packages the whole desktop except the compositor itself.
+    if has_item Hyprland "${missing[@]}" && [ "$FAMILY" = "void" ]; then
+        printf '\n'
+        note "Hyprland: not in Void's official repositories. The community repo is"
+        note "  https://github.com/Makrennel/hyprland-void (xbps-src templates and binaries)"
+    fi
+    # Alpine's stable repos stop short of these two; they live in edge/testing.
+    if [ "$FAMILY" = "alpine" ]; then
+        local -a alpine_testing=()
+        has_item cava "${missing[@]}" && alpine_testing+=(cava)
+        has_item cliphist "${missing[@]}" && alpine_testing+=(cliphist)
+        if [ "${#alpine_testing[@]}" -gt 0 ]; then
+            printf '\n'
+            note "Alpine: ${alpine_testing[*]} are in edge/testing, not the stable repos."
+            note "  https://dl-cdn.alpinelinux.org/alpine/edge/testing"
+            note "Enable testing or build from source if you want those features."
+        fi
     fi
     note "A missing tool degrades the one feature that uses it, not the session."
 }
@@ -526,6 +649,10 @@ main() {
     [ -n "${HOME:-}" ] || die "HOME is not set"
 
     detect_distro
+    if [ "$NO_DEPS" != "1" ]; then
+        detect_privilege
+        check_distro_repos
+    fi
     STAMP="$(date +%Y%m%d-%H%M%S)"
     BACKUP_DIR="$STATE_DIR/backups/$STAMP"
 
@@ -547,7 +674,7 @@ main() {
         if [ "$NO_DEPS" = "1" ]; then
             say "About to deploy ${#CONFIG_ENTRIES[@]} config entries into $CONFIG_DIR."
         else
-            say "About to install packages with sudo, then deploy ${#CONFIG_ENTRIES[@]} config entries into $CONFIG_DIR."
+            say "About to install packages with $SUDO, then deploy ${#CONFIG_ENTRIES[@]} config entries into $CONFIG_DIR."
         fi
         say "Anything already there is backed up to $BACKUP_DIR first."
         confirm "Continue?"

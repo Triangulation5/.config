@@ -6,8 +6,9 @@ import qs.services
 import qs.modules.bar.blocks as Blocks
 
 /**
- * One monitor's strip: a layer-shell window pinned full width to the top edge
- * that reserves its own band, so tiled windows start below it the way they do
+ * One monitor's strip: a layer-shell window pinned full width to the screen edge
+ * it owns — the top by default, or the bottom when `Flags.barBottom` is set — and
+ * it reserves its own band, so tiled windows start beside it the way they do
  * under the pill's reserve.
  *
  * Everything on it is a text readout. There is deliberately no MouseArea
@@ -86,13 +87,20 @@ PanelWindow {
     WlrLayershell.namespace: "silhouette-bar"
     WlrLayershell.layer: bar.picking ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: bar.picking ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    anchors { top: true; left: true; right: true }
+    /**
+     * The strip owns one horizontal edge at a time. Flipping `barBottom`
+     * rebuilds this surface from shell.qml — a mapped layer-shell anchor cannot
+     * move — so the reserved band moves with it; the bar is not merely drawn at
+     * the other end of the screen.
+     */
+    anchors { top: !Flags.barBottom; bottom: Flags.barBottom; left: true; right: true }
 
     /**
-     * How far the strip has dropped, 0 before it starts and 1 the whole way down.
-     * The bar comes in as a solid band sliding off the top edge rather than
-     * appearing at full size, so the switch reads as something arriving from
-     * above — the same motion, in the opposite direction, the pill left by.
+     * How far the strip has arrived, 0 before it starts and 1 in place. The bar
+     * comes in as a solid band sliding in from its edge rather than appearing at
+     * full size, so the switch reads as something arriving from off-screen — the
+     * same motion, in the opposite direction, the pill left by. On the bottom
+     * edge that is the same travel mirrored: the band rises instead of falling.
      */
     readonly property real drop: BarSwap.barPresence
 
@@ -138,19 +146,19 @@ PanelWindow {
         clip: true
 
         /**
-         * The strip, already at its final size, slid down into view.
+         * The strip, already at its final size, slid into view.
          *
          * Only `y` moves; the height is constant. That makes the arrival a
          * translate of one finished rectangle rather than a rectangle whose size
          * is recomputed and re-rasterised every frame — the same reason the
-         * surface itself is not resized. At `drop` 0 the strip sits entirely above
-         * the window and is clipped away; at 1 it is exactly in place.
+         * surface itself is not resized. At `drop` 0 the strip sits entirely past
+         * the edge it owns and is clipped away; at 1 it is exactly in place.
          */
         Item {
             id: strip
             width: parent.width
             height: bar.fullHeight
-            y: bar.fullHeight * (bar.drop - 1)
+            y: bar.fullHeight * (Flags.barBottom ? (1 - bar.drop) : (bar.drop - 1))
 
             Rectangle {
                 anchors.fill: parent

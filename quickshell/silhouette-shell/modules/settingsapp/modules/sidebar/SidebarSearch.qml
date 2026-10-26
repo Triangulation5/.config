@@ -68,6 +68,7 @@ Rectangle {
 
             Layout.fillWidth: true
             color: Theme.text
+            font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSizeSmall
             clip: true
             selectByMouse: true
@@ -75,6 +76,7 @@ Rectangle {
             Text {
                 text: "Search Settings"
                 color: Theme.textSecondary
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
                 visible: input.text.length === 0
             }
@@ -92,6 +94,7 @@ Rectangle {
             visible: input.text.length > 0
             text: "\u00D7"
             color: clearArea.containsMouse ? Theme.text : Theme.textSecondary
+            font.family: Theme.fontFamily
             font.pixelSize: 15
 
             MouseArea {

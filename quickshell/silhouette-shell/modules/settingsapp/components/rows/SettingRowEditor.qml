@@ -30,6 +30,7 @@ Loader {
         toggle: toggleEditor,
         slider: sliderEditor,
         segmented: segmentedEditor,
+        select: selectEditor,
         swatch: swatchEditor,
         text: textEditor,
         action: actionEditor
@@ -54,6 +55,12 @@ Loader {
         id: segmentedEditor
 
         SettingSeg { row: root.row }
+    }
+
+    Component {
+        id: selectEditor
+
+        SettingSelect { row: root.row }
     }
 
     Component {

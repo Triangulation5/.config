@@ -98,6 +98,7 @@ Rectangle {
                     text: root.mon ? root.mon.name : ""
                     textFormat: Text.PlainText
                     color: Theme.text
+                    font.family: Theme.fontFamily
                     font.pixelSize: Theme.fontSizeTitle - 4
                     font.weight: Font.Bold
                     elide: Text.ElideRight
@@ -118,6 +119,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "Main"
                         color: Theme.accent
+                        font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontSizeSection
                         font.weight: Font.DemiBold
                     }
@@ -130,6 +132,7 @@ Rectangle {
                 text: Monitors.identity(root.mon)
                 textFormat: Text.PlainText
                 color: Theme.text
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
                 elide: Text.ElideRight
             }
@@ -138,6 +141,7 @@ Rectangle {
                 Layout.fillWidth: true
                 text: root.specLine
                 color: Theme.textSecondary
+                font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
                 elide: Text.ElideRight
             }

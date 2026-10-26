@@ -39,6 +39,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.label
         color: Theme.textSecondary
+        font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSizeSmall
         elide: Text.ElideRight
     }

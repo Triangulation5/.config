@@ -17,9 +17,11 @@ import qs.modules.settingsapp.services
  * Dyn service watches (those tokens are valid hex, so they land), and this window
  * follows it, re-tinting the moment a wallpaper change re-tints the pill. On the
  * static palette the pill paints whichever scheme is selected, and so does this
- * window — see the note on `window` below. Everything else, the cards included,
- * stays as designed: a card is the app's own surface, and `#100d0d` is what the
- * rows were laid out against.
+ * window — see the note on `window` below. Accented is the middle case: the
+ * accent follows the wallpaper while the window keeps the selected static
+ * scheme's body, so `accent` branches on `accentFromWallpaper` rather than on
+ * `dyn`. Everything else, the cards included, stays as designed: a card is the
+ * app's own surface, and `#100d0d` is what the rows were laid out against.
  *
  * The shell's two static schemes are defined in the shell's own
  * `services/ColorScheme.qml`, and the accent and body colour each one paints are
@@ -37,8 +39,19 @@ QtObject {
 
     /** Palette */
 
-    /** True while the shell's palette follows the wallpaper or the manual hue. */
-    readonly property bool dyn: Store.adapter.paletteMode !== "static"
+    /**
+     * True while the window itself follows the generated palette: Dynamic and
+     * Manual. Accented is deliberately excluded — it keeps this window's static
+     * surfaces and text and takes only `accent` from the wallpaper, which is the
+     * whole point of that mode (see `accentFromWallpaper` below).
+     */
+    readonly property bool dyn: Store.adapter.paletteMode === "dynamic" || Store.adapter.paletteMode === "manual"
+
+    /** True in Accented mode: wallpaper accents on the selected static scheme. */
+    readonly property bool accented: Store.adapter.paletteMode === "accented"
+
+    /** True when the highlight and the ink that sits on it are generated. */
+    readonly property bool accentFromWallpaper: root.dyn || root.accented
 
     /**
      * True when the shell is on its original static palette rather than the port.
@@ -48,8 +61,8 @@ QtObject {
      */
     readonly property bool legacy: Store.adapter.colorScheme !== "vague"
 
-    /** The pill's highlight. Both static schemes agree on it, so only dyn branches. */
-    readonly property color accent: dyn ? Dyn.primary : "#d8647e"
+    /** The pill's highlight. Both static schemes agree on it, so only the accent source branches. */
+    readonly property color accent: accentFromWallpaper ? Dyn.primary : "#d8647e"
     /**
      * The pill's own body colour: the backdrop the rail and the cards sit on.
      *
@@ -64,18 +77,36 @@ QtObject {
      */
     readonly property color window: dyn ? Dyn.surfaceContainerHigh : (legacy ? "#000000" : "#252530")
     readonly property color sidebar: window
-    readonly property color card: "#100d0d"
-    readonly property color text: "#d0d0d0"
-    readonly property color textSecondary: "#888888"
+    /**
+     * On Dynamic these stop being the app's own dark design and become the
+     * generated scheme: a Material light palette has light cards and dark ink,
+     * and keeping `#100d0d`/`#d0d0d0` would paint light text on a light card.
+     * The card role is one step below the window's, which is the M3 elevation
+     * convention the shell's pill already follows.
+     */
+    readonly property color card: dyn ? Dyn.surfaceContainerLow : "#100d0d"
+
+    /**
+     * Text on the generated scheme: Material's on_surface / on_surface_variant
+     * are the intended inks. `wallcolors.py` walks both until they clear 4.5:1
+     * on every surface step the app paints on (window, cards, hover), so they
+     * are used as-is rather than re-mixed here — a fixed-grey mix was what made
+     * light-mode ink faint and dark-mode labels look muddy.
+     */
+    readonly property color text: dyn ? Dyn.onSurface : "#d0d0d0"
+    readonly property color textSecondary: dyn ? Dyn.onSurfaceVariant : "#888888"
+
     /** Ink that is there but out of play — a chevron at the end of the page list. */
-    readonly property color faint: "#4d4d4d"
-    readonly property color sliderTrack: "#2a2a2a"
-    readonly property color border: Qt.rgba(1, 1, 1, 0.05)
-    readonly property color hover: "#161616"
-    readonly property color selected: "#1e1e1e"
-    readonly property color searchField: "#161616"
-    readonly property color knob: "#101010"
-    readonly property color navButton: "#161616"
+    readonly property color faint: dyn ? Dyn.outline : "#4d4d4d"
+    readonly property color sliderTrack: dyn ? Dyn.outlineVariant : "#2a2a2a"
+    /** Typed copy so Qt.alpha gets a colour, not a string, on the dynamic branch. */
+    readonly property color dynamicOutlineVariant: Dyn.outlineVariant
+    readonly property color border: dyn ? Qt.alpha(dynamicOutlineVariant, 0.45) : Qt.rgba(1, 1, 1, 0.05)
+    readonly property color hover: dyn ? Dyn.surfaceContainerHighest : "#161616"
+    readonly property color selected: dyn ? Dyn.surfaceContainerHighest : "#1e1e1e"
+    readonly property color searchField: dyn ? Dyn.surfaceContainer : "#161616"
+    readonly property color knob: accentFromWallpaper ? Dyn.onPrimary : "#101010"
+    readonly property color navButton: dyn ? Dyn.surfaceContainer : "#161616"
 
     /**
      * The privacy dot's swatches, mirrored from `services/ColorScheme.qml` for
@@ -131,6 +162,7 @@ QtObject {
     readonly property int radiusRow: 10
 
     /** Typography */
+    readonly property string fontFamily: (Store.adapter.uiFont && Store.adapter.uiFont.length > 0) ? Store.adapter.uiFont : "Inter"
     readonly property int fontSizeTitle: 20
     readonly property int fontSizeNormal: 14
     readonly property int fontSizeSmall: 13

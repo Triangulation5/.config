@@ -44,8 +44,6 @@ set updatetime=200
 set timeoutlen=150
 
 " --- misc ---
-set list
-set listchars=tab:\ \ ,trail:·
 set whichwrap+=<,>,[,],h,l
 set iskeyword+=-
 set completeopt=menuone,longest,popup

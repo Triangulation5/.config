@@ -30,6 +30,14 @@ import qs.services
  * also why the settings app reaches its own copy of this decision through its
  * store rather than importing this file (they are separate processes).
  *
+ * `accented` is the third path and the only mixed one: the generated palette
+ * supplies the accent tokens, while every surface and every text token stays on
+ * the selected static scheme. It is the "wallpaper colour on the theme I
+ * already like" mode, so the background keeps its curated blacks and greys and
+ * only the highlights follow the image. `wallcolors.py` generates it with the
+ * dark scheme regardless of the Appearance option: both static schemes are
+ * dark, and a light-scheme accent is a dark colour that would vanish on them.
+ *
  * What is a palette's and what is not: every colour that a scheme can be said to
  * choose lives in one of the two objects below, including the ones both schemes
  * currently agree on — a scheme file that stated only its differences would be a
@@ -44,7 +52,17 @@ Singleton {
     id: root
 
     /** True while the palette follows the wallpaper or the manual hue. */
-    readonly property bool dyn: Flags.paletteMode !== "static"
+    readonly property bool dyn: Flags.paletteMode === "dynamic" || Flags.paletteMode === "manual"
+
+    /**
+     * True in `accented` mode: wallpaper accents on the selected static scheme.
+     * Neither the surfaces nor the text move; only the tokens grouped under the
+     * live-palette comment below switch to the generated colours.
+     */
+    readonly property bool accented: Flags.paletteMode === "accented"
+
+    /** True when the accent tokens come from the generated palette. */
+    readonly property bool accentFromWallpaper: root.dyn || root.accented
 
     /**
      * The selected scheme, `"legacy"` or `"vague"`.
@@ -198,7 +216,9 @@ Singleton {
      *
      * Dynamic and manual mode bypass the scheme entirely and take the generated
      * palette: those tokens are real hex, so they have always landed, and they
-     * are what re-tints the shell when the wallpaper changes.
+     * are what re-tints the shell when the wallpaper changes. Accented mode
+     * takes only the generated accent group (`accentFromWallpaper` below) and
+     * leaves every surface and text token on `palette`.
      *
      * Every scheme token is declared as a `string`, and that is load-bearing
      * rather than incidental. QML parses a string *literal* assigned straight
@@ -211,10 +231,10 @@ Singleton {
      * to the next scheme someone writes.
      */
 
-    readonly property color onGlow: dyn ? Dyn.primary : palette.onGlow
-    readonly property color verm: dyn ? Qt.darker(Dyn.primary, 1.18) : palette.verm
-    readonly property color vermLit: dyn ? Dyn.primary : palette.vermLit
-    readonly property color vermDeep: dyn ? Dyn.primaryContainer : palette.vermDeep
+    readonly property color onGlow: accentFromWallpaper ? Dyn.primary : palette.onGlow
+    readonly property color verm: accentFromWallpaper ? Qt.darker(Dyn.primary, 1.18) : palette.verm
+    readonly property color vermLit: accentFromWallpaper ? Dyn.primary : palette.vermLit
+    readonly property color vermDeep: accentFromWallpaper ? Dyn.primaryContainer : palette.vermDeep
 
     readonly property color cream: dyn ? Dyn.cream : palette.cream
     readonly property color bright: dyn ? Dyn.bright : palette.bright
@@ -231,9 +251,9 @@ Singleton {
     readonly property color faint: dyn ? Dyn.faint : palette.faint
     readonly property color iconDim: dyn ? Dyn.iconDim : palette.iconDim
 
-    readonly property color vermDim: dyn ? Qt.darker(Dyn.primary, 1.5) : palette.vermDim
-    readonly property color vermDimDeep: dyn ? Qt.darker(Dyn.primary, 2.2) : palette.vermDimDeep
-    readonly property color vermBurn: dyn ? Qt.darker(Dyn.primaryContainer, 1.1) : palette.vermBurn
+    readonly property color vermDim: accentFromWallpaper ? Qt.darker(Dyn.primary, 1.5) : palette.vermDim
+    readonly property color vermDimDeep: accentFromWallpaper ? Qt.darker(Dyn.primary, 2.2) : palette.vermDimDeep
+    readonly property color vermBurn: accentFromWallpaper ? Qt.darker(Dyn.primaryContainer, 1.1) : palette.vermBurn
 
     readonly property color tickRest: dyn ? Dyn.tickRest : palette.tickRest
 
@@ -244,14 +264,14 @@ Singleton {
 
     readonly property color placeholder: dyn ? Dyn.dim : palette.placeholder
 
-    readonly property color flameCore: dyn ? Qt.lighter(onGlow, 1.03) : palette.flameCore
-    readonly property color flameGlow: dyn ? onGlow : palette.flameGlow
-    readonly property string flameInk: dyn ? Dyn.primary : palette.flameInk
-    readonly property string flameEmber: dyn ? Dyn.primaryContainer : palette.flameEmber
-    readonly property string flameBurn: dyn ? Dyn.primaryContainer : palette.flameBurn
-    readonly property string flameTip: dyn ? Dyn.primaryContainerInk : palette.flameTip
+    readonly property color flameCore: accentFromWallpaper ? Qt.lighter(onGlow, 1.03) : palette.flameCore
+    readonly property color flameGlow: accentFromWallpaper ? onGlow : palette.flameGlow
+    readonly property string flameInk: accentFromWallpaper ? Dyn.primary : palette.flameInk
+    readonly property string flameEmber: accentFromWallpaper ? Dyn.primaryContainer : palette.flameEmber
+    readonly property string flameBurn: accentFromWallpaper ? Dyn.primaryContainer : palette.flameBurn
+    readonly property string flameTip: accentFromWallpaper ? Dyn.primaryContainerInk : palette.flameTip
 
-    readonly property color todayWarm: dyn ? onGlow : palette.todayWarm
+    readonly property color todayWarm: accentFromWallpaper ? onGlow : palette.todayWarm
 
     /**
      * -- what no scheme gets a vote on -------------------------------------
