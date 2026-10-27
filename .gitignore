@@ -6,34 +6,33 @@ libreoffice/
 libvirt/
 pulse/
 yelp/
-rofi-menus/
+menus/
 autostart/
 ibus/
 enchant/
 mozilla/
+w3m/
 org.gnome.Ptyxis/
+nwg-look/
 nwg-panel/
 simple-scan/
+systemd/
 
 nautilus/
-gtk-3.0/
-gtk-4.0/
 sioyek/*.db
 connections.db
 rygel.conf
 QtProject.conf
 mpd/*
 !mpd/mpd.conf
+ncmpcpp/*
+!ncmpcpp/bindings
+mpv/*
 
 gnome-initial-setup-done
 .gsd-keyboard.settings-ported
 
 nvim/nvim-pack-lock.json
-nvim/LICENSE
-nvim/EXTRA.md
-nvim/README.md
-nvim/linux-startuptime.log
-nvim/startup.log.log
 
 quickshell/caelestia-shell
 quickshell/dux-shell
@@ -48,7 +47,6 @@ quickshell/noctalia
 *.cache
 .cache/
 __pycache__/
-manicode/
 
 # Doom core checkout: installed separately, the config lives in doom/
 emacs/
