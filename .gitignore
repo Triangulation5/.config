@@ -35,11 +35,13 @@ nvim/README.md
 nvim/linux-startuptime.log
 nvim/startup.log.log
 
-quickshell/Nebula/
-quickshell/caelestia-shell/
-quickshell/dux-shell/
-quickshell/nandoroid-shell/
-quickshell/noctalia/
+quickshell/caelestia-shell
+quickshell/dux-shell
+quickshell/eqsh
+quickshell/illogical-impulse
+quickshell/nandoroid-shell
+quickshell/Nebula
+quickshell/noctalia
 
 *.log
 *.log.*

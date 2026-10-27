@@ -73,10 +73,11 @@ if [[ -z "$selected_name" ]]; then
 fi
 
 # Create the session only if it does not already exist.
+# Leave the initial window unnamed so tmux can automatically
+# rename it based on the foreground command.
 if ! tmux has-session -t "=$selected_name" 2>/dev/null; then
     tmux new-session -d \
         -s "$selected_name" \
-        -n zsh \
         -c "$selected" \
         zsh
 fi
