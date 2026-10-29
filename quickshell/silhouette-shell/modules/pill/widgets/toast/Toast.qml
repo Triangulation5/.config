@@ -5,6 +5,7 @@ import Quickshell.Services.Notifications
 import Quickshell.Widgets
 import qs.services
 import qs.components.controls
+import qs.components.animation
 
 /**
  * Toast content for the morphing pill body: icon tile, app eyebrow, summary
@@ -18,6 +19,10 @@ import qs.components.controls
  * the width (0.6 height going up) or on a quick flick it flings out, shorter
  * pulls spring back. Auto-expires via Notifs.expireAt unless the notification
  * is critical or has been opened for reading.
+ *
+ * Content fades in through RevealLatch once the pill has settled, and fades
+ * out before removal on every exit except the fling (which already fades
+ * through host.swipeFade).
  */
 Item {
     id: root
@@ -41,6 +46,38 @@ Item {
 
     implicitHeight: Math.max(iconTile.height, col.implicitHeight)
 
+    RevealLatch {
+        id: reveal
+        shown: root.live
+    }
+
+    /**
+     * Set while the content fades out ahead of a removal. Cleared when the
+     * next notification arrives in this same instance.
+     */
+    property bool closing: false
+
+    readonly property bool revealed: reveal.shown && reveal.ready && !closing
+
+    /**
+     * Fade the content out, then run `after`. The fling skips this:
+     * swipeFade already covers its fade.
+     */
+    function closeThen(after) {
+        if (closing)
+            return;
+        closing = true;
+        closeTimer.after = after;
+        closeTimer.restart();
+    }
+
+    Timer {
+        id: closeTimer
+        property var after: null
+        interval: Motion.fast
+        onTriggered: if (after) after()
+    }
+
     /**
      * Deadline is snapshotted once: binding the interval to Notifs.expireAt
      * restarts the timer (and drifts the lifetime) every time an unrelated
@@ -56,9 +93,9 @@ Item {
          * An opened notification is being read, so it holds its place on
          * screen; closing it (or a swipe) hands the deadline back.
          */
-        running: root.deadline > 0 && root.live && !swipe.pressed && !root.expanded
+        running: root.deadline > 0 && root.live && !swipe.pressed && !root.expanded && !root.closing
             && root.notif.urgency !== NotificationUrgency.Critical
-        onTriggered: Notifs.removePopup(root.notif)
+        onTriggered: root.closeThen(function() { Notifs.removePopup(root.notif); })
     }
 
     /**
@@ -70,6 +107,8 @@ Item {
     onNotifChanged: {
         if (!notif)
             return;
+        closeTimer.stop();
+        closing = false;
         armDeadline();
         if (enterX === 0 && enterY === 0)
             return;
@@ -160,7 +199,7 @@ Item {
                     return;
                 }
                 Notifs.activateNotif(root.notif);
-                Notifs.removePopup(root.notif);
+                root.closeThen(function() { Notifs.removePopup(root.notif); });
                 return;
             }
             const h = root.host;
@@ -192,6 +231,8 @@ Item {
         color: Theme.tileBg
         border.width: 1
         border.color: Theme.border
+        opacity: root.revealed ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Motion.fast; easing.type: Motion.easeStandard } }
 
         Image {
             id: toastImg
@@ -225,7 +266,9 @@ Item {
         text: "✕"
         font.family: Theme.font
         font.pixelSize: 11 * root.s
-        onClicked: Notifs.removePopup(root.notif)
+        onClicked: root.closeThen(function() { Notifs.removePopup(root.notif); })
+        opacity: root.revealed ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Motion.fast; easing.type: Motion.easeStandard } }
     }
 
     Column {
@@ -236,6 +279,8 @@ Item {
         anchors.rightMargin: 8 * root.s
         anchors.top: parent.top
         spacing: 3 * root.s
+        opacity: root.revealed ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Motion.fast; easing.type: Motion.easeStandard } }
 
         Text {
             width: parent.width
@@ -346,7 +391,7 @@ Item {
                             actPill.modelData.invoke();
                             if (actPill.modelData.identifier === "default")
                                 Notifs.raiseWindow(root.notif);
-                            Notifs.removePopup(root.notif);
+                            root.closeThen(function() { Notifs.removePopup(root.notif); });
                         }
                     }
                 }

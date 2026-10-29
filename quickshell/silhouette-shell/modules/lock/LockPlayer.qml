@@ -25,12 +25,14 @@ Column {
 
     visible: Flags.lockMedia && host.hasPlayer && !host.clockExpanded
     opacity: host.clockExpanded ? 0 : 1
+
     Behavior on opacity {
         NumberAnimation {
             duration: 220
             easing.type: Easing.OutCubic
         }
     }
+
     spacing: 9 * root.s
 
     Row {
@@ -39,13 +41,17 @@ Column {
         Rectangle {
             width: 53 * root.s
             height: 53 * root.s
-            /** Square in dwm style, matching the desktop's window corners. */
-            radius: BarMode.dwmStyle ? 0 : 16 * root.s
+
+            /** Square in dwm style, rounded otherwise. */
+            radius: BarMode.dwmStyle ? 0 : 12 * root.s
+
             anchors.verticalCenter: parent.verticalCenter
             clip: true
             color: "#1a100c"
+
             Image {
                 id: coverImg
+
                 anchors.fill: parent
                 visible: host.artUrl.length > 0 && !root.redacted
                 source: host.artUrl
@@ -54,20 +60,27 @@ Column {
                 mipmap: true
                 cache: false
                 asynchronous: true
+
                 layer.enabled: true
+
                 layer.effect: MultiEffect {
                     maskEnabled: true
                     maskSource: coverMask
                 }
             }
+
             Item {
                 id: coverMask
+
                 anchors.fill: parent
                 layer.enabled: true
                 visible: false
+
                 Rectangle {
                     anchors.fill: parent
-                    radius: 16 * root.s
+
+                    /** Keep the image mask synchronized with DWM styling. */
+                    radius: BarMode.dwmStyle ? 0 : 12 * root.s
                 }
             }
         }
@@ -80,6 +93,7 @@ Column {
                 text: root.redacted
                     ? "Media hidden"
                     : (host.trackTitle.length > 0 ? host.trackTitle : "Unknown")
+
                 textFormat: Text.PlainText
                 color: Theme.bright
                 font.family: Theme.font
@@ -88,6 +102,7 @@ Column {
                 elide: Text.ElideRight
                 width: 154 * root.s
             }
+
             Text {
                 visible: host.metaLine.length > 0 && !root.redacted
                 text: host.metaLine
@@ -111,16 +126,24 @@ Column {
             radius: BarMode.dwmStyle ? 0 : 1
             color: Theme.trackBg
         }
+
         Rectangle {
             id: threadFill
+
             width: parent.width * host.progress
             height: parent.height
             radius: 1
             color: Theme.verm
         }
+
         Rectangle {
-            x: Math.min(parent.width - width, Math.max(0, threadFill.width - width / 2))
+            x: Math.min(
+                parent.width - width,
+                Math.max(0, threadFill.width - width / 2)
+            )
+
             anchors.verticalCenter: parent.verticalCenter
+
             width: 8 * root.s
             height: 8 * root.s
             radius: BarMode.dwmStyle ? 0 : width / 2
