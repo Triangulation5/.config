@@ -83,6 +83,7 @@ Variants {
             }
 
             Repeater {
+                id: widgetRepeater
                 model: DesktopWidgetState.catalog
 
                 delegate: Item {
@@ -98,11 +99,6 @@ Variants {
                     property real liveHeight: settings ? settings.h : modelData.h
                     property bool moving: false
                     property bool resizing: false
-                    property point pointerStart
-                    property real geometryXStart: 0
-                    property real geometryYStart: 0
-                    property real geometryWidthStart: 0
-                    property real geometryHeightStart: 0
 
                     function clamp(value, lower, upper) {
                         return Math.max(lower, Math.min(upper, value));
@@ -178,41 +174,6 @@ Variants {
                         border.color: Theme.primary
                     }
 
-                    MouseArea {
-                        id: dragArea
-                        anchors.fill: parent
-                        enabled: DesktopWidgetState.editing && frame.widgetEnabled
-                        hoverEnabled: true
-                        preventStealing: true
-                        cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-
-                        onPressed: function (mouse) {
-                            frame.moving = true;
-                            frame.pointerStart = dragArea.mapToItem(focusScope, mouse.x, mouse.y);
-                            frame.geometryXStart = frame.liveX;
-                            frame.geometryYStart = frame.liveY;
-                        }
-                        onPositionChanged: function (mouse) {
-                            if (!pressed)
-                                return;
-                            var point = dragArea.mapToItem(focusScope, mouse.x, mouse.y);
-                            frame.liveX = frame.clamp(frame.geometryXStart
-                                + (point.x - frame.pointerStart.x) / desktop.scaleFactor,
-                                0, desktop.width / desktop.scaleFactor - frame.liveWidth);
-                            frame.liveY = frame.clamp(frame.geometryYStart
-                                + (point.y - frame.pointerStart.y) / desktop.scaleFactor,
-                                0, desktop.height / desktop.scaleFactor - frame.liveHeight);
-                        }
-                        onReleased: {
-                            frame.saveGeometry();
-                            frame.moving = false;
-                        }
-                        onCanceled: {
-                            frame.saveGeometry();
-                            frame.moving = false;
-                        }
-                    }
-
                     Rectangle {
                         id: resizeHandle
                         visible: DesktopWidgetState.editing && frame.widgetEnabled
@@ -224,45 +185,89 @@ Variants {
                         radius: 5 * desktop.scaleFactor
                         color: Theme.primary
                         z: 4
-
-                        MouseArea {
-                            id: resizeArea
-                            anchors.fill: parent
-                            enabled: DesktopWidgetState.editing && frame.widgetEnabled
-                            preventStealing: true
-                            cursorShape: Qt.SizeFDiagCursor
-                            onPressed: function (mouse) {
-                                frame.resizing = true;
-                                frame.pointerStart = resizeArea.mapToItem(focusScope, mouse.x, mouse.y);
-                                frame.geometryWidthStart = frame.liveWidth;
-                                frame.geometryHeightStart = frame.liveHeight;
-                            }
-                            onPositionChanged: function (mouse) {
-                                if (!pressed)
-                                    return;
-                                var point = resizeArea.mapToItem(focusScope, mouse.x, mouse.y);
-                                frame.liveWidth = frame.clamp(frame.geometryWidthStart
-                                    + (point.x - frame.pointerStart.x) / desktop.scaleFactor,
-                                    frame.modelData.minW, frame.modelData.maxW);
-                                frame.liveHeight = frame.clamp(frame.geometryHeightStart
-                                    + (point.y - frame.pointerStart.y) / desktop.scaleFactor,
-                                    frame.modelData.minH, frame.modelData.maxH);
-                                frame.liveWidth = Math.min(frame.liveWidth,
-                                    desktop.width / desktop.scaleFactor - frame.liveX);
-                                frame.liveHeight = Math.min(frame.liveHeight,
-                                    desktop.height / desktop.scaleFactor - frame.liveY);
-                            }
-                            onReleased: {
-                                frame.saveGeometry();
-                                frame.resizing = false;
-                            }
-                            onCanceled: {
-                                frame.saveGeometry();
-                                frame.resizing = false;
-                            }
-                        }
                     }
                 }
+            }
+
+            MouseArea {
+                id: editorInput
+                anchors.fill: parent
+                enabled: DesktopWidgetState.editing
+                z: 5
+                acceptedButtons: Qt.LeftButton
+                hoverEnabled: true
+                preventStealing: true
+                property var dragFrame: null
+                property bool resizing: false
+                property point pointerStart
+                property real xStart: 0
+                property real yStart: 0
+                property real widthStart: 0
+                property real heightStart: 0
+                cursorShape: resizing ? Qt.SizeFDiagCursor
+                    : (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+
+                onPressed: function (mouse) {
+                    dragFrame = null;
+                    for (var i = widgetRepeater.count - 1; i >= 0; i--) {
+                        var candidate = widgetRepeater.itemAt(i);
+                        if (!candidate || !candidate.widgetEnabled)
+                            continue;
+                        var local = focusScope.mapToItem(candidate, mouse.x, mouse.y);
+                        if (local.x < 0 || local.y < 0
+                                || local.x > candidate.width || local.y > candidate.height)
+                            continue;
+                        dragFrame = candidate;
+                        resizing = local.x >= candidate.width - 28 * desktop.scaleFactor
+                            && local.y >= candidate.height - 28 * desktop.scaleFactor;
+                        pointerStart = Qt.point(mouse.x, mouse.y);
+                        xStart = candidate.liveX;
+                        yStart = candidate.liveY;
+                        widthStart = candidate.liveWidth;
+                        heightStart = candidate.liveHeight;
+                        candidate.moving = !resizing;
+                        candidate.resizing = resizing;
+                        break;
+                    }
+                    if (!dragFrame)
+                        mouse.accepted = false;
+                }
+
+                onPositionChanged: function (mouse) {
+                    if (!pressed || !dragFrame)
+                        return;
+                    var dx = (mouse.x - pointerStart.x) / desktop.scaleFactor;
+                    var dy = (mouse.y - pointerStart.y) / desktop.scaleFactor;
+                    if (resizing) {
+                        dragFrame.liveWidth = dragFrame.clamp(widthStart + dx,
+                            dragFrame.modelData.minW, dragFrame.modelData.maxW);
+                        dragFrame.liveHeight = dragFrame.clamp(heightStart + dy,
+                            dragFrame.modelData.minH, dragFrame.modelData.maxH);
+                        dragFrame.liveWidth = Math.min(dragFrame.liveWidth,
+                            desktop.width / desktop.scaleFactor - dragFrame.liveX);
+                        dragFrame.liveHeight = Math.min(dragFrame.liveHeight,
+                            desktop.height / desktop.scaleFactor - dragFrame.liveY);
+                    } else {
+                        dragFrame.liveX = dragFrame.clamp(xStart + dx,
+                            0, desktop.width / desktop.scaleFactor - dragFrame.liveWidth);
+                        dragFrame.liveY = dragFrame.clamp(yStart + dy,
+                            0, desktop.height / desktop.scaleFactor - dragFrame.liveHeight);
+                    }
+                }
+
+                function finishDrag() {
+                    if (!dragFrame)
+                        return;
+                    dragFrame.saveGeometry();
+                    dragFrame.moving = false;
+                    dragFrame.resizing = false;
+                    dragFrame.syncFromSettings();
+                    dragFrame = null;
+                    resizing = false;
+                }
+
+                onReleased: finishDrag()
+                onCanceled: finishDrag()
             }
 
             Rectangle {

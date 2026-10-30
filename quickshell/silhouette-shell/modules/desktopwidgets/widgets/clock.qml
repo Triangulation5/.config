@@ -34,37 +34,23 @@ Item {
             border.color: Qt.alpha(Theme.outlineVariant, 0.45)
         }
 
-        Repeater {
-            model: 12
-
-            delegate: Item {
-                id: tick
-                required property int index
-                anchors.fill: parent
-                rotation: index * 30
-
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: 13
-                    width: tick.index % 3 === 0 ? 2 : 1
-                    height: tick.index % 3 === 0 ? 7 : 4
-                    radius: width / 2
-                    color: tick.index % 3 === 0 ? Theme.primary : Theme.outlineVariant
-                    opacity: tick.index % 3 === 0 ? 0.9 : 0.7
-                }
-            }
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 12
+            width: 6
+            height: width
+            radius: width / 2
+            color: Theme.primary
         }
 
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
-            width: 8
-            height: 36
-            radius: 4
-            color: "transparent"
-            border.width: 2
-            border.color: Theme.primary
+            width: 6
+            height: 160 * 0.30
+            radius: width / 2
+            color: Theme.onSurfaceVariant
             transformOrigin: Item.Bottom
             rotation: root.hourAngle
 
@@ -76,10 +62,10 @@ Item {
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
-            width: 5
-            height: 51
-            radius: 2.5
-            color: Theme.onSurface
+            width: 3
+            height: 160 * 0.40
+            radius: width / 2
+            color: Theme.onSurfaceVariant
             transformOrigin: Item.Bottom
             rotation: root.minuteAngle
         }
@@ -88,20 +74,50 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
             width: 2
-            height: 59
+            height: 160 * 0.42
             radius: 1
             color: Theme.primary
             transformOrigin: Item.Bottom
             rotation: root.secondAngle
+
+            Behavior on rotation {
+                RotationAnimation {
+                    duration: 200
+                    direction: RotationAnimation.Clockwise
+                    easing.type: Easing.Linear
+                }
+            }
         }
 
         Rectangle {
             anchors.centerIn: parent
-            width: 12
+            width: 8
             height: width
             radius: width / 2
-            color: Theme.primary
+            color: Theme.onSurfaceVariant
             z: 2
+        }
+
+        Rectangle {
+            id: dateBadge
+            x: parent.width / 2 + parent.width * 0.36 - width / 2
+            y: parent.height / 2 + parent.height * 0.04 - height / 2
+            height: 22
+            width: dateLabel.implicitWidth + 16
+            radius: height / 2
+            color: Theme.primary
+            z: 3
+
+            Text {
+                id: dateLabel
+                anchors.centerIn: parent
+                text: Qt.formatDate(root.now, "d")
+                color: Theme.onPrimary
+                font.family: Theme.font
+                font.pixelSize: 12
+                font.weight: Font.Bold
+                font.features: ({ "tnum": 1 })
+            }
         }
     }
 }

@@ -38,6 +38,7 @@ Item {
     property real s: 1.1
     property point point: Qt.point(0, 0)
     property string form: "rest"
+    property bool materialMediaMarker: false
     property real heat: 0
     property point wake: Qt.point(0, 0)
     property real wickDir: -1

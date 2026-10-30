@@ -1555,6 +1555,7 @@ Item {
          */
         z: 1
         s: pill.s
+        materialMediaMarker: Theme.material && pill.surfaceOpen && pill.surface === "media"
         heat: (pill.powerOpen && ldPower.item) ? ldPower.item.holdProgress : 0
         wake: pill.wakePoint
         wickDir: pill.powerOpen ? 1 : -1

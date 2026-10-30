@@ -78,7 +78,7 @@ Canvas {
         const by = host.by;
         const baseR = host.restR;
 
-        if (Theme.material) {
+        if (Theme.material && host.materialMediaMarker) {
             ctx.beginPath();
             ctx.lineCap = "round";
             ctx.strokeStyle = Theme.primary;
