@@ -102,8 +102,12 @@ Singleton {
 
     /** Opt-in chips behind the status readouts (`Flags.barChips`). */
     readonly property bool chips: Flags.barChips
-    readonly property color chipFill: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.16) : Theme.hair
-    readonly property color chipEdge: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.28) : Theme.hairSoft
+    readonly property color chipFill: accented
+        ? Qt.rgba(ink.r, ink.g, ink.b, 0.16)
+        : (Theme.material ? Theme.secondaryContainer : Theme.hair)
+    readonly property color chipEdge: accented
+        ? Qt.rgba(ink.r, ink.g, ink.b, 0.28)
+        : (Theme.material ? "transparent" : Theme.hairSoft)
 
     /** Flatten a Theme token into a definite, opaque colour. */
     function flat(c) {

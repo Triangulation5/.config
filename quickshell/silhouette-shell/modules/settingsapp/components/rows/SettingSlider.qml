@@ -92,14 +92,14 @@ SettingRow {
             id: track
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width
-            height: 4
-            radius: 2
-            color: Theme.sliderTrack
+            height: Theme.material ? 6 : 4
+            radius: height / 2
+            color: Theme.material ? Theme.surfaceContainerHighest : Theme.sliderTrack
 
             Rectangle {
                 width: Math.max(handle.width / 2, handle.x + handle.width / 2)
                 height: parent.height
-                radius: 2
+                radius: height / 2
                 color: Theme.accent
             }
         }

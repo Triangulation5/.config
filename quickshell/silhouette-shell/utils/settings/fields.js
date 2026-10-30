@@ -82,7 +82,13 @@ var FIELDS = {
     /**
      * The palette and the shell's own motion budget: the shell's Appearance
      * surface and the app's Appearance, Motion pages.
+     *
+     * `style` is the design language, not a palette: Washi is the paper-flat
+     * shell identity, Material is Google's Material 3 / Material You surface
+     * treatment. Both settings UIs read the same two options so the toggle
+     * cannot offer a profile the shell does not know.
      */
+    "flags.style":          { options: ["washi", "material"], names: ["Washi", "Material"], reset: "washi" },
     "flags.paletteMode":    { options: ["static", "dynamic", "accented", "manual"], names: ["Static", "Dynamic", "Accented", "Manual"], reset: "static" },
     /**
      * Which static palette that mode paints from: the shell's original theme

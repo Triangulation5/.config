@@ -24,10 +24,12 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 9 * s
+        radius: Theme.material ? Theme.radiusRow : 9 * s
         visible: winRow.selected || winArea.containsMouse
-        color: winRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03)
-        border.width: winRow.selected ? 1 : 0
+        color: Theme.material
+            ? (winRow.selected ? Theme.secondaryContainer : Theme.stateHover)
+            : (winRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03))
+        border.width: Theme.material ? 0 : (winRow.selected ? 1 : 0)
         border.color: Theme.frameBorder
     }
 

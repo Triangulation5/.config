@@ -42,10 +42,11 @@ Item {
     property point wake: Qt.point(0, 0)
     property real wickDir: -1
 
-    opacity: form === "off" ? 0 : 1
+    opacity: !positioned || form === "off" ? 0 : 1
     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
     visible: opacity > 0.001
 
+    property bool positioned: false
     readonly property real restR: 5 * s
     readonly property real heatScale: 1 - 0.4 * heat
     readonly property real flightThreshold: 30 * s
@@ -214,6 +215,8 @@ Item {
      * airborne bead.
      */
     function decide() {
+        if (!positioned)
+            return;
         if (form === "off") {
             if (hidden)
                 return;
@@ -237,14 +240,29 @@ Item {
 
     onPointChanged: Qt.callLater(root.decide)
     onFormChanged: Qt.callLater(root.decide)
-    onHeatChanged: canvas.requestPaint()
+    onHeatChanged: ameBody.requestPaint()
 
-    Component.onCompleted: {
+    function initializePosition() {
+        if (root.width <= 0 || root.height <= 0 || point.x <= 0 || point.y <= 0
+                || point.x > root.width || point.y > root.height)
+            return;
         bx = point.x;
         by = point.y;
         activeForm = form;
         hidden = form === "off";
         lastTarget = Qt.point(point.x, point.y);
+        positioned = true;
+        ameBody.requestPaint();
+        Qt.callLater(root.decide);
+    }
+
+    Component.onCompleted: Qt.callLater(root.initializePosition)
+
+    Timer {
+        interval: 16
+        repeat: true
+        running: !root.positioned
+        onTriggered: root.initializePosition()
     }
 
     NumberAnimation {

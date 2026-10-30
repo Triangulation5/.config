@@ -135,8 +135,8 @@ Item {
         height: pick.listH
         visible: pick.open
         clip: true
-        radius: 9 * pick.s
-        border.width: 1
+        radius: Theme.material ? Theme.radiusSmall : 9 * pick.s
+        border.width: Theme.material ? 0 : 1
         border.color: Theme.frameBorder
 
         ListView {
@@ -153,9 +153,12 @@ Item {
 
                 width: ListView.view.width
                 height: 24 * pick.s
-                radius: 7 * pick.s
-                color: optHover.hovered ? Theme.frameBg
-                    : (optRow.current ? Qt.alpha(Theme.onGlow, 0.16) : "transparent")
+                radius: Theme.material ? Theme.radiusSmall : 7 * pick.s
+                color: Theme.material
+                    ? (optRow.current ? Theme.secondaryContainer
+                                      : (optHover.hovered ? Theme.stateHover : "transparent"))
+                    : (optHover.hovered ? Theme.frameBg
+                        : (optRow.current ? Qt.alpha(Theme.onGlow, 0.16) : "transparent"))
 
                 HoverHandler { id: optHover }
 

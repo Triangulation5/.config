@@ -26,9 +26,9 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 9 * s
-        color: Theme.frameBg
-        border.width: 1
+        radius: Theme.material ? Theme.radiusRow : 9 * s
+        color: Theme.material ? Theme.surfaceContainerHigh : Theme.frameBg
+        border.width: Theme.material ? 0 : 1
         border.color: Theme.frameBorder
     }
 

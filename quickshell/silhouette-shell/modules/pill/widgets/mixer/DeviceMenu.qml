@@ -53,8 +53,8 @@ Item {
         anchors.right: parent.right
         height: Math.min(menu.model.length * 24 * s + 4 * s, 150 * s)
         clip: true
-        radius: 9 * s
-        border.width: 1
+        radius: Theme.material ? Theme.radiusSmall : 9 * s
+        border.width: Theme.material ? 0 : 1
         border.color: Theme.frameBorder
 
         ListView {
@@ -71,9 +71,12 @@ Item {
 
                 width: ListView.view.width
                 height: 24 * s
-                radius: 7 * s
-                color: devRowHover.hovered ? Theme.frameBg
-                    : (devRow.current ? Qt.alpha(Theme.onGlow, 0.16) : "transparent")
+                radius: Theme.material ? Theme.radiusSmall : 7 * s
+                color: Theme.material
+                    ? (devRow.current ? Theme.secondaryContainer
+                                      : (devRowHover.hovered ? Theme.stateHover : "transparent"))
+                    : (devRowHover.hovered ? Theme.frameBg
+                        : (devRow.current ? Qt.alpha(Theme.onGlow, 0.16) : "transparent"))
 
                 HoverHandler { id: devRowHover }
 

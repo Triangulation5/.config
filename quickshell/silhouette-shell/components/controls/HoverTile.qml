@@ -20,9 +20,15 @@ Rectangle {
     /** Border color while hot; "transparent" (default) keeps the tile borderless. */
     property color edge: "transparent"
 
-    color: (tile.hovered || tile.focused) ? Theme.frameBg : "transparent"
+    /**
+     * Material uses the M3 state layer (on-surface at 8–10 %) with no outline;
+     * Washi keeps the original frame wash and editable edge.
+     */
+    color: (tile.hovered || tile.focused)
+        ? (Theme.material ? (tile.focused ? Theme.stateFocus : Theme.stateHover) : Theme.frameBg)
+        : "transparent"
     Behavior on color { ColorAnimation { duration: Motion.fast } }
 
-    border.width: 1
+    border.width: Theme.material ? 0 : 1
     border.color: (tile.hovered || tile.focused) ? tile.edge : "transparent"
 }

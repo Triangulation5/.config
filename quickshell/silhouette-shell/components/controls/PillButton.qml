@@ -25,15 +25,17 @@ Rectangle {
 
     readonly property bool hot: btnArea.containsMouse || btn.focused
 
-    width: label.implicitWidth + 20 * btn.s
-    height: 22 * btn.s
-    radius: 7 * btn.s
+    width: label.implicitWidth + (Theme.material ? 24 : 20) * btn.s
+    height: (Theme.material ? 24 : 22) * btn.s
+    radius: Theme.material ? height / 2 : 7 * btn.s
     color: btn.kind === "danger"
-        ? Qt.rgba(Theme.verm.r, Theme.verm.g, Theme.verm.b, btn.hot ? 0.2 : 0.12)
-        : (btn.hot ? Theme.tileBg : "transparent")
-    border.width: 1
+        ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, btn.hot ? 0.2 : 0.12)
+        : (Theme.material
+            ? (btn.hot ? Theme.stateHover : "transparent")
+            : (btn.hot ? Theme.tileBg : "transparent"))
+    border.width: Theme.material ? 0 : 1
     border.color: btn.kind === "danger"
-        ? Qt.rgba(Theme.vermLit.r, Theme.vermLit.g, Theme.vermLit.b, 0.45)
+        ? Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.45)
         : ((btn.hot || btn.lit) ? Theme.vermDim : Theme.border)
     Behavior on color { ColorAnimation { duration: Motion.fast } }
     Behavior on border.color { ColorAnimation { duration: Motion.fast } }
@@ -42,7 +44,9 @@ Rectangle {
         id: label
         anchors.centerIn: parent
         text: btn.text
-        color: btn.kind === "danger" ? Theme.vermLit : Theme.cream
+        color: btn.kind === "danger"
+            ? (Theme.material ? Theme.error : Theme.vermLit)
+            : (Theme.material ? Theme.primary : Theme.cream)
         font.family: Theme.font
         font.pixelSize: 10 * btn.s
         font.weight: Font.DemiBold

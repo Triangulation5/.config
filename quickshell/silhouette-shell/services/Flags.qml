@@ -19,6 +19,15 @@ Singleton {
     property alias time12h: adapter.time12h
     property alias clockSeconds: adapter.clockSeconds
     property alias showGlyphs: adapter.showGlyphs
+    /**
+     * The shell's design language: "washi" (the paper-flat look the shell was
+     * built around) or "material" (Google's Material 3 / Material You surface
+     * treatment). Read by services/Style.qml, which owns every shape, material
+     * and motion token the choice changes. It is separate from `paletteMode`:
+     * the palette decides what colours a surface is made of, this decides what
+     * the surface is made of.
+     */
+    property alias style: adapter.style
     property alias paletteMode: adapter.paletteMode
     /**
      * Which static palette the shell draws from when paletteMode is "static":
@@ -90,6 +99,7 @@ Singleton {
     property alias lockBattery: adapter.lockBattery
     property alias lockLink: adapter.lockLink
     property alias weatherCity: adapter.weatherCity
+    property alias desktopWidgets: adapter.desktopWidgets
     /**
      * How often the privacy indicator re-reads PipeWire, in ms. One second by
      * default: a dot that takes ten seconds to appear is not an indicator, and
@@ -364,6 +374,8 @@ Singleton {
             property bool time12h: true
             property bool clockSeconds: false
             property bool showGlyphs: false
+            /** Design language: "washi" or "material". See services/Style.qml. */
+            property string style: "washi"
             property string paletteMode: "static"
             /** Which static palette the shell paints from: "legacy" or "vague". */
             property string colorScheme: "legacy"
@@ -482,6 +494,13 @@ Singleton {
             /** The lock's wifi/bluetooth glance (modules/lock/LinkSurface.qml). */
             property bool lockLink: true
             property string weatherCity: "WELLAND"
+            property var desktopWidgets: [
+                { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
+                { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },
+                { id: "moon", enabled: true, x: 29, y: 321, w: 258, h: 166 },
+                { id: "weather", enabled: true, x: 304, y: 321, w: 260, h: 166 },
+                { id: "music", enabled: true, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
+            ]
             /**
              * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
              * which floors it at 500 however this is set.

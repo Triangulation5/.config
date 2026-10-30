@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Services.Pipewire
 import qs.services
 import qs.components.icons
 import qs.modules.pill.widgets.osd
@@ -14,24 +15,52 @@ OsdFace {
 
     property bool micMuted: false
 
+    Rectangle {
+        id: micContainer
+        visible: Theme.material
+        anchors.left: parent.left
+        anchors.leftMargin: 4 * face.s
+        anchors.verticalCenter: parent.verticalCenter
+        width: 38 * face.s
+        height: width
+        radius: 14 * face.s
+        color: face.micMuted ? Qt.alpha(Theme.error, 0.16) : Theme.primaryContainer
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: Theme.material && !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: {
+                const source = Pipewire.defaultAudioSource;
+                if (source && source.audio)
+                    source.audio.muted = !source.audio.muted;
+            }
+        }
+    }
+
     GlyphIcon {
         id: micGlyph
-        anchors.left: parent.left
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: Theme.material ? undefined : parent.left
+        anchors.centerIn: Theme.material ? micContainer : undefined
+        anchors.verticalCenter: Theme.material ? undefined : parent.verticalCenter
         width: 17 * face.s
         height: 17 * face.s
         name: face.micMuted ? "mic-off" : "mic"
-        color: face.micMuted ? Theme.verm : Theme.vermLit
+        color: Theme.material
+            ? (face.micMuted ? Theme.error : Theme.primary)
+            : (face.micMuted ? Theme.verm : Theme.vermLit)
         stroke: 1.7
     }
 
     Text {
-        anchors.left: micGlyph.right
+        anchors.left: Theme.material ? micContainer.right : micGlyph.right
         anchors.leftMargin: 12 * face.s
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        text: "Microphone " + (face.micMuted ? "off" : "on")
-        color: face.micMuted ? Theme.verm : Theme.cream
+        text: Theme.material
+            ? (face.micMuted ? "Microphone muted" : "Microphone on")
+            : "Microphone " + (face.micMuted ? "off" : "on")
+        color: face.micMuted ? Theme.error : Theme.onSurface
         font.family: Theme.font
         font.pixelSize: 11.5 * face.s
         font.weight: Font.DemiBold

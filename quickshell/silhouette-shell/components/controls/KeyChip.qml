@@ -17,9 +17,11 @@ Rectangle {
 
     width: label.implicitWidth + 16 * chip.s
     height: label.implicitHeight + 8 * chip.s
-    radius: 7 * chip.s
-    color: chip.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.frameBg
-    border.width: 1
+    radius: Theme.material ? Theme.radiusChip : 7 * chip.s
+    color: Theme.material
+        ? (chip.focused ? Theme.stateSelected : Theme.surfaceContainerHigh)
+        : (chip.focused ? Qt.alpha(Theme.vermLit, 0.16) : Theme.frameBg)
+    border.width: Theme.material ? 0 : 1
     border.color: chip.focused ? Qt.alpha(Theme.vermLit, 0.45) : Theme.hairSoft
     Behavior on color { ColorAnimation { duration: Motion.fast } }
 

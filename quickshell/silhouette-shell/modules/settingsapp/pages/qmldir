@@ -6,6 +6,7 @@ singleton BarIsland 1.0 BarIsland.qml
 singleton ClockDate 1.0 ClockDate.qml
 singleton ControlCenter 1.0 ControlCenter.qml
 singleton Corners 1.0 Corners.qml
+singleton DesktopWidgets 1.0 DesktopWidgets.qml
 singleton Displays 1.0 Displays.qml
 singleton Input 1.0 Input.qml
 singleton Keybinds 1.0 Keybinds.qml

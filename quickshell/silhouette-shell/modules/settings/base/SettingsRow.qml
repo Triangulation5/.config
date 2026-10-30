@@ -39,7 +39,7 @@ Item {
         anchors.fill: parent
         anchors.topMargin: 3 * srow.s
         anchors.bottomMargin: 3 * srow.s
-        radius: 9 * srow.s
+        radius: Theme.material ? Theme.radiusRow : 9 * srow.s
         focused: srow.focused
         hovered: srowHover.hovered
     }

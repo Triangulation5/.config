@@ -14,13 +14,28 @@ OsdFace {
     property bool recordStarted: false
 
     Rectangle {
-        id: recGlyph
+        id: recordContainer
+        visible: Theme.material
         anchors.left: parent.left
+        anchors.leftMargin: 4 * face.s
         anchors.verticalCenter: parent.verticalCenter
-        width: 13 * face.s
+        width: 38 * face.s
+        height: width
+        radius: 14 * face.s
+        color: face.recordStarted ? Qt.alpha(Theme.error, 0.16) : Theme.surfaceContainerHigh
+    }
+
+    Rectangle {
+        id: recGlyph
+        anchors.left: Theme.material ? undefined : parent.left
+        anchors.centerIn: Theme.material ? recordContainer : undefined
+        anchors.verticalCenter: parent.verticalCenter
+        width: (Theme.material ? 12 : 13) * face.s
         height: 13 * face.s
         radius: width / 2
-        color: face.recordStarted ? Theme.verm : Theme.dim
+        color: Theme.material
+            ? (face.recordStarted ? Theme.error : Theme.onSurfaceVariant)
+            : (face.recordStarted ? Theme.verm : Theme.dim)
 
         SequentialAnimation on opacity {
             running: face.recordStarted && face.active
@@ -31,12 +46,12 @@ OsdFace {
     }
 
     Text {
-        anchors.left: recGlyph.right
+        anchors.left: Theme.material ? recordContainer.right : recGlyph.right
         anchors.leftMargin: 13 * face.s
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         text: face.recordStarted ? "Recording started" : "Recording stopped"
-        color: Theme.cream
+        color: Theme.material ? Theme.onSurface : Theme.cream
         font.family: Theme.font
         font.pixelSize: 11.5 * face.s
         font.weight: Font.DemiBold

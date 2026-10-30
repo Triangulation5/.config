@@ -10,7 +10,7 @@ import Quickshell.Io
  *
  * Nothing of the dialog exists until it is asked for. A settings window is not
  * something a session should boot with, and a window tree that is only ever
- * hidden is still a window tree: a rail of eighteen pages, a search model and
+ * hidden is still a window tree: a rail of twenty pages, a search model and
  * every page singleton stay resident for the whole session so that a dialog
  * opened once can be reopened quickly. Here the tree is destroyed instead —
  * `built` goes false and the Loader takes the whole item graph with it, five
@@ -117,7 +117,7 @@ Item {
     /**
      * The window, built on the first open and destroyed by `teardown` after a
      * close. Built asynchronously, the way the pill builds its heavy surfaces:
-     * the first open is the only one that pays for the rail's eighteen pages and
+     * the first open is the only one that pays for the rail's twenty pages and
      * the content column, and it pays off the GUI thread rather than stalling
      * every other surface in the shell while it compiles.
      *

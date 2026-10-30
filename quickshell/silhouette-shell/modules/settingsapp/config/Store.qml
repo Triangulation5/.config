@@ -142,6 +142,8 @@ Singleton {
             property bool time12h: true
             property bool clockSeconds: false
             property bool showGlyphs: false
+            /** Design language: "washi" or "material". See services/Style.qml. */
+            property string style: "washi"
             property string paletteMode: "static"
             /** Which static palette the shell paints from: "legacy" or "vague". */
             property string colorScheme: "legacy"
@@ -194,6 +196,13 @@ Singleton {
             property bool lockBattery: true
             property bool lockLink: true
             property string weatherCity: "WELLAND"
+            property var desktopWidgets: [
+                { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
+                { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },
+                { id: "moon", enabled: true, x: 29, y: 321, w: 258, h: 166 },
+                { id: "weather", enabled: true, x: 304, y: 321, w: 260, h: 166 },
+                { id: "music", enabled: true, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
+            ]
             /**
              * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
              * which floors it at 500 however this is set.
@@ -375,7 +384,7 @@ Singleton {
     /** Every mirrored flag key, in schema order. */
     readonly property var keys: [
         "dnd", "dndCritical", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
-        "paletteMode", "colorScheme", "dynamicScheme", "dynamicContrast", "dynamicMode", "dynamicPrefer",
+        "style", "paletteMode", "colorScheme", "dynamicScheme", "dynamicContrast", "dynamicMode", "dynamicPrefer",
         "containerSaturation", "surfaceRole",
         "wallpaperDir", "uiScale", "reduceMotion",
         "manualHue", "manualDark", "manualSat", "uiFont",
@@ -387,7 +396,7 @@ Singleton {
         "lockFailAction", "lockFailLimit",
         "lockoutThreshold", "lockoutSeconds", "lockoutMax", "lockMedia", "lockViz",
         "lockClock", "lockBattery", "lockLink",
-        "weatherCity", "privacyPollMs", "privacyDot", "privacyScreen", "privacyAudioIn", "privacyCam", "privacyAudioOut",
+        "weatherCity", "desktopWidgets", "privacyPollMs", "privacyDot", "privacyScreen", "privacyAudioIn", "privacyCam", "privacyAudioOut",
         "privacyToneScreen", "privacyToneAudioIn", "privacyToneCam", "privacyToneAudioOut",
         "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",

@@ -1,7 +1,12 @@
 .pragma library
 
 /**
- * The three design languages the shell can wear.
+ * The shell's design languages.
+ *
+ * Two are offered in Settings: Washi (`washi`, the default) and Material
+ * (`material`, Google's Material 3 / Material You treatment). A Liquid Glass
+ * profile is kept in the table for a later pass but is not part of the shell's
+ * setting yet.
  *
  * A style is a *shape and material* profile, not a palette: the palette flags
  * (static / dynamic / accented / manual, and the colour scheme underneath)
@@ -63,6 +68,21 @@ var profiles = {
         specular: 0.0,
         sheen: 0.0,
 
+        /** Chroma ceiling used when a tonal style generates an M3 surface ramp. */
+        chromaCap: 0.0,
+        /** M3 interaction state layers, as alpha over on-surface/primary. */
+        stateHover: 0.055,
+        stateFocus: 0.055,
+        statePressed: 0.10,
+        stateSelected: 0.16,
+        /** Divider tones, as alpha over the outline-variant role. */
+        dividerAlpha: 0.13,
+        dividerSoftAlpha: 0.08,
+        trackAlpha: 0.10,
+        /** Extra rounding the style gives the pill's rest and open corners. */
+        pillCornerScale: 1.0,
+        pillOpenScale: 1.0,
+
         shadowOpacity: 0.50,
         shadowBlur: 0.70,
         shadowOffset: 3.0,
@@ -119,6 +139,17 @@ var profiles = {
         specular: 0.16,
         sheen: 0.34,
 
+        chromaCap: 0.0,
+        stateHover: 0.07,
+        stateFocus: 0.09,
+        statePressed: 0.12,
+        stateSelected: 0.18,
+        dividerAlpha: 0.10,
+        dividerSoftAlpha: 0.06,
+        trackAlpha: 0.10,
+        pillCornerScale: 1.10,
+        pillOpenScale: 1.15,
+
         shadowOpacity: 0.74,
         shadowBlur: 1.30,
         shadowOffset: 8.0,
@@ -148,9 +179,9 @@ var profiles = {
     },
 
     "material-you": {
-        name: "material-you",
-        label: "Material You",
-        description: "Tonal Material 3 surfaces tinted from the accent, full-round shapes and expressive motion — Google's dynamic-colour language.",
+        name: "material",
+        label: "Material",
+        description: "Tonal Material 3 surfaces tinted from the accent, full-round shapes and expressive motion — Google's Material You language.",
         glass: false,
         tonal: true,
 
@@ -175,6 +206,17 @@ var profiles = {
         specular: 0.0,
         sheen: 0.0,
 
+        chromaCap: 0.14,
+        stateHover: 0.08,
+        stateFocus: 0.10,
+        statePressed: 0.10,
+        stateSelected: 0.12,
+        dividerAlpha: 0.12,
+        dividerSoftAlpha: 0.07,
+        trackAlpha: 0.12,
+        pillCornerScale: 1.12,
+        pillOpenScale: 1.32,
+
         shadowOpacity: 0.38,
         shadowBlur: 0.85,
         shadowOffset: 4.0,
@@ -189,22 +231,32 @@ var profiles = {
         pillShadowBlur: 0.85,
         pillShadowOffset: 4.0,
 
-        motionFast: 150,
-        motionStandard: 280,
-        motionMorph: 460,
-        motionShapeshift: 760,
-        motionGlide: 280,
+        motionFast: 160,
+        motionStandard: 300,
+        motionMorph: 500,
+        motionShapeshift: 750,
+        motionGlide: 300,
         motionHeat: 1000,
-        motionPulse: 380,
+        motionPulse: 400,
         motionLiquid: false,
-        motionCurve: [0.18, 1.10, 0.32, 1.00, 1.00, 1.00],
-        appFast: 130,
-        appNormal: 200,
-        appWindow: 280
+        /** Material 3 emphasized easing: (0.2, 0, 0, 1) with a breath of settle. */
+        motionCurve: [0.20, 0.06, 0.00, 1.00, 1.00, 1.00],
+        appFast: 140,
+        appNormal: 220,
+        appWindow: 300
     }
 }
 
-/** The profile for `name`, falling back to Washi for an unknown value. */
+/**
+ * The profile for `name`, falling back to Washi for an unknown value.
+ *
+ * The Material profile's key is historical (`material-you`) while the flag and
+ * the UI call it `material`; the alias keeps the profile table and the setting
+ * from having to agree on a spelling. A file already holding `material-you`
+ * keeps working too.
+ */
 function profile(name) {
+    if (name === "material")
+        name = "material-you";
     return profiles[name] || profiles["washi"]
 }

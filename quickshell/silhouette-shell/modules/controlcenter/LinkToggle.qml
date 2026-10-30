@@ -23,11 +23,13 @@ Rectangle {
     /** Knob inset, the same at both ends of its travel. */
     readonly property real inset: 3 * s
 
-    width: 28 * s
-    height: 16 * s
+    width: (Theme.material ? 34 : 28) * s
+    height: (Theme.material ? 20 : 16) * s
     radius: 999
-    color: on ? Theme.verm : Theme.tileBg
-    border.width: 1
+    color: Theme.material
+        ? (on ? Theme.primary : Theme.surfaceContainerHighest)
+        : (on ? Theme.verm : Theme.tileBg)
+    border.width: Theme.material ? 0 : 1
     border.color: on ? "transparent" : Theme.border
 
     Behavior on color { ColorAnimation { duration: Motion.fast } }
@@ -35,10 +37,12 @@ Rectangle {
 
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-        width: 10 * toggle.s
-        height: 10 * toggle.s
+        width: (Theme.material ? 14 : 10) * toggle.s
+        height: (Theme.material ? 14 : 10) * toggle.s
         radius: width / 2
-        color: Theme.cream
+        color: Theme.material
+            ? (toggle.on ? Theme.onPrimary : Theme.onSurfaceVariant)
+            : Theme.cream
         x: toggle.on ? toggle.width - width - toggle.inset : toggle.inset
         Behavior on x {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }

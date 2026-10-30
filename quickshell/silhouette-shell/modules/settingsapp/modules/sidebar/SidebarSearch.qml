@@ -20,9 +20,9 @@ Rectangle {
     property alias text: input.text
 
     implicitHeight: 34
-    radius: 10
-    color: Theme.searchField
-    border.width: 1
+    radius: Theme.material ? height / 2 : 10
+    color: Theme.material ? Theme.surfaceContainerHigh : Theme.searchField
+    border.width: Theme.material ? 0 : 1
     border.color: input.activeFocus ? Qt.alpha(Theme.accent, 0.35) : Theme.border
 
     Behavior on border.color { ColorAnimation { duration: Theme.animNormal } }

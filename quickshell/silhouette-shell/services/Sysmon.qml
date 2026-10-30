@@ -7,10 +7,11 @@ import Quickshell.Io
  * System-vitals backend for the 系 SYSTEM surface. Polls CPU, memory, swap,
  * network, disk and (when a discrete GPU is present) GPU load, temperature and
  * VRAM, exposing them as live properties the surface binds to. Polling only runs
- * while `open` is true, on three decoupled cadences so a slow source never
- * stalls the dials: the cheap /proc and hwmon reads refresh every 500ms, the GPU
- * query every 1s, and disk plus uptime every 5s. Opening the surface primes all
- * three at once so the dials are populated immediately.
+ * while the system surface or Material desktop glance is visible, on three
+ * decoupled cadences so a slow source never stalls the dials: the cheap /proc
+ * and hwmon reads refresh every 500ms, the GPU query every 1s, and disk plus
+ * uptime every 5s. Opening either view primes the sources so the readings land
+ * immediately.
  *
  * CPU load is a two-sample delta of /proc/stat (busy vs total jiffies); network
  * rates are a two-sample delta of /proc/net/dev summed over every interface but
@@ -25,6 +26,8 @@ Singleton {
     id: root
 
     property bool open: false
+    property bool desktopOpen: false
+    readonly property bool active: open || desktopOpen
 
     property int cpu: 0
     property int cpuTemp: -1
@@ -75,7 +78,7 @@ Singleton {
         slowProc.running = true;
     }
 
-    onOpenChanged: if (open) primeAll()
+    onActiveChanged: if (active) primeAll()
 
     function fmtUptime(sec) {
         var d = Math.floor(sec / 86400);
@@ -119,7 +122,7 @@ Singleton {
                 if (root.gpuVendor.length === 0)
                     root.gpuVendor = "none";
                 root.detected = true;
-                if (root.open)
+                if (root.active)
                     root.primeAll();
             }
         }
@@ -234,21 +237,21 @@ Singleton {
 
     Timer {
         interval: 500
-        running: root.open
+        running: root.active
         repeat: true
         onTriggered: if (!fastProc.running) fastProc.running = true
     }
 
     Timer {
         interval: 1000
-        running: root.open && root.hasGpu
+        running: root.active && root.hasGpu
         repeat: true
         onTriggered: if (!gpuProc.running) gpuProc.running = true
     }
 
     Timer {
         interval: 5000
-        running: root.open
+        running: root.active
         repeat: true
         onTriggered: if (!slowProc.running) slowProc.running = true
     }

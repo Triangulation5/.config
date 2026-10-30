@@ -51,7 +51,7 @@ Rectangle {
 
     width: parent ? parent.width : 0
     height: replying ? 52 * s : (expanded ? Math.max(26 * s, nrowStack.implicitHeight + 18 * s) : 26 * s)
-    radius: 7 * s
+    radius: Theme.material ? Theme.radiusSmall : 7 * s
     color: nrowHover.hovered ? Theme.frameBg : "transparent"
 
     Behavior on height { NumberAnimation { duration: Motion.fast } }

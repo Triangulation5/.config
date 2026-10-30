@@ -35,7 +35,7 @@ Rectangle {
     x: seg.flushLeft ? -seg.edgePad : 0
     width: pills.implicitWidth + 2 * pad
     height: pills.implicitHeight + 2 * pad
-    radius: 9 * seg.s
+    radius: Theme.material ? 999 : 9 * seg.s
     color: "transparent"
 
     Row {
@@ -54,17 +54,22 @@ Rectangle {
 
                 width: optLabel.implicitWidth + 18 * seg.s
                 height: optLabel.implicitHeight + 12 * seg.s
-                radius: seg.optRadius
-                color: seg.accent === "card"
-                    ? (opt.current ? Theme.cardTop : "transparent")
-                    : (opt.current ? Qt.alpha(Theme.onGlow, 0.16) : (opt.hovered ? Theme.frameBg : "transparent"))
+                radius: Theme.material ? height / 2 : seg.optRadius
+                color: Theme.material
+                    ? (opt.current ? Theme.secondaryContainer
+                                   : (opt.hovered ? Theme.stateHover : "transparent"))
+                    : (seg.accent === "card"
+                        ? (opt.current ? Theme.cardTop : "transparent")
+                        : (opt.current ? Qt.alpha(Theme.onGlow, 0.16) : (opt.hovered ? Theme.frameBg : "transparent")))
                 Behavior on color { ColorAnimation { duration: Motion.fast } }
 
                 Text {
                     id: optLabel
                     anchors.centerIn: parent
                     text: opt.modelData.label
-                    color: opt.current ? Theme.cream : Theme.subtle
+                    color: Theme.material
+                        ? (opt.current ? Theme.onSecondaryContainer : Theme.onSurfaceVariant)
+                        : (opt.current ? Theme.cream : Theme.subtle)
                     font.family: Theme.font
                     font.pixelSize: 10.5 * seg.s
                     font.weight: Font.Bold

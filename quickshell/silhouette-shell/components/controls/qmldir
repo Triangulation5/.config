@@ -10,3 +10,4 @@ TextHoverLabel 1.0 TextHoverLabel.qml
 ScrubValue 1.0 ScrubValue.qml
 Tooltip 1.0 Tooltip.qml
 WheelScroller 1.0 WheelScroller.qml
+WaveProgress 1.0 WaveProgress.qml

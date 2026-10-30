@@ -26,7 +26,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: 10
         anchors.rightMargin: 10
-        radius: Theme.radiusRow
+        radius: Theme.material ? height / 2 : Theme.radiusRow
         color: root.selected
             ? Theme.selected
             : (mouse.containsMouse ? Theme.hover : "transparent")

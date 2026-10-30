@@ -93,6 +93,11 @@ ShellRoot {
         source: Qt.resolvedUrl("modules/bar/BarRoot.qml")
     }
 
+    LazyLoader {
+        active: Theme.material
+        source: Qt.resolvedUrl("modules/desktopwidgets/DesktopWidgets.qml")
+    }
+
     /**
      * Rebuild the bar when it switches edges. Toggling the flag while the bar
      * is not built needs no work: the next build reads the new value.

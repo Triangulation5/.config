@@ -35,10 +35,19 @@ Item {
 
     height: 30 * s
 
+    /** Material search bar: a filled, full-round container instead of an underline. */
+    Rectangle {
+        visible: Theme.material
+        anchors.fill: parent
+        radius: height / 2
+        color: Theme.surfaceContainerHigh
+    }
+
     Text {
         id: glyph
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
+        anchors.leftMargin: Theme.material ? 12 * root.s : 0
         visible: Flags.showGlyphs
         width: Flags.showGlyphs ? implicitWidth : 0
         text: root.kanji
@@ -52,7 +61,7 @@ Item {
         id: field
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: glyph.right
-        anchors.leftMargin: Flags.showGlyphs ? 10 * root.s : 0
+        anchors.leftMargin: Flags.showGlyphs ? 10 * root.s : (Theme.material ? 14 * root.s : 0)
         anchors.right: counter.left
         anchors.rightMargin: 10 * root.s
         background: null
@@ -95,6 +104,7 @@ Item {
         anchors.topMargin: 2 * root.s
         height: 1
         color: Theme.faint
+        visible: !Theme.material
         opacity: field.activeFocus ? 0.7 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
     }

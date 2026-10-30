@@ -31,9 +31,12 @@ Item {
             required property int index
             width: emojiGrid.cellWidth - 2 * root.s
             height: emojiGrid.cellHeight - 2 * root.s
-            radius: 8 * root.s
-            color: index === host.selectedIndex ? Theme.frameBg : (emoArea.containsMouse ? Qt.rgba(0.94, 0.88, 0.84, 0.04) : "transparent")
-            border.width: index === host.selectedIndex ? 1 : 0
+            radius: Theme.material ? Theme.radiusSmall : 8 * root.s
+            color: Theme.material
+                ? (index === host.selectedIndex ? Theme.secondaryContainer
+                                                : (emoArea.containsMouse ? Theme.stateHover : "transparent"))
+                : (index === host.selectedIndex ? Theme.frameBg : (emoArea.containsMouse ? Qt.rgba(0.94, 0.88, 0.84, 0.04) : "transparent"))
+            border.width: Theme.material ? 0 : (index === host.selectedIndex ? 1 : 0)
             border.color: Theme.frameBorder
 
             readonly property var emoji: host.emojiResults[index]

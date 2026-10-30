@@ -227,9 +227,9 @@ Item {
         anchors.top: parent.top
         width: 28 * root.s
         height: 28 * root.s
-        radius: 9 * root.s
-        color: Theme.tileBg
-        border.width: 1
+        radius: Theme.material ? Theme.radiusTile : 9 * root.s
+        color: Theme.material ? Theme.surfaceContainerHigh : Theme.tileBg
+        border.width: Theme.material ? 0 : 1
         border.color: Theme.border
         opacity: root.revealed ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.fast; easing.type: Motion.easeStandard } }
@@ -366,18 +366,20 @@ Item {
                     required property var modelData
                     required property int index
 
-                    height: 20 * root.s
-                    width: actText.implicitWidth + 18 * root.s
+                    height: (Theme.material ? 24 : 20) * root.s
+                    width: actText.implicitWidth + (Theme.material ? 22 : 18) * root.s
                     radius: 999
-                    color: Theme.tileBg
-                    border.width: 1
+                    color: Theme.material ? Theme.secondaryContainer : Theme.tileBg
+                    border.width: Theme.material ? 0 : 1
                     border.color: Theme.border
 
                     Text {
                         id: actText
                         anchors.centerIn: parent
                         text: actPill.modelData.text
-                        color: actPill.index === 0 ? Theme.vermLit : Theme.dim
+                        color: Theme.material
+                            ? (actPill.index === 0 ? Theme.primary : Theme.onSurfaceVariant)
+                            : (actPill.index === 0 ? Theme.vermLit : Theme.dim)
                         font.family: Theme.font
                         font.pixelSize: 9.5 * root.s
                         font.weight: Font.DemiBold

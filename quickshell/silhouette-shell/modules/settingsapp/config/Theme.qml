@@ -33,6 +33,12 @@ import qs.modules.settingsapp.services
  *
  * These are the values the panel was designed around, so keep them together: a
  * component that needs a colour takes it from here rather than inventing one.
+ *
+ * Surfaces, outlines and radii pass through this app's `Style` first, which
+ * reads the same profile table as the shell and the same `Store.adapter.style`
+ * the Design style row writes. Washi returns every base value untouched;
+ * Material tints the window and cards from the accent and rounds the shape
+ * scale, so the window re-dresses itself live as the toggle moves.
  */
 QtObject {
     id: root
@@ -52,6 +58,9 @@ QtObject {
 
     /** True when the highlight and the ink that sits on it are generated. */
     readonly property bool accentFromWallpaper: root.dyn || root.accented
+
+    /** True while the Material design language is active. */
+    readonly property bool material: Style.tonal
 
     /**
      * True when the shell is on its original static palette rather than the port.
@@ -75,7 +84,14 @@ QtObject {
      * window is concerned, and it is visible the moment the scheme row on the
      * Appearance page is touched.
      */
-    readonly property color window: dyn ? Dyn.surfaceContainerHigh : (legacy ? "#000000" : "#252530")
+    /**
+     * The palette's own window colour, before the design language treats it.
+     * Kept separate from `window` so Style can return it untouched on Washi and
+     * tint it with the accent on Material without the conditional above having
+     * to be repeated.
+     */
+    readonly property color baseWindow: dyn ? Dyn.surfaceContainerHigh : (legacy ? "#000000" : "#252530")
+    readonly property color window: Style.surface(root.baseWindow, root.accent, "window")
     readonly property color sidebar: window
     /**
      * On Dynamic these stop being the app's own dark design and become the
@@ -84,7 +100,8 @@ QtObject {
      * The card role is one step below the window's, which is the M3 elevation
      * convention the shell's pill already follows.
      */
-    readonly property color card: dyn ? Dyn.surfaceContainerLow : "#100d0d"
+    readonly property color baseCard: dyn ? Dyn.surfaceContainerLow : "#100d0d"
+    readonly property color card: Style.surface(root.baseCard, root.accent, "card")
 
     /**
      * Text on the generated scheme: Material's on_surface / on_surface_variant
@@ -101,12 +118,21 @@ QtObject {
     readonly property color sliderTrack: dyn ? Dyn.outlineVariant : "#2a2a2a"
     /** Typed copy so Qt.alpha gets a colour, not a string, on the dynamic branch. */
     readonly property color dynamicOutlineVariant: Dyn.outlineVariant
-    readonly property color border: dyn ? Qt.alpha(dynamicOutlineVariant, 0.45) : Qt.rgba(1, 1, 1, 0.05)
-    readonly property color hover: dyn ? Dyn.surfaceContainerHighest : "#161616"
-    readonly property color selected: dyn ? Dyn.surfaceContainerHighest : "#1e1e1e"
-    readonly property color searchField: dyn ? Dyn.surfaceContainer : "#161616"
+    readonly property color baseBorder: dyn ? Qt.alpha(dynamicOutlineVariant, 0.45) : Qt.rgba(1, 1, 1, 0.05)
+    readonly property color border: Style.border(root.baseBorder, root.accent)
+    readonly property color baseHover: dyn ? Dyn.surfaceContainerHighest : "#161616"
+    readonly property color hover: Style.overlay(root.baseHover, root.accent, false)
+    readonly property color baseSelected: dyn ? Dyn.surfaceContainerHighest : "#1e1e1e"
+    readonly property color selected: Style.overlay(root.baseSelected, root.accent, true)
+    readonly property color baseSearchField: dyn ? Dyn.surfaceContainer : "#161616"
+    readonly property color searchField: Style.control(root.baseSearchField, root.accent)
+    readonly property color surfaceContainerLow: dyn ? Dyn.surfaceContainerLow : root.card
+    readonly property color surfaceContainer: dyn ? Dyn.surfaceContainer : root.card
+    readonly property color surfaceContainerHigh: dyn ? Dyn.surfaceContainerHigh : root.searchField
+    readonly property color surfaceContainerHighest: dyn ? Dyn.surfaceContainerHighest : root.selected
     readonly property color knob: accentFromWallpaper ? Dyn.onPrimary : "#101010"
-    readonly property color navButton: dyn ? Dyn.surfaceContainer : "#161616"
+    readonly property color baseNavButton: dyn ? Dyn.surfaceContainer : "#161616"
+    readonly property color navButton: Style.control(root.baseNavButton, root.accent)
 
     /**
      * The privacy dot's swatches, mirrored from `services/ColorScheme.qml` for
@@ -158,8 +184,20 @@ QtObject {
      * Radii. There is no window radius: the compositor cuts this window's
      * corners (see Panel), so a token here would only be a second opinion.
      */
-    readonly property int radiusCard: 14
-    readonly property int radiusRow: 10
+    readonly property int radiusCard: Style.radiusCard
+    readonly property int radiusRow: Style.radiusRow
+    readonly property int radiusChip: Style.radiusChip
+    readonly property int radiusField: Style.radiusField
+    readonly property int radiusTile: Style.radiusTile
+    readonly property int radiusSmall: Style.radiusSmall
+
+    /** 4 dp spacing scale. */
+    readonly property int space1: Style.space1
+    readonly property int space2: Style.space2
+    readonly property int space3: Style.space3
+    readonly property int space4: Style.space4
+    readonly property int space5: Style.space5
+    readonly property int space6: Style.space6
 
     /** Typography */
     readonly property string fontFamily: (Store.adapter.uiFont && Store.adapter.uiFont.length > 0) ? Store.adapter.uiFont : "Inter"
@@ -169,7 +207,7 @@ QtObject {
     readonly property int fontSizeSection: 11
 
     /** Motion */
-    readonly property int animFast: 120
-    readonly property int animNormal: 150
-    readonly property int animWindow: 220
+    readonly property int animFast: Style.animFast
+    readonly property int animNormal: Style.animNormal
+    readonly property int animWindow: Style.animWindow
 }

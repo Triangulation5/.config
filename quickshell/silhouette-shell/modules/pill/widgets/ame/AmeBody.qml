@@ -256,6 +256,13 @@ Canvas {
         bead(ctx, bx, by, r, settling ? (1 - q) * 0.4 : 0, host.flightAng);
     }
 
+    Connections {
+        target: canvas.host
+        function onBxChanged() { canvas.requestPaint(); }
+        function onByChanged() { canvas.requestPaint(); }
+        function onPositionedChanged() { canvas.requestPaint(); }
+    }
+
     /**
      * The blur layer allocates an FBO the size of the whole pill; while the bead
      * is hidden (wallpaper strip, toast, plain hover) that's pure GPU tax on an

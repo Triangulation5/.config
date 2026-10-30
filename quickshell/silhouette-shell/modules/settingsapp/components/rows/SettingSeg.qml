@@ -46,9 +46,12 @@ SettingRow {
 
                 implicitWidth: chipText.implicitWidth + 20
                 implicitHeight: 24
-                radius: 7
-                color: on ? Theme.accent : (chipMouse.containsMouse ? Theme.selected : Theme.navButton)
-                border.width: 1
+                radius: Theme.material ? height / 2 : 7
+                color: on ? Theme.accent
+                    : (chipMouse.containsMouse
+                        ? (Theme.material ? Theme.hover : Theme.selected)
+                        : (Theme.material ? Theme.searchField : Theme.navButton))
+                border.width: Theme.material ? 0 : 1
                 border.color: Theme.border
                 Behavior on color { ColorAnimation { duration: Theme.animNormal } }
 

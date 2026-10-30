@@ -32,9 +32,9 @@ Rectangle {
 
     implicitWidth: content.implicitWidth + 2 * root.padX
     implicitHeight: content.implicitHeight + 2 * root.padY
-    radius: 4 * s
+    radius: Theme.material ? height / 2 : 4 * s
     color: on ? (root.fill !== null ? root.fill : BarStyle.chipFill) : "transparent"
-    border.width: on ? 1 : 0
+    border.width: on && !Theme.material ? 1 : 0
     border.color: root.edge !== null ? root.edge : BarStyle.chipEdge
 
     /** The block itself, declared inside as if the chip were not there. */

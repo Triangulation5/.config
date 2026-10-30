@@ -116,9 +116,14 @@ Item {
     readonly property bool micMuted: source && source.audio ? source.audio.muted : false
 
     readonly property real desiredW: kind === "workspace" ? Math.max(120 * s, wsFace.indicatorWidth + 40 * s)
-        : (kind === "track" ? 344 * s : (kind === "record" ? 256 * s
-        : (kind === "mic" ? 220 * s : (kind === "download" ? 300 * s : 248 * s))))
-    readonly property real desiredH: kind === "track" || kind === "download" ? 64 * s : 44 * s
+        : (kind === "track" ? (Theme.material ? 380 : 344) * s
+        : (kind === "record" ? (Theme.material ? 300 : 256) * s
+        : (kind === "mic" ? (Theme.material ? 300 : 220) * s
+        : (kind === "download" ? (Theme.material ? 336 : 300) * s
+        : (Theme.material ? 320 : 248) * s))))
+    readonly property real desiredH: kind === "track" ? (Theme.material ? 88 : 64) * s
+        : (kind === "download" ? (Theme.material ? 76 : 64) * s
+        : (Theme.material ? (kind === "workspace" ? 68 : 84) : 44) * s)
 
     /**
      * Active workspace name on this monitor. Any switch (Super+arrow,
@@ -393,13 +398,30 @@ Item {
         anchors.fill: parent
         s: root.s
         active: root.kind === "volume"
+        title: "Volume"
         glyph: root.muted ? "speaker-off" : "speaker-level"
         glyphProgress: root.volumeFill
-        glyphColor: root.muted ? Theme.dim : Theme.iconDim
+        glyphColor: Theme.material
+            ? (root.muted ? Theme.onSurfaceVariant : Theme.primary)
+            : (root.muted ? Theme.dim : Theme.iconDim)
         pctText: Math.round(root.volume * 100) + "%"
-        pctColor: root.muted ? Theme.dim : Theme.cream
+        pctColor: Theme.material
+            ? (root.muted ? Theme.onSurfaceVariant : Theme.onSurface)
+            : (root.muted ? Theme.dim : Theme.cream)
         fill: root.volumeFill
         fillColor: root.muted ? Theme.vermDim : Theme.vermLit
+        materialFillColor: root.muted ? Theme.onSurfaceVariant : Theme.primary
+        levelInteractive: Theme.material && !!root.sink && !!root.sink.audio
+        iconInteractive: Theme.material && !!root.sink && !!root.sink.audio
+        onLevelRequested: value => {
+            if (root.sink && root.sink.audio) {
+                root.sink.audio.volume = value * Math.max(1, Flags.maxVolume) / 100;
+                if (value > 0)
+                    root.sink.audio.muted = false;
+            }
+        }
+        onIconClicked: if (root.sink && root.sink.audio)
+            root.sink.audio.muted = !root.sink.audio.muted
     }
 
     OsdMic {
@@ -435,11 +457,17 @@ Item {
         anchors.fill: parent
         s: root.s
         active: root.kind === "brightness"
+        title: "Brightness"
         glyph: "sun-level"
+        glyphColor: Theme.material ? Theme.primary : Theme.iconDim
         glyphProgress: root.brightness
         pctText: Math.round(root.brightness * 100) + "%"
+        pctColor: Theme.material ? Theme.onSurface : Theme.cream
         fill: root.brightness
         fillGradient: root.flameGradient
+        materialFillColor: Theme.primary
+        levelInteractive: Theme.material && Backlight.present
+        onLevelRequested: value => Devices.setBacklight(value * 100)
     }
 
     /**
@@ -456,13 +484,19 @@ Item {
         anchors.fill: parent
         s: root.s
         active: root.kind === "battery"
+        title: "Battery"
         glyph: "bolt"
-        glyphColor: Battery.plugged ? Theme.flameGlow : Theme.faint
+        glyphColor: Theme.material
+            ? (Battery.plugged ? Theme.primary : Theme.onSurfaceVariant)
+            : (Battery.plugged ? Theme.flameGlow : Theme.faint)
         pctText: Battery.pct + "%"
-        pctColor: Battery.plugged ? Theme.flameGlow : Theme.dim
+        pctColor: Theme.material
+            ? (Battery.plugged ? Theme.primary : Theme.onSurfaceVariant)
+            : (Battery.plugged ? Theme.flameGlow : Theme.dim)
         fill: Battery.frac
         fillGradient: Battery.plugged ? root.flameGradient : null
         fillColor: Battery.plugged ? Theme.vermLit : Theme.vermDim
+        materialFillColor: Battery.plugged ? Theme.primary : Theme.onSurfaceVariant
         /** The charging sweep rides the meter while the pack actually takes charge. */
         shimmerOn: Battery.charging
     }

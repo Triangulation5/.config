@@ -278,10 +278,12 @@ Column {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 9 * picker.s
+                    radius: Theme.material ? Theme.radiusRow : 9 * picker.s
                     visible: appRow.selected || appArea.containsMouse
-                    color: appRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03)
-                    border.width: appRow.selected ? 1 : 0
+                    color: Theme.material
+                        ? (appRow.selected ? Theme.secondaryContainer : Theme.stateHover)
+                        : (appRow.selected ? Theme.frameBg : Qt.rgba(0.94, 0.88, 0.84, 0.03))
+                    border.width: Theme.material ? 0 : (appRow.selected ? 1 : 0)
                     border.color: Theme.frameBorder
                 }
 

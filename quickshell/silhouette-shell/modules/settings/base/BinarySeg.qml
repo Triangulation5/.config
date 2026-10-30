@@ -25,13 +25,15 @@ Rectangle {
 
     width: segText.implicitWidth + 18 * seg.s
     height: 24 * seg.s
-    radius: 7 * seg.s
+    radius: Theme.material ? Theme.radiusChip : 7 * seg.s
     topLeftRadius: corner === -1 ? radius : 0
     bottomLeftRadius: corner === -1 ? radius : 0
     topRightRadius: corner === 1 ? radius : 0
     bottomRightRadius: corner === 1 ? radius : 0
-    color: seg.on ? Qt.alpha(Theme.vermLit, 0.20) : Theme.frameBg
-    border.width: 1
+    color: Theme.material
+        ? (seg.on ? Theme.secondaryContainer : Theme.surfaceContainerHigh)
+        : (seg.on ? Qt.alpha(Theme.vermLit, 0.20) : Theme.frameBg)
+    border.width: Theme.material ? 0 : 1
     border.color: seg.on ? Qt.alpha(Theme.vermLit, 0.55) : Theme.hairSoft
     Behavior on color { ColorAnimation { duration: Motion.fast } }
     Behavior on border.color { ColorAnimation { duration: Motion.fast } }

@@ -38,7 +38,7 @@ Item {
         anchors.leftMargin: -7 * crow.s
         anchors.rightMargin: -7 * crow.s
         height: 32 * crow.s
-        radius: 8 * crow.s
+        radius: Theme.material ? Theme.radiusRow : 8 * crow.s
         focused: crow.focused
         hovered: crowHover.hovered
     }

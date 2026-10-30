@@ -7,6 +7,7 @@ import qs.services
 import qs.modules.pill.surfaces
 import qs.components.animation
 import qs.components.icons
+import qs.components.controls
 
 /**
  * Now-playing card. Its backdrop follows Flags.mediaStyle, chosen in
@@ -444,22 +445,30 @@ PillSurface {
             anchors.left: parent.left
             anchors.right: parent.right
             text: root.title
-            color: Theme.cream
+            color: Theme.material ? Theme.onSurface : Theme.cream
             pixelSize: 21 * root.s
             weight: Font.DemiBold
             fadeWidth: root.bleedOn ? 0 : 20 * root.s
             active: root.shown
+            Behavior on color {
+                enabled: Style.transitioning
+                ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+            }
         }
 
         Marquee {
             anchors.left: parent.left
             anchors.right: parent.right
             text: root.artist
-            color: Theme.dim
+            color: Theme.material ? Theme.onSurfaceVariant : Theme.dim
             pixelSize: 16 * root.s
             fadeWidth: root.bleedOn ? 0 : 16 * root.s
             active: root.shown
             visible: text.length > 0
+            Behavior on color {
+                enabled: Style.transitioning
+                ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+            }
         }
     }
 
@@ -514,8 +523,6 @@ PillSurface {
             width: 36 * root.s * root.tScale
             height: 36 * root.s * root.tScale
 
-            radius: 9 * root.s * root.tScale
-
             rotation: -1.5
             scale: 1 + 0.08 * root.sealPulse
 
@@ -539,31 +546,42 @@ PillSurface {
                 }
             }
 
-            border.width: 1
+            border.width: Theme.material ? 0 : 1
+            Behavior on border.width {
+                enabled: Style.transitioning
+                NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+            }
 
             border.color:
-                Qt.alpha(
-                    Theme.vermLit,
-                    0.4 + 0.4 * root.sealPulse
-                )
+                Theme.material ? "transparent"
+                    : Qt.alpha(Theme.vermLit, 0.4 + 0.4 * root.sealPulse)
+
+            color: "transparent"
+            radius: Theme.material ? width / 2 : 9 * root.s * root.tScale
+            Behavior on radius {
+                enabled: Style.transitioning
+                NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+            }
 
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
-                    color: Theme.mix(
-                        Theme.verm,
-                        Theme.tileBg,
-                        0.55 - 0.27 * seal.sat
-                    )
+                    color: Theme.material ? Theme.primaryContainer
+                        : Theme.mix(Theme.verm, Theme.tileBg, 0.55 - 0.27 * seal.sat)
+                    Behavior on color {
+                        enabled: Style.transitioning
+                        ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                    }
                 }
 
                 GradientStop {
                     position: 1.0
-                    color: Theme.mix(
-                        Theme.vermDeep,
-                        Theme.tileBg,
-                        0.55 - 0.27 * seal.sat
-                    )
+                    color: Theme.material ? Theme.primaryContainer
+                        : Theme.mix(Theme.vermDeep, Theme.tileBg, 0.55 - 0.27 * seal.sat)
+                    Behavior on color {
+                        enabled: Style.transitioning
+                        ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                    }
                 }
             }
 
@@ -576,7 +594,7 @@ PillSurface {
                       ? "奏"
                       : "休"
 
-                color: "#ffffff"
+                color: Theme.material ? Theme.onPrimaryContainer : "#ffffff"
 
                 font.family: Theme.fontJp
                 font.pixelSize: 19 * root.s * root.tScale
@@ -595,7 +613,7 @@ PillSurface {
                       ? "pause"
                       : "play"
 
-                color: "#ffffff"
+                color: Theme.material ? Theme.onPrimaryContainer : "#ffffff"
             }
 
             MouseArea {
@@ -649,7 +667,12 @@ PillSurface {
     Canvas {
         id: stroke
 
-        visible: root.compact
+        visible: root.compact && (!Theme.material || Style.transitioning)
+        opacity: Theme.material ? 0 : 1
+        Behavior on opacity {
+            enabled: Style.transitioning
+            NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+        }
 
         anchors.left: parent.left
         anchors.leftMargin: root.textX
@@ -743,7 +766,7 @@ PillSurface {
             anchors.leftMargin: -8 * root.s
             anchors.rightMargin: -8 * root.s
             anchors.bottomMargin: -6 * root.s
-            enabled: root.canScrub
+            enabled: root.canScrub && !Theme.material
             cursorShape: Qt.PointingHandCursor
             preventStealing: true
 
@@ -764,6 +787,67 @@ PillSurface {
                     root.player.position = root.commitSec;
                 }
                 root.dragging = false;
+            }
+        }
+    }
+
+    Item {
+        id: materialStroke
+
+        visible: root.compact && (Theme.material || Style.transitioning)
+        opacity: Theme.material ? 1 : 0
+        Behavior on opacity {
+            enabled: Style.transitioning
+            NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+        }
+        anchors.left: parent.left
+        anchors.leftMargin: root.textX
+        anchors.right: parent.right
+        anchors.rightMargin: root.edgePad
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 40 * root.s
+        height: 18 * root.s
+
+        WaveProgress {
+            id: wave
+            anchors.fill: parent
+            value: root.frac
+            actualValue: root.playFrac
+            showActualPlaybackState: root.dragging
+            isPlaying: root.playing && root.shown
+            lineWidth: 2 * root.s
+            amplitude: 1.6 * root.s
+            wavelength: 20 * root.s
+            trackColor: Qt.alpha(Theme.onSurfaceVariant, 0.35)
+            fillColor: Theme.primary
+            playheadColor: Theme.onSurface
+            actualProgressColor: Theme.onSurfaceVariant
+
+            MouseArea {
+                anchors.fill: parent
+                anchors.leftMargin: -8 * root.s
+                anchors.rightMargin: -8 * root.s
+                enabled: root.canScrub && Theme.material
+                cursorShape: Qt.PointingHandCursor
+                preventStealing: true
+
+                function fracAt(mx) {
+                    return Math.max(0, Math.min(1, (mx - 8 * root.s) / wave.width));
+                }
+
+                onPressed: mouse => {
+                    root.dragFrac = fracAt(mouse.x);
+                    root.dragging = true;
+                }
+                onPositionChanged: mouse => { if (pressed) root.dragFrac = fracAt(mouse.x); }
+                onCanceled: root.dragging = false
+                onReleased: {
+                    if (root.player && root.canScrub) {
+                        root.commitSec = root.dragFrac * root.lengthSec;
+                        root.player.position = root.commitSec;
+                    }
+                    root.dragging = false;
+                }
             }
         }
     }
@@ -789,9 +873,13 @@ PillSurface {
         text: root.live ? "Live"
                         : root.fmt(root.dragging ? root.dragFrac * root.lengthSec : root.positionSec)
                           + " / " + root.fmt(root.lengthSec)
-        color: Theme.dim
+        color: Theme.material ? Theme.onSurfaceVariant : Theme.dim
         font.family: Theme.font
         font.pixelSize: 11.5 * root.s
         font.features: { "tnum": 1 }
+        Behavior on color {
+            enabled: Style.transitioning
+            ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+        }
     }
 }

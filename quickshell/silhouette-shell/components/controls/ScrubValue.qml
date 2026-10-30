@@ -68,8 +68,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Motion.rSmall * root.s
-        color: Qt.alpha(Theme.onGlow, root.hovered ? 0.14 : 0)
+        radius: Theme.material ? Theme.radiusSmall : Motion.rSmall * root.s
+        color: Theme.material
+            ? (root.hovered ? Theme.stateHover : "transparent")
+            : Qt.alpha(Theme.onGlow, root.hovered ? 0.14 : 0)
         Behavior on color { ColorAnimation { duration: Motion.fast } }
     }
 

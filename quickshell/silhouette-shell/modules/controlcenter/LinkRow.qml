@@ -44,8 +44,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 10 * s
-        color: (rowHover.hovered || row.focused) ? Theme.frameBg : "transparent"
+        radius: Theme.material ? Theme.radiusRow : 10 * s
+        color: (rowHover.hovered || row.focused)
+            ? (Theme.material && row.focused ? Theme.stateFocus : Theme.frameBg)
+            : "transparent"
     }
 
     GlyphIcon {

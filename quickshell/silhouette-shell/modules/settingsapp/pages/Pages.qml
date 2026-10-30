@@ -45,6 +45,7 @@ QtObject {
      */
     readonly property var pages: [
         Appearance,
+        DesktopWidgets,
         Look,
         PillShape,
         Corners,

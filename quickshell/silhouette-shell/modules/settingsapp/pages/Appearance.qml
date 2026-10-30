@@ -48,7 +48,7 @@ import "../utils/rows.js" as Rows
 QtObject {
     readonly property string name: "Appearance"
     readonly property string icon: "\u25D0"
-    readonly property string keywords: "theme colour color palette scheme colorscheme wallpaper font scale ui tint backdrop media aura glow shadow strength"
+    readonly property string keywords: "theme colour color design style washi material material-you palette scheme colorscheme wallpaper font scale ui tint backdrop media aura glow shadow strength"
 
     /** One row for a flag, its bounds read from the shared table (see utils/rows.js). */
     function row(field, type, label, caption, unit, extra) {
@@ -56,6 +56,18 @@ QtObject {
     }
 
     readonly property var groups: [
+        /**
+         * The design language is its own card rather than the first row under
+         * Palette because it is not a palette choice: it decides the shape,
+         * material, outlines and motion every surface wears, and it holds while
+         * the colours underneath change. Keeping it separate also makes the
+         * vocabulary clear — Washi and Material are styles, Static and Dynamic
+         * are palettes.
+         */
+        { card: "Design language", rows: [
+            row("style", "segmented", "Design style",
+                "Washi is the shell's paper-flat identity; Material is Google's Material 3 / Material You surface treatment. Applies shell-wide, independent of the palette", "")
+        ]},
         { card: "Palette", rows: [
             row("colorScheme", "segmented", "Colorscheme",
                 "Which static palette the shell paints from — the vague.nvim port, or the original black-bodied one. Static mode, and the body Accented puts wallpaper accents on", ""),

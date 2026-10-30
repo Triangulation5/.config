@@ -37,8 +37,10 @@ SettingRow {
         width: 42
         height: 22
         radius: 11
-        color: root.value ? Theme.accent : Theme.sliderTrack
-        border.width: 1
+        color: Theme.material
+            ? (root.value ? Theme.accent : Theme.searchField)
+            : (root.value ? Theme.accent : Theme.sliderTrack)
+        border.width: Theme.material ? 0 : 1
         border.color: root.value ? "transparent" : Theme.border
         Behavior on color { ColorAnimation { duration: Theme.animNormal } }
         Behavior on border.color { ColorAnimation { duration: Theme.animNormal } }

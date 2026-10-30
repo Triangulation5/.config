@@ -298,8 +298,8 @@ Item {
     readonly property real dragOverH: Flags.pillDragOverH * s
     readonly property real gameH: Flags.pillGameH * s
     readonly property real gameW: barWindow ? barWindow.width : 1920
-    readonly property real restCorner: (Flags.notchStyle ? Flags.pillNotchCorner : Flags.pillRestCorner) * s
-    readonly property real openCorner: Flags.pillOpenCorner * s
+    readonly property real restCorner: Theme.pillRestCorner(Flags.notchStyle ? Flags.pillNotchCorner : Flags.pillRestCorner) * s
+    readonly property real openCorner: Theme.pillOpenCorner(Flags.pillOpenCorner) * s
 
     /**
      * Latch-once lazy load with idle-timeout cleanup. Every surface sleeps in
@@ -1411,17 +1411,33 @@ Item {
             bottomLeftRadius: pill.morphRadius * (1 - gameFlat)
             bottomRightRadius: pill.morphRadius * (1 - gameFlat)
 
-            border.width: 1
+            border.width: Theme.pillBorderWidth
             border.color: Theme.border
+            Behavior on border.width {
+                enabled: Style.transitioning
+                NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+            }
+            Behavior on border.color {
+                enabled: Style.transitioning
+                ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+            }
 
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
                     color: pillSurface.surfaceTop
+                    Behavior on color {
+                        enabled: Style.transitioning
+                        ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                    }
                 }
                 GradientStop {
                     position: 1.0
                     color: pillSurface.surfaceBottom
+                    Behavior on color {
+                        enabled: Style.transitioning
+                        ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                    }
                 }
             }
 
@@ -1440,12 +1456,20 @@ Item {
                  * the aura is off.
                  */
                 shadowColor: Qt.rgba(aura.shadowTint.r, aura.shadowTint.g, aura.shadowTint.b,
-                    Theme.shadowOpacity + 0.25 * pill.notchProgress)
+                    Theme.pillShadowOpacity + 0.25 * pill.notchProgress)
                 Behavior on shadowColor {
                     ColorAnimation { duration: Motion.morph; easing.type: Motion.easeStandard }
                 }
-                shadowBlur: 0.7 + 0.4 * pill.notchProgress
-                shadowVerticalOffset: (3 + 2 * pill.notchProgress) * pill.s
+                shadowBlur: Theme.pillShadowBlur + 0.4 * pill.notchProgress
+                Behavior on shadowBlur {
+                    enabled: Style.transitioning
+                    NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                }
+                shadowVerticalOffset: (Theme.pillShadowOffset + 2 * pill.notchProgress) * pill.s
+                Behavior on shadowVerticalOffset {
+                    enabled: Style.transitioning
+                    NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                }
             }
 
             Rectangle {
@@ -1524,6 +1548,12 @@ Item {
     Ame {
         id: ame
         anchors.fill: parent
+        visible: !Theme.material || Style.transitioning
+        opacity: Theme.material ? 0 : 1
+        Behavior on opacity {
+            enabled: Style.transitioning
+            NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+        }
         /**
          * Above the surface loaders so the caret/bead isn't hidden under opaque
          * surface content (the polkit prompt's field capsule), but below the
