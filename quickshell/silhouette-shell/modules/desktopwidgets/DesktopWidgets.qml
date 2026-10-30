@@ -83,18 +83,19 @@ Variants {
             }
 
             Repeater {
-                model: DesktopWidgetState.widgets
+                model: DesktopWidgetState.catalog
 
                 delegate: Item {
                     id: frame
 
                     required property var modelData
 
-                    readonly property bool widgetEnabled: modelData.enabled
-                    property real liveX: modelData.x
-                    property real liveY: modelData.y
-                    property real liveWidth: modelData.w
-                    property real liveHeight: modelData.h
+                    readonly property var settings: DesktopWidgetState.widget(frame.modelData.id)
+                    readonly property bool widgetEnabled: settings ? settings.enabled : false
+                    property real liveX: settings ? settings.x : modelData.x
+                    property real liveY: settings ? settings.y : modelData.y
+                    property real liveWidth: settings ? settings.w : modelData.w
+                    property real liveHeight: settings ? settings.h : modelData.h
                     property bool moving: false
                     property bool resizing: false
                     property point pointerStart
@@ -112,13 +113,21 @@ Variants {
                             frame.liveX, frame.liveY, frame.liveWidth, frame.liveHeight);
                     }
 
-                    onModelDataChanged: {
+                    function syncFromSettings() {
                         if (frame.moving || frame.resizing)
                             return;
-                        frame.liveX = modelData.x;
-                        frame.liveY = modelData.y;
-                        frame.liveWidth = modelData.w;
-                        frame.liveHeight = modelData.h;
+                        if (!frame.settings)
+                            return;
+                        frame.liveX = frame.settings.x;
+                        frame.liveY = frame.settings.y;
+                        frame.liveWidth = frame.settings.w;
+                        frame.liveHeight = frame.settings.h;
+                    }
+                    onSettingsChanged: frame.syncFromSettings()
+
+                    Connections {
+                        target: DesktopWidgetState
+                        function onLayoutChanged() { frame.syncFromSettings(); }
                     }
 
                     x: liveX * desktop.scaleFactor
@@ -172,7 +181,7 @@ Variants {
                     MouseArea {
                         id: dragArea
                         anchors.fill: parent
-                        enabled: DesktopWidgetState.editing
+                        enabled: DesktopWidgetState.editing && frame.widgetEnabled
                         hoverEnabled: true
                         preventStealing: true
                         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
@@ -219,7 +228,7 @@ Variants {
                         MouseArea {
                             id: resizeArea
                             anchors.fill: parent
-                            enabled: DesktopWidgetState.editing
+                            enabled: DesktopWidgetState.editing && frame.widgetEnabled
                             preventStealing: true
                             cursorShape: Qt.SizeFDiagCursor
                             onPressed: function (mouse) {

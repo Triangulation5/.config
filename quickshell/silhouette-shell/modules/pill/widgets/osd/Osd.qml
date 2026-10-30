@@ -116,14 +116,13 @@ Item {
     readonly property bool micMuted: source && source.audio ? source.audio.muted : false
 
     readonly property real desiredW: kind === "workspace" ? Math.max(120 * s, wsFace.indicatorWidth + 40 * s)
-        : (kind === "track" ? (Theme.material ? 380 : 344) * s
-        : (kind === "record" ? (Theme.material ? 300 : 256) * s
-        : (kind === "mic" ? (Theme.material ? 300 : 220) * s
-        : (kind === "download" ? (Theme.material ? 336 : 300) * s
-        : (Theme.material ? 320 : 248) * s))))
+        : (kind === "track" ? (Theme.material ? 360 : 344) * s
+        : (kind === "record" ? (Theme.material ? 260 : 256) * s
+        : (kind === "mic" ? (Theme.material ? 260 : 220) * s
+        : (kind === "download" ? (Theme.material ? 320 : 300) * s
+        : (Theme.material ? 280 : 248) * s))))
     readonly property real desiredH: kind === "track" ? (Theme.material ? 88 : 64) * s
-        : (kind === "download" ? (Theme.material ? 76 : 64) * s
-        : (Theme.material ? (kind === "workspace" ? 68 : 84) : 44) * s)
+        : (Theme.material ? (kind === "download" ? 76 : 72) : 44) * s
 
     /**
      * Active workspace name on this monitor. Any switch (Super+arrow,

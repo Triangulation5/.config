@@ -196,7 +196,6 @@ Singleton {
             property bool lockBattery: true
             property bool lockLink: true
             property string weatherCity: "WELLAND"
-            property string materialAmeStyle: "wave"
             property var desktopWidgets: [
                 { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
                 { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },
@@ -397,7 +396,7 @@ Singleton {
         "lockFailAction", "lockFailLimit",
         "lockoutThreshold", "lockoutSeconds", "lockoutMax", "lockMedia", "lockViz",
         "lockClock", "lockBattery", "lockLink",
-        "weatherCity", "materialAmeStyle", "desktopWidgets", "privacyPollMs", "privacyDot", "privacyScreen", "privacyAudioIn", "privacyCam", "privacyAudioOut",
+        "weatherCity", "desktopWidgets", "privacyPollMs", "privacyDot", "privacyScreen", "privacyAudioIn", "privacyCam", "privacyAudioOut",
         "privacyToneScreen", "privacyToneAudioIn", "privacyToneCam", "privacyToneAudioOut",
         "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",
         "auraOn", "auraStrength", "auraShadow",

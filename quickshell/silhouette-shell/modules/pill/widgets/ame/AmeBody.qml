@@ -81,24 +81,10 @@ Canvas {
         if (Theme.material) {
             ctx.beginPath();
             ctx.lineCap = "round";
-            ctx.lineJoin = "round";
             ctx.strokeStyle = Theme.primary;
-            ctx.lineWidth = 2.2 * S;
-            if (Flags.materialAmeStyle === "line") {
-                ctx.moveTo(bx, by - 7 * S);
-                ctx.lineTo(bx, by + 7 * S);
-            } else {
-                const halfWidth = 11 * S;
-                const steps = 20;
-                for (let i = 0; i <= steps; i++) {
-                    const x = bx - halfWidth + 2 * halfWidth * i / steps;
-                    const y = by + 2.2 * S * Math.sin(i / steps * Math.PI * 4 + host.swirl);
-                    if (i === 0)
-                        ctx.moveTo(x, y);
-                    else
-                        ctx.lineTo(x, y);
-                }
-            }
+            ctx.lineWidth = 2 * S;
+            ctx.moveTo(bx, by - 7 * S);
+            ctx.lineTo(bx, by + 7 * S);
             ctx.stroke();
             return;
         }
@@ -286,11 +272,6 @@ Canvas {
         function onBxChanged() { canvas.requestPaint(); }
         function onByChanged() { canvas.requestPaint(); }
         function onPositionedChanged() { canvas.requestPaint(); }
-    }
-
-    Connections {
-        target: Flags
-        function onMaterialAmeStyleChanged() { canvas.requestPaint(); }
     }
 
     /**

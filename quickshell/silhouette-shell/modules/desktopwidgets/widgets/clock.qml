@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Shapes
 import qs.services
 
 Item {
@@ -26,17 +25,33 @@ Item {
         transformOrigin: Item.Center
         anchors.centerIn: parent
 
-        Shape {
+        Rectangle {
             anchors.fill: parent
-            antialiasing: true
-            preferredRendererType: Shape.CurveRenderer
+            anchors.margins: 5
+            radius: width / 2
+            color: Theme.surfaceContainerLowest
+            border.width: 1
+            border.color: Qt.alpha(Theme.outlineVariant, 0.45)
+        }
 
-            ShapePath {
-                fillColor: Theme.surfaceContainerLowest
-                strokeColor: Qt.alpha(Theme.outlineVariant, 0.35)
-                strokeWidth: 1
-                PathSvg {
-                    path: "M80 4 C94 4 101 17 113 17 C128 16 141 26 141 41 C141 54 156 60 156 74 C156 88 143 96 145 109 C147 123 136 136 122 135 C109 134 102 156 87 156 C73 156 66 142 53 143 C39 144 26 134 27 120 C28 106 5 102 5 87 C5 73 20 66 18 53 C16 39 27 27 41 28 C56 29 63 4 80 4 Z"
+        Repeater {
+            model: 12
+
+            delegate: Item {
+                id: tick
+                required property int index
+                anchors.fill: parent
+                rotation: index * 30
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 13
+                    width: tick.index % 3 === 0 ? 2 : 1
+                    height: tick.index % 3 === 0 ? 7 : 4
+                    radius: width / 2
+                    color: tick.index % 3 === 0 ? Theme.primary : Theme.outlineVariant
+                    opacity: tick.index % 3 === 0 ? 0.9 : 0.7
                 }
             }
         }
@@ -45,7 +60,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
             width: 8
-            height: 39
+            height: 36
             radius: 4
             color: "transparent"
             border.width: 2
@@ -62,7 +77,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
             width: 5
-            height: 53
+            height: 51
             radius: 2.5
             color: Theme.onSurface
             transformOrigin: Item.Bottom
@@ -73,7 +88,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
             width: 2
-            height: 58
+            height: 59
             radius: 1
             color: Theme.primary
             transformOrigin: Item.Bottom

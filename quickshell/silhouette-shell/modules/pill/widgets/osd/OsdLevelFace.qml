@@ -78,6 +78,8 @@ OsdFace {
         visible: Theme.material
         anchors.left: iconContainer.right
         anchors.leftMargin: 12 * face.s
+        anchors.right: pctLabel.left
+        anchors.rightMargin: 6 * face.s
         anchors.top: parent.top
         anchors.topMargin: 7 * face.s
         text: face.title
@@ -85,13 +87,12 @@ OsdFace {
         font.family: Theme.font
         font.pixelSize: 11 * face.s
         font.weight: Font.Medium
+        elide: Text.ElideRight
     }
 
     Text {
         id: pctLabel
         anchors.right: parent.right
-        anchors.left: Theme.material ? titleLabel.right : undefined
-        anchors.leftMargin: Theme.material ? 6 * face.s : 0
         anchors.top: Theme.material ? parent.top : undefined
         anchors.topMargin: Theme.material ? 7 * face.s : 0
         anchors.verticalCenter: Theme.material ? undefined : parent.verticalCenter

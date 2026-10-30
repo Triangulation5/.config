@@ -70,6 +70,13 @@ Singleton {
         return false;
     }
 
+    function widget(widgetId) {
+        for (var i = 0; i < root.widgets.length; i++)
+            if (root.widgets[i].id === widgetId)
+                return root.widgets[i];
+        return null;
+    }
+
     function update(widgetId, patch) {
         var next = [];
         for (var i = 0; i < root.widgets.length; i++) {
@@ -130,6 +137,9 @@ Singleton {
 
     Connections {
         target: Flags
+        function onDesktopWidgetsChanged() {
+            root.layoutChanged();
+        }
         function onStyleChanged() {
             if (!Theme.material)
                 root.finishEditing();

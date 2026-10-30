@@ -12,45 +12,6 @@ ColumnLayout {
 
     readonly property bool materialEnabled: Store.adapter.style === "material"
 
-    function widgetEnabled(widgetId) {
-        var saved = Store.adapter.desktopWidgets;
-        if (Array.isArray(saved)) {
-            for (var i = 0; i < saved.length; i++)
-                if (saved[i] && saved[i].id === widgetId)
-                    return saved[i].enabled !== false;
-        }
-        return true;
-    }
-
-    function updateWidget(widgetId, patch) {
-        var saved = Array.isArray(Store.adapter.desktopWidgets)
-            ? Store.adapter.desktopWidgets : [];
-        var next = [];
-        for (var i = 0; i < DesktopWidgetState.catalog.length; i++) {
-            var spec = DesktopWidgetState.catalog[i];
-            var entry = null;
-            for (var j = 0; j < saved.length; j++) {
-                if (saved[j] && saved[j].id === spec.id) {
-                    entry = saved[j];
-                    break;
-                }
-            }
-            var value = Object.assign({}, spec, entry || {});
-            if (value.id === widgetId)
-                Object.assign(value, patch);
-            next.push({
-                id: value.id,
-                enabled: value.enabled !== false,
-                x: value.x,
-                y: value.y,
-                w: value.w,
-                h: value.h,
-                musicStyle: value.musicStyle
-            });
-        }
-        Store.set("desktopWidgets", next);
-    }
-
     function rows() {
         var result = [];
         for (var i = 0; i < DesktopWidgetState.catalog.length; i++) {
@@ -61,8 +22,8 @@ ColumnLayout {
                 type: "toggle",
                 label: widget.label,
                 caption: widget.description,
-                get: function () { return root.widgetEnabled(widgetId); },
-                set: function (value) { root.updateWidget(widgetId, { enabled: value }); }
+                get: function () { return DesktopWidgetState.isEnabled(widgetId); },
+                set: function (value) { DesktopWidgetState.setEnabled(widgetId, value); }
             });
         }
         result.push({
@@ -72,24 +33,8 @@ ColumnLayout {
             caption: "Choose the ticket design or a minimal player with a live squiggle.",
             options: ["ticket", "line"],
             names: ["Music Ticket", "Music + squiggle"],
-            get: function () {
-                var saved = Store.adapter.desktopWidgets;
-                if (Array.isArray(saved)) {
-                    for (var i = 0; i < saved.length; i++)
-                        if (saved[i] && saved[i].id === "music")
-                            return saved[i].musicStyle === "line" ? "line" : "ticket";
-                }
-                return "ticket";
-            },
-            set: function (value) { root.updateWidget("music", { musicStyle: value }); }
-        });
-        result.push({
-            key: "materialAmeStyle",
-            type: "select",
-            label: "Material Ame marker",
-            caption: "Choose the Material-style animated wave or a straight line.",
-            options: ["wave", "line"],
-            names: ["Wave", "Straight line"]
+            get: function () { return DesktopWidgetState.musicStyle; },
+            set: function (value) { DesktopWidgetState.setMusicStyle(value); }
         });
         return result;
     }
