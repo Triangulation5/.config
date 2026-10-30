@@ -1,5 +1,6 @@
 module qs.services
 
+AlignedTimer 1.0 AlignedTimer.qml
 singleton Backlight       1.0 Backlight.qml
 singleton BarLauncher     1.0 BarLauncher.qml
 singleton BarPower        1.0 BarPower.qml

@@ -468,15 +468,14 @@ Item {
         }
     }
 
-    Timer {
-        interval: ["digitalClock", "worldClock", "weatherDayClock"].indexOf(root.widgetId) >= 0
+    AlignedTimer {
+        period: ["digitalClock", "worldClock", "weatherDayClock"].indexOf(root.widgetId) >= 0
             ? 1000 : 60000
-        repeat: true
-        running: ["digitalClock", "worldClock", "weatherDayClock", "sunArc", "weather",
+        active: ["digitalClock", "worldClock", "weatherDayClock", "sunArc", "weather",
             "weatherHours", "profileDay", "calendarMini", "calendarYarn",
             "calendarAlmanac", "calendarWindows", "calendarYear", "yearAgo", "countdowns"].indexOf(root.widgetId) >= 0
-        onTriggered: {
-            root.now = new Date();
+        onTick: (date) => {
+            root.now = date;
             if (root.widgetId === "sunArc")
                 solarArc.requestPaint();
         }

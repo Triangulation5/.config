@@ -35,11 +35,9 @@ Item {
         return out;
     }
 
-    Timer {
-        interval: 60000
-        repeat: true
-        running: true
-        onTriggered: root.now = new Date()
+    AlignedTimer {
+        period: 60000
+        onTick: (date) => root.now = date
     }
 
     Rectangle {

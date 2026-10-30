@@ -3,10 +3,12 @@ import qs.services
 
 /**
  * The date and time, following the shell's own 12/24-hour and seconds flags.
- * Driven by a plain repeating Timer rather than a SystemClock, the same reason
- * the pill's clock is: a repeating Timer re-reads the wall clock on every fire,
- * so the time self-heals if the event loop was stopped (a locked session, say)
- * instead of freezing one tick behind.
+ * Driven by an AlignedTimer rather than a SystemClock, the same reason the
+ * pill's clock is: it re-reads the wall clock on every fire, so the time
+ * self-heals if the event loop was stopped (a locked session, say) instead of
+ * freezing one tick behind. Unlike a bare repeating Timer, it also fires just
+ * past each whole second, so the strip never trails the real clock by the
+ * phase the timer happened to start with.
  *
  * Two tones in one run of type: the time takes the strip's reading colour and
  * the date recedes to the muted one, so the eye lands on the hour first. This is
@@ -54,10 +56,8 @@ Row {
         font.features: ({ "tnum": 1 })
     }
 
-    Timer {
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: root.now = new Date()
+    AlignedTimer {
+        period: 1000
+        onTick: (date) => root.now = date
     }
 }

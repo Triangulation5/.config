@@ -60,11 +60,10 @@ Item {
         return path + "Z";
     }
 
-    Timer {
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: root.now = new Date()
+    /** Locked to the real second, so the hands never trail the wall clock. */
+    AlignedTimer {
+        period: 1000
+        onTick: (date) => root.now = date
     }
 
     Item {

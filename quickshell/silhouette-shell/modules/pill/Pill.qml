@@ -917,18 +917,18 @@ Item {
     }
 
     /**
-     * Drives the pill's clock from a plain repeating Timer instead of a
-     * Quickshell SystemClock. A SystemClock schedules one delayed tick per
-     * interval, and that single one-shot can be dropped while the session is
-     * locked (the compositor stops frame-driven updates), leaving the pill's
-     * time frozen after unlock. A repeating Timer re-reads the wall clock on
-     * every fire, so the time self-heals the instant the event loop runs again.
+     * Drives the pill's clock from an AlignedTimer instead of a Quickshell
+     * SystemClock. A SystemClock schedules one delayed tick per interval, and
+     * that single one-shot can be dropped while the session is locked (the
+     * compositor stops frame-driven updates), leaving the pill's time frozen
+     * after unlock. An AlignedTimer re-reads the wall clock on every fire, so
+     * the time self-heals the instant the event loop runs again, and it arms
+     * itself for just past the next whole second, so the pill never trails the
+     * real clock by the phase a bare repeating Timer started with.
      */
-    Timer {
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: clock.now = new Date()
+    AlignedTimer {
+        period: 1000
+        onTick: (date) => clock.now = date
     }
 
     property real morphRadius: (mode === "rest" || mode === "hover" || mode === "game") ? restCorner : openCorner
