@@ -83,13 +83,14 @@ Variants {
             }
 
             Repeater {
-                model: DesktopWidgetState.enabledWidgets
+                model: DesktopWidgetState.widgets
 
                 delegate: Item {
                     id: frame
 
                     required property var modelData
 
+                    readonly property bool widgetEnabled: modelData.enabled
                     property real liveX: modelData.x
                     property real liveY: modelData.y
                     property real liveWidth: modelData.w
@@ -106,6 +107,11 @@ Variants {
                         return Math.max(lower, Math.min(upper, value));
                     }
 
+                    function saveGeometry() {
+                        DesktopWidgetState.saveGeometry(frame.modelData.id,
+                            frame.liveX, frame.liveY, frame.liveWidth, frame.liveHeight);
+                    }
+
                     onModelDataChanged: {
                         if (frame.moving || frame.resizing)
                             return;
@@ -120,16 +126,43 @@ Variants {
                     width: liveWidth * desktop.scaleFactor
                     height: liveHeight * desktop.scaleFactor
                     z: DesktopWidgetState.editing ? 2 : 1
+                    opacity: widgetEnabled ? 1 : 0
+                    scale: widgetEnabled ? 1 : 0.97
+                    visible: widgetEnabled || opacity > 0.001
+
+                    Behavior on x {
+                        enabled: !frame.moving && !frame.resizing
+                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on y {
+                        enabled: !frame.moving && !frame.resizing
+                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on width {
+                        enabled: !frame.resizing
+                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on height {
+                        enabled: !frame.resizing
+                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on opacity {
+                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on scale {
+                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                    }
 
                     Loader {
                         anchors.fill: parent
                         source: Qt.resolvedUrl("widgets/" + frame.modelData.id + ".qml")
+                        active: frame.visible
                         asynchronous: true
                     }
 
                     Rectangle {
                         anchors.fill: parent
-                        visible: DesktopWidgetState.editing
+                        visible: DesktopWidgetState.editing && frame.widgetEnabled
                         radius: 16 * desktop.scaleFactor
                         color: "transparent"
                         border.width: 2 * desktop.scaleFactor
@@ -146,14 +179,14 @@ Variants {
 
                         onPressed: function (mouse) {
                             frame.moving = true;
-                            frame.pointerStart = mapToItem(focusScope, mouse.x, mouse.y);
+                            frame.pointerStart = dragArea.mapToItem(focusScope, mouse.x, mouse.y);
                             frame.geometryXStart = frame.liveX;
                             frame.geometryYStart = frame.liveY;
                         }
                         onPositionChanged: function (mouse) {
                             if (!pressed)
                                 return;
-                            var point = mapToItem(focusScope, mouse.x, mouse.y);
+                            var point = dragArea.mapToItem(focusScope, mouse.x, mouse.y);
                             frame.liveX = frame.clamp(frame.geometryXStart
                                 + (point.x - frame.pointerStart.x) / desktop.scaleFactor,
                                 0, desktop.width / desktop.scaleFactor - frame.liveWidth);
@@ -162,15 +195,18 @@ Variants {
                                 0, desktop.height / desktop.scaleFactor - frame.liveHeight);
                         }
                         onReleased: {
+                            frame.saveGeometry();
                             frame.moving = false;
-                            DesktopWidgetState.saveGeometry(frame.modelData.id,
-                                frame.liveX, frame.liveY, frame.liveWidth, frame.liveHeight);
+                        }
+                        onCanceled: {
+                            frame.saveGeometry();
+                            frame.moving = false;
                         }
                     }
 
                     Rectangle {
                         id: resizeHandle
-                        visible: DesktopWidgetState.editing
+                        visible: DesktopWidgetState.editing && frame.widgetEnabled
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
                         anchors.margins: 5 * desktop.scaleFactor
@@ -181,20 +217,21 @@ Variants {
                         z: 4
 
                         MouseArea {
+                            id: resizeArea
                             anchors.fill: parent
                             enabled: DesktopWidgetState.editing
                             preventStealing: true
                             cursorShape: Qt.SizeFDiagCursor
                             onPressed: function (mouse) {
                                 frame.resizing = true;
-                                frame.pointerStart = mapToItem(focusScope, mouse.x, mouse.y);
+                                frame.pointerStart = resizeArea.mapToItem(focusScope, mouse.x, mouse.y);
                                 frame.geometryWidthStart = frame.liveWidth;
                                 frame.geometryHeightStart = frame.liveHeight;
                             }
                             onPositionChanged: function (mouse) {
                                 if (!pressed)
                                     return;
-                                var point = mapToItem(focusScope, mouse.x, mouse.y);
+                                var point = resizeArea.mapToItem(focusScope, mouse.x, mouse.y);
                                 frame.liveWidth = frame.clamp(frame.geometryWidthStart
                                     + (point.x - frame.pointerStart.x) / desktop.scaleFactor,
                                     frame.modelData.minW, frame.modelData.maxW);
@@ -207,9 +244,12 @@ Variants {
                                     desktop.height / desktop.scaleFactor - frame.liveY);
                             }
                             onReleased: {
+                                frame.saveGeometry();
                                 frame.resizing = false;
-                                DesktopWidgetState.saveGeometry(frame.modelData.id,
-                                    frame.liveX, frame.liveY, frame.liveWidth, frame.liveHeight);
+                            }
+                            onCanceled: {
+                                frame.saveGeometry();
+                                frame.resizing = false;
                             }
                         }
                     }

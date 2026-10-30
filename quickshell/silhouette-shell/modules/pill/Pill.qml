@@ -1548,12 +1548,6 @@ Item {
     Ame {
         id: ame
         anchors.fill: parent
-        visible: !Theme.material || Style.transitioning
-        opacity: Theme.material ? 0 : 1
-        Behavior on opacity {
-            enabled: Style.transitioning
-            NumberAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
-        }
         /**
          * Above the surface loaders so the caret/bead isn't hidden under opaque
          * surface content (the polkit prompt's field capsule), but below the

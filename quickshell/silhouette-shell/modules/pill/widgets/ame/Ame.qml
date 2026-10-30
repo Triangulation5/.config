@@ -347,7 +347,7 @@ Item {
 
     Timer {
         running: root.visible && !root.busy
-        interval: root.blinking ? 33 : 500
+        interval: root.blinking || (Theme.material && Flags.materialAmeStyle === "wave") ? 33 : 500
         repeat: true
         onTriggered: {
             root.swirl += interval * 0.0005;

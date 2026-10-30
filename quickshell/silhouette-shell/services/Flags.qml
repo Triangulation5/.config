@@ -100,6 +100,7 @@ Singleton {
     property alias lockLink: adapter.lockLink
     property alias weatherCity: adapter.weatherCity
     property alias desktopWidgets: adapter.desktopWidgets
+    property alias materialAmeStyle: adapter.materialAmeStyle
     /**
      * How often the privacy indicator re-reads PipeWire, in ms. One second by
      * default: a dot that takes ten seconds to appear is not an indicator, and
@@ -494,6 +495,7 @@ Singleton {
             /** The lock's wifi/bluetooth glance (modules/lock/LinkSurface.qml). */
             property bool lockLink: true
             property string weatherCity: "WELLAND"
+            property string materialAmeStyle: "wave"
             property var desktopWidgets: [
                 { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
                 { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },
