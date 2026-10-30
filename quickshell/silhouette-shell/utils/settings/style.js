@@ -208,7 +208,7 @@ var profiles = {
 
         chromaCap: 0.14,
         stateHover: 0.08,
-        stateFocus: 0.10,
+        stateFocus: 0.12,
         statePressed: 0.10,
         stateSelected: 0.12,
         dividerAlpha: 0.12,

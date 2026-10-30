@@ -85,7 +85,9 @@ Item {
         Text {
             visible: frow.expanded && frow.caption.length > 0
             text: frow.caption
-            color: Theme.faint
+            color: (frow.focused || fhover.hovered)
+                ? (Theme.material ? Theme.onSurfaceVariant : Theme.dim)
+                : Theme.faint
             font.family: Theme.font
             font.pixelSize: 9 * frow.s
             font.weight: Font.Medium

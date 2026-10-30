@@ -1332,14 +1332,15 @@ Item {
             /** Shrink the radius instead of scaling so the arc keeps its shape as it deflates into the corner. */
             size: (pill.morphRadius + Flags.notchFlare) * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopRight
-            color: Theme.border
+            color: Theme.material ? pillSurface.surfaceTop : Theme.border
             z: 1
         }
 
         /**
          * Left notch ear fill.
          *
-         * Transparent so media/content can bleed through.
+         * Transparent so media/content can bleed through in washi style;
+         * matches the pill surface in material style.
          */
         RoundCorner {
             visible: pillSurface.earRise > 0.01
@@ -1351,7 +1352,7 @@ Item {
 
             size: pill.morphRadius * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopRight
-            color: "transparent"
+            color: Theme.material ? pillSurface.surfaceTop : "transparent"
             z: 1
         }
 
@@ -1368,14 +1369,15 @@ Item {
 
             size: (pill.morphRadius + Flags.notchFlare) * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopLeft
-            color: Theme.border
+            color: Theme.material ? pillSurface.surfaceTop : Theme.border
             z: 1
         }
 
         /**
          * Right notch ear fill.
          *
-         * Transparent so media/content can bleed through.
+         * Transparent so media/content can bleed through in washi style;
+         * matches the pill surface in material style.
          */
         RoundCorner {
             visible: pillSurface.earRise > 0.01
@@ -1387,7 +1389,7 @@ Item {
 
             size: pill.morphRadius * pillSurface.earRise
             corner: RoundCorner.CornerEnum.TopLeft
-            color: "transparent"
+            color: Theme.material ? pillSurface.surfaceTop : "transparent"
             z: 1
         }
 

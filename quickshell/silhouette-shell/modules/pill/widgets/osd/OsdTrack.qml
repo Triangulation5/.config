@@ -33,8 +33,8 @@ OsdFace {
         anchors.verticalCenter: parent.verticalCenter
         width: 44 * face.s
         height: 44 * face.s
-        radius: Theme.radiusSmall * face.s
-        color: Theme.surfaceContainerHighest
+        radius: 9 * face.s
+        color: Theme.tileBg
 
         Image {
             id: cover
@@ -65,7 +65,7 @@ OsdFace {
             width: 18 * face.s
             height: 18 * face.s
             radius: width / 2
-            color: Theme.surfaceContainerHigh
+            color: Qt.alpha(Theme.cardBot, 0.8)
             visible: srcIcon.status === Image.Ready
 
             Image {
@@ -88,8 +88,8 @@ OsdFace {
         anchors.verticalCenter: parent.verticalCenter
         width: 18 * face.s
         height: 18 * face.s
-        name: face.playing ? "pause" : "play"
-        color: face.playing ? Theme.primary : Theme.iconDim
+        name: face.playing ? "play" : "pause"
+        color: face.playing ? Theme.vermLit : Theme.iconDim
     }
 
     Column {
@@ -104,7 +104,7 @@ OsdFace {
             width: parent.width
             text: face.title.length > 0 ? face.title : "Nothing playing"
             textFormat: Text.PlainText
-            color: Theme.onSurface
+            color: Theme.cream
             font.family: Theme.font
             font.pixelSize: 14 * face.s
             font.weight: Font.DemiBold
@@ -116,7 +116,7 @@ OsdFace {
             width: parent.width
             text: face.artist
             textFormat: Text.PlainText
-            color: Theme.onSurfaceVariant
+            color: Theme.dim
             font.family: Theme.font
             font.pixelSize: 11 * face.s
             maximumLineCount: 1

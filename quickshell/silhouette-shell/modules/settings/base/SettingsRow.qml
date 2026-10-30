@@ -95,7 +95,9 @@ Item {
             width: parent.width
             visible: srow.sub.length > 0 && (!srow.captionOnFocus || srow.focused || srowHover.hovered)
             text: srow.sub
-            color: Theme.faint
+            color: (srow.focused || srowHover.hovered)
+                ? (Theme.material ? Theme.onSurfaceVariant : Theme.dim)
+                : Theme.faint
             font.family: Theme.font
             font.pixelSize: 10.5 * srow.s
             wrapMode: Text.WordWrap

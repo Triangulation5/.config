@@ -13,5 +13,5 @@
   temporary validation files.
 - [x] Review changed paths and the live shell reload; no new QML errors. Two
   existing `ShaderEffect` source warnings remain in unchanged effect components.
-- [ ] Commit and push the requested shell and attribution changes, excluding
+- [x] Commit and push the requested shell and attribution changes, excluding
   unrelated worktree edits.

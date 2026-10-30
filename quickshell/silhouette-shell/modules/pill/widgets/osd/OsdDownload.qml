@@ -41,7 +41,7 @@ OsdFace {
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
             ctx.stroke();
             if (ring.p > 0) {
-                ctx.strokeStyle = Theme.primary;
+                ctx.strokeStyle = Theme.flameGlow;
                 ctx.beginPath();
                 ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + ring.p * Math.PI * 2);
                 ctx.stroke();
@@ -52,7 +52,7 @@ OsdFace {
     Text {
         anchors.centerIn: ring
         text: Downloads.pctText.length > 0 ? Downloads.pctText : "…"
-        color: Theme.onSurface
+        color: Theme.cream
         font.family: Theme.font
         font.pixelSize: 10 * face.s
         font.weight: Font.DemiBold
@@ -69,7 +69,7 @@ OsdFace {
         Marquee {
             width: parent.width
             text: Downloads.fileName
-            color: Theme.onSurface
+            color: Theme.cream
             pixelSize: 12.5 * face.s
             weight: Font.DemiBold
             active: face.active
@@ -79,7 +79,7 @@ OsdFace {
             text: Downloads.bytesTotal > 0
                 ? (Downloads.speedText + " · " + Downloads.sizeText)
                 : Downloads.speedText
-            color: Theme.onSurfaceVariant
+            color: Theme.dim
             font.family: Theme.font
             font.pixelSize: 10 * face.s
             font.weight: Font.Medium

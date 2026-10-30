@@ -25,7 +25,9 @@ Rectangle {
      * Washi keeps the original frame wash and editable edge.
      */
     color: (tile.hovered || tile.focused)
-        ? (Theme.material ? (tile.focused ? Theme.stateFocus : Theme.stateHover) : Theme.frameBg)
+        ? (Theme.material
+            ? (tile.focused ? Theme.stateFocus : Theme.stateHover)
+            : (tile.focused ? Qt.alpha(Theme.cream, 0.08) : Theme.frameBg))
         : "transparent"
     Behavior on color { ColorAnimation { duration: Motion.fast } }
 

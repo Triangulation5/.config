@@ -97,6 +97,13 @@ Item {
      */
     property int lastShownPct: Battery.pct
 
+    /** Flame gradient shared by the brightness and battery level fills. */
+    readonly property Gradient flameGradient: Gradient {
+        orientation: Gradient.Horizontal
+        GradientStop { position: 0.0; color: Theme.vermDeep }
+        GradientStop { position: 1.0; color: Theme.flameGlow }
+    }
+
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
     /** Output volume as a 0..>1 fraction: 1.25 is a 125% boost. */
@@ -109,12 +116,9 @@ Item {
     readonly property bool micMuted: source && source.audio ? source.audio.muted : false
 
     readonly property real desiredW: kind === "workspace" ? Math.max(120 * s, wsFace.indicatorWidth + 40 * s)
-        : (kind === "track" ? 360 * s
-        : (kind === "record" ? 260 * s
-        : (kind === "mic" ? 260 * s
-        : (kind === "download" ? 320 * s : 280 * s))))
-    readonly property real desiredH: kind === "track" ? 88 * s
-        : (kind === "download" ? 76 * s : 72 * s)
+        : (kind === "track" ? 344 * s : (kind === "record" ? 256 * s
+        : (kind === "mic" ? 220 * s : (kind === "download" ? 300 * s : 248 * s))))
+    readonly property real desiredH: kind === "track" || kind === "download" ? 64 * s : 44 * s
 
     /**
      * Active workspace name on this monitor. Any switch (Super+arrow,
@@ -389,14 +393,13 @@ Item {
         anchors.fill: parent
         s: root.s
         active: root.kind === "volume"
-        title: "Volume"
         glyph: root.muted ? "speaker-off" : "speaker-level"
         glyphProgress: root.volumeFill
-        glyphColor: root.muted ? Theme.onSurfaceVariant : Theme.primary
+        glyphColor: root.muted ? Theme.dim : Theme.iconDim
         pctText: Math.round(root.volume * 100) + "%"
-        pctColor: root.muted ? Theme.onSurfaceVariant : Theme.onSurface
+        pctColor: root.muted ? Theme.dim : Theme.cream
         fill: root.volumeFill
-        levelFillColor: root.muted ? Theme.onSurfaceVariant : Theme.primary
+        fillColor: root.muted ? Theme.vermDim : Theme.vermLit
         levelInteractive: !!root.sink && !!root.sink.audio
         iconInteractive: !!root.sink && !!root.sink.audio
         onLevelRequested: value => {
@@ -443,14 +446,11 @@ Item {
         anchors.fill: parent
         s: root.s
         active: root.kind === "brightness"
-        title: "Brightness"
         glyph: "sun-level"
-        glyphColor: Theme.primary
         glyphProgress: root.brightness
         pctText: Math.round(root.brightness * 100) + "%"
-        pctColor: Theme.onSurface
         fill: root.brightness
-        levelFillColor: Theme.primary
+        fillGradient: root.flameGradient
         levelInteractive: Backlight.present
         onLevelRequested: value => Devices.setBacklight(value * 100)
     }
@@ -469,13 +469,15 @@ Item {
         anchors.fill: parent
         s: root.s
         active: root.kind === "battery"
-        title: "Battery"
         glyph: "bolt"
-        glyphColor: Battery.plugged ? Theme.primary : Theme.onSurfaceVariant
+        glyphColor: Battery.plugged ? Theme.flameGlow : Theme.faint
         pctText: Battery.pct + "%"
-        pctColor: Battery.plugged ? Theme.primary : Theme.onSurfaceVariant
+        pctColor: Battery.plugged ? Theme.flameGlow : Theme.dim
         fill: Battery.frac
-        levelFillColor: Battery.plugged ? Theme.primary : Theme.onSurfaceVariant
+        fillGradient: Battery.plugged ? root.flameGradient : null
+        fillColor: Battery.plugged ? Theme.vermLit : Theme.vermDim
+        /** The charging sweep rides the meter while the pack actually takes charge. */
+        shimmerOn: Battery.charging
     }
 
     OsdWorkspace {

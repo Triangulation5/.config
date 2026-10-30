@@ -9,13 +9,14 @@ import qs.modules.pill.widgets.osd
  * Level OSD face: a glyph at the left, a percentage at the right and a fill
  * bar between them that tracks `fill`. Shared by the volume, brightness and
  * power-source faces, which only differ in glyph, glyph colour, percentage and
- * fill styling. Driven by the Osd root through `active`.
+ * fill styling: `fillGradient` wins over `fillColor`, and `shimmerOn` runs
+ * the charging sweep the battery face uses. Driven by the Osd root through
+ * `active`.
  */
 OsdFace {
     id: face
 
     property string glyph: ""
-    property string title: "Level"
     property color glyphColor: Theme.iconDim
     property real glyphProgress: 1
 
@@ -24,7 +25,12 @@ OsdFace {
     property real pctWidth: 32 * face.s
 
     property real fill: 0
-    property color levelFillColor: Theme.primary
+    property color fillColor: Theme.vermLit
+    property Gradient fillGradient: null
+
+    /** Runs the charging sweep along the filled bar; the battery face sets this while the pack takes charge. */
+    property bool shimmerOn: false
+
     property bool levelInteractive: false
     property bool iconInteractive: false
     signal levelRequested(real value)
@@ -33,86 +39,50 @@ OsdFace {
     property bool dragging: false
     readonly property real displayFill: dragging ? dragValue : fill
 
-    Rectangle {
-        id: iconContainer
-        anchors.left: parent.left
-        anchors.leftMargin: 4 * face.s
-        anchors.verticalCenter: parent.verticalCenter
-        width: 38 * face.s
-        height: width
-        radius: 14 * face.s
-        color: Theme.primaryContainer
-
-        MouseArea {
-            anchors.fill: parent
-            enabled: face.iconInteractive
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: face.iconClicked()
-        }
-    }
-
     GlyphIcon {
         id: levelGlyph
-        anchors.centerIn: iconContainer
-        width: 18 * face.s
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: 17 * face.s
         height: 17 * face.s
         name: face.glyph
         progress: face.glyphProgress
         color: face.glyphColor
         stroke: 1.7
-    }
 
-    Text {
-        id: titleLabel
-        anchors.left: iconContainer.right
-        anchors.leftMargin: 12 * face.s
-        anchors.right: pctLabel.left
-        anchors.rightMargin: 6 * face.s
-        anchors.top: parent.top
-        anchors.topMargin: 7 * face.s
-        text: face.title
-        color: Theme.onSurfaceVariant
-        font.family: Theme.font
-        font.pixelSize: 11 * face.s
-        font.weight: Font.Medium
-        elide: Text.ElideRight
+        MouseArea {
+            anchors.fill: parent
+            enabled: face.iconInteractive && face.active
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: face.iconClicked()
+        }
     }
 
     Text {
         id: pctLabel
         anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.topMargin: 7 * face.s
-        anchors.rightMargin: 5 * face.s
+        anchors.verticalCenter: parent.verticalCenter
         width: face.pctWidth
         horizontalAlignment: Text.AlignRight
         text: face.pctText
         color: face.pctColor
         font.family: Theme.font
-        font.pixelSize: 12 * face.s
+        font.pixelSize: 11 * face.s
         font.weight: Font.DemiBold
         font.features: { "tnum": 1 }
-        Behavior on color {
-            enabled: Style.transitioning
-            ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
-        }
     }
 
     Rectangle {
-        anchors.left: iconContainer.right
+        id: track
+        anchors.left: levelGlyph.right
         anchors.leftMargin: 12 * face.s
-        anchors.right: parent.right
-        anchors.rightMargin: 5 * face.s
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 9 * face.s
-        height: 8 * face.s
-        radius: height / 2
-        color: Theme.surfaceContainerHighest
+        anchors.right: pctLabel.left
+        anchors.rightMargin: 12 * face.s
+        anchors.verticalCenter: parent.verticalCenter
+        height: 4 * face.s
+        radius: 2 * face.s
+        color: Theme.threadBg
         clip: true
-        Behavior on color {
-            enabled: Style.transitioning
-            ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
-        }
 
         Rectangle {
             id: levelFill
@@ -121,33 +91,53 @@ OsdFace {
             anchors.bottom: parent.bottom
             width: parent.width * face.displayFill
             radius: parent.radius
-            color: face.levelFillColor
+            gradient: face.fillGradient
+            color: face.fillGradient ? "transparent" : face.fillColor
             Behavior on width { NumberAnimation { duration: Motion.fast } }
             Behavior on color { ColorAnimation { duration: Motion.fast } }
+
+            /**
+             * The charging sweep: a soft warm band travelling along the filled
+             * bar while the pack takes charge, looping for as long as the face
+             * is active and `shimmerOn` holds. The gradient runs horizontal so
+             * the glint sweeps along the bar (the original OsdBattery face's
+             * behaviour, which a level-face merge silently flattened into a
+             * 4px vertical sliver). Restarting the flash mid-charge would
+             * reset the sweep, which is why battery edges never preempt a
+             * running battery flash (see Osd.flash).
+             */
             Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                x: parent.width - width / 2
-                width: 10 * face.s
-                height: width
-                radius: width / 2
-                color: face.levelFillColor
-                visible: face.displayFill > 0
-                Behavior on color {
-                    enabled: Style.transitioning
-                    ColorAnimation { duration: Style.transitionDuration; easing.type: Easing.InOutCubic }
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 34 * face.s
+                visible: face.shimmerOn
+                color: "transparent"
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#00ffffff" }
+                    GradientStop { position: 0.5; color: "#55ffe6d6" }
+                    GradientStop { position: 1.0; color: "#00ffffff" }
+                }
+                NumberAnimation on x {
+                    from: -34 * face.s
+                    to: levelFill.width
+                    duration: 1200
+                    loops: Animation.Infinite
+                    running: face.active && face.shimmerOn
                 }
             }
-
         }
 
         MouseArea {
             anchors.fill: parent
+            anchors.topMargin: -8 * face.s
+            anchors.bottomMargin: -8 * face.s
             enabled: face.levelInteractive && face.active
             preventStealing: true
             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 
             function setFromX(x) {
-                face.dragValue = Math.max(0, Math.min(1, x / width));
+                face.dragValue = Math.max(0, Math.min(1, x / track.width));
             }
 
             onPressed: mouse => {
