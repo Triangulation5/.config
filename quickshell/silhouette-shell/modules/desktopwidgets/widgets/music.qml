@@ -21,6 +21,16 @@ Item {
     readonly property string album: Players.has && player.trackAlbum ? player.trackAlbum : "\u2014"
     readonly property string source: Players.serviceLabel.length > 0 ? Players.serviceLabel : "\u2014"
     readonly property bool ticketMode: DesktopWidgetState.musicStyle === "ticket"
+    readonly property bool ticketTransportEnabled: Players.has && player.canTogglePlaying
+    readonly property bool lineTransportEnabled: Players.has && player.canTogglePlaying
+    readonly property bool ticketSeekEnabled: Players.has && player.canSeek
+        && player.positionSupported && length > 0 && !Players.live
+    readonly property bool lineSeekEnabled: Players.has && player.canSeek
+        && player.positionSupported && length > 0 && !Players.live
+    readonly property alias ticketSeekInput: ticketSeekMouseArea
+    readonly property alias ticketTransportInput: ticketTransportRow
+    readonly property alias lineSeekInput: lineSeekMouseArea
+    readonly property alias lineTransportInput: lineTransportRow
 
     function formatTime(seconds) {
         var value = Math.max(0, Math.floor(seconds || 0));
@@ -250,6 +260,7 @@ Item {
             }
 
             MouseArea {
+                id: ticketSeekMouseArea
                 anchors.fill: parent
                 enabled: Players.has && player.canSeek && player.positionSupported && root.length > 0 && !Players.live
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
@@ -262,6 +273,7 @@ Item {
         }
 
         Row {
+            id: ticketTransportRow
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 2 * root.s
 
@@ -336,6 +348,7 @@ Item {
         }
 
         Row {
+            id: lineTransportRow
             anchors.right: parent.right
             anchors.rightMargin: 16 * root.s
             anchors.top: parent.top
@@ -381,6 +394,7 @@ Item {
             actualProgressColor: Theme.onSurfaceVariant
 
             MouseArea {
+                id: lineSeekMouseArea
                 anchors.fill: parent
                 enabled: Players.has && player.canSeek && player.positionSupported
                     && root.length > 0 && !Players.live

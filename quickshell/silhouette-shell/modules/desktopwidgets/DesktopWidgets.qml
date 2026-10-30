@@ -16,20 +16,7 @@ Variants {
 
         readonly property real scaleFactor: Math.max(0.62, Math.min(1.25,
             Math.min(modelData.width / 1600, modelData.height / 900) * Flags.uiScale))
-        readonly property real inputWidth: {
-            var edge = 0;
-            var items = DesktopWidgetState.enabledWidgets;
-            for (var i = 0; i < items.length; i++)
-                edge = Math.max(edge, (items[i].x + items[i].w) * scaleFactor);
-            return edge;
-        }
-        readonly property real inputHeight: {
-            var edge = 0;
-            var items = DesktopWidgetState.enabledWidgets;
-            for (var i = 0; i < items.length; i++)
-                edge = Math.max(edge, (items[i].y + items[i].h) * scaleFactor);
-            return edge;
-        }
+        property var musicWidget: null
 
         screen: modelData
         color: "transparent"
@@ -39,17 +26,43 @@ Variants {
         WlrLayershell.keyboardFocus: DesktopWidgetState.editing
             ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         anchors { top: true; bottom: true; left: true; right: true }
-        mask: DesktopWidgetState.editing ? fullRegion : widgetsRegion
+        mask: DesktopWidgetState.editing ? fullRegion : interactiveRegion
 
-        Region {
-            id: widgetsRegion
-            width: desktop.inputWidth
-            height: desktop.inputHeight
-        }
         Region {
             id: fullRegion
             width: desktop.width
             height: desktop.height
+        }
+        Region {
+            id: interactiveRegion
+            Region {
+                item: desktop.musicWidget
+                    && DesktopWidgetState.musicStyle === "ticket"
+                    && desktop.musicWidget.ticketSeekEnabled
+                    ? desktop.musicWidget.ticketSeekInput : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.musicWidget
+                    && DesktopWidgetState.musicStyle === "ticket"
+                    && desktop.musicWidget.ticketTransportEnabled
+                    ? desktop.musicWidget.ticketTransportInput : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.musicWidget
+                    && DesktopWidgetState.musicStyle === "line"
+                    && desktop.musicWidget.lineSeekEnabled
+                    ? desktop.musicWidget.lineSeekInput : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.musicWidget
+                    && DesktopWidgetState.musicStyle === "line"
+                    && desktop.musicWidget.lineTransportEnabled
+                    ? desktop.musicWidget.lineTransportInput : null
+                intersection: Intersection.Combine
+            }
         }
 
         Component.onCompleted: {
@@ -92,7 +105,7 @@ Variants {
                     required property var modelData
 
                     readonly property var settings: DesktopWidgetState.widget(frame.modelData.id)
-                    readonly property bool widgetEnabled: settings ? settings.enabled : false
+                    readonly property bool widgetEnabled: DesktopWidgetState.isEnabled(frame.modelData.id)
                     property real liveX: settings ? settings.x : modelData.x
                     property real liveY: settings ? settings.y : modelData.y
                     property real liveWidth: settings ? settings.w : modelData.w
@@ -159,10 +172,14 @@ Variants {
                     }
 
                     Loader {
+                        id: widgetLoader
                         anchors.fill: parent
                         source: Qt.resolvedUrl("widgets/" + frame.modelData.id + ".qml")
-                        active: frame.visible
+                        active: frame.widgetEnabled || DesktopWidgetState.editing
                         asynchronous: true
+                        onLoaded: if (frame.modelData.id === "music") desktop.musicWidget = item
+                        onItemChanged: if (frame.modelData.id === "music" && item === null)
+                            desktop.musicWidget = null
                     }
 
                     Rectangle {
@@ -239,14 +256,12 @@ Variants {
                     var dx = (mouse.x - pointerStart.x) / desktop.scaleFactor;
                     var dy = (mouse.y - pointerStart.y) / desktop.scaleFactor;
                     if (resizing) {
-                        dragFrame.liveWidth = dragFrame.clamp(widthStart + dx,
-                            dragFrame.modelData.minW, dragFrame.modelData.maxW);
-                        dragFrame.liveHeight = dragFrame.clamp(heightStart + dy,
-                            dragFrame.modelData.minH, dragFrame.modelData.maxH);
-                        dragFrame.liveWidth = Math.min(dragFrame.liveWidth,
-                            desktop.width / desktop.scaleFactor - dragFrame.liveX);
-                        dragFrame.liveHeight = Math.min(dragFrame.liveHeight,
-                            desktop.height / desktop.scaleFactor - dragFrame.liveY);
+                        var maxWidth = desktop.width / desktop.scaleFactor - dragFrame.liveX;
+                        var maxHeight = desktop.height / desktop.scaleFactor - dragFrame.liveY;
+                        dragFrame.liveWidth = Math.min(maxWidth,
+                            Math.max(dragFrame.modelData.minW, widthStart + dx));
+                        dragFrame.liveHeight = Math.min(maxHeight,
+                            Math.max(dragFrame.modelData.minH, heightStart + dy));
                     } else {
                         dragFrame.liveX = dragFrame.clamp(xStart + dx,
                             0, desktop.width / desktop.scaleFactor - dragFrame.liveWidth);

@@ -6,7 +6,7 @@ Item {
 
     readonly property real faceSize: Math.min(width, height)
     readonly property real faceScale: faceSize / 160
-    property var now: new Date()
+    property date now: new Date()
     readonly property real hourAngle: ((now.getHours() % 12) + now.getMinutes() / 60) * 30
     readonly property real minuteAngle: (now.getMinutes() + now.getSeconds() / 60) * 6
     readonly property real secondAngle: now.getSeconds() * 6
@@ -27,97 +27,125 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 5
+            anchors.margins: 4
             radius: width / 2
             color: Theme.surfaceContainerLowest
             border.width: 1
-            border.color: Qt.alpha(Theme.outlineVariant, 0.45)
+            border.color: Qt.alpha(Theme.outlineVariant, 0.55)
         }
 
-        Rectangle {
+        Repeater {
+            model: 60
+            delegate: Rectangle {
+                required property int index
+                readonly property real tickWidth: index % 5 === 0 ? 2 : 1
+                readonly property real tickHeight: index % 5 === 0 ? 8 : 3
+                x: 80 - width / 2
+                y: 8
+                width: tickWidth
+                height: tickHeight
+                radius: width / 2
+                color: index % 5 === 0 ? Theme.onSurfaceVariant : Theme.outlineVariant
+                transform: Rotation {
+                    origin.x: parent.width / 2
+                    origin.y: 72
+                    angle: index * 6
+                }
+            }
+        }
+
+        Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 12
-            width: 6
-            height: width
-            radius: width / 2
-            color: Theme.primary
+            y: 23
+            text: "12"
+            color: Theme.onSurface
+            font.family: Theme.font
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
+            anchors.rightMargin: 22
+            text: "3"
+            color: Theme.onSurface
+            font.family: Theme.font
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 23
+            text: "6"
+            color: Theme.onSurface
+            font.family: Theme.font
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 22
+            text: "9"
+            color: Theme.onSurface
+            font.family: Theme.font
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
         }
 
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
-            width: 6
-            height: 160 * 0.30
+            width: 7
+            height: 42
             radius: width / 2
-            color: Theme.onSurfaceVariant
+            color: Theme.onSurface
             transformOrigin: Item.Bottom
             rotation: root.hourAngle
-
             Behavior on rotation {
                 RotationAnimation { duration: 360; direction: RotationAnimation.Clockwise; easing.type: Easing.OutCubic }
             }
         }
-
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
-            width: 3
-            height: 160 * 0.40
+            width: 4
+            height: 58
             radius: width / 2
             color: Theme.onSurfaceVariant
             transformOrigin: Item.Bottom
             rotation: root.minuteAngle
         }
-
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.verticalCenter
             width: 2
-            height: 160 * 0.42
-            radius: 1
+            height: 64
+            radius: width / 2
             color: Theme.primary
             transformOrigin: Item.Bottom
             rotation: root.secondAngle
-
             Behavior on rotation {
-                RotationAnimation {
-                    duration: 200
-                    direction: RotationAnimation.Clockwise
-                    easing.type: Easing.Linear
-                }
+                RotationAnimation { duration: 200; direction: RotationAnimation.Clockwise; easing.type: Easing.Linear }
             }
         }
 
         Rectangle {
             anchors.centerIn: parent
-            width: 8
+            width: 12
             height: width
             radius: width / 2
-            color: Theme.onSurfaceVariant
+            color: Theme.onSurface
             z: 2
         }
-
         Rectangle {
-            id: dateBadge
-            x: parent.width / 2 + parent.width * 0.36 - width / 2
-            y: parent.height / 2 + parent.height * 0.04 - height / 2
-            height: 22
-            width: dateLabel.implicitWidth + 16
-            radius: height / 2
+            anchors.centerIn: parent
+            width: 5
+            height: width
+            radius: width / 2
             color: Theme.primary
             z: 3
-
-            Text {
-                id: dateLabel
-                anchors.centerIn: parent
-                text: Qt.formatDate(root.now, "d")
-                color: Theme.onPrimary
-                font.family: Theme.font
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                font.features: ({ "tnum": 1 })
-            }
         }
     }
 }

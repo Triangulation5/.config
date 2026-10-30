@@ -397,7 +397,7 @@ Singleton {
             "https://api.open-meteo.com/v1/forecast?latitude=" + root.lat
             + "&longitude=" + root.lon
             + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m"
-            + "&hourly=temperature_2m,weather_code&forecast_hours=24"
+            + "&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=24"
             + "&daily=weather_code,temperature_2m_max,relative_humidity_2m_mean,sunrise,sunset&forecast_days=5&timezone=auto"]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -414,7 +414,9 @@ Singleton {
                             rows.push({
                                 hour: h.time[i].slice(11, 13),
                                 temp: Math.round(h.temperature_2m[i]),
-                                code: h.weather_code[i]
+                                code: h.weather_code[i],
+                                rain: h.precipitation_probability
+                                    ? Math.round(h.precipitation_probability[i] || 0) : 0
                             });
                         }
                     }

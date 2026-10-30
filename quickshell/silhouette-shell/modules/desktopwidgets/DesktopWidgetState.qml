@@ -13,11 +13,11 @@ Singleton {
     property bool editing: false
 
     readonly property var catalog: [
-        { id: "clock", label: "Analog clock", description: "Scalloped analog clock face", minW: 120, minH: 120, maxW: 260, maxH: 260, x: 78, y: 142, w: 164, h: 164 },
-        { id: "system", label: "System load", description: "CPU history with memory, GPU, and disk readings", minW: 220, minH: 145, maxW: 420, maxH: 280, x: 304, y: 138, w: 260, h: 168 },
-        { id: "moon", label: "Moon calendar", description: "Lunar phase, illumination, and monthly calendar", minW: 250, minH: 160, maxW: 440, maxH: 240, x: 29, y: 321, w: 258, h: 166 },
-        { id: "weather", label: "Hourly weather", description: "Current conditions and an hourly temperature chart", minW: 240, minH: 150, maxW: 480, maxH: 280, x: 304, y: 321, w: 260, h: 166 },
-        { id: "music", label: "Music", description: "Choose a ticket or a minimal music line", minW: 420, minH: 112, maxW: 720, maxH: 190, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
+        { id: "clock", label: "Analog clock", description: "Scalloped analog clock face", minW: 120, minH: 120, x: 78, y: 142, w: 164, h: 164 },
+        { id: "system", label: "System load", description: "CPU history with memory, GPU, and disk readings", minW: 220, minH: 145, x: 304, y: 138, w: 260, h: 168 },
+        { id: "moon", label: "Moon calendar", description: "Lunar phase, illumination, and monthly calendar", minW: 250, minH: 160, x: 29, y: 321, w: 258, h: 166 },
+        { id: "weather", label: "Hourly weather", description: "Current conditions and an hourly temperature chart", minW: 240, minH: 150, x: 304, y: 321, w: 260, h: 166 },
+        { id: "music", label: "Music", description: "Choose a ticket or a minimal music line", minW: 420, minH: 112, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
     ]
 
     readonly property var widgets: {
