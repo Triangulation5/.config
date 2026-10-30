@@ -189,11 +189,11 @@ Item {
             : (link.panelOpen ? 18 * link.s : height / 2)
 
         color: link.panelOpen
-            ? Theme.capsule
+            ? ColorScheme.capsule
             : "transparent"
 
         border.width: link.panelOpen ? 1 : 0
-        border.color: Theme.capsuleBorder
+        border.color: ColorScheme.capsuleBorder
 
         Behavior on width {
             NumberAnimation {

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.services
+import qs.components.controls
 
 /**
  * Lock screen now-playing block: album art, track and meta text, and the
@@ -117,37 +118,17 @@ Column {
         }
     }
 
-    Item {
+    WaveProgress {
         width: 220 * root.s
-        height: 2.2
-
-        Rectangle {
-            anchors.fill: parent
-            radius: BarMode.dwmStyle ? 0 : 1
-            color: Theme.trackBg
-        }
-
-        Rectangle {
-            id: threadFill
-
-            width: parent.width * host.progress
-            height: parent.height
-            radius: 1
-            color: Theme.verm
-        }
-
-        Rectangle {
-            x: Math.min(
-                parent.width - width,
-                Math.max(0, threadFill.width - width / 2)
-            )
-
-            anchors.verticalCenter: parent.verticalCenter
-
-            width: 8 * root.s
-            height: 8 * root.s
-            radius: BarMode.dwmStyle ? 0 : width / 2
-            color: Theme.cream
-        }
+        height: 16 * root.s
+        value: host.progress
+        actualValue: host.progress
+        isPlaying: host.playing
+        lineWidth: 1.6 * root.s
+        wavelength: 22 * root.s
+        amplitude: 2 * root.s
+        trackColor: ColorScheme.trackBg
+        fillColor: Theme.verm
+        playheadColor: Theme.cream
     }
 }

@@ -321,9 +321,9 @@ Item {
             /** Matches the capsule it fills, for the reason given on `squareCapsule`. */
             radius: content.squareCapsule ? 0 : height / 2
 
-            color: content.passwordArmed ? Theme.capsule : "transparent"
+            color: content.passwordArmed ? ColorScheme.capsule : "transparent"
             border.width: content.passwordArmed ? 1 : 0
-            border.color: Theme.capsuleBorder
+            border.color: ColorScheme.capsuleBorder
 
             scale: 0.90 + 0.10 * content.lockMorph
             transformOrigin: Item.Center
@@ -483,7 +483,7 @@ Item {
                 anchors.bottomMargin: 7 * content.s
                 anchors.left: parent.left
                 fadeWidth: 16 * content.s
-                fadeColor: Theme.capsule
+                fadeColor: ColorScheme.capsule
                 active: fadeLatch.shown && fadeLatch.ready
                 opacity: content.revealPassword ? 0.45 : 1
                 Behavior on opacity { NumberAnimation { duration: 160 } }
@@ -497,7 +497,7 @@ Item {
                 anchors.right: parent.right
                 anchors.rightMargin: -2 * content.s
                 fadeWidth: 16 * content.s
-                fadeColor: Theme.capsule
+                fadeColor: ColorScheme.capsule
                 mirrored: true
                 active: fadeLatch.shown && fadeLatch.ready
                 opacity: content.revealPassword ? 0.45 : 1

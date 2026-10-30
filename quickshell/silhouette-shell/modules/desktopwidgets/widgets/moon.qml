@@ -52,7 +52,7 @@ Item {
 
     Row {
         anchors.fill: parent
-        anchors.margins: 12 * root.s
+        anchors.margins: 16 * root.s
         spacing: 10 * root.s
 
         Column {

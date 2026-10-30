@@ -33,8 +33,8 @@ OsdFace {
         anchors.verticalCenter: parent.verticalCenter
         width: 44 * face.s
         height: 44 * face.s
-        radius: (Theme.material ? Theme.radiusSmall : 9) * face.s
-        color: Theme.material ? Theme.surfaceContainerHighest : Theme.tileBg
+        radius: Theme.radiusSmall * face.s
+        color: Theme.surfaceContainerHighest
 
         Image {
             id: cover
@@ -65,7 +65,7 @@ OsdFace {
             width: 18 * face.s
             height: 18 * face.s
             radius: width / 2
-            color: Theme.material ? Theme.surfaceContainerHigh : Qt.alpha(Theme.cardBot, 0.8)
+            color: Theme.surfaceContainerHigh
             visible: srcIcon.status === Image.Ready
 
             Image {
@@ -89,9 +89,7 @@ OsdFace {
         width: 18 * face.s
         height: 18 * face.s
         name: face.playing ? "pause" : "play"
-        color: Theme.material
-            ? "#ffffff"
-            : (face.playing ? Theme.vermLit : Theme.iconDim)
+        color: face.playing ? Theme.primary : Theme.iconDim
     }
 
     Column {

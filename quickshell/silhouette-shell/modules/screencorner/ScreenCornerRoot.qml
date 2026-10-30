@@ -122,7 +122,7 @@ Variants {
         /**
          * Match the pill surface color.
          */
-        readonly property color cornerColor: Theme.capsule
+        readonly property color cornerColor: Theme.cardTop
 
         Repeater {
             model: [

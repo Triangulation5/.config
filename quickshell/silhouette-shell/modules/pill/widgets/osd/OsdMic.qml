@@ -17,7 +17,6 @@ OsdFace {
 
     Rectangle {
         id: micContainer
-        visible: Theme.material
         anchors.left: parent.left
         anchors.leftMargin: 4 * face.s
         anchors.verticalCenter: parent.verticalCenter
@@ -28,7 +27,7 @@ OsdFace {
 
         MouseArea {
             anchors.fill: parent
-            enabled: Theme.material && !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
+            enabled: !!(Pipewire.defaultAudioSource && Pipewire.defaultAudioSource.audio)
             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
             onClicked: {
                 const source = Pipewire.defaultAudioSource;
@@ -40,26 +39,20 @@ OsdFace {
 
     GlyphIcon {
         id: micGlyph
-        anchors.left: Theme.material ? undefined : parent.left
-        anchors.centerIn: Theme.material ? micContainer : undefined
-        anchors.verticalCenter: Theme.material ? undefined : parent.verticalCenter
+        anchors.centerIn: micContainer
         width: 17 * face.s
         height: 17 * face.s
         name: face.micMuted ? "mic-off" : "mic"
-        color: Theme.material
-            ? (face.micMuted ? Theme.error : Theme.primary)
-            : (face.micMuted ? Theme.verm : Theme.vermLit)
+        color: face.micMuted ? Theme.error : Theme.primary
         stroke: 1.7
     }
 
     Text {
-        anchors.left: Theme.material ? micContainer.right : micGlyph.right
+        anchors.left: micContainer.right
         anchors.leftMargin: 12 * face.s
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        text: Theme.material
-            ? (face.micMuted ? "Microphone muted" : "Microphone on")
-            : "Microphone " + (face.micMuted ? "off" : "on")
+        text: face.micMuted ? "Microphone muted" : "Microphone on"
         color: face.micMuted ? Theme.error : Theme.onSurface
         font.family: Theme.font
         font.pixelSize: 11.5 * face.s

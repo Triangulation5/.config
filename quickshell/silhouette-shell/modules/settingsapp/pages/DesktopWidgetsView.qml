@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import qs.modules.desktopwidgets
 import qs.modules.settingsapp.config
 import qs.modules.settingsapp.components
@@ -10,6 +11,8 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 22
 
+    property string searchText: ""
+
     readonly property bool materialEnabled: Store.adapter.style === "material"
 
     function widgetToggle(widget) {
@@ -17,7 +20,7 @@ ColumnLayout {
         return {
             key: "desktopWidget-" + widgetId,
             type: "toggle",
-            label: widget.label,
+            label: widget.category + " · " + widget.label,
             caption: widget.description,
             get: function () { return DesktopWidgetState.isEnabled(widgetId); },
             set: function (value) { DesktopWidgetState.setEnabled(widgetId, value); }
@@ -25,11 +28,11 @@ ColumnLayout {
     }
 
     function rows() {
-        var result = [];
+        var all = [];
         for (var i = 0; i < DesktopWidgetState.catalog.length; i++) {
-            result.push(root.widgetToggle(DesktopWidgetState.catalog[i]));
+            all.push(root.widgetToggle(DesktopWidgetState.catalog[i]));
         }
-        result.push({
+        all.push({
             key: "desktopWidget-clockStyle",
             type: "select",
             label: "Analog clock style",
@@ -39,17 +42,72 @@ ColumnLayout {
             get: function () { return DesktopWidgetState.clockStyle; },
             set: function (value) { DesktopWidgetState.setClockStyle(value); }
         });
-        result.push({
+        all.push({
+            key: "desktopWidget-digitalClockStyle",
+            type: "select",
+            label: "Digital clock style",
+            caption: "Choose the Veil, Bloom, Orbit, Script, Stack, Condensed, or Display face.",
+            options: ["veil", "bloom", "orbit", "script", "stack", "condensed", "display"],
+            names: ["Veil", "Bloom", "Orbit", "Script", "Stack", "Condensed", "Display"],
+            get: function () { return DesktopWidgetState.digitalClockStyle; },
+            set: function (value) { DesktopWidgetState.setDigitalClockStyle(value); }
+        });
+        all.push({
             key: "desktopWidget-musicStyle",
             type: "select",
             label: "Music widget style",
-            caption: "Choose the ticket design or a minimal player with a live squiggle.",
-            options: ["ticket", "line"],
-            names: ["Music Ticket", "Music + squiggle"],
+            caption: "Choose the ticket design or a minimal player with a live waveform.",
+            options: ["ticket", "waveform"],
+            names: ["Music Ticket", "Music + waveform"],
             get: function () { return DesktopWidgetState.musicStyle; },
             set: function (value) { DesktopWidgetState.setMusicStyle(value); }
         });
-        return result;
+        all.push({
+            key: "desktopWidgetNotes",
+            type: "text",
+            label: "Sticky note text",
+            caption: "Text shown by the desktop Note widget.",
+            placeholder: "Write a note",
+            get: function () { return Store.adapter.desktopWidgetNotes; },
+            set: function (value) { Store.set("desktopWidgetNotes", value); }
+        });
+        all.push({
+            key: "desktopWidgetPhoto",
+            type: "text",
+            label: "Photo frame image path",
+            caption: "Path to a local image file for the Photo Frame widget.",
+            placeholder: "~/Pictures/photo.jpg",
+            get: function () { return Store.adapter.desktopWidgetPhoto; },
+            set: function (value) { Store.set("desktopWidgetPhoto", value); }
+        });
+        all.push({
+            key: "desktopWidgetPomodoro",
+            type: "action",
+            label: "Pomodoro timer",
+            caption: "Start or pause the focus timer shown by the Pomodoro widget.",
+            button: DesktopWidgetState.focusTimerRunning ? "Pause" : "Start",
+            done: "Done",
+            action: function () { DesktopWidgetState.toggleFocusTimer(); }
+        });
+        all.push({
+            key: "desktopWidgetPomodoroReset",
+            type: "action",
+            label: "Reset Pomodoro timer",
+            caption: "Reset the focus timer to 25 minutes.",
+            button: "Reset",
+            done: "Reset",
+            action: function () { DesktopWidgetState.resetFocusTimer(); }
+        });
+        var query = root.searchText.trim().toLowerCase();
+        if (query.length === 0)
+            return all;
+        var filtered = [];
+        for (var j = 0; j < all.length; j++) {
+            var row = all[j];
+            if ((row.label + " " + row.caption).toLowerCase().indexOf(query) >= 0)
+                filtered.push(row);
+        }
+        return filtered;
     }
 
     Rectangle {
@@ -66,7 +124,7 @@ ColumnLayout {
 
             Text {
                 Layout.fillWidth: true
-                text: "Choose your desktop widgets"
+                text: "Choose from 45 desktop widgets"
                 color: Theme.text
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSizeNormal
@@ -76,7 +134,7 @@ ColumnLayout {
             Text {
                 Layout.fillWidth: true
                 text: root.materialEnabled
-                    ? "Widgets are shown on the desktop only in Material style. Arrange them freely, resize from a corner, and changes save as you go."
+                    ? "Search the catalog below. Widgets appear only in Material style; arrange them freely, resize from a corner, and changes save as you go."
                     : "Desktop widgets are Material-only. Switch Design style to Material to show and arrange them."
                 color: Theme.textSecondary
                 font.family: Theme.fontFamily
@@ -138,8 +196,46 @@ ColumnLayout {
         }
     }
 
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: 52
+        radius: Theme.radiusCard
+        color: Theme.card
+
+        TextField {
+            anchors.fill: parent
+            anchors.margins: 7
+            text: root.searchText
+            placeholderText: "Search desktop widgets"
+            placeholderTextColor: Theme.textSecondary
+            color: Theme.text
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSizeSmall
+            selectByMouse: true
+
+            background: Rectangle {
+                radius: Theme.radiusRow
+                color: Theme.searchField
+                border.width: parent.activeFocus ? 1 : 0
+                border.color: Qt.alpha(Theme.accent, 0.5)
+            }
+
+            onTextChanged: root.searchText = text
+        }
+    }
+
     SettingGroup {
-        group: ({ card: "Available widgets", rows: root.rows() })
+        group: ({ card: "Widget catalog", rows: root.rows() })
+    }
+
+    Text {
+        Layout.fillWidth: true
+        visible: root.searchText.trim().length > 0 && root.rows().length === 0
+        text: "No desktop widgets match “" + root.searchText.trim() + "”."
+        color: Theme.textSecondary
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeSmall
+        horizontalAlignment: Text.AlignHCenter
     }
 
     Rectangle {

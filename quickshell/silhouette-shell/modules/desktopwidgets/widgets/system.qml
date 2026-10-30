@@ -43,7 +43,7 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: 16 * root.s
         anchors.rightMargin: 16 * root.s
-        anchors.topMargin: 13 * root.s
+        anchors.topMargin: 14 * root.s
         spacing: 7 * root.s
 
         GlyphIcon {
@@ -86,7 +86,7 @@ Item {
     Row {
         id: hero
         anchors.left: parent.left
-        anchors.leftMargin: 18 * root.s
+        anchors.leftMargin: 16 * root.s
         anchors.top: header.bottom
         anchors.topMargin: 5 * root.s
         spacing: 7 * root.s
@@ -114,8 +114,8 @@ Item {
         id: graph
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.leftMargin: 15 * root.s
-        anchors.rightMargin: 15 * root.s
+        anchors.leftMargin: 16 * root.s
+        anchors.rightMargin: 16 * root.s
         anchors.top: hero.bottom
         anchors.bottom: footer.top
         anchors.topMargin: 1 * root.s

@@ -50,6 +50,11 @@ Gakuseei.
 same Ricelin base, and the system monitor's ping and network speed test takes
 its cue from that shell's version of the card.
 
+**The desktop widgets take inspiration from Nebula.**
+[Nebula](https://github.com/iamSt3el/Nebula) was the reference for expanding
+Silhouette's Material-style desktop widget catalog. The widgets here are
+implemented for this shell and its services.
+
 **Not everything here is hand-written.** Parts of the shell and the scripts
 were written with AI assistance, and several features take code or ideas from
 other Quickshell projects, all named in Credits below. Vendored third-party
@@ -219,6 +224,8 @@ my machine or my habits and will look strange anywhere else:
 - [Ukishima](https://github.com/amanhex/ukishima) by
   [amanhex](https://github.com/amanhex) — the system monitor's ping and network
   speed test was inspired by its version.
+- [Nebula](https://github.com/iamSt3el/Nebula) — inspiration and visual
+  reference for the Material-style desktop widget catalog.
 - [vague.nvim](https://github.com/vague-theme/vague.nvim) — the static palette
   is a port of it, from the terminal to the yazi flavor.
 - [Ambxst](https://github.com/Axenide/Ambxst) by

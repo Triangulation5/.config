@@ -15,7 +15,6 @@ OsdFace {
 
     Rectangle {
         id: recordContainer
-        visible: Theme.material
         anchors.left: parent.left
         anchors.leftMargin: 4 * face.s
         anchors.verticalCenter: parent.verticalCenter
@@ -27,15 +26,12 @@ OsdFace {
 
     Rectangle {
         id: recGlyph
-        anchors.left: Theme.material ? undefined : parent.left
-        anchors.centerIn: Theme.material ? recordContainer : undefined
+        anchors.centerIn: recordContainer
         anchors.verticalCenter: parent.verticalCenter
-        width: (Theme.material ? 12 : 13) * face.s
+        width: 12 * face.s
         height: 13 * face.s
         radius: width / 2
-        color: Theme.material
-            ? (face.recordStarted ? Theme.error : Theme.onSurfaceVariant)
-            : (face.recordStarted ? Theme.verm : Theme.dim)
+        color: face.recordStarted ? Theme.error : Theme.onSurfaceVariant
 
         SequentialAnimation on opacity {
             running: face.recordStarted && face.active
@@ -46,12 +42,12 @@ OsdFace {
     }
 
     Text {
-        anchors.left: Theme.material ? recordContainer.right : recGlyph.right
+        anchors.left: recordContainer.right
         anchors.leftMargin: 13 * face.s
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         text: face.recordStarted ? "Recording started" : "Recording stopped"
-        color: Theme.material ? Theme.onSurface : Theme.cream
+        color: Theme.onSurface
         font.family: Theme.font
         font.pixelSize: 11.5 * face.s
         font.weight: Font.DemiBold

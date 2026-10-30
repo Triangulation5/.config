@@ -17,6 +17,19 @@ Variants {
         readonly property real scaleFactor: Math.max(0.62, Math.min(1.25,
             Math.min(modelData.width / 1600, modelData.height / 900) * Flags.uiScale))
         property var musicWidget: null
+        readonly property var activePlayer: Players.active
+        readonly property bool hasActivePlayer: activePlayer !== null && activePlayer !== undefined
+
+        function widgetInput(widgetId, inputName) {
+            for (var i = 0; i < widgetRepeater.count; i++) {
+                var frame = widgetRepeater.itemAt(i);
+                if (!frame || frame.modelData.id !== widgetId || !frame.widgetEnabled
+                        || !frame.loadedWidget)
+                    continue;
+                return frame.loadedWidget[inputName] || null;
+            }
+            return null;
+        }
 
         screen: modelData
         color: "transparent"
@@ -51,23 +64,96 @@ Variants {
             }
             Region {
                 item: desktop.musicWidget
-                    && DesktopWidgetState.musicStyle === "line"
+                    && DesktopWidgetState.musicStyle === "waveform"
                     && desktop.musicWidget.lineSeekEnabled
                     ? desktop.musicWidget.lineSeekInput : null
                 intersection: Intersection.Combine
             }
             Region {
                 item: desktop.musicWidget
-                    && DesktopWidgetState.musicStyle === "line"
+                    && DesktopWidgetState.musicStyle === "waveform"
                     && desktop.musicWidget.lineTransportEnabled
                     ? desktop.musicWidget.lineTransportInput : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && (desktop.activePlayer.canTogglePlaying
+                    || desktop.activePlayer.canGoPrevious || desktop.activePlayer.canGoNext)
+                    ? desktop.widgetInput("musicExpressive", "musicTransportInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && desktop.activePlayer.canSeek
+                    && desktop.activePlayer.positionSupported
+                    && Players.lengthSec > 0 && !Players.live
+                    ? desktop.widgetInput("musicExpressive", "musicSeekInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && (desktop.activePlayer.canTogglePlaying
+                    || desktop.activePlayer.canGoPrevious || desktop.activePlayer.canGoNext)
+                    ? desktop.widgetInput("musicDisc", "musicTransportInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && desktop.activePlayer.canSeek
+                    && desktop.activePlayer.positionSupported
+                    && Players.lengthSec > 0 && !Players.live
+                    ? desktop.widgetInput("musicDisc", "musicSeekInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && (desktop.activePlayer.canTogglePlaying
+                    || desktop.activePlayer.canGoPrevious || desktop.activePlayer.canGoNext)
+                    ? desktop.widgetInput("musicDeck", "musicTransportInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && desktop.activePlayer.canSeek
+                    && desktop.activePlayer.positionSupported
+                    && Players.lengthSec > 0 && !Players.live
+                    ? desktop.widgetInput("musicDeck", "musicSeekInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && (desktop.activePlayer.canTogglePlaying
+                    || desktop.activePlayer.canGoPrevious || desktop.activePlayer.canGoNext)
+                    ? desktop.widgetInput("musicRail", "musicTransportInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && desktop.activePlayer.canSeek
+                    && desktop.activePlayer.positionSupported
+                    && Players.lengthSec > 0 && !Players.live
+                    ? desktop.widgetInput("musicRail", "musicSeekInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && (desktop.activePlayer.canTogglePlaying
+                    || desktop.activePlayer.canGoPrevious || desktop.activePlayer.canGoNext)
+                    ? desktop.widgetInput("musicPulse", "musicTransportInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: desktop.hasActivePlayer && desktop.activePlayer.canSeek
+                    && desktop.activePlayer.positionSupported
+                    && Players.lengthSec > 0 && !Players.live
+                    ? desktop.widgetInput("musicPulse", "musicSeekInput") : null
+                intersection: Intersection.Combine
+            }
+            Region {
+                item: DesktopWidgetState.isEnabled("pomodoro")
+                    ? desktop.widgetInput("pomodoro", "timerInput") : null
                 intersection: Intersection.Combine
             }
         }
 
         Component.onCompleted: {
-            Sysmon.desktopOpen = DesktopWidgetState.isEnabled("system");
-            if (DesktopWidgetState.isEnabled("moon") || DesktopWidgetState.isEnabled("weather"))
+            if (Flags.ready)
+                DesktopWidgetState.handleFlagsReady();
+            Sysmon.desktopOpen = DesktopWidgetState.isCategoryEnabled("System");
+            if (DesktopWidgetState.isCategoryEnabled("Weather")
+                    || DesktopWidgetState.isEnabled("moon"))
                 Weather.needed = true;
         }
         Component.onDestruction: Sysmon.desktopOpen = false
@@ -75,9 +161,17 @@ Variants {
         Connections {
             target: DesktopWidgetState
             function onLayoutChanged() {
-                Sysmon.desktopOpen = DesktopWidgetState.isEnabled("system");
-                if (DesktopWidgetState.isEnabled("moon") || DesktopWidgetState.isEnabled("weather"))
+                Sysmon.desktopOpen = DesktopWidgetState.isCategoryEnabled("System");
+                if (DesktopWidgetState.isCategoryEnabled("Weather")
+                        || DesktopWidgetState.isEnabled("moon"))
                     Weather.needed = true;
+            }
+        }
+
+        Connections {
+            target: Flags
+            function onReadyChanged() {
+                DesktopWidgetState.handleFlagsReady();
             }
         }
 
@@ -95,6 +189,14 @@ Variants {
                 z: 0
             }
 
+            property var draggedFrame: null
+            property point pointerStart
+            property real dragXStart: 0
+            property real dragYStart: 0
+            property real dragWidthStart: 0
+            property real dragHeightStart: 0
+            property bool dragResizing: false
+
             Repeater {
                 id: widgetRepeater
                 model: DesktopWidgetState.catalog
@@ -104,7 +206,8 @@ Variants {
 
                     required property var modelData
 
-                    readonly property var settings: DesktopWidgetState.widget(frame.modelData.id)
+                    property var settings: DesktopWidgetState.widget(frame.modelData.id)
+                    readonly property var loadedWidget: widgetLoader.item
                     readonly property bool widgetEnabled: DesktopWidgetState.isEnabled(frame.modelData.id)
                     property real liveX: settings ? settings.x : modelData.x
                     property real liveY: settings ? settings.y : modelData.y
@@ -125,14 +228,15 @@ Variants {
                     function syncFromSettings() {
                         if (frame.moving || frame.resizing)
                             return;
-                        if (!frame.settings)
+                        var currentSettings = DesktopWidgetState.widget(frame.modelData.id);
+                        if (!currentSettings)
                             return;
-                        frame.liveX = frame.settings.x;
-                        frame.liveY = frame.settings.y;
-                        frame.liveWidth = frame.settings.w;
-                        frame.liveHeight = frame.settings.h;
+                        frame.settings = currentSettings;
+                        frame.liveX = currentSettings.x;
+                        frame.liveY = currentSettings.y;
+                        frame.liveWidth = currentSettings.w;
+                        frame.liveHeight = currentSettings.h;
                     }
-                    onSettingsChanged: frame.syncFromSettings()
 
                     Connections {
                         target: DesktopWidgetState
@@ -174,13 +278,27 @@ Variants {
                     Loader {
                         id: widgetLoader
                         anchors.fill: parent
-                        source: Qt.resolvedUrl("widgets/" + frame.modelData.id + ".qml")
-                        active: frame.widgetEnabled || DesktopWidgetState.editing
+                        source: ["clock", "system", "moon", "weather", "music"].indexOf(
+                            frame.modelData.id) >= 0
+                            ? Qt.resolvedUrl("widgets/" + frame.modelData.id + ".qml")
+                            : Qt.resolvedUrl("widgets/catalog.qml")
+                        active: frame.widgetEnabled
                         enabled: !DesktopWidgetState.editing
                         asynchronous: true
-                        onLoaded: if (frame.modelData.id === "music") desktop.musicWidget = item
-                        onItemChanged: if (frame.modelData.id === "music" && item === null)
-                            desktop.musicWidget = null
+                        onLoaded: {
+                            if (frame.modelData.id === "music")
+                                desktop.musicWidget = item;
+                            else if (item && ["clock", "system", "moon", "weather", "music"].indexOf(
+                                frame.modelData.id) < 0)
+                                item.widgetData = frame.modelData;
+                        }
+                        onItemChanged: {
+                            if (frame.modelData.id === "music" && item === null)
+                                desktop.musicWidget = null;
+                            else if (item && ["clock", "system", "moon", "weather", "music"].indexOf(
+                                frame.modelData.id) < 0)
+                                item.widgetData = frame.modelData;
+                        }
                     }
 
                     Rectangle {
@@ -205,58 +323,97 @@ Variants {
                         z: 4
                     }
 
-                    DragHandler {
-                        id: widgetEditorInput
-                        enabled: DesktopWidgetState.editing && frame.widgetEnabled
-                        acceptedButtons: Qt.LeftButton
-                        acceptedDevices: PointerDevice.Mouse
-                        target: null
-                        property bool resizing: false
-                        property real xStart: 0
-                        property real yStart: 0
-                        property real widthStart: 0
-                        property real heightStart: 0
-                        cursorShape: resizing ? Qt.SizeFDiagCursor
-                            : (active ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+                }
+            }
 
-                        onActiveChanged: {
-                            if (active) {
-                                xStart = frame.liveX;
-                                yStart = frame.liveY;
-                                widthStart = frame.liveWidth;
-                                heightStart = frame.liveHeight;
-                                resizing = centroid.pressPosition.x >= frame.width - 32 * desktop.scaleFactor
-                                    && centroid.pressPosition.y >= frame.height - 32 * desktop.scaleFactor;
-                                frame.moving = !resizing;
-                                frame.resizing = resizing;
-                            } else {
-                                DesktopWidgetState.saveGeometry(frame.modelData.id,
-                                    frame.liveX, frame.liveY, frame.liveWidth, frame.liveHeight);
-                                frame.moving = false;
-                                frame.resizing = false;
-                            }
-                        }
+            MouseArea {
+                id: widgetArrangeInput
+                anchors.fill: parent
+                enabled: DesktopWidgetState.editing
+                visible: enabled
+                z: 8
+                acceptedButtons: Qt.LeftButton
+                hoverEnabled: true
+                preventStealing: true
+                property var hoverFrame: null
+                property bool hoverResize: false
+                cursorShape: pressed
+                    ? (focusScope.dragResizing ? Qt.SizeFDiagCursor : Qt.ClosedHandCursor)
+                    : (hoverFrame ? (hoverResize ? Qt.SizeFDiagCursor : Qt.OpenHandCursor)
+                        : Qt.ArrowCursor)
 
-                        onTranslationChanged: {
-                            if (!active)
-                                return;
-                            var dx = translation.x / desktop.scaleFactor;
-                            var dy = translation.y / desktop.scaleFactor;
-                            if (resizing) {
-                                var maxWidth = desktop.width / desktop.scaleFactor - xStart;
-                                var maxHeight = desktop.height / desktop.scaleFactor - yStart;
-                                frame.liveWidth = Math.max(frame.modelData.minW,
-                                    Math.min(maxWidth, widthStart + dx));
-                                frame.liveHeight = Math.max(frame.modelData.minH,
-                                    Math.min(maxHeight, heightStart + dy));
-                            } else {
-                                frame.liveX = frame.clamp(xStart + dx,
-                                    0, desktop.width / desktop.scaleFactor - frame.liveWidth);
-                                frame.liveY = frame.clamp(yStart + dy,
-                                    0, desktop.height / desktop.scaleFactor - frame.liveHeight);
-                            }
-                        }
+                function frameAt(x, y) {
+                    for (var i = widgetRepeater.count - 1; i >= 0; i--) {
+                        var candidate = widgetRepeater.itemAt(i);
+                        if (candidate && candidate.widgetEnabled
+                                && x >= candidate.x && x <= candidate.x + candidate.width
+                                && y >= candidate.y && y <= candidate.y + candidate.height)
+                            return candidate;
                     }
+                    return null;
+                }
+
+                function finishDrag() {
+                    if (!focusScope.draggedFrame)
+                        return;
+                    var target = focusScope.draggedFrame;
+                    DesktopWidgetState.saveGeometry(target.modelData.id,
+                        target.liveX, target.liveY, target.liveWidth, target.liveHeight);
+                    target.moving = false;
+                    target.resizing = false;
+                    focusScope.draggedFrame = null;
+                }
+
+                onPositionChanged: function (mouse) {
+                    if (!pressed) {
+                        hoverFrame = frameAt(mouse.x, mouse.y);
+                        hoverResize = hoverFrame
+                            && mouse.x >= hoverFrame.x + hoverFrame.width - 32 * desktop.scaleFactor
+                            && mouse.y >= hoverFrame.y + hoverFrame.height - 32 * desktop.scaleFactor;
+                        return;
+                    }
+                    var target = focusScope.draggedFrame;
+                    if (!target)
+                        return;
+                    var dx = (mouse.x - focusScope.pointerStart.x) / desktop.scaleFactor;
+                    var dy = (mouse.y - focusScope.pointerStart.y) / desktop.scaleFactor;
+                    if (focusScope.dragResizing) {
+                        var maxWidth = desktop.width / desktop.scaleFactor - focusScope.dragXStart;
+                        var maxHeight = desktop.height / desktop.scaleFactor - focusScope.dragYStart;
+                        target.liveWidth = Math.max(target.modelData.minW,
+                            Math.min(maxWidth, focusScope.dragWidthStart + dx));
+                        target.liveHeight = Math.max(target.modelData.minH,
+                            Math.min(maxHeight, focusScope.dragHeightStart + dy));
+                    } else {
+                        target.liveX = target.clamp(focusScope.dragXStart + dx,
+                            0, desktop.width / desktop.scaleFactor - target.liveWidth);
+                        target.liveY = target.clamp(focusScope.dragYStart + dy,
+                            0, desktop.height / desktop.scaleFactor - target.liveHeight);
+                    }
+                }
+
+                onPressed: function (mouse) {
+                    var target = frameAt(mouse.x, mouse.y);
+                    if (!target)
+                        return;
+                    focusScope.draggedFrame = target;
+                    focusScope.pointerStart = Qt.point(mouse.x, mouse.y);
+                    focusScope.dragXStart = target.liveX;
+                    focusScope.dragYStart = target.liveY;
+                    focusScope.dragWidthStart = target.liveWidth;
+                    focusScope.dragHeightStart = target.liveHeight;
+                    focusScope.dragResizing = mouse.x >= target.x + target.width - 32 * desktop.scaleFactor
+                        && mouse.y >= target.y + target.height - 32 * desktop.scaleFactor;
+                    target.moving = !focusScope.dragResizing;
+                    target.resizing = focusScope.dragResizing;
+                    hoverResize = focusScope.dragResizing;
+                }
+
+                onReleased: finishDrag()
+                onCanceled: finishDrag()
+                onExited: {
+                    hoverFrame = null;
+                    hoverResize = false;
                 }
             }
 

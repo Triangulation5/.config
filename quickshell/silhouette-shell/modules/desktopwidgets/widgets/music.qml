@@ -13,19 +13,20 @@ Item {
     readonly property real perforationX: width - stubWidth
     readonly property real radius: Math.min(22 * s, height * 0.25)
     readonly property var player: Players.active
+    readonly property bool hasPlayer: player !== null && player !== undefined
     readonly property real length: Players.lengthSec
-    readonly property real position: Players.has ? Math.max(0, player.position) : 0
+    readonly property real position: hasPlayer ? Math.max(0, player.position) : 0
     readonly property real progress: length > 0 ? Math.max(0, Math.min(1, position / length)) : 0
     readonly property string title: Players.has && Players.title.length > 0 ? Players.title : "Nothing playing"
     readonly property string artist: Players.has ? Players.artist : "Start a track to see it here"
-    readonly property string album: Players.has && player.trackAlbum ? player.trackAlbum : "\u2014"
+    readonly property string album: hasPlayer && player.trackAlbum ? player.trackAlbum : "\u2014"
     readonly property string source: Players.serviceLabel.length > 0 ? Players.serviceLabel : "\u2014"
     readonly property bool ticketMode: DesktopWidgetState.musicStyle === "ticket"
-    readonly property bool ticketTransportEnabled: Players.has && player.canTogglePlaying
-    readonly property bool lineTransportEnabled: Players.has && player.canTogglePlaying
-    readonly property bool ticketSeekEnabled: Players.has && player.canSeek
+    readonly property bool ticketTransportEnabled: hasPlayer && player.canTogglePlaying
+    readonly property bool lineTransportEnabled: hasPlayer && player.canTogglePlaying
+    readonly property bool ticketSeekEnabled: hasPlayer && player.canSeek
         && player.positionSupported && length > 0 && !Players.live
-    readonly property bool lineSeekEnabled: Players.has && player.canSeek
+    readonly property bool lineSeekEnabled: hasPlayer && player.canSeek
         && player.positionSupported && length > 0 && !Players.live
     readonly property alias ticketSeekInput: ticketSeekMouseArea
     readonly property alias ticketTransportInput: ticketTransportRow
@@ -42,8 +43,8 @@ Item {
     Timer {
         interval: 500
         repeat: true
-        running: Players.has && Players.active.positionSupported
-        onTriggered: if (Players.has) Players.active.positionChanged()
+        running: root.hasPlayer && root.player.positionSupported
+        onTriggered: if (root.hasPlayer) root.player.positionChanged()
     }
 
     Shape {
@@ -98,8 +99,8 @@ Item {
 
     Item {
         visible: root.ticketMode
-        x: 18 * root.s
-        y: 12 * root.s
+        x: 16 * root.s
+        y: 14 * root.s
         width: root.perforationX - 34 * root.s
         height: parent.height - 24 * root.s
 
@@ -262,9 +263,12 @@ Item {
             MouseArea {
                 id: ticketSeekMouseArea
                 anchors.fill: parent
-                enabled: Players.has && player.canSeek && player.positionSupported && root.length > 0 && !Players.live
+                enabled: root.hasPlayer && player.canSeek && player.positionSupported
+                    && root.length > 0 && !Players.live
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: function (mouse) {
+                    if (!root.hasPlayer)
+                        return;
                     var target = Math.max(0, Math.min(1, mouse.x / width)) * root.length;
                     player.position = target;
                     player.positionChanged();
@@ -279,19 +283,19 @@ Item {
 
             TransportButton {
                 icon: "prev"
-                enabled: Players.has && player.canGoPrevious
-                onActivated: if (Players.has) player.previous()
+                enabled: root.hasPlayer && player.canGoPrevious
+                onActivated: if (root.hasPlayer) player.previous()
             }
             TransportButton {
                 icon: Players.playing ? "pause" : "play"
                 highlighted: true
-                enabled: Players.has && player.canTogglePlaying
-                onActivated: if (Players.has) player.togglePlaying()
+                enabled: root.hasPlayer && player.canTogglePlaying
+                onActivated: if (root.hasPlayer) player.togglePlaying()
             }
             TransportButton {
                 icon: "next"
-                enabled: Players.has && player.canGoNext
-                onActivated: if (Players.has) player.next()
+                enabled: root.hasPlayer && player.canGoNext
+                onActivated: if (root.hasPlayer) player.next()
             }
         }
     }
@@ -310,8 +314,8 @@ Item {
         }
 
         Text {
-            x: 18 * root.s
-            y: 12 * root.s
+            x: 16 * root.s
+            y: 14 * root.s
             text: "NOW PLAYING"
             color: Theme.primary
             font.family: Theme.font
@@ -322,8 +326,8 @@ Item {
 
         Text {
             id: lineTitle
-            x: 18 * root.s
-            y: 27 * root.s
+            x: 16 * root.s
+            y: 29 * root.s
             width: parent.width - 156 * root.s
             text: root.title
             color: Theme.onSurface
@@ -357,19 +361,19 @@ Item {
 
             TransportButton {
                 icon: "prev"
-                enabled: Players.has && player.canGoPrevious
-                onActivated: if (Players.has) player.previous()
+                enabled: root.hasPlayer && player.canGoPrevious
+                onActivated: if (root.hasPlayer) player.previous()
             }
             TransportButton {
                 icon: Players.playing ? "pause" : "play"
                 highlighted: true
-                enabled: Players.has && player.canTogglePlaying
-                onActivated: if (Players.has) player.togglePlaying()
+                enabled: root.hasPlayer && player.canTogglePlaying
+                onActivated: if (root.hasPlayer) player.togglePlaying()
             }
             TransportButton {
                 icon: "next"
-                enabled: Players.has && player.canGoNext
-                onActivated: if (Players.has) player.next()
+                enabled: root.hasPlayer && player.canGoNext
+                onActivated: if (root.hasPlayer) player.next()
             }
         }
 
@@ -377,10 +381,10 @@ Item {
             id: waveform
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: 18 * root.s
-            anchors.rightMargin: 18 * root.s
+            anchors.leftMargin: 16 * root.s
+            anchors.rightMargin: 16 * root.s
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 15 * root.s
+            anchors.bottomMargin: 12 * root.s
             height: 20 * root.s
             value: root.progress
             actualValue: root.progress
@@ -396,10 +400,12 @@ Item {
             MouseArea {
                 id: lineSeekMouseArea
                 anchors.fill: parent
-                enabled: Players.has && player.canSeek && player.positionSupported
+                enabled: root.hasPlayer && player.canSeek && player.positionSupported
                     && root.length > 0 && !Players.live
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: function (mouse) {
+                    if (!root.hasPlayer)
+                        return;
                     player.position = Math.max(0, Math.min(1, mouse.x / width)) * root.length;
                     player.positionChanged();
                 }

@@ -27,6 +27,11 @@ Item {
 
     readonly property var glyphs: ({
         "sun": { d: "M16 12a4 4 0 1 0-8 0a4 4 0 1 0 8 0 M12 2v2 M12 20v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M2 12h2 M20 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4", fill: false },
+        "calendar": { d: "M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M7 2v4 M17 2v4 M3 9h18 M7 13h.01 M12 13h.01 M17 13h.01 M7 17h.01 M12 17h.01", fill: false },
+        "memory": { d: "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M9 9h6v6H9z M8 2v2 M12 2v2 M16 2v2 M8 20v2 M12 20v2 M16 20v2 M2 8h2 M2 12h2 M2 16h2 M20 8h2 M20 12h2 M20 16h2", fill: false },
+        "thermometer": { d: "M14 14.8V5a3 3 0 0 0-6 0v9.8a5 5 0 1 0 6 0z M11 11v6", fill: false },
+        "notifications": { d: "M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4", fill: false },
+        "note": { d: "M5 3h14a2 2 0 0 1 2 2v11l-5 5H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 8h8 M8 12h8 M8 16h4 M16 21v-5h5", fill: false },
         "moon": { d: "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z", fill: false },
         "cloud": { d: "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z", fill: false },
         "cloud-rain": { d: "M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2 M16 14v5 M8 14v5 M12 16v5", fill: false },
@@ -105,7 +110,7 @@ Item {
         "network-off": { d: "M4 9.5C9 4.8 15 4.8 20 9.5 M7 13c3-2.8 7-2.8 10 0 M3 3l18 18", fill: false },
         "eye": { d: "M2 12s3.5-6 10-6s10 6 10 6s-3.5 6-10 6S2 12 2 12z M12 15a3 3 0 1 0 0-6a3 3 0 0 0 0 6z", fill: false },
         "eye-off": { d: "M3 3l18 18 M10.6 10.6a2 2 0 0 0 2.8 2.8 M9.9 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-4 4.8 M6.2 6.2C3.6 8 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 3.2-.5", fill: false },
-        "user": { d: "M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2", fill: false },
+        "user": { d: "M12 3a4 4 0 1 0 0 8a4 4 0 0 0 0-8z M4 21a8 8 0 0 1 16 0", fill: false },
         "airplane": { d: "M22 2L11 13 M22 2l-5 18-5-9-9-4z", fill: false },
         "search": { d: "M11 3a8 8 0 1 0 4.9 14.3l4.3 4.3 1.4-1.4-4.3-4.3A8 8 0 0 0 11 3zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z", fill: false },
         "terminal": { d: "M5 6h14a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z M8 13h4 M8 16h6", fill: false },

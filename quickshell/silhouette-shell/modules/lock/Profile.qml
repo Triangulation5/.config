@@ -122,7 +122,7 @@ Item {
         height: width
         radius: width / 2
 
-        color: Theme.capsule
+        color: ColorScheme.capsule
 
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -221,7 +221,7 @@ Item {
             radius: width / 2
             color: "transparent"
             border.width: 1
-            border.color: Theme.capsuleBorder
+            border.color: ColorScheme.capsuleBorder
         }
 
         GlyphIcon {

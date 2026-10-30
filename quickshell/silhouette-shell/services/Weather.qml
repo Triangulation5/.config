@@ -37,6 +37,8 @@ Singleton {
     property int tempNow: 0
     property int codeNow: 0
     property int humidity: 0
+    property real windSpeed: 0
+    property int windDirection: 0
     property bool isDay: true
     property string city: ""
     property var hourly: []
@@ -45,6 +47,7 @@ Singleton {
     /** Sunrise/sunset as "HH:MM" 24h strings (today, from the daily block). */
     property string sunrise: ""
     property string sunset: ""
+    property int utcOffsetSeconds: -new Date().getTimezoneOffset() * 60
 
     /** Moon phase name for today's date, computed locally (no network). */
     property string moonPhase: "New moon"
@@ -136,9 +139,12 @@ Singleton {
             tempNow: root.tempNow,
             codeNow: root.codeNow,
             humidity: root.humidity,
+            windSpeed: root.windSpeed,
+            windDirection: root.windDirection,
             isDay: root.isDay,
             sunrise: root.sunrise,
             sunset: root.sunset,
+            utcOffsetSeconds: root.utcOffsetSeconds,
             hourly: root.hourly,
             daily: root.daily,
             ts: Date.now()
@@ -160,9 +166,13 @@ Singleton {
             root.tempNow = c.tempNow || 0;
             root.codeNow = c.codeNow;
             root.humidity = c.humidity || 0;
+            root.windSpeed = c.windSpeed || 0;
+            root.windDirection = c.windDirection || 0;
             root.isDay = c.isDay !== false;
             root.sunrise = typeof c.sunrise === "string" ? c.sunrise : "";
             root.sunset = typeof c.sunset === "string" ? c.sunset : "";
+            root.utcOffsetSeconds = typeof c.utcOffsetSeconds === "number"
+                ? c.utcOffsetSeconds : -new Date().getTimezoneOffset() * 60;
             root.hourly = Array.isArray(c.hourly) ? c.hourly : [];
             root.daily = Array.isArray(c.daily) ? c.daily : [];
             root.ready = true;
@@ -396,7 +406,7 @@ Singleton {
         command: ["curl", "-s", "--max-time", "10",
             "https://api.open-meteo.com/v1/forecast?latitude=" + root.lat
             + "&longitude=" + root.lon
-            + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m"
+            + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
             + "&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=24"
             + "&daily=weather_code,temperature_2m_max,relative_humidity_2m_mean,sunrise,sunset&forecast_days=5&timezone=auto"]
         stdout: StdioCollector {
@@ -426,8 +436,11 @@ Singleton {
                         var dn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
                         var m = Math.min(dd.time.length, dd.weather_code.length, dd.temperature_2m_max.length, dd.relative_humidity_2m_mean.length);
                         for (var j = 0; j < m; j++) {
+                            var dateParts = dd.time[j].split("-");
+                            var localDate = new Date(Number(dateParts[0]),
+                                Number(dateParts[1]) - 1, Number(dateParts[2]));
                             days.push({
-                                day: dn[new Date(dd.time[j]).getDay()],
+                                day: dn[localDate.getDay()],
                                 code: dd.weather_code[j],
                                 temp: Math.round(dd.temperature_2m_max[j]),
                                 rh: Math.round(dd.relative_humidity_2m_mean[j])
@@ -444,7 +457,11 @@ Singleton {
                     root.tempNow = Math.round(cur.temperature_2m);
                     root.codeNow = cur.weather_code;
                     root.humidity = Math.round(cur.relative_humidity_2m);
+                    root.windSpeed = Math.round(cur.wind_speed_10m || 0);
+                    root.windDirection = Math.round(cur.wind_direction_10m || 0);
                     root.isDay = cur.is_day === 1;
+                    if (typeof d.utc_offset_seconds === "number")
+                        root.utcOffsetSeconds = d.utc_offset_seconds;
                     root.hourly = rows;
                     root.daily = days;
                     root.ready = true;

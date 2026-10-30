@@ -21,11 +21,10 @@ Singleton {
     property alias showGlyphs: adapter.showGlyphs
     /**
      * The shell's design language: "washi" (the paper-flat look the shell was
-     * built around) or "material" (Google's Material 3 / Material You surface
-     * treatment). Read by services/Style.qml, which owns every shape, material
-     * and motion token the choice changes. It is separate from `paletteMode`:
-     * the palette decides what colours a surface is made of, this decides what
-     * the surface is made of.
+     * built around) or "material" (Google's Material 3 / Material You shapes
+     * and motion). Read by services/Style.qml. It is separate from
+     * `paletteMode`: the palette decides colors; the style decides geometry and
+     * motion.
      */
     property alias style: adapter.style
     property alias paletteMode: adapter.paletteMode
@@ -106,6 +105,10 @@ Singleton {
     property alias desktopWidgetWeatherEnabled: adapter.desktopWidgetWeatherEnabled
     property alias desktopWidgetMusicEnabled: adapter.desktopWidgetMusicEnabled
     property alias desktopWidgetClockStyle: adapter.desktopWidgetClockStyle
+    property alias desktopWidgetMusicStyle: adapter.desktopWidgetMusicStyle
+    property alias desktopWidgetDigitalClockStyle: adapter.desktopWidgetDigitalClockStyle
+    property alias desktopWidgetNotes: adapter.desktopWidgetNotes
+    property alias desktopWidgetPhoto: adapter.desktopWidgetPhoto
     /**
      * How often the privacy indicator re-reads PipeWire, in ms. One second by
      * default: a dot that takes ten seconds to appear is not an indicator, and
@@ -506,12 +509,16 @@ Singleton {
             property var desktopWidgetWeatherEnabled: null
             property var desktopWidgetMusicEnabled: null
             property string desktopWidgetClockStyle: "nebula"
+            property var desktopWidgetMusicStyle: null
+            property string desktopWidgetDigitalClockStyle: "veil"
+            property string desktopWidgetNotes: ""
+            property string desktopWidgetPhoto: ""
             property var desktopWidgets: [
-                { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
-                { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },
-                { id: "moon", enabled: true, x: 29, y: 321, w: 258, h: 166 },
-                { id: "weather", enabled: true, x: 304, y: 321, w: 260, h: 166 },
-                { id: "music", enabled: true, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
+                { id: "clock", enabled: true, x: 1200, y: 40, w: 164, h: 164 },
+                { id: "system", enabled: false, x: 304, y: 138, w: 260, h: 168 },
+                { id: "moon", enabled: false, x: 29, y: 321, w: 258, h: 166 },
+                { id: "weather", enabled: false, x: 304, y: 321, w: 260, h: 166 },
+                { id: "music", enabled: false, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
             ]
             /**
              * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,

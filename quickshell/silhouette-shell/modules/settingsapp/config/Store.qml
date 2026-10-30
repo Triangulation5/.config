@@ -202,12 +202,16 @@ Singleton {
             property var desktopWidgetWeatherEnabled: null
             property var desktopWidgetMusicEnabled: null
             property string desktopWidgetClockStyle: "nebula"
+            property var desktopWidgetMusicStyle: null
+            property string desktopWidgetDigitalClockStyle: "veil"
+            property string desktopWidgetNotes: ""
+            property string desktopWidgetPhoto: ""
             property var desktopWidgets: [
-                { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
-                { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },
-                { id: "moon", enabled: true, x: 29, y: 321, w: 258, h: 166 },
-                { id: "weather", enabled: true, x: 304, y: 321, w: 260, h: 166 },
-                { id: "music", enabled: true, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
+                { id: "clock", enabled: true, x: 1200, y: 40, w: 164, h: 164 },
+                { id: "system", enabled: false, x: 304, y: 138, w: 260, h: 168 },
+                { id: "moon", enabled: false, x: 29, y: 321, w: 258, h: 166 },
+                { id: "weather", enabled: false, x: 304, y: 321, w: 260, h: 166 },
+                { id: "music", enabled: false, x: 29, y: 503, w: 535, h: 122, musicStyle: "ticket" }
             ]
             /**
              * Privacy indicator's PipeWire poll cadence, in ms. See Privacy.qml,
@@ -405,7 +409,9 @@ Singleton {
         "weatherCity", "desktopWidgets",
         "desktopWidgetClockEnabled", "desktopWidgetSystemEnabled", "desktopWidgetMoonEnabled",
         "desktopWidgetWeatherEnabled", "desktopWidgetMusicEnabled",
-        "desktopWidgetClockStyle",
+        "desktopWidgetClockStyle", "desktopWidgetMusicStyle", "desktopWidgetDigitalClockStyle",
+        "desktopWidgetNotes",
+        "desktopWidgetPhoto",
         "privacyPollMs", "privacyDot", "privacyScreen", "privacyAudioIn", "privacyCam", "privacyAudioOut",
         "privacyToneScreen", "privacyToneAudioIn", "privacyToneCam", "privacyToneAudioOut",
         "eventChime", "eventNotify", "musicViz", "vizStyle", "vizFps", "mediaStyle",

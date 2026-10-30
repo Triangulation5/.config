@@ -36,6 +36,9 @@ projects below.
 
 Specific features drew on other projects:
 
+- [Nebula](https://github.com/iamSt3el/Nebula). The Material-style desktop
+  widget catalog takes inspiration from Nebula's widget collection. The
+  widgets in Silhouette are implemented for this shell and its services.
 - [vague.nvim](https://github.com/vague-theme/vague.nvim) by the vague-theme org. Both static colour schemes come from its palette — `vague` a direct port, `legacy` the shell's older and partly broken transcription of it.
 
 - [Ambxst](https://github.com/Axenide/Ambxst) by

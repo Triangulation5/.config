@@ -156,10 +156,10 @@ Item {
             ? 0
             : (battery.panelOpen ? 18 * battery.s : height / 2)
 
-        color: battery.panelOpen ? Theme.capsule : "transparent"
+        color: battery.panelOpen ? ColorScheme.capsule : "transparent"
 
         border.width: battery.panelOpen ? 1 : 0
-        border.color: Theme.capsuleBorder
+        border.color: ColorScheme.capsuleBorder
 
         Behavior on width {
             NumberAnimation {

@@ -6,7 +6,19 @@ Item {
     id: root
 
     readonly property real s: Math.max(0.78, Math.min(1.7, Math.min(width / 260, height / 166)))
-    readonly property var hours: Weather.hourly.slice(0, 7)
+    property var now: new Date()
+    readonly property var hours: {
+        var rows = Weather.hourly;
+        var currentHour = Weather.ready
+            ? new Date(root.now.getTime() + Weather.utcOffsetSeconds * 1000).getUTCHours()
+            : root.now.getHours();
+        var first = 0;
+        while (first < rows.length && Number(rows[first].hour) < currentHour)
+            first++;
+        if (first >= rows.length)
+            first = 0;
+        return rows.slice(first, first + 7);
+    }
     readonly property int low: {
         if (hours.length === 0)
             return Weather.tempNow - 3;
@@ -25,8 +37,18 @@ Item {
     }
     readonly property int range: Math.max(4, high - low)
 
+    Timer {
+        interval: 60000
+        repeat: true
+        running: true
+        onTriggered: root.now = new Date()
+    }
+
     function hourLabel(entry, index) {
-        if (index === 0)
+        var currentHour = Weather.ready
+            ? new Date(root.now.getTime() + Weather.utcOffsetSeconds * 1000).getUTCHours()
+            : root.now.getHours();
+        if (index === 0 && Number(entry.hour) === currentHour)
             return "Now";
         var hour = parseInt(entry.hour, 10);
         if (Flags.time12h) {
@@ -52,8 +74,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.leftMargin: 15 * root.s
-        anchors.rightMargin: 15 * root.s
+        anchors.leftMargin: 16 * root.s
+        anchors.rightMargin: 16 * root.s
         anchors.topMargin: 14 * root.s
         spacing: 6 * root.s
 
@@ -63,6 +85,7 @@ Item {
             height: width
             name: Weather.glyphFor(Weather.codeNow, Weather.isDay)
             color: Theme.primary
+            visible: Weather.ready
         }
 
         Text {
@@ -109,21 +132,13 @@ Item {
         anchors.right: parent.right
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
-        anchors.leftMargin: 15 * root.s
-        anchors.rightMargin: 15 * root.s
+        anchors.leftMargin: 16 * root.s
+        anchors.rightMargin: 16 * root.s
         anchors.topMargin: 10 * root.s
-        anchors.bottomMargin: 11 * root.s
+        anchors.bottomMargin: 12 * root.s
 
         Repeater {
-            model: root.hours.length > 0 ? root.hours : [
-                { hour: "00", temp: root.low },
-                { hour: "03", temp: root.low + 1 },
-                { hour: "06", temp: root.low + 2 },
-                { hour: "09", temp: root.high },
-                { hour: "12", temp: root.high - 1 },
-                { hour: "15", temp: root.low + 1 },
-                { hour: "18", temp: root.low + 2 }
-            ]
+            model: root.hours
 
             delegate: Item {
                 id: hourColumn
@@ -166,12 +181,22 @@ Item {
     Text {
         anchors.right: parent.right
         anchors.top: header.bottom
-        anchors.rightMargin: 15 * root.s
+        anchors.rightMargin: 16 * root.s
         anchors.topMargin: 2 * root.s
         text: root.high + "° / " + root.low + "°"
         color: Theme.onSurfaceVariant
         font.family: Theme.font
         font.pixelSize: 8 * root.s
         font.features: ({ "tnum": 1 })
+        visible: Weather.ready && root.hours.length > 0
+    }
+
+    Text {
+        anchors.centerIn: parent
+        text: Weather.ready ? "No hourly forecast available" : "Waiting for forecast"
+        color: Theme.onSurfaceVariant
+        font.family: Theme.font
+        font.pixelSize: 10 * root.s
+        visible: root.hours.length === 0
     }
 }

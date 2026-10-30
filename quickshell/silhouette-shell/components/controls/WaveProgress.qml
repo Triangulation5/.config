@@ -66,11 +66,8 @@ Item {
             ctx.lineJoin = "round";
 
             ctx.beginPath();
-            ctx.moveTo(0, yAt(0));
-            for (let i = 1; i <= steps; i++) {
-                const x = width * i / steps;
-                ctx.lineTo(x, yAt(x));
-            }
+            ctx.moveTo(end, height / 2);
+            ctx.lineTo(width, height / 2);
             ctx.strokeStyle = root.trackColor;
             ctx.lineWidth = root.lineWidth;
             ctx.stroke();

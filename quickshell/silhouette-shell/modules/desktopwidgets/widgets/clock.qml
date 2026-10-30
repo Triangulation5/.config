@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import qs.services
+import qs.modules.desktopwidgets
 
 Item {
     id: root
@@ -104,6 +105,7 @@ Item {
                 model: 12
 
                 delegate: Item {
+                    id: tick
                     required property int index
                     anchors.fill: parent
                     rotation: index * 30
