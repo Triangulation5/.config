@@ -4,9 +4,10 @@ import Quickshell
 import qs.services
 
 /**
- * The minimal bar's palette, derived from the shell theme so the strip follows
- * the live palette the same way the pill does — on a dynamic palette every token
- * below is the generated colour, on static it is the shipped one. One choice
+ * The minimal bar's palette, read from the colour scheme rather than styled
+ * surface tokens so its Washi colours stay unchanged in Material mode. It still
+ * follows the live palette — on a dynamic palette every token below is generated,
+ * on static it is the shipped one. One choice
  * (`Flags.barStyle`) re-tints the whole bar: `theme` keeps the palette backdrop,
  * `accent` fills the strip with the palette accent, `plain` drops the backdrop so
  * the wallpaper shows through.
@@ -15,9 +16,8 @@ import qs.services
  *
  * Beyond the trio above it also carries the strip's per-readout roles: the bar is
  * one row of text but not one colour, so the title, the two halves of the clock
- * and each status readout have a token of their own. Everything below is derived
- * from Theme, so a dynamic palette re-tints the whole strip at once; a block that
- * wanted a hue of its own would be the one thing that did not.
+ * and each status readout have a token of their own. Those roles come from the
+ * colour scheme directly, so the Material surface profile cannot retint the bar.
  *
  * The status group is deliberately one colour. `fg` for every readout — cpu,
  * memory, battery, volume — rather than a ladder that tinted a hot cpu or a low
@@ -45,7 +45,7 @@ Singleton {
     readonly property bool accented: mode === "accent"
 
     /** Opaque dark ink that sits on an accent fill. */
-    readonly property color ink: flat(Theme.tileBg)
+    readonly property color ink: flat(ColorScheme.tileBg)
 
     /**
      * What reads *on* the accent fill rather than under it — the digit of the lit
@@ -53,23 +53,23 @@ Singleton {
      * filled with the accent it is the accent itself, so a blocked tag inverts
      * against the strip instead of vanishing into it.
      */
-    readonly property color accentInk: accented ? flat(Theme.vermLit) : ink
+    readonly property color accentInk: accented ? flat(ColorScheme.vermLit) : ink
 
     /** The strip's backdrop. */
     readonly property color bg: mode === "plain" ? "transparent"
-        : (accented ? Theme.vermLit : flat(Theme.tileBg))
+        : (accented ? ColorScheme.vermLit : flat(ColorScheme.tileBg))
 
     /** Primary text. */
-    readonly property color fg: accented ? ink : Theme.cream
+    readonly property color fg: accented ? ink : ColorScheme.cream
 
     /** Secondary text: labels, a muted sink, inactive workspaces. */
-    readonly property color dim: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.62) : Theme.dim
+    readonly property color dim: accented ? Qt.rgba(ink.r, ink.g, ink.b, 0.62) : ColorScheme.dim
 
     /** The emphasis colour: the lit workspace, a charging pack. */
-    readonly property color accent: accented ? ink : Theme.vermLit
+    readonly property color accent: accented ? ink : ColorScheme.vermLit
 
     /** Warning text, e.g. a battery at the low mark. */
-    readonly property color warn: accented ? ink : Theme.error
+    readonly property color warn: accented ? ink : ColorScheme.error
 
     /** The focused window's title: the strip's one long reading. */
     readonly property color title: fg
@@ -104,12 +104,12 @@ Singleton {
     readonly property bool chips: Flags.barChips
     readonly property color chipFill: accented
         ? Qt.rgba(ink.r, ink.g, ink.b, 0.16)
-        : (Theme.material ? Theme.secondaryContainer : Theme.hair)
+        : ColorScheme.hair
     readonly property color chipEdge: accented
         ? Qt.rgba(ink.r, ink.g, ink.b, 0.28)
-        : (Theme.material ? "transparent" : Theme.hairSoft)
+        : ColorScheme.hairSoft
 
-    /** Flatten a Theme token into a definite, opaque colour. */
+    /** Flatten a scheme token into a definite, opaque colour. */
     function flat(c) {
         return Qt.rgba(c.r, c.g, c.b, 1);
     }

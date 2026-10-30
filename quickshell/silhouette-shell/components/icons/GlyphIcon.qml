@@ -146,14 +146,14 @@ Item {
     readonly property var g: {
         switch (name) {
         case "speaker-level":
-            return { d: "M4 9v6h4l5 4V5L8 9z M16 9.5a3 3 0 0 1 0 5 M18.5 7.5a6 6 0 0 1 0 9", fill: false, fixed: true };
+            return { d: "M4 9v6h4l5 4V5L8 9z M16 9.5a3 3 0 0 1 0 5 M18.5 7.5a6 6 0 0 1 0 9", fill: false };
         case "sun-level":
-            return { d: levelSun(root.progress), fill: false, fixed: true };
+            return { d: levelSun(root.progress), fill: false };
         default:
-            return glyphs[name] !== undefined ? glyphs[name] : ({ d: "", fill: false });
+            return glyphs[name] !== undefined
+                ? glyphs[name] : ({ d: "", fill: false });
         }
     }
-
     Shape {
         id: glyph
 
@@ -161,14 +161,8 @@ Item {
         height: 24
         scale: root.u
         transformOrigin: Item.TopLeft
-        x: root.g.fixed ? (root.width - 24 * root.u) / 2
-           : (glyph.boundingRect.width > 0
-              ? root.width / 2 - (glyph.boundingRect.x + glyph.boundingRect.width / 2) * root.u
-              : (root.width - 24 * root.u) / 2)
-        y: root.g.fixed ? (root.height - 24 * root.u) / 2
-           : (glyph.boundingRect.height > 0
-              ? root.height / 2 - (glyph.boundingRect.y + glyph.boundingRect.height / 2) * root.u
-              : (root.height - 24 * root.u) / 2)
+        x: (root.width - 24 * root.u) / 2
+        y: (root.height - 24 * root.u) / 2
         antialiasing: true
         preferredRendererType: Shape.CurveRenderer
 

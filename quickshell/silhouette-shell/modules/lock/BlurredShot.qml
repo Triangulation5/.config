@@ -82,34 +82,20 @@ Item {
         visible: false
     }
 
-    ShaderEffect {
-        id: copyHalf
-        anchors.fill: parent
-        visible: false
-        property var source: downHalf
-    }
-
     ShaderEffectSource {
         id: downQuarter
         anchors.fill: parent
-        sourceItem: copyHalf
+        sourceItem: downHalf
         textureSize: root.quarter
         smooth: true
         hideSource: true
         visible: false
     }
 
-    ShaderEffect {
-        id: copyQuarter
-        anchors.fill: parent
-        visible: false
-        property var source: downQuarter
-    }
-
     ShaderEffectSource {
         id: downEighth
         anchors.fill: parent
-        sourceItem: copyQuarter
+        sourceItem: downQuarter
         textureSize: root.eighth
         smooth: true
         hideSource: true

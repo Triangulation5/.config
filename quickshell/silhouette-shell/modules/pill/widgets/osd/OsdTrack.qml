@@ -88,9 +88,9 @@ OsdFace {
         anchors.verticalCenter: parent.verticalCenter
         width: 18 * face.s
         height: 18 * face.s
-        name: face.playing ? "play" : "pause"
+        name: face.playing ? "pause" : "play"
         color: Theme.material
-            ? (face.playing ? Theme.primary : Theme.onSurfaceVariant)
+            ? "#ffffff"
             : (face.playing ? Theme.vermLit : Theme.iconDim)
     }
 

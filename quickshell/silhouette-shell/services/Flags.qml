@@ -100,6 +100,12 @@ Singleton {
     property alias lockLink: adapter.lockLink
     property alias weatherCity: adapter.weatherCity
     property alias desktopWidgets: adapter.desktopWidgets
+    property alias desktopWidgetClockEnabled: adapter.desktopWidgetClockEnabled
+    property alias desktopWidgetSystemEnabled: adapter.desktopWidgetSystemEnabled
+    property alias desktopWidgetMoonEnabled: adapter.desktopWidgetMoonEnabled
+    property alias desktopWidgetWeatherEnabled: adapter.desktopWidgetWeatherEnabled
+    property alias desktopWidgetMusicEnabled: adapter.desktopWidgetMusicEnabled
+    property alias desktopWidgetClockStyle: adapter.desktopWidgetClockStyle
     /**
      * How often the privacy indicator re-reads PipeWire, in ms. One second by
      * default: a dot that takes ten seconds to appear is not an indicator, and
@@ -494,6 +500,12 @@ Singleton {
             /** The lock's wifi/bluetooth glance (modules/lock/LinkSurface.qml). */
             property bool lockLink: true
             property string weatherCity: "WELLAND"
+            property var desktopWidgetClockEnabled: null
+            property var desktopWidgetSystemEnabled: null
+            property var desktopWidgetMoonEnabled: null
+            property var desktopWidgetWeatherEnabled: null
+            property var desktopWidgetMusicEnabled: null
+            property string desktopWidgetClockStyle: "nebula"
             property var desktopWidgets: [
                 { id: "clock", enabled: true, x: 78, y: 142, w: 164, h: 164 },
                 { id: "system", enabled: true, x: 304, y: 138, w: 260, h: 168 },

@@ -12,20 +12,33 @@ ColumnLayout {
 
     readonly property bool materialEnabled: Store.adapter.style === "material"
 
+    function widgetToggle(widget) {
+        const widgetId = widget.id;
+        return {
+            key: "desktopWidget-" + widgetId,
+            type: "toggle",
+            label: widget.label,
+            caption: widget.description,
+            get: function () { return DesktopWidgetState.isEnabled(widgetId); },
+            set: function (value) { DesktopWidgetState.setEnabled(widgetId, value); }
+        };
+    }
+
     function rows() {
         var result = [];
         for (var i = 0; i < DesktopWidgetState.catalog.length; i++) {
-            const widgetId = DesktopWidgetState.catalog[i].id;
-            const widget = DesktopWidgetState.catalog[i];
-            result.push({
-                key: "desktopWidget-" + widgetId,
-                type: "toggle",
-                label: widget.label,
-                caption: widget.description,
-                get: function () { return DesktopWidgetState.isEnabled(widgetId); },
-                set: function (value) { DesktopWidgetState.setEnabled(widgetId, value); }
-            });
+            result.push(root.widgetToggle(DesktopWidgetState.catalog[i]));
         }
+        result.push({
+            key: "desktopWidget-clockStyle",
+            type: "select",
+            label: "Analog clock style",
+            caption: "Choose the Nebula Bloom, Soft Organic, or Classic Circle face.",
+            options: ["nebula", "organic", "circle"],
+            names: ["Nebula Bloom", "Soft Organic", "Classic Circle"],
+            get: function () { return DesktopWidgetState.clockStyle; },
+            set: function (value) { DesktopWidgetState.setClockStyle(value); }
+        });
         result.push({
             key: "desktopWidget-musicStyle",
             type: "select",

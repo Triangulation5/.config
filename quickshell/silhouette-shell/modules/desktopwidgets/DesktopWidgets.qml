@@ -176,6 +176,7 @@ Variants {
                         anchors.fill: parent
                         source: Qt.resolvedUrl("widgets/" + frame.modelData.id + ".qml")
                         active: frame.widgetEnabled || DesktopWidgetState.editing
+                        enabled: !DesktopWidgetState.editing
                         asynchronous: true
                         onLoaded: if (frame.modelData.id === "music") desktop.musicWidget = item
                         onItemChanged: if (frame.modelData.id === "music" && item === null)
@@ -203,86 +204,60 @@ Variants {
                         color: Theme.primary
                         z: 4
                     }
-                }
-            }
 
-            MouseArea {
-                id: editorInput
-                anchors.fill: parent
-                enabled: DesktopWidgetState.editing
-                z: 5
-                acceptedButtons: Qt.LeftButton
-                hoverEnabled: true
-                preventStealing: true
-                property var dragFrame: null
-                property bool resizing: false
-                property point pointerStart
-                property real xStart: 0
-                property real yStart: 0
-                property real widthStart: 0
-                property real heightStart: 0
-                cursorShape: resizing ? Qt.SizeFDiagCursor
-                    : (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+                    DragHandler {
+                        id: widgetEditorInput
+                        enabled: DesktopWidgetState.editing && frame.widgetEnabled
+                        acceptedButtons: Qt.LeftButton
+                        acceptedDevices: PointerDevice.Mouse
+                        target: null
+                        property bool resizing: false
+                        property real xStart: 0
+                        property real yStart: 0
+                        property real widthStart: 0
+                        property real heightStart: 0
+                        cursorShape: resizing ? Qt.SizeFDiagCursor
+                            : (active ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
 
-                onPressed: function (mouse) {
-                    dragFrame = null;
-                    for (var i = widgetRepeater.count - 1; i >= 0; i--) {
-                        var candidate = widgetRepeater.itemAt(i);
-                        if (!candidate || !candidate.widgetEnabled)
-                            continue;
-                        var local = focusScope.mapToItem(candidate, mouse.x, mouse.y);
-                        if (local.x < 0 || local.y < 0
-                                || local.x > candidate.width || local.y > candidate.height)
-                            continue;
-                        dragFrame = candidate;
-                        resizing = local.x >= candidate.width - 28 * desktop.scaleFactor
-                            && local.y >= candidate.height - 28 * desktop.scaleFactor;
-                        pointerStart = Qt.point(mouse.x, mouse.y);
-                        xStart = candidate.liveX;
-                        yStart = candidate.liveY;
-                        widthStart = candidate.liveWidth;
-                        heightStart = candidate.liveHeight;
-                        candidate.moving = !resizing;
-                        candidate.resizing = resizing;
-                        break;
-                    }
-                    if (!dragFrame)
-                        mouse.accepted = false;
-                }
+                        onActiveChanged: {
+                            if (active) {
+                                xStart = frame.liveX;
+                                yStart = frame.liveY;
+                                widthStart = frame.liveWidth;
+                                heightStart = frame.liveHeight;
+                                resizing = centroid.pressPosition.x >= frame.width - 32 * desktop.scaleFactor
+                                    && centroid.pressPosition.y >= frame.height - 32 * desktop.scaleFactor;
+                                frame.moving = !resizing;
+                                frame.resizing = resizing;
+                            } else {
+                                DesktopWidgetState.saveGeometry(frame.modelData.id,
+                                    frame.liveX, frame.liveY, frame.liveWidth, frame.liveHeight);
+                                frame.moving = false;
+                                frame.resizing = false;
+                            }
+                        }
 
-                onPositionChanged: function (mouse) {
-                    if (!pressed || !dragFrame)
-                        return;
-                    var dx = (mouse.x - pointerStart.x) / desktop.scaleFactor;
-                    var dy = (mouse.y - pointerStart.y) / desktop.scaleFactor;
-                    if (resizing) {
-                        var maxWidth = desktop.width / desktop.scaleFactor - dragFrame.liveX;
-                        var maxHeight = desktop.height / desktop.scaleFactor - dragFrame.liveY;
-                        dragFrame.liveWidth = Math.min(maxWidth,
-                            Math.max(dragFrame.modelData.minW, widthStart + dx));
-                        dragFrame.liveHeight = Math.min(maxHeight,
-                            Math.max(dragFrame.modelData.minH, heightStart + dy));
-                    } else {
-                        dragFrame.liveX = dragFrame.clamp(xStart + dx,
-                            0, desktop.width / desktop.scaleFactor - dragFrame.liveWidth);
-                        dragFrame.liveY = dragFrame.clamp(yStart + dy,
-                            0, desktop.height / desktop.scaleFactor - dragFrame.liveHeight);
+                        onTranslationChanged: {
+                            if (!active)
+                                return;
+                            var dx = translation.x / desktop.scaleFactor;
+                            var dy = translation.y / desktop.scaleFactor;
+                            if (resizing) {
+                                var maxWidth = desktop.width / desktop.scaleFactor - xStart;
+                                var maxHeight = desktop.height / desktop.scaleFactor - yStart;
+                                frame.liveWidth = Math.max(frame.modelData.minW,
+                                    Math.min(maxWidth, widthStart + dx));
+                                frame.liveHeight = Math.max(frame.modelData.minH,
+                                    Math.min(maxHeight, heightStart + dy));
+                            } else {
+                                frame.liveX = frame.clamp(xStart + dx,
+                                    0, desktop.width / desktop.scaleFactor - frame.liveWidth);
+                                frame.liveY = frame.clamp(yStart + dy,
+                                    0, desktop.height / desktop.scaleFactor - frame.liveHeight);
+                            }
+                        }
                     }
                 }
-
-                function finishDrag() {
-                    if (!dragFrame)
-                        return;
-                    dragFrame.saveGeometry();
-                    dragFrame.moving = false;
-                    dragFrame.resizing = false;
-                    dragFrame.syncFromSettings();
-                    dragFrame = null;
-                    resizing = false;
-                }
-
-                onReleased: finishDrag()
-                onCanceled: finishDrag()
             }
 
             Rectangle {

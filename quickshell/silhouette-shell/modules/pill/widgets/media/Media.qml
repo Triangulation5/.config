@@ -566,7 +566,7 @@ PillSurface {
             gradient: Gradient {
                 GradientStop {
                     position: 0.0
-                    color: Theme.material ? Theme.primaryContainer
+                    color: Theme.material ? "#ffffff"
                         : Theme.mix(Theme.verm, Theme.tileBg, 0.55 - 0.27 * seal.sat)
                     Behavior on color {
                         enabled: Style.transitioning
@@ -576,7 +576,7 @@ PillSurface {
 
                 GradientStop {
                     position: 1.0
-                    color: Theme.material ? Theme.primaryContainer
+                    color: Theme.material ? "#ffffff"
                         : Theme.mix(Theme.vermDeep, Theme.tileBg, 0.55 - 0.27 * seal.sat)
                     Behavior on color {
                         enabled: Style.transitioning
@@ -594,7 +594,7 @@ PillSurface {
                       ? "奏"
                       : "休"
 
-                color: Theme.material ? Theme.onPrimaryContainer : "#ffffff"
+                color: Theme.material ? Theme.surfaceContainerLowest : "#ffffff"
 
                 font.family: Theme.fontJp
                 font.pixelSize: 19 * root.s * root.tScale
@@ -613,7 +613,7 @@ PillSurface {
                       ? "pause"
                       : "play"
 
-                color: Theme.material ? Theme.onPrimaryContainer : "#ffffff"
+                color: Theme.material ? Theme.surfaceContainerLowest : "#ffffff"
             }
 
             MouseArea {
