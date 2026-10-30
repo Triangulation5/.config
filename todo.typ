@@ -1,0 +1,3 @@
+- Add a migration docuement from Fedora -> Gentoo (something I am currently thinking about).
+- Optimize and hunt pests inside the shell.
+- Rewrite entire shell in Rust, get it below 100 MB, and distribute as binary.
