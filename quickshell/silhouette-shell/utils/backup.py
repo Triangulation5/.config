@@ -158,14 +158,16 @@ def create(args):
         discard(partial)
         return error("Could not write %s: %s" % (path, problem))
 
-    return emit({
-        "status": "ok",
-        "name": name,
-        "path": path,
-        "bytes": os.path.getsize(path),
-        "files": files,
-        "created": int(time.time()),
-    })
+    return emit(
+        {
+            "status": "ok",
+            "name": name,
+            "path": path,
+            "bytes": os.path.getsize(path),
+            "files": files,
+            "created": int(time.time()),
+        }
+    )
 
 
 def backups(directory):
@@ -179,8 +181,14 @@ def backups(directory):
             if entry is None:
                 continue
             stat = os.stat(entry)
-            found.append({"name": name, "path": entry,
-                          "bytes": stat.st_size, "created": int(stat.st_mtime)})
+            found.append(
+                {
+                    "name": name,
+                    "path": entry,
+                    "bytes": stat.st_size,
+                    "created": int(stat.st_mtime),
+                }
+            )
     found.sort(key=lambda entry: entry["created"], reverse=True)
     return found
 
@@ -250,8 +258,10 @@ def restore(args, archive, name):
         with tarfile.open(archive) as tar:
             strange = [entry.name for entry in tar.getmembers() if not inside(entry)]
             if strange:
-                return error("The archive holds something this script did not write: "
-                             + strange[0])
+                return error(
+                    "The archive holds something this script did not write: "
+                    + strange[0]
+                )
             extract(tar, staging)
 
         written = []
@@ -298,11 +308,14 @@ def discard(path):
 def main():
     base = defaults()
     parser = argparse.ArgumentParser(
-        description="Back up and restore the silhouette-shell config.")
-    parser.add_argument("action", choices=["create", "list", "restore", "remove"],
-                        help="what to do")
-    parser.add_argument("name", nargs="?",
-                        help="the archive to restore or remove, by file name")
+        description="Back up and restore the silhouette-shell config."
+    )
+    parser.add_argument(
+        "action", choices=["create", "list", "restore", "remove"], help="what to do"
+    )
+    parser.add_argument(
+        "name", nargs="?", help="the archive to restore or remove, by file name"
+    )
     parser.add_argument("--shell", default=base["shell"], help="the shell tree")
     parser.add_argument("--state", default=base["state"], help="the shell's state dir")
     parser.add_argument("--dir", default=base["dir"], help="where archives live")

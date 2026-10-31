@@ -311,7 +311,7 @@ Singleton {
             var value = Object.assign({}, spec, entry || {}, patch);
             var enabled = typeof patch.enabled === "boolean"
                 ? patch.enabled : root.isEnabled(spec.id);
-            // Preserve widget-specific settings while updating common geometry.
+            /** Preserve widget-specific settings while updating common geometry. */
             next.push(Object.assign({}, entry || {}, patch, {
                 id: spec.id,
                 enabled: enabled,

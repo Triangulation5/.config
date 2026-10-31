@@ -3,8 +3,43 @@
   "blurRadius": 64,
   "zoomFactor": 2,
   "copyToDisk": false,
-  "copyOnSave": true,
+  "copyOnSave": false,
   "skipSaveDialog": false,
   "saveDir": "",
-  "toolStyle": {}
+  "language": "en",
+  "toolStyle": {
+    "rect": {
+      "color": "#d8647e",
+      "width": 4,
+      "filled": false
+    },
+    "ellipse": {
+      "color": "#878787",
+      "width": 4,
+      "filled": false
+    },
+    "line": {
+      "color": "#606079",
+      "width": 3
+    },
+    "arrow": {
+      "color": "#d8647e",
+      "width": 4
+    },
+    "pen": {
+      "color": "#cdcdcd",
+      "width": 3
+    },
+    "step": {
+      "color": "#f3be7c",
+      "width": 3
+    },
+    "text": {
+      "color": "#cdcdcd",
+      "width": 3
+    },
+    "marker": {
+      "width": 4
+    }
+  }
 }

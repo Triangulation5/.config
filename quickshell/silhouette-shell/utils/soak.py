@@ -59,8 +59,12 @@ import sys
 import time
 
 HOME = os.path.expanduser("~")
-SHELL_PATH = os.environ.get("SHELL_PATH", os.path.join(HOME, ".config/quickshell/silhouette-shell/"))
-STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local/state")), "silhouette")
+SHELL_PATH = os.environ.get(
+    "SHELL_PATH", os.path.join(HOME, ".config/quickshell/silhouette-shell/")
+)
+STATE_DIR = os.path.join(
+    os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local/state")), "silhouette"
+)
 LOG_DIR = STATE_DIR
 FLAGS_PATH = os.path.join(STATE_DIR, "flags.json")
 
@@ -98,11 +102,32 @@ WARM_HOLD = 1.5
 # refuses to be evicted while a timer runs; both stay in for the peak-memory
 # read, and the table prints a note when they look like no-ops.
 RISKY = {"recorder", "updates", "polkit"}
-DEFAULT_SURFACES = (
-    "calendar launcher clipboard wallpaper settings keybinds workspaces stash "
-    "spaceapps appearance display input look idlelock animation fontpicker "
-    "sysmon battery power mixer link weather timer media"
-).split()
+DEFAULT_SURFACES = [
+    "calendar",
+    "launcher",
+    "clipboard",
+    "wallpaper",
+    "settings",
+    "keybinds",
+    "workspaces",
+    "stash",
+    "spaceapps",
+    "appearance",
+    "display",
+    "input",
+    "look",
+    "idlelock",
+    "animation",
+    "fontpicker",
+    "sysmon",
+    "battery",
+    "power",
+    "mixer",
+    "link",
+    "weather",
+    "timer",
+    "media",
+]
 
 COLOR = sys.stdout.isatty()
 # Set from --allow-locked: the lock is in-process now, so logind's LockedHint is
@@ -118,14 +143,34 @@ RUNNING = False
 # leaves two shells up.
 SUPERVISOR_GRACE = 12.0
 
+
 def paint(code, text):
     return f"\033[{code}m{text}\033[0m" if COLOR else text
-def dim(t):    return paint("2", t)
-def bold(t):   return paint("1", t)
-def green(t):  return paint("32", t)
-def yellow(t): return paint("33", t)
-def red(t):    return paint("31", t)
-def cyan(t):   return paint("36", t)
+
+
+def dim(t):
+    return paint("2", t)
+
+
+def bold(t):
+    return paint("1", t)
+
+
+def green(t):
+    return paint("32", t)
+
+
+def yellow(t):
+    return paint("33", t)
+
+
+def red(t):
+    return paint("31", t)
+
+
+def cyan(t):
+    return paint("36", t)
+
 
 # --------------------------------------------------------------------------
 # discovery & sampling
@@ -138,12 +183,14 @@ def cyan(t):   return paint("36", t)
 # /proc catches both plus the `quickshell` binary name, where a pgrep pattern
 # only ever matched the one it was written for.
 
+
 def _argv_of(pid):
     try:
         with open(f"/proc/{pid}/cmdline", "rb") as f:
             return [a.decode(errors="replace") for a in f.read().split(b"\0") if a]
     except (FileNotFoundError, ProcessLookupError, PermissionError, OSError):
         return []
+
 
 def _is_shell_invocation(argv):
     """True for a shell *server*, false for an `ipc call` client of one."""
@@ -158,6 +205,7 @@ def _is_shell_invocation(argv):
             return True
     return False
 
+
 def shell_instances():
     """[(pid, argv)] for every running shell server, oldest first."""
     found = []
@@ -169,34 +217,43 @@ def shell_instances():
             found.append((int(entry), argv))
     return sorted(found)
 
+
 def shell_pids():
     return [pid for pid, _ in shell_instances()]
+
 
 def shell_pid():
     pids = shell_pids()
     return pids[0] if pids else None
+
 
 def mem_kb(pid):
     """(rss, anon, swap) in KiB for a pid, or (0,0,0)."""
     try:
         with open(f"/proc/{pid}/status") as f:
             st = f.read()
+
         def kb(key):
-            m = re.search(rf"^{key}:\s*(\d+)", st, re.M)
+            m = re.search(rf"^{key}:\s*(\d+)", st, re.MULTILINE)
             return int(m.group(1)) if m else 0
+
         return kb("VmRSS"), kb("RssAnon"), kb("VmSwap")
     except (FileNotFoundError, ProcessLookupError):
         return 0, 0, 0
 
+
 def fmt_mb(kb):
     return f"{kb / 1024:8.1f} MB"
+
 
 def delta_mb(a_kb, b_kb):
     """b − a in MB, signed and padded: negative means memory came back."""
     return f"{(b_kb - a_kb) / 1024:+7.1f} MB"
 
+
 # --------------------------------------------------------------------------
 # session / lock state
+
 
 def session_id():
     """The session this script runs in. XDG_SESSION_ID is set by any session
@@ -206,13 +263,15 @@ def session_id():
     sid = os.environ.get("XDG_SESSION_ID")
     if sid:
         return sid
-    out = subprocess.run(["loginctl", "list-sessions", "--no-legend"],
-                         capture_output=True, text=True).stdout
+    out = subprocess.run(
+        ["loginctl", "list-sessions", "--no-legend"], capture_output=True, text=True
+    ).stdout
     for line in out.splitlines():
         parts = line.split()
         if len(parts) >= 2:
             return parts[0]
     return None
+
 
 def locked():
     """Best-effort lock detection: the shell's marker, logind's LockedHint, a 'lock' layer.
@@ -227,7 +286,9 @@ def locked():
     marker reading "0" only means this shell is not locked, so it is never an
     early false — the other two are still asked.
     """
-    marker = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "silhouette-locked")
+    marker = os.path.join(
+        os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "silhouette-locked"
+    )
     try:
         with open(marker) as f:
             if f.read(1) == "1":
@@ -236,14 +297,18 @@ def locked():
         pass
     sid = session_id()
     if sid:
-        out = subprocess.run(["loginctl", "show-session", sid, "-p", "LockedHint"],
-                             capture_output=True, text=True).stdout
+        out = subprocess.run(
+            ["loginctl", "show-session", sid, "-p", "LockedHint"],
+            capture_output=True,
+            text=True,
+        ).stdout
         if "LockedHint=yes" in out:
             return True
     out = subprocess.run(["hyprctl", "layers"], capture_output=True, text=True).stdout
-    if re.search(r"namespace:.*lock", out, re.I):
+    if re.search(r"namespace:.*lock", out, re.IGNORECASE):
         return True
     return False
+
 
 def wait_unlocked(timeout, poll=1.0):
     t0 = time.monotonic()
@@ -253,8 +318,10 @@ def wait_unlocked(timeout, poll=1.0):
         time.sleep(poll)
     return not locked()
 
+
 # --------------------------------------------------------------------------
 # shell control
+
 
 def ipc_cmd():
     """The client command that reaches the running instance.
@@ -273,10 +340,16 @@ def ipc_cmd():
                 return [argv[0], a, argv[i + 1]]
     return ["qs", "-c", "silhouette-shell"]
 
+
 def ipc(*args, timeout=20):
-    r = subprocess.run(ipc_cmd() + ["ipc", "call"] + list(args),
-                       capture_output=True, text=True, timeout=timeout)
+    r = subprocess.run(
+        ipc_cmd() + ["ipc", "call"] + list(args),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
     return r.returncode, (r.stdout + r.stderr).strip()
+
 
 def launch_form():
     """(flag, value) to start the shell with — the running instance's own form."""
@@ -288,6 +361,7 @@ def launch_form():
                 return a, argv[i + 1]
     return "-p", SHELL_PATH
 
+
 def relaunch():
     """Start the shell detached, mirroring scripts/reload.sh (qs.log)."""
     flag, val = launch_form()
@@ -295,9 +369,15 @@ def relaunch():
     os.makedirs(LOG_DIR, exist_ok=True)
     binary = shutil.which("qs") or "qs"
     with open(log, "ab") as lf:
-        subprocess.Popen([binary, flag, val], stdout=lf, stderr=lf,
-                         stdin=subprocess.DEVNULL, start_new_session=True)
+        subprocess.Popen(
+            [binary, flag, val],
+            stdout=lf,
+            stderr=lf,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+        )
     print(f"  relaunched: qs {flag} {val}  (log: {dim(log)})")
+
 
 def wait_shell_up(timeout=20, poll=0.3):
     t0 = time.monotonic()
@@ -310,18 +390,25 @@ def wait_shell_up(timeout=20, poll=0.3):
         time.sleep(poll)
     return None
 
+
 def restart_shell():
     """Kill every running shell server and relaunch one. Refuses while locked."""
     inst = shell_instances()
     pids = [p for p, _ in inst]
     if not pids:
-        print(f"  {red('no running shell found')} (qs -p <dir> / qs -c silhouette-shell)")
+        print(
+            f"  {red('no running shell found')} (qs -p <dir> / qs -c silhouette-shell)"
+        )
         return None, False
     for pid in pids:
         print(f"  pid {cyan(str(pid))}  rss {fmt_mb(mem_kb(pid)[0])}")
     if not ALLOW_LOCKED and locked():
-        print(red("  session is LOCKED — refusing to restart (use --wait-unlock, "
-                  "or unlock first)"))
+        print(
+            red(
+                "  session is LOCKED — refusing to restart (use --wait-unlock, "
+                "or unlock first)"
+            )
+        )
         return None, False
     for pid in pids:
         try:
@@ -344,7 +431,9 @@ def restart_shell():
     # before launching directly — doing both at once is what leaves two shells
     # fighting over the layer surface, and the direct launch is only for a session
     # with no supervisor running at all.
-    print(dim(f"  waiting up to {SUPERVISOR_GRACE:g}s for the supervisor to respawn it"))
+    print(
+        dim(f"  waiting up to {SUPERVISOR_GRACE:g}s for the supervisor to respawn it")
+    )
     new = wait_shell_up(timeout=SUPERVISOR_GRACE)
     if new is None:
         print(dim("  nothing respawned it — launching directly"))
@@ -357,6 +446,7 @@ def restart_shell():
         print(f"  up as pid {cyan(str(new))}  rss {fmt_mb(rss)}  anon {fmt_mb(anon)}")
     return new, new is not None
 
+
 def ensure_shell():
     """Guarantee a shell is running; returns pid (or None if impossible)."""
     pid = shell_pid()
@@ -365,15 +455,18 @@ def ensure_shell():
     relaunch()
     return wait_shell_up()
 
+
 # --------------------------------------------------------------------------
 # memory saver (Pill.qml's tier table, plus game mode's override of it, as
 # configured in flags.json)
+
 
 def _num(v, default):
     try:
         return int(float(v))
     except (TypeError, ValueError):
         return default
+
 
 def saver_config():
     """{on, base, sweep, game, game_ms, game_sweep} from the shell's flags,
@@ -385,8 +478,14 @@ def saver_config():
     Like the saver's own numbers these are a snapshot taken before the run — a
     mode toggled mid-run is not re-read.
     """
-    cfg = {"on": True, "base": 12, "sweep": 10,
-           "game": False, "game_ms": GAME_MS, "game_sweep": GAME_SWEEP_S}
+    cfg = {
+        "on": True,
+        "base": 12,
+        "sweep": 10,
+        "game": False,
+        "game_ms": GAME_MS,
+        "game_sweep": GAME_SWEEP_S,
+    }
     try:
         with open(FLAGS_PATH) as f:
             flags = json.load(f)
@@ -400,14 +499,17 @@ def saver_config():
         pass
     return cfg
 
+
 def base_tail(cfg):
     """The base tail in seconds — Pill.qml floors pillSurfaceIdleTimeout at 10."""
     return max(10, cfg["base"])
+
 
 def game_tail(cfg):
     """Game mode's harsh tail in seconds — Pill.qml's gameUnloadMs, kept in ms in
     the flag but carried here in seconds like every other tail."""
     return cfg["game_ms"] / 1000.0
+
 
 def effective_sweep(cfg):
     """The sweep period in seconds the shell actually runs: pillCleanupSec, capped
@@ -415,10 +517,12 @@ def effective_sweep(cfg):
     secs = min(cfg["sweep"], cfg["game_sweep"]) if cfg["game"] else cfg["sweep"]
     return max(1, secs)
 
+
 def sweep_runs(cfg):
     """Whether the timed sweep fires at all: with the saver on, or in game mode,
     whose override holds even when the saver is off."""
     return cfg["on"] or cfg["game"]
+
 
 def tier_tail(name, cfg):
     """Tail (seconds) before a closed `name` is swept. Game mode collapses the
@@ -428,26 +532,36 @@ def tier_tail(name, cfg):
         return game_tail(cfg)
     return base_tail(cfg) if name in BASE_TIER else 2 * base_tail(cfg)
 
+
 def timed_wait(name, cfg):
     """That surface's tail plus one sweep tick — when its own tier has certainly run."""
     return tier_tail(name, cfg) + effective_sweep(cfg)
 
+
 def saver_line(cfg):
     if cfg["game"]:
-        line = (f"  game mode ON: closed surfaces free after {game_tail(cfg):g}s "
-                f"(any tier), sweep every {effective_sweep(cfg)}s")
+        line = (
+            f"  game mode ON: closed surfaces free after {game_tail(cfg):g}s "
+            f"(any tier), sweep every {effective_sweep(cfg)}s"
+        )
         if not cfg["on"]:
             line += "; the saver is off, but the override still sweeps"
         return dim(line)
     if not cfg["on"]:
-        return dim("  memory saver OFF — the timed sweep never fires; closed "
-                   "surfaces stay resident until `pill unloadAll` or a restart")
-    return dim(f"  memory saver on: base {base_tail(cfg)}s (floored at 10), "
-               f"heaviest tier {base_tail(cfg)}s / rest {2 * base_tail(cfg)}s, "
-               f"sweep every {effective_sweep(cfg)}s")
+        return dim(
+            "  memory saver OFF — the timed sweep never fires; closed "
+            "surfaces stay resident until `pill unloadAll` or a restart"
+        )
+    return dim(
+        f"  memory saver on: base {base_tail(cfg)}s (floored at 10), "
+        f"heaviest tier {base_tail(cfg)}s / rest {2 * base_tail(cfg)}s, "
+        f"sweep every {effective_sweep(cfg)}s"
+    )
+
 
 # --------------------------------------------------------------------------
 # phases
+
 
 def measure(pid, secs, tag, every=0.5):
     """Sample RSS over `secs` seconds; return peak & samples."""
@@ -456,17 +570,31 @@ def measure(pid, secs, tag, every=0.5):
     t0 = time.monotonic()
     while time.monotonic() - t0 < secs:
         rss, anon, swap = mem_kb(pid)
-        if rss > peak:
-            peak = rss
-        rows.append({"t": time.monotonic(), "tag": tag, "rss_kb": rss,
-                     "anon_kb": anon, "swap_kb": swap})
+        peak = max(peak, rss)
+        rows.append(
+            {
+                "t": time.monotonic(),
+                "tag": tag,
+                "rss_kb": rss,
+                "anon_kb": anon,
+                "swap_kb": swap,
+            }
+        )
         time.sleep(every)
     if not rows:  # secs was 0 — still take one reading
         rss, anon, swap = mem_kb(pid)
-        rows.append({"t": time.monotonic(), "tag": tag, "rss_kb": rss,
-                     "anon_kb": anon, "swap_kb": swap})
+        rows.append(
+            {
+                "t": time.monotonic(),
+                "tag": tag,
+                "rss_kb": rss,
+                "anon_kb": anon,
+                "swap_kb": swap,
+            }
+        )
         peak = rss
     return peak, rows
+
 
 def slope_mb_min(rows):
     """Least-squares RSS trend over a sample run, in MB/min."""
@@ -483,10 +611,12 @@ def slope_mb_min(rows):
         return 0.0
     return ((n * sxy - sx * sy) / denom) * 60 / 1024
 
+
 def run_soak(args):
     global RUNNING
     RUNNING = True
     out = []
+
     def log(s=""):
         print(s)
         out.append(s)
@@ -516,7 +646,7 @@ def run_soak(args):
         pid, ok = restart_shell()
         if not ok:
             return 2
-        time.sleep(4)   # let the surfaces/OSD settle before the baseline
+        time.sleep(4)  # let the surfaces/OSD settle before the baseline
     else:
         pid = ensure_shell()
         if pid is None:
@@ -524,7 +654,9 @@ def run_soak(args):
             return 2
     baseline = mem_kb(pid)[0]
     log(bold("\n== baseline =="))
-    log(f"  rss {fmt_mb(baseline)}   anon {fmt_mb(mem_kb(pid)[1])}   pid {cyan(str(pid))}")
+    log(
+        f"  rss {fmt_mb(baseline)}   anon {fmt_mb(mem_kb(pid)[1])}   pid {cyan(str(pid))}"
+    )
     log(saver_line(cfg))
     log("")
 
@@ -543,8 +675,16 @@ def run_soak(args):
         log(dim(f"  (skipping risky surfaces: {' '.join(skipped)})"))
 
     log(bold("== stress =="))
-    log(dim("  " + "surface".ljust(14) + "open".rjust(11) + "peak".rjust(11)
-            + "closed".rjust(11) + "Δ".rjust(11)))
+    log(
+        dim(
+            "  "
+            + "surface".ljust(14)
+            + "open".rjust(11)
+            + "peak".rjust(11)
+            + "closed".rjust(11)
+            + "Δ".rjust(11)
+        )
+    )
     rows = []
     ipc("pill", "hide")  # deterministic start: nothing open
     for cycle in range(1, args.cycles + 1):
@@ -578,18 +718,26 @@ def run_soak(args):
             if rc != 0:
                 log(f"  {s.ljust(14)}{yellow('ipc failed: ' + (err or '?'))}")
                 continue
-            time.sleep(args.open)                     # async build + morph settle
+            time.sleep(args.open)  # async build + morph settle
             open_kb = mem_kb(pid)[0]
             _, peek_rows = measure(pid, args.peak, f"open:{s}", every=0.4)
             peak_kb = max(r["rss_kb"] for r in peek_rows)
             ipc("pill", "hide")
-            time.sleep(args.hold)                     # close dissolve
+            time.sleep(args.hold)  # close dissolve
             closed_kb = mem_kb(pid)[0]
-            log(f"  {s.ljust(14)}{fmt_mb(open_kb)}{fmt_mb(peak_kb)}"
-                f"{fmt_mb(closed_kb)}{delta_mb(open_kb, closed_kb)}")
-            row = {"surface": s, "cycle": cycle, "before_kb": before_kb,
-                   "open_kb": open_kb, "peak_kb": peak_kb, "closed_kb": closed_kb,
-                   "dropped_kb": None}
+            log(
+                f"  {s.ljust(14)}{fmt_mb(open_kb)}{fmt_mb(peak_kb)}"
+                f"{fmt_mb(closed_kb)}{delta_mb(open_kb, closed_kb)}"
+            )
+            row = {
+                "surface": s,
+                "cycle": cycle,
+                "before_kb": before_kb,
+                "open_kb": open_kb,
+                "peak_kb": peak_kb,
+                "closed_kb": closed_kb,
+                "dropped_kb": None,
+            }
             if args.per_surface:
                 # The reclaim probe: at this instant this surface is the only one
                 # closed and resident, so what the drop returns is its own tree.
@@ -611,8 +759,16 @@ def run_soak(args):
     dialog = None
     if args.dialog:
         log(bold("\n== dialog =="))
-        log(dim("  " + "dialog".ljust(14) + "before".rjust(11) + "peak".rjust(11)
-                + "after".rjust(11) + "Δ".rjust(11)))
+        log(
+            dim(
+                "  "
+                + "dialog".ljust(14)
+                + "before".rjust(11)
+                + "peak".rjust(11)
+                + "after".rjust(11)
+                + "Δ".rjust(11)
+            )
+        )
         before = mem_kb(pid)[0]
         rc, err = ipc("settings", "toggle")
         if rc != 0:
@@ -622,12 +778,18 @@ def run_soak(args):
             _, d_rows = measure(pid, args.peak, "dialog", every=0.4)
             peak_kb = max(r["rss_kb"] for r in d_rows)
             ipc("settings", "hide")
-            log(dim(f"  holding {args.dialog_teardown:g}s: the window teardown "
-                    "starts 5s after the close"))
+            log(
+                dim(
+                    f"  holding {args.dialog_teardown:g}s: the window teardown "
+                    "starts 5s after the close"
+                )
+            )
             time.sleep(args.dialog_teardown)
             after = mem_kb(pid)[0]
-            log(f"  {'settings'.ljust(14)}{fmt_mb(before)}{fmt_mb(peak_kb)}"
-                f"{fmt_mb(after)}{delta_mb(peak_kb, after)}")
+            log(
+                f"  {'settings'.ljust(14)}{fmt_mb(before)}{fmt_mb(peak_kb)}"
+                f"{fmt_mb(after)}{delta_mb(peak_kb, after)}"
+            )
             dialog = {"before_kb": before, "peak_kb": peak_kb, "after_kb": after}
 
     # -- phase 4: reclaim ---------------------------------------------------
@@ -646,38 +808,72 @@ def run_soak(args):
     offenders = []
     timed = None
     if probed:
-        log(dim("  per surface: `pill unloadAll` right after each close, while that "
+        log(
+            dim(
+                "  per surface: `pill unloadAll` right after each close, while that "
                 "surface is the only one closed — so the drop is its own tree. "
-                "`held` is what it still had at close, `freed` what the drop returned"))
-        log(dim("  " + "surface".ljust(14) + "closed".rjust(11) + "dropped".rjust(11)
-                + "held".rjust(11) + "freed".rjust(11) + "   verdict"))
+                "`held` is what it still had at close, `freed` what the drop returned"
+            )
+        )
+        log(
+            dim(
+                "  "
+                + "surface".ljust(14)
+                + "closed".rjust(11)
+                + "dropped".rjust(11)
+                + "held".rjust(11)
+                + "freed".rjust(11)
+                + "   verdict"
+            )
+        )
         for r in probed:
             held = r["closed_kb"] - r["before_kb"]
             freed = r["closed_kb"] - r["dropped_kb"]
             kept = r["dropped_kb"] - r["before_kb"]
             if held < LEAK_TOL_KB:
-                why = ("no player loaded, so the handler no-oped" if r["surface"] == "media"
-                       else ("nothing was running, or a running timer is pinned rather "
-                             "than evicted" if r["surface"] == "timer"
-                             else "its tree is under the tolerance"))
+                why = (
+                    "no player loaded, so the handler no-oped"
+                    if r["surface"] == "media"
+                    else (
+                        "nothing was running, or a running timer is pinned rather "
+                        "than evicted"
+                        if r["surface"] == "timer"
+                        else "its tree is under the tolerance"
+                    )
+                )
                 verdict = dim(f"nothing held ({why})")
             elif freed >= held - LEAK_TOL_KB:
                 verdict = green("returned")
             else:
                 verdict = red(f"kept {kept / 1024:.1f} MB")
                 offenders.append(r["surface"])
-            log(f"  {r['surface'].ljust(14)}{fmt_mb(r['closed_kb'])}{fmt_mb(r['dropped_kb'])}"
+            log(
+                f"  {r['surface'].ljust(14)}{fmt_mb(r['closed_kb'])}{fmt_mb(r['dropped_kb'])}"
                 f"{delta_mb(r['before_kb'], r['closed_kb']).rjust(11)}"
-                f"{delta_mb(r['dropped_kb'], r['closed_kb']).rjust(11)}   {verdict}")
+                f"{delta_mb(r['dropped_kb'], r['closed_kb']).rjust(11)}   {verdict}"
+            )
         if offenders:
-            log(red(f"  {len(offenders)}/{len(probed)} surfaces did not give their memory "
-                    f"back: {' '.join(offenders)}"))
-            log(dim(f"  the shell also moved {(mem_kb(pid)[0] - baseline) / 1024:+.1f} MB on "
+            log(
+                red(
+                    f"  {len(offenders)}/{len(probed)} surfaces did not give their memory "
+                    f"back: {' '.join(offenders)}"
+                )
+            )
+            log(
+                dim(
+                    f"  the shell also moved {(mem_kb(pid)[0] - baseline) / 1024:+.1f} MB on "
                     "its own over the run (baseline -> now): a row within a MB or two of "
-                    "the line is usually that drift, not the surface"))
+                    "the line is usually that drift, not the surface"
+                )
+            )
         else:
-            log(green(f"  all {len(probed)} surface" + ("s" if len(probed) != 1 else "")
-                      + " returned to where they started"))
+            log(
+                green(
+                    f"  all {len(probed)} surface"
+                    + ("s" if len(probed) != 1 else "")
+                    + " returned to where they started"
+                )
+            )
     else:
         log(dim("  per-surface probes skipped (--no-per-surface)"))
 
@@ -686,29 +882,48 @@ def run_soak(args):
     if args.timed_surface not in ("", "auto"):
         name = args.timed_surface
         if name not in surfaces:
-            log(dim(f"  note: --timed-surface {name} is not in this run's surface list"))
+            log(
+                dim(f"  note: --timed-surface {name} is not in this run's surface list")
+            )
     else:
-        name = next((s for s in surfaces if s in BASE_TIER), surfaces[0] if surfaces else "")
-    secs = args.reclaim if args.reclaim is not None else (
-        timed_wait(name, cfg) if (name and sweep_runs(cfg)) else 0)
+        name = next(
+            (s for s in surfaces if s in BASE_TIER), surfaces[0] if surfaces else ""
+        )
+    secs = (
+        args.reclaim
+        if args.reclaim is not None
+        else (timed_wait(name, cfg) if (name and sweep_runs(cfg)) else 0)
+    )
 
     if not sweep_runs(cfg):
-        log(dim("  timed sweep skipped: the memory saver is off and game mode is off, "
-                "so a closed surface stays resident until `pill unloadAll` or a restart"))
+        log(
+            dim(
+                "  timed sweep skipped: the memory saver is off and game mode is off, "
+                "so a closed surface stays resident until `pill unloadAll` or a restart"
+            )
+        )
     elif not name:
         log(dim("  timed sweep skipped: no surface in this run to leave to it"))
     elif secs <= 0:
         log(dim("  timed sweep skipped (--reclaim 0)"))
     else:
         if cfg["game"]:
-            log(dim(f"  timed sweep: open + close {name}, then {secs:.0f}s idle — game "
+            log(
+                dim(
+                    f"  timed sweep: open + close {name}, then {secs:.0f}s idle — game "
                     f"mode's harsh tail ({game_tail(cfg):g}s, any tier) + one "
-                    f"{effective_sweep(cfg)}s sweep tick, with no manual drop"))
+                    f"{effective_sweep(cfg)}s sweep tick, with no manual drop"
+                )
+            )
         else:
-            tier = ("the base" if name in BASE_TIER else "2× the base")
-            log(dim(f"  timed sweep: open + close {name}, then {secs:.0f}s idle — its own "
+            tier = "the base" if name in BASE_TIER else "2× the base"
+            log(
+                dim(
+                    f"  timed sweep: open + close {name}, then {secs:.0f}s idle — its own "
                     f"tier ({tier_tail(name, cfg):.0f}s = {tier} {base_tail(cfg)}s) + one "
-                    f"{effective_sweep(cfg)}s sweep tick, with no manual drop"))
+                    f"{effective_sweep(cfg)}s sweep tick, with no manual drop"
+                )
+            )
         ipc("pill", "hide")
         time.sleep(0.5)
         pre = mem_kb(pid)[0]
@@ -718,21 +933,41 @@ def run_soak(args):
         time.sleep(args.hold + secs)
         after = mem_kb(pid)[0]
         kept = after - pre
-        timed = {"surface": name, "held_s": secs, "before_kb": pre,
-                 "after_kb": after, "kept_kb": kept}
-        verdict = (red(f"kept {kept / 1024:.1f} MB") if kept > LEAK_TOL_KB
-                   else green("returned"))
-        log(dim("  " + "surface".ljust(14) + "before".rjust(11) + "after".rjust(11)
-                + "kept".rjust(11) + "   verdict"))
-        log(f"  {name.ljust(14)}{fmt_mb(pre)}{fmt_mb(after)}"
-            f"{delta_mb(pre, after).rjust(11)}   {verdict}")
+        timed = {
+            "surface": name,
+            "held_s": secs,
+            "before_kb": pre,
+            "after_kb": after,
+            "kept_kb": kept,
+        }
+        verdict = (
+            red(f"kept {kept / 1024:.1f} MB")
+            if kept > LEAK_TOL_KB
+            else green("returned")
+        )
+        log(
+            dim(
+                "  "
+                + "surface".ljust(14)
+                + "before".rjust(11)
+                + "after".rjust(11)
+                + "kept".rjust(11)
+                + "   verdict"
+            )
+        )
+        log(
+            f"  {name.ljust(14)}{fmt_mb(pre)}{fmt_mb(after)}"
+            f"{delta_mb(pre, after).rjust(11)}   {verdict}"
+        )
 
     # -- phase 5: quiet trend ----------------------------------------------
     log(bold(f"\n== quiet ({args.quiet:g}s) =="))
     _, q_rows = measure(pid, args.quiet, "quiet", every=1.0)
     slope = slope_mb_min(q_rows)
-    log(f"  start {fmt_mb(q_rows[0]['rss_kb'])}   end {fmt_mb(q_rows[-1]['rss_kb'])}   "
-        f"trend {slope:+.2f} MB/min")
+    log(
+        f"  start {fmt_mb(q_rows[0]['rss_kb'])}   end {fmt_mb(q_rows[-1]['rss_kb'])}   "
+        f"trend {slope:+.2f} MB/min"
+    )
 
     # -- summary ------------------------------------------------------------
     peak_all = max((r["peak_kb"] for r in rows), default=0)
@@ -746,100 +981,195 @@ def run_soak(args):
     log(f"  end       : {fmt_mb(end_kb)}")
     log(f"  net       : {(end_kb - baseline) / 1024:+.1f} MB over the run")
     if probed:
-        log(f"  reclaim   : {len(probed) - len(offenders)}/{len(probed)} surfaces returned"
-            + ("" if not offenders else f" — kept: {' '.join(offenders)}"))
+        log(
+            f"  reclaim   : {len(probed) - len(offenders)}/{len(probed)} surfaces returned"
+            + ("" if not offenders else f" — kept: {' '.join(offenders)}")
+        )
     if timed is not None:
-        log(f"  timed     : {timed['surface']} "
-            + ("returned" if timed["kept_kb"] <= LEAK_TOL_KB
-               else f"kept {timed['kept_kb'] / 1024:.1f} MB")
-            + (f" on game mode's {game_tail(cfg):g}s tail" if cfg["game"]
-               else " on its own tier"))
+        log(
+            f"  timed     : {timed['surface']} "
+            + (
+                "returned"
+                if timed["kept_kb"] <= LEAK_TOL_KB
+                else f"kept {timed['kept_kb'] / 1024:.1f} MB"
+            )
+            + (
+                f" on game mode's {game_tail(cfg):g}s tail"
+                if cfg["game"]
+                else " on its own tier"
+            )
+        )
     if dialog:
-        log(f"  dialog    : {(dialog['peak_kb'] - dialog['after_kb']) / 1024:+.1f} MB "
-            "returned after its teardown")
+        log(
+            f"  dialog    : {(dialog['peak_kb'] - dialog['after_kb']) / 1024:+.1f} MB "
+            "returned after its teardown"
+        )
     log(f"  trend     : {slope:+.2f} MB/min idle (quiet phase)")
     log(dim(f"  log: {log_path}"))
-    log(dim("  tip: a surface marked kept after `pill unloadAll` is a leak in its "
+    log(
+        dim(
+            "  tip: a surface marked kept after `pill unloadAll` is a leak in its "
             "own tree (or its service); a timed sweep that keeps memory means the "
             "sweep is not running (Timers page); a net that grows per cycle = the "
-            "open/close path; an idle trend above ~+1 MB/min = a slow leak"))
+            "open/close path; an idle trend above ~+1 MB/min = a slow leak"
+        )
+    )
 
-    payload = {"ts": ts, "baseline_kb": baseline, "end_kb": end_kb,
-               "peak_kb": peak_kb, "trend_mb_min": slope,
-               "saver": cfg, "leak_tol_kb": LEAK_TOL_KB,
-               "reclaim": {
-                   "per_surface": [{"surface": r["surface"], "before_kb": r["before_kb"],
-                                    "peak_kb": r["peak_kb"], "closed_kb": r["closed_kb"],
-                                    "dropped_kb": r["dropped_kb"],
-                                    "held_kb": r["closed_kb"] - r["before_kb"],
-                                    "freed_kb": r["closed_kb"] - r["dropped_kb"],
-                                    "kept_kb": r["dropped_kb"] - r["before_kb"]}
-                                   for r in probed],
-                   "kept": offenders,
-                   "timed": timed},
-               "dialog": dialog, "rows": rows}
+    payload = {
+        "ts": ts,
+        "baseline_kb": baseline,
+        "end_kb": end_kb,
+        "peak_kb": peak_kb,
+        "trend_mb_min": slope,
+        "saver": cfg,
+        "leak_tol_kb": LEAK_TOL_KB,
+        "reclaim": {
+            "per_surface": [
+                {
+                    "surface": r["surface"],
+                    "before_kb": r["before_kb"],
+                    "peak_kb": r["peak_kb"],
+                    "closed_kb": r["closed_kb"],
+                    "dropped_kb": r["dropped_kb"],
+                    "held_kb": r["closed_kb"] - r["before_kb"],
+                    "freed_kb": r["closed_kb"] - r["dropped_kb"],
+                    "kept_kb": r["dropped_kb"] - r["before_kb"],
+                }
+                for r in probed
+            ],
+            "kept": offenders,
+            "timed": timed,
+        },
+        "dialog": dialog,
+        "rows": rows,
+    }
     with open(log_path + ".json", "w") as f:
         json.dump(payload, f, indent=2)
     with open(log_path, "w") as f:
         f.write("\n".join(out) + "\n")
     return 0
 
+
 def main():
     global COLOR, ALLOW_LOCKED, LEAK_TOL_KB
     ap = argparse.ArgumentParser(description="memory soak for silhouette-shell")
-    ap.add_argument("--no-restart", dest="restart", action="store_false",
-                    help="don't restart the shell first")
-    ap.add_argument("--restart", dest="restart", action="store_true",
-                    help="restart the shell first (default)")
+    ap.add_argument(
+        "--no-restart",
+        dest="restart",
+        action="store_false",
+        help="don't restart the shell first",
+    )
+    ap.add_argument(
+        "--restart",
+        dest="restart",
+        action="store_true",
+        help="restart the shell first (default)",
+    )
     ap.set_defaults(restart=True)
     ap.add_argument("--cycles", type=int, default=1, help="stress cycles (default 1)")
-    ap.add_argument("--open", type=float, default=2.5,
-                    help="seconds to wait after opening a surface (default 2.5)")
-    ap.add_argument("--peak", type=float, default=1.5,
-                    help="seconds to sample the open peak (default 1.5)")
-    ap.add_argument("--hold", type=float, default=4.0,
-                    help="seconds to wait after closing a surface (default 4)")
-    ap.add_argument("--reclaim", type=float, default=None,
-                    help="idle seconds to wait for the timed sweep in the end-of-run "
-                         "probe; default is auto — the probe surface's own tail + one "
-                         "sweep tick (game mode's harsh tail and capped sweep while "
-                         "it is on) — and 0 skips it")
-    ap.add_argument("--unload-settle", type=float, default=2.0,
-                    help="seconds after each per-surface `pill unloadAll` before reading "
-                         "RSS, i.e. the Loader teardown (default 2)")
-    ap.add_argument("--warmup", dest="warmup", action="store_true",
-                    help="open + close each surface once, unmeasured, before the "
-                         "measured one so one-time compile/service costs are not "
-                         "charged to its reclaim (default)")
+    ap.add_argument(
+        "--open",
+        type=float,
+        default=2.5,
+        help="seconds to wait after opening a surface (default 2.5)",
+    )
+    ap.add_argument(
+        "--peak",
+        type=float,
+        default=1.5,
+        help="seconds to sample the open peak (default 1.5)",
+    )
+    ap.add_argument(
+        "--hold",
+        type=float,
+        default=4.0,
+        help="seconds to wait after closing a surface (default 4)",
+    )
+    ap.add_argument(
+        "--reclaim",
+        type=float,
+        default=None,
+        help="idle seconds to wait for the timed sweep in the end-of-run "
+        "probe; default is auto — the probe surface's own tail + one "
+        "sweep tick (game mode's harsh tail and capped sweep while "
+        "it is on) — and 0 skips it",
+    )
+    ap.add_argument(
+        "--unload-settle",
+        type=float,
+        default=2.0,
+        help="seconds after each per-surface `pill unloadAll` before reading "
+        "RSS, i.e. the Loader teardown (default 2)",
+    )
+    ap.add_argument(
+        "--warmup",
+        dest="warmup",
+        action="store_true",
+        help="open + close each surface once, unmeasured, before the "
+        "measured one so one-time compile/service costs are not "
+        "charged to its reclaim (default)",
+    )
     ap.add_argument("--no-warmup", dest="warmup", action="store_false")
     ap.set_defaults(warmup=True)
-    ap.add_argument("--per-surface", dest="per_surface", action="store_true",
-                    help="probe every closed surface with `pill unloadAll` right after its "
-                         "own close, so the reclaim table is per surface (default)")
+    ap.add_argument(
+        "--per-surface",
+        dest="per_surface",
+        action="store_true",
+        help="probe every closed surface with `pill unloadAll` right after its "
+        "own close, so the reclaim table is per surface (default)",
+    )
     ap.add_argument("--no-per-surface", dest="per_surface", action="store_false")
     ap.set_defaults(per_surface=True)
-    ap.add_argument("--leak-tol", type=float, default=LEAK_TOL_KB / 1024,
-                    help="MB a surface may still hold after its drop and count as "
-                         "returned (default 1)")
-    ap.add_argument("--timed-surface", default="auto",
-                    help="surface to leave to the memory saver's own tier tail "
-                         "(default: the heaviest tier of the ones in this run — "
-                         "wallpaper or mixer)")
-    ap.add_argument("--dialog", dest="dialog", action="store_true",
-                    help="toggle the settings dialog and wait out its teardown (default)")
+    ap.add_argument(
+        "--leak-tol",
+        type=float,
+        default=LEAK_TOL_KB / 1024,
+        help="MB a surface may still hold after its drop and count as "
+        "returned (default 1)",
+    )
+    ap.add_argument(
+        "--timed-surface",
+        default="auto",
+        help="surface to leave to the memory saver's own tier tail "
+        "(default: the heaviest tier of the ones in this run — "
+        "wallpaper or mixer)",
+    )
+    ap.add_argument(
+        "--dialog",
+        dest="dialog",
+        action="store_true",
+        help="toggle the settings dialog and wait out its teardown (default)",
+    )
     ap.add_argument("--no-dialog", dest="dialog", action="store_false")
     ap.set_defaults(dialog=True)
-    ap.add_argument("--dialog-teardown", type=float, default=8.0,
-                    help="seconds to wait after closing the settings dialog: its window "
-                         "is destroyed 5s after the close (default 8)")
-    ap.add_argument("--quiet", type=float, default=20.0,
-                    help="quiet soak length, seconds (default 20)")
-    ap.add_argument("--surfaces", default=" ".join(DEFAULT_SURFACES),
-                    help="space-separated surface names to cycle")
-    ap.add_argument("--wait-unlock", action="store_true",
-                    help="wait (up to 300s) for the session to unlock instead of aborting")
-    ap.add_argument("--allow-locked", action="store_true",
-                    help="run even if logind reports the session locked")
+    ap.add_argument(
+        "--dialog-teardown",
+        type=float,
+        default=8.0,
+        help="seconds to wait after closing the settings dialog: its window "
+        "is destroyed 5s after the close (default 8)",
+    )
+    ap.add_argument(
+        "--quiet",
+        type=float,
+        default=20.0,
+        help="quiet soak length, seconds (default 20)",
+    )
+    ap.add_argument(
+        "--surfaces",
+        default=" ".join(DEFAULT_SURFACES),
+        help="space-separated surface names to cycle",
+    )
+    ap.add_argument(
+        "--wait-unlock",
+        action="store_true",
+        help="wait (up to 300s) for the session to unlock instead of aborting",
+    )
+    ap.add_argument(
+        "--allow-locked",
+        action="store_true",
+        help="run even if logind reports the session locked",
+    )
     ap.add_argument("--color", choices=["auto", "always", "never"], default="auto")
     args = ap.parse_args()
 
@@ -853,15 +1183,21 @@ def main():
     if not shutil.which("qs"):
         print(red("qs not found on PATH"), file=sys.stderr)
         return 1
-    if "WAYLAND_DISPLAY" not in os.environ or "HYPRLAND_INSTANCE_SIGNATURE" not in os.environ:
-        print(red("no Wayland/Hyprland env — refusing to run outside a session"),
-              file=sys.stderr)
+    if (
+        "WAYLAND_DISPLAY" not in os.environ
+        or "HYPRLAND_INSTANCE_SIGNATURE" not in os.environ
+    ):
+        print(
+            red("no Wayland/Hyprland env — refusing to run outside a session"),
+            file=sys.stderr,
+        )
         return 1
     if not os.path.exists(os.path.join(SHELL_PATH, "shell.qml")):
         print(red(f"no shell.qml under {SHELL_PATH} — set SHELL_PATH"), file=sys.stderr)
         return 1
     args.surfaces = args.surfaces.split()
     return run_soak(args)
+
 
 if __name__ == "__main__":
     code = 0

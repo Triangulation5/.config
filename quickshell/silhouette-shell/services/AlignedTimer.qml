@@ -50,7 +50,7 @@ Timer {
         const d = new Date();
         const period = Math.max(1, root.period);
         const phase = (d.getSeconds() * 1000 + d.getMilliseconds()) % period;
-        // Arm before emitting, so a handler that throws cannot leave the timer dead.
+        /** Arm before emitting, so a handler that throws cannot leave the timer dead. */
         root.interval = period - phase + root.margin;
         root.restart();
         root.tick(d);
