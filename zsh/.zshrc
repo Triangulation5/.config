@@ -51,7 +51,7 @@ alias cc="gcc -Wall -Wextra -std=c23 -pedantic "
 export PATH="$HOME/.local/bin:$PATH"
 
 bindkey -s '^F' 'cd "$(dirname "$(fzf)")"\n'
-bindkey -s $'\e\C-f' '~/.config/hypr/scripts/tmux-session-dispensary.sh\n'
+bindkey -s $'\e\C-f' '~/.config/scripts/tmux-session-dispensary.sh\n'
 
 # Load the plugin last
 source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

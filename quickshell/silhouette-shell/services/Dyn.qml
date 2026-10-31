@@ -101,7 +101,7 @@ Singleton {
     Process {
         id: regen
         command: ["sh", "-c",
-            "f=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper\"; pic=$(cat \"$f\" 2>/dev/null); [ -f \"$pic\" ] && python3 \"$HOME/.config/hypr/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true"]
+            "f=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper\"; pic=$(cat \"$f\" 2>/dev/null); [ -f \"$pic\" ] && python3 \"$HOME/.config/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true"]
 
         onRunningChanged: {
             if (!running && root.regenPending) {
@@ -115,7 +115,7 @@ Singleton {
     Process {
         id: manualRegen
         command: ["sh", "-c",
-            "python3 \"$HOME/.config/hypr/scripts/wallcolors.py\" --hue \"$1\" \"$2\" \"$3\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
+            "python3 \"$HOME/.config/scripts/wallcolors.py\" --hue \"$1\" \"$2\" \"$3\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
             "sh", root.hueArg, root.modeArg, root.satArg]
 
         onRunningChanged: {

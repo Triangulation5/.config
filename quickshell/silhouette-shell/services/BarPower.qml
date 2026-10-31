@@ -69,7 +69,7 @@ Singleton {
 
     readonly property int armWindow: 2500
 
-    readonly property string lockScript: Quickshell.env("HOME") + "/.config/hypr/scripts/lock.sh"
+    readonly property string lockScript: Quickshell.env("HOME") + "/.config/scripts/lock.sh"
 
     /**
      * The same five as the pill's power surface, same order, same `confirm` flags.

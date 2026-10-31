@@ -1,8 +1,8 @@
 local terminal    = "kitty"
 local fileManager = "nautilus"
 local browser     = "firefox"
-local quickshell  = "~/.config/hypr/scripts/open-surface.sh"
-local locker      = "~/.config/hypr/scripts/lock.sh"
+local quickshell  = "~/.config/scripts/open-surface.sh"
+local locker      = "~/.config/scripts/lock.sh"
 local screenshots = "~/.local/bin/rishot"
 
 local mainMod = "SUPER" -- "Windows" key
@@ -10,7 +10,7 @@ local mainMod = "SUPER" -- "Windows" key
 hl.bind(mainMod .. " + Return",    hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + C",         hl.dsp.window.close())
 hl.bind(mainMod .. " + O",         hl.dsp.exec_cmd(locker))
-hl.bind(mainMod .. " + R",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/reload.sh"))
+hl.bind(mainMod .. " + R",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/reload.sh"))
 hl.bind(mainMod .. " + E",         hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F",         hl.dsp.window.float({ action = "toggle" }))
@@ -20,7 +20,7 @@ hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + SPACE",     hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd(quickshell .. " link"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(quickshell .. " calendar"))
-hl.bind(mainMod .. " + B",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/record.sh"))
+hl.bind(mainMod .. " + B",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/record.sh"))
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(quickshell .. " record"))
 hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd(quickshell .. " mixer"))
 hl.bind(mainMod .. " + M",         hl.dsp.exec_cmd(quickshell .. " power"))
@@ -36,7 +36,7 @@ hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd(quickshell .. " timer"))
 hl.bind(mainMod .. " + W",         hl.dsp.exec_cmd(quickshell .. " wallpaper"))
 hl.bind(mainMod .. " + G",         hl.dsp.exec_cmd(quickshell .. " gameMode"))
 hl.bind(mainMod .. " + D",         hl.dsp.exec_cmd(quickshell .. " dwmBar"))
-hl.bind(mainMod .. " + X",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/minimize-toggle.sh"))
+hl.bind(mainMod .. " + X",         hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/minimize-toggle.sh"))
 hl.bind(mainMod .. " + V",         hl.dsp.exec_cmd(quickshell .. " clipboard"))
 
 hl.bind("Print",         hl.dsp.exec_cmd(screenshots))
@@ -67,9 +67,9 @@ end
 hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 -- hl.bind(mainMod .. " + P",         hl.dsp.workspace.toggle_special("private"))
--- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh private"))
+-- hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/special-toggle.sh private"))
 -- hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("stash"))
--- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/scripts/special-toggle.sh stash"))
+-- hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/special-toggle.sh stash"))
 
 -- Scroll through existing workspaces with mainMod + scroll
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))

@@ -72,6 +72,9 @@ Singleton {
 
     readonly property string stylePath: Quickshell.env("HOME") + "/.config/hypr/modules/style.lua"
 
+    readonly property string kittyOpacityScript:
+        Quickshell.env("HOME") + "/.config/scripts/update-kitty-opacity.sh"
+
     /**
      * What the file is meant to say, as a word Lua reads.
      *
@@ -132,14 +135,17 @@ Singleton {
     function scriptArg() {
         var dir = stylePath.substring(0, stylePath.lastIndexOf("/"));
         var w = wanted;
+
         return [
             "set -e",
             "dir=" + JSON.stringify(dir),
             "file=" + JSON.stringify(stylePath),
+            "kitty_script=" + JSON.stringify(kittyOpacityScript),
             "mkdir -p \"$dir\"",
             "[ -f \"$file\" ] || printf '%s\\n' 'return {' '    dwmStyle = " + w + ",' '}' > \"$file\"",
             "grep -Eq '^[[:space:]]*dwmStyle[[:space:]]*=' \"$file\" || printf '%s\\n' '    dwmStyle = " + w + ",' >> \"$file\"",
-            "sed -i -E 's/^([[:space:]]*dwmStyle[[:space:]]*=[[:space:]]*)(true|false)/\\1" + w + "/' \"$file\""
+            "sed -i -E 's/^([[:space:]]*dwmStyle[[:space:]]*=[[:space:]]*)(true|false)/\\1" + w + "/' \"$file\"",
+            "[ ! -x \"$kitty_script\" ] || \"$kitty_script\""
         ].join("; ");
     }
 

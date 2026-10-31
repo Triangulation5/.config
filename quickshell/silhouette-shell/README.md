@@ -85,12 +85,12 @@ The shell reads its state by path, and those paths used to be `ricelin` ones:
 `~/.local/state/silhouette/flags.json`, the caches, the AppImage registry and
 the wallpaper state all moved. A session that starts without the migration
 running reads new, empty paths and looks brand new — default flags, no calendar,
-a blank wallpaper strip. `hypr/scripts/migrate-state.sh` carries the old tree
+a blank wallpaper strip. `scripts/migrate-state.sh` carries the old tree
 over and `launch.sh` runs it before the shell starts, so a restart is usually
 the whole fix:
 
 ```bash
-~/.config/hypr/scripts/reload.sh    # or Super + R
+~/.config/scripts/reload.sh    # or Super + R
 ```
 
 It is idempotent, moves a path only when the old one exists and the new one does

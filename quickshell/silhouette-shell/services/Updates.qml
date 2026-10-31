@@ -6,7 +6,7 @@ import Quickshell.Io
 /**
  * Update backend for the 更 UPDATES sub-surface: a terminal-free face for the
  * rice update engine. Never touches git itself; it shells out to the python
- * engine at ~/.config/hypr/scripts/rice-update.py, which prints one JSON
+ * engine at ~/.config/scripts/rice-update.py, which prints one JSON
  * object. `check` is a safe dry-run that reports how far behind the install is,
  * the changelog, and any protected file whose local edits clash with upstream;
  * `apply` performs the update, taking upstream wholesale only for the
@@ -23,7 +23,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string engine: Quickshell.env("HOME") + "/.config/hypr/scripts/rice-update.py"
+    readonly property string engine: Quickshell.env("HOME") + "/.config/scripts/rice-update.py"
 
     property string status: ""
     property string version: ""

@@ -43,7 +43,7 @@ Singleton {
     id: root
 
     readonly property bool active: Flags.gameMode
-    readonly property string script: Quickshell.env("HOME") + "/.config/hypr/scripts/gamemode.sh"
+    readonly property string script: Quickshell.env("HOME") + "/.config/scripts/gamemode.sh"
     property string pending: ""
 
     /**

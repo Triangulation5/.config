@@ -54,7 +54,7 @@ Singleton {
     readonly property int total: allEntries.length
     readonly property var results: root.open ? Fuzzy.rank(allEntries, query, usage) : []
 
-    readonly property string guardScript: Quickshell.env("HOME") + "/.config/hypr/scripts/launch-guard.sh"
+    readonly property string guardScript: Quickshell.env("HOME") + "/.config/scripts/launch-guard.sh"
 
     FileView {
         id: usageStore

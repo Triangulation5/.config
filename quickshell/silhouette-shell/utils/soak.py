@@ -8,7 +8,7 @@ every surface, window and the memory saver that frees them live inside it. So
 "the shell" is a single qs server, and this measures that one process:
 
   restart   optionally restart it first (SIGTERM + relaunch, the same shape
-            hypr/scripts/reload.sh has) — never while the session is locked
+            scripts/reload.sh has) — never while the session is locked
   stress    open + close every pill surface once through the pill's generic
             `page` door, sampling RSS at each step
   dialog    toggle the settings dialog, whose window is built on first open and
@@ -289,7 +289,7 @@ def launch_form():
     return "-p", SHELL_PATH
 
 def relaunch():
-    """Start the shell detached, mirroring hypr/scripts/reload.sh (qs.log)."""
+    """Start the shell detached, mirroring scripts/reload.sh (qs.log)."""
     flag, val = launch_form()
     log = os.path.join(LOG_DIR, "qs.log")
     os.makedirs(LOG_DIR, exist_ok=True)

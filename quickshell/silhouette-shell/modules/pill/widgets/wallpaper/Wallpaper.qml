@@ -262,7 +262,7 @@ PillSurface {
         }
     }
 
-    readonly property string searchScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-search.sh"
+    readonly property string searchScript: Quickshell.env("HOME") + "/.config/scripts/wallpaper-search.sh"
 
     /**
      * The folder name for the empty state, home-relative so the caption stays

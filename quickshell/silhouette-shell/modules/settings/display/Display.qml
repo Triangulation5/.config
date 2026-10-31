@@ -44,7 +44,7 @@ SettingsSurface {
     contentClip: true
 
     readonly property string monitorsPath: Quickshell.env("HOME") + "/.config/hypr/modules/monitors.lua"
-    readonly property string helper: Quickshell.env("HOME") + "/.config/hypr/scripts/display-apply.sh"
+    readonly property string helper: Quickshell.env("HOME") + "/.config/scripts/display-apply.sh"
 
     property var monitors: []
     property string pendingOut: ""

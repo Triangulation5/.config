@@ -74,7 +74,7 @@ PillSurface {
         onTriggered: {
             Quickshell.execDetached([
                 "sh",
-                Quickshell.env("HOME") + "/.config/hypr/scripts/lock.sh"
+                Quickshell.env("HOME") + "/.config/scripts/lock.sh"
             ]);
             root.requestClose();
         }
@@ -94,7 +94,7 @@ PillSurface {
     amePoint: Qt.point(heatX, heatY)
 
     readonly property var actions: [
-        { key: "lock",     glyph: "lock",     label: "Lock",     confirm: false, dispatch: "",             argv: [Quickshell.env("HOME") + "/.config/hypr/scripts/lock.sh"] },
+        { key: "lock",     glyph: "lock",     label: "Lock",     confirm: false, dispatch: "",             argv: [Quickshell.env("HOME") + "/.config/scripts/lock.sh"] },
         { key: "logout",   glyph: "logout",   label: "Logout",   confirm: true,  dispatch: "hl.dsp.exit()", argv: [] },
         { key: "suspend",  glyph: "suspend",  label: "Sleep",    confirm: false, dispatch: "",             argv: ["systemctl", "suspend"] },
         { key: "reboot",   glyph: "reboot",   label: "Restart",  confirm: true,  dispatch: "",             argv: ["systemctl", "reboot"] },

@@ -33,7 +33,7 @@ import Quickshell.Io
  *
  * Beside the strip it carries the minimal bar's lock backdrop: that lock opens
  * onto the wallpaper instead of a grab of the desktop, so wallpaper.sh mirrors
- * every pick to a file of its own (see hypr/scripts/lock-wallpaper.sh) and
+ * every pick to a file of its own (see scripts/lock-wallpaper.sh) and
  * `lockWallpaper` names the mirror here. Read from disk and not handed over,
  * because the lock needs it on the frame it is raised — including the relock a
  * shell does on start, which lands long before this singleton's own pipeline
@@ -59,8 +59,8 @@ Singleton {
     readonly property string wpDir: Flags.wallpaperDir.length > 0 ? expandHome(Flags.wallpaperDir)
         : (resolvedDir.length > 0 ? resolvedDir : Quickshell.env("HOME") + "/Pictures")
     readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/silhouette-wp-thumbs/"
-    readonly property string thumbScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper-thumbs.sh"
-    readonly property string setScript: Quickshell.env("HOME") + "/.config/hypr/scripts/wallpaper.sh"
+    readonly property string thumbScript: Quickshell.env("HOME") + "/.config/scripts/wallpaper-thumbs.sh"
+    readonly property string setScript: Quickshell.env("HOME") + "/.config/scripts/wallpaper.sh"
     readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-wallpaper"
     readonly property string dirStateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-wallpaper-dir"
     readonly property string lockWallpaperFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette-lock-wallpaper"

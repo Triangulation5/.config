@@ -96,7 +96,7 @@ dialogs land on the pill instead of a bare GTK window, and a nice lock screen.
 - Monitoring: btop, fastfetch
 - Font: JetBrainsMono Nerd Font, FiraCode Nerd Font
 - GTK: Colloid-Grey-Dark, Papirus-Dark, Bibata-Modern-Ice cursor
-- Colors: palette pulled from the wallpaper by `hypr/scripts/wallcolors.py`
+- Colors: palette pulled from the wallpaper by `scripts/wallcolors.py`
 
 ## Colors and the wallpaper
 
@@ -207,7 +207,7 @@ my machine or my habits and will look strange anywhere else:
 - The wallpaper scripts expect a `~/Pictures` collection, `awww` as the
   daemon, and `jq` for the settings handoff.
 - The shell's state, cache and wallpaper files were renamed from `ricelin`
-  paths to `silhouette` ones. `hypr/scripts/migrate-state.sh` carries an older
+  paths to `silhouette` ones. `scripts/migrate-state.sh` carries an older
   tree over, and `launch.sh` runs it before the shell starts, so a restart is
   the whole upgrade. `quickshell/silhouette-shell/README.md` has the recovery
   if a session comes up empty.

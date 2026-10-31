@@ -521,12 +521,12 @@ rewrite_home_paths() {
     done
 }
 
-# Four files in hypr/scripts are not executable in the repo (a helper meant to
+# Four files in scripts are not executable in the repo (a helper meant to
 # be run by hand, and python engines the shell invokes as `python3 <file>`).
 # Make the lot executable anyway: Hyprland's binds exec these by path, and a
 # non-executable one is a bind that silently does nothing.
 ensure_script_modes() {
-    local dir="$CONFIG_DIR/hypr/scripts" f n=0
+    local dir="$CONFIG_DIR/scripts" f n=0
     [ -d "$dir" ] || return 0
     if [ "$DRY_RUN" = "1" ]; then
         printf '    %swould run:%s chmod +x %s/*.sh %s/*.py\n' "$DIM" "$RESET" "$dir" "$dir"
@@ -707,7 +707,7 @@ main() {
     if [ "$DRY_RUN" = "1" ]; then
         note "That was a dry run. Nothing was installed. Drop --dry-run to do it for real."
     else
-        note "Configs are in $CONFIG_DIR, hypr/scripts are executable as shipped."
+        note "Configs are in $CONFIG_DIR, scripts are executable as shipped."
         note "Reload an existing session with Super + R, or log out and start Hyprland."
         note "Roll back with: cp -a $BACKUP_DIR/. $CONFIG_DIR/"
         printf '\n'
