@@ -16,7 +16,7 @@ hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + F",         hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + ALT + F",         hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.pseudo())
-hl.bind("ALT + Q", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/note-inbox.sh"))
+hl.bind("ALT + Q", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/note-inbox.sh --timestamp"))
 
 hl.bind(mainMod .. " + SPACE",     hl.dsp.exec_cmd(quickshell .. " launcher"))
 hl.bind(mainMod .. " + N",         hl.dsp.exec_cmd(quickshell .. " link"))
