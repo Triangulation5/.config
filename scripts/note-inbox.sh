@@ -51,20 +51,20 @@ if (( STAMPED )); then
     STAMP_FILE="$(date '+%Y-%m-%d %-I-%M %p')"
     STAMP_TEXT="$(date '+%Y-%m-%d %-I:%M %p')"
     NOTE="$NOTES_DIR/$STAMP_FILE.md"
-    TITLE="Inbox $STAMP_TEXT"
     CREATED="$STAMP_TEXT"
 else
     DATE="$(date +%Y-%m-%d)"
     NOTE="$NOTES_DIR/$DATE.md"
-    TITLE="Inbox $DATE"
-    CREATED="$DATE"
+    CREATED="$(date '+%Y-%m-%d %-I:%M %p')"
 fi
 
-# Create the note with front matter if it doesn't exist (or is empty)
+# Create the note with front matter if it doesn't exist (or is empty).
+# The title is intentionally blank, with a trailing space for immediate typing.
+# The body starts with "* " for a new list entry.
 if [[ ! -s "$NOTE" ]]; then
     cat > "$NOTE" <<EOF
 ---
-title: $TITLE
+title: 
 tags: [inbox]
 created: $CREATED
 ---
@@ -75,11 +75,12 @@ fi
 # Snapshot existing note-inbox windows so we can identify the new one later
 BEFORE="$(hypr clients | jq -c --arg c "$CLASS" '[.[] | select(.class == $c) | .address]')" || exit 1
 
-# Open Neovim in a floating Kitty window ("+" puts the cursor on the last line)
+# Open Neovim in a floating Kitty window.
+# +2 moves the cursor to the blank title line, immediately after "title: ".
 kitty --class "$CLASS" \
     --override initial_window_width=87c \
     --override initial_window_height=26c \
-    nvim + "$NOTE" &
+    nvim +2 +startinsert! "$NOTE"
 
 # Wait for the NEW window (one whose address wasn't in the snapshot)
 WINDOW=""
