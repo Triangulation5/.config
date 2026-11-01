@@ -65,12 +65,34 @@ if ! sudo -v; then
     exit 1
 fi
 
+service_restart() {
+    local svc="$1"
+    if [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl restart "$svc" >/dev/null 2>&1
+    elif command -v rc-service >/dev/null 2>&1; then
+        sudo rc-service "$svc" restart >/dev/null 2>&1
+    else
+        sudo service "$svc" restart >/dev/null 2>&1
+    fi
+}
+
+service_is_active() {
+    local svc="$1"
+    if [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
+        systemctl is-active --quiet "$svc"
+    elif command -v rc-service >/dev/null 2>&1; then
+        rc-service "$svc" status --quiet >/dev/null 2>&1
+    else
+        service "$svc" status >/dev/null 2>&1
+    fi
+}
+
 section "[1/4] Restarting fingerprint services"
 
 for service in "${services[@]}"; do
     info "Restarting $service..."
 
-    if sudo systemctl restart "$service" >/dev/null 2>&1; then
+    if service_restart "$service"; then
         ok "$service restarted"
     else
         fail "$service failed to restart"
@@ -82,7 +104,7 @@ sleep 2
 section "[2/4] Checking service health"
 
 for service in "${services[@]}"; do
-    if systemctl is-active --quiet "$service"; then
+    if service_is_active "$service"; then
         ok "$service is running"
     else
         fail "$service is not running"

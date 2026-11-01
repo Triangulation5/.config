@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# stop systemd service first (prevents respawn)
-systemctl --user stop mpd 2>/dev/null
-systemctl --user disable mpd 2>/dev/null
-
-# kill any remaining mpd processes
-pkill -9 mpd 2>/dev/null
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+"$scripts_dir/user-service.sh" stop mpd
 
 # kill client UI
 pkill -9 ncmpcpp 2>/dev/null

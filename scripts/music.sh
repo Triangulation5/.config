@@ -1,6 +1,7 @@
 #!/bin/bash
 
-systemctl --user restart mpd 2>/dev/null || (pkill mpd && mpd ~/.config/mpd/mpd.conf)
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+"$scripts_dir/user-service.sh" restart mpd
 
 mpc update
 

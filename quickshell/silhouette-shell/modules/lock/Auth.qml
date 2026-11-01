@@ -116,12 +116,13 @@ Item {
         failedAttempts = 0
         lockedOut = false
         lockoutRemaining = 0
+        var powerScript = Quickshell.env("HOME") + "/.config/scripts/power.sh"
         if (action === "logout")
             Hyprland.dispatch("hl.dsp.exit()")
         else if (action === "reboot")
-            Quickshell.execDetached(["systemctl", "reboot"])
+            Quickshell.execDetached([powerScript, "reboot"])
         else
-            Quickshell.execDetached(["systemctl", "poweroff"])
+            Quickshell.execDetached([powerScript, "poweroff"])
     }
 
     /** Successful auth clears the streak and any active lockout. */

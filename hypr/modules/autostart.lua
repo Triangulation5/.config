@@ -6,6 +6,7 @@
 -- the db is never created: `cliphist list` exits 1 and the surface comes up
 -- blank. The script is guarded by pgrep, so it is safe on a config reload.
 hl.on("hyprland.start", function ()
+  hl.exec_cmd("bash ~/.config/scripts/session-start.sh")
   hl.exec_cmd("awww-daemon")
   hl.exec_cmd("bash ~/.config/scripts/cliphist-watch.sh")
   hl.exec_cmd("bash ~/.config/scripts/watchdog.sh silhouette-shell")

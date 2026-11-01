@@ -70,6 +70,7 @@ Singleton {
     readonly property int armWindow: 2500
 
     readonly property string lockScript: Quickshell.env("HOME") + "/.config/scripts/lock.sh"
+    readonly property string powerScript: Quickshell.env("HOME") + "/.config/scripts/power.sh"
 
     /**
      * The same five as the pill's power surface, same order, same `confirm` flags.
@@ -80,9 +81,9 @@ Singleton {
     readonly property var actions: [
         { key: "lock",     label: "Lock",     confirm: false, dispatch: "",                 argv: [root.lockScript] },
         { key: "logout",   label: "Logout",   confirm: true,  dispatch: "hl.dsp.exit()", argv: [] },
-        { key: "suspend",  label: "Sleep",    confirm: false, dispatch: "",                 argv: ["systemctl", "suspend"] },
-        { key: "reboot",   label: "Restart",  confirm: true,  dispatch: "",                 argv: ["systemctl", "reboot"] },
-        { key: "shutdown", label: "Shutdown", confirm: true,  dispatch: "",                 argv: ["systemctl", "poweroff"] }
+        { key: "suspend",  label: "Sleep",    confirm: false, dispatch: "",                 argv: [root.powerScript, "suspend"] },
+        { key: "reboot",   label: "Restart",  confirm: true,  dispatch: "",                 argv: [root.powerScript, "reboot"] },
+        { key: "shutdown", label: "Shutdown", confirm: true,  dispatch: "",                 argv: [root.powerScript, "poweroff"] }
     ]
 
     /**

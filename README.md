@@ -173,11 +173,12 @@ command for the rest, using full atoms. Hyprland is no longer in `::gentoo`
 that is not enabled yet and the `~arch` keywords those packages usually need.
 It does not ask for sudo or doas unless you take its offer to run the emerge.
 A stage3 has no git, so `emerge --ask dev-vcs/git` first or pass `--source`.
-On OpenRC it lists the features that still call `systemctl` directly (the
-power menus, the idle-lock and night-light toggles, the music scripts) and any
-installed `elogind`, `NetworkManager` or `bluetooth` service that is not in a
-runlevel. On a machine that is already set up, `./install.sh --no-deps
---dry-run` shows the deploy plan without the package step.
+Silhouette has first-class OpenRC support alongside systemd: power menus, idle
+inhibition, user daemons (`hypridle`, `hyprsunset`, `mpd`), and audio autostart
+adapt automatically between systemd and OpenRC/elogind. On OpenRC, the installer
+verifies essential services (`elogind`, `dbus`, `NetworkManager`, `bluetooth`)
+and reports any missing runlevel entries. On a machine that is already set up,
+`./install.sh --no-deps --dry-run` shows the deploy plan without the package step.
 
 Silhouette shell is a hyprland shell. I would not expect it to work on anything
 else.

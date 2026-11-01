@@ -121,13 +121,13 @@ ShellRoot {
     /**
      * The Wayland IdleInhibitor above only pauses the compositor's own idle
      * (DPMS); hypridle runs its own timer and never sees it, so the lock still
-     * fired with keep-awake on. A logind idle inhibitor is the wire hypridle
-     * does respect, so hold one for as long as the flag is set.
+     * fired with keep-awake on. A logind idle inhibitor (systemd-inhibit or
+     * elogind-inhibit on OpenRC) is the wire hypridle does respect, so hold
+     * one for as long as the flag is set.
      */
     Process {
         running: GameMode.keepAwake
-        command: ["systemd-inhibit", "--what=idle:sleep", "--who=josh",
-                  "--why=keep awake", "--mode=block", "sleep", "infinity"]
+        command: [Quickshell.env("HOME") + "/.config/scripts/inhibit.sh", "sleep", "infinity"]
     }
 
     /**

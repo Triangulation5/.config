@@ -17,6 +17,7 @@ Singleton {
     id: root
 
     readonly property string confPath: Quickshell.env("HOME") + "/.config/hypr/hyprsunset.conf"
+    readonly property string serviceScript: Quickshell.env("HOME") + "/.config/scripts/user-service.sh"
 
     function clampTemp(t) {
         return Math.max(2200, Math.min(6000, Math.round(t)));
@@ -173,7 +174,7 @@ Singleton {
 
     Process {
         id: restartProc
-        command: ["systemctl", "--user", "restart", "hyprsunset"]
+        command: [root.serviceScript, "restart", "hyprsunset"]
     }
 
     /**

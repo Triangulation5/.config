@@ -833,13 +833,12 @@ report_missing() {
     note "A missing tool degrades the one feature that uses it, not the session."
 }
 
-# The rice was built on systemd, and a few features call it directly: the power
-# menus run `systemctl suspend|reboot|poweroff`, the idle-lock and night-light
-# toggles restart systemd user units, the pill inhibits idle through
-# systemd-inhibit, and the music scripts manage mpd as a user unit. None of
-# that is rewritten yet, so on any other init say which features are affected
-# rather than letting them fail silently. On OpenRC (Gentoo's default) also
-# check the services a Hyprland session leans on.
+# Silhouette supports both systemd and OpenRC with first-class adaptation:
+# power actions route through scripts/power.sh (systemctl vs loginctl/openrc-shutdown),
+# user daemons (hypridle, hyprsunset, mpd) through scripts/user-service.sh,
+# idle inhibition through scripts/inhibit.sh (systemd-inhibit vs elogind-inhibit),
+# and session autostart through scripts/session-start.sh (D-Bus environment,
+# pipewire audio stack on OpenRC, and hypridle).
 report_init() {
     [ -d /run/systemd/system ] && return 0
 
@@ -848,15 +847,10 @@ report_init() {
         init="OpenRC"
     fi
 
-    step "Init system: $init"
-    warn "parts of the shell call systemd directly and will not work as-is here:"
-    note "power menus (sleep, restart, shutdown)   systemctl suspend|reboot|poweroff"
-    note "idle-lock and night-light toggles        systemctl --user restart hypridle|hyprsunset"
-    note "caffeine / idle inhibit                  systemd-inhibit"
-    note "music scripts                            systemctl --user ... mpd"
-    note "With elogind, loginctl suspend|reboot|poweroff are the drop-in equivalents."
-    note "hypridle is not started by Hyprland's autostart; without systemd user units,"
-    note "add hl.exec_cmd(\"hypridle\") to ~/.config/hypr/modules/autostart.lua."
+    step "Init system: $init (first-class support enabled)"
+    note "Silhouette automatically adapts: power actions route through elogind/loginctl,"
+    note "inhibitors use elogind-inhibit, and daemons (hypridle, hyprsunset, mpd, pipewire)"
+    note "are started and supervised cleanly via session-start.sh and user-service.sh."
 
     [ "$init" = "OpenRC" ] || return 0
 

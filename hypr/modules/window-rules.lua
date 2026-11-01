@@ -36,6 +36,19 @@ hl.window_rule({
     center = true,
 })
 
+-- Daily inbox note: floating, fixed terminal dimensions.
+-- Position is randomized by note-inbox.sh on every launch.
+hl.window_rule({
+    name  = "note-inbox",
+    match = {
+        class = "^note-inbox$",
+    },
+
+    float  = true,
+    size   = { 696, 416 },
+    center = false,
+})
+
 hl.window_rule({
     name  = "fix-xwayland-drags",
     match = {
