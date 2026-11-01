@@ -165,6 +165,20 @@ repositories (the installer points at the `hyprland-void` repo), and Alpine's
 from source. Both distros need `bash`; a minimal install may not have it yet
 (`apk add bash`, or `xbps-install -S bash`).
 
+On Gentoo the installer never emerges anything unasked. It checks
+`/var/db/pkg` for what is already installed and prints one `emerge --ask`
+command for the rest, using full atoms. Hyprland is no longer in `::gentoo`
+(it lives in the `hyproverlay` repository), and `quickshell`, `brightnessctl`,
+`cliphist` and `yazi` come from GURU, so the installer names any overlay
+that is not enabled yet and the `~arch` keywords those packages usually need.
+It does not ask for sudo or doas unless you take its offer to run the emerge.
+A stage3 has no git, so `emerge --ask dev-vcs/git` first or pass `--source`.
+On OpenRC it lists the features that still call `systemctl` directly (the
+power menus, the idle-lock and night-light toggles, the music scripts) and any
+installed `elogind`, `NetworkManager` or `bluetooth` service that is not in a
+runlevel. On a machine that is already set up, `./install.sh --no-deps
+--dry-run` shows the deploy plan without the package step.
+
 Silhouette shell is a hyprland shell. I would not expect it to work on anything
 else.
 

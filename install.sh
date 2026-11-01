@@ -93,10 +93,21 @@ CORE_debian=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
 CORE_suse=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-tools slurp NetworkManager bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python)
+# Gentoo takes full category/package atoms, and three of these are not in
+# ::gentoo at all: Hyprland was dropped from the main tree in 2026 and now
+# lives in the hyproverlay repository, and brightnessctl, cliphist and
+# quickshell are in GURU. GENTOO_REPO_OF below records which overlay each one
+# needs, so the report can say what to enable instead of letting emerge fail
+# with "no ebuilds to satisfy". Quickshell is in the list because, unlike on
+# most distros, it is packaged.
 # shellcheck disable=SC2034
-CORE_gentoo=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
-    cliphist wl-clipboard libnotify slurp networkmanager bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick dbus-python)
+CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
+    net-misc/curl dev-lang/python app-misc/brightnessctl app-misc/ddcutil
+    media-sound/cava media-sound/playerctl app-misc/cliphist
+    gui-apps/wl-clipboard x11-libs/libnotify gui-apps/slurp
+    net-misc/networkmanager net-wireless/bluez sys-power/upower
+    media-video/wireplumber x11-misc/xdg-utils media-video/ffmpeg
+    media-gfx/imagemagick dev-python/dbus-python)
 # Alpine's stable repos carry the desktop stack in community, but cava and
 # cliphist only exist in edge/testing. They are left out on purpose: pulling a
 # testing repo in would make an install less predictable than a missing
@@ -134,9 +145,22 @@ FULL_debian=(nautilus firefox-esr yazi mpd ncmpcpp btop ffmpegthumbnailer
 # shellcheck disable=SC2034
 FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
     poppler-tools p7zip fd ripgrep fzf zoxide bat chafa)
+# yazi is GURU's; the rest are ::gentoo. poppler's `utils` USE flag (on by
+# default) is what provides pdftoppm for yazi's PDF previews.
 # shellcheck disable=SC2034
-FULL_gentoo=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
-    p7zip fd ripgrep fzf zoxide bat chafa)
+FULL_gentoo=(gnome-base/nautilus www-client/firefox app-misc/yazi
+    media-sound/mpd media-sound/ncmpcpp sys-process/btop
+    media-video/ffmpegthumbnailer app-text/poppler app-arch/p7zip sys-apps/fd
+    sys-apps/ripgrep app-shells/fzf app-shells/zoxide sys-apps/bat
+    media-gfx/chafa)
+# Atoms that need an overlay enabled first. Anything not listed is ::gentoo.
+declare -A GENTOO_REPO_OF=(
+    [gui-wm/hyprland]=hyproverlay
+    [gui-apps/quickshell]=guru
+    [app-misc/brightnessctl]=guru
+    [app-misc/cliphist]=guru
+    [app-misc/yazi]=guru
+)
 # Alpine does not package p7zip; the upstream 7zip package provides both 7z
 # and 7zz, which is what yazi looks for.
 # shellcheck disable=SC2034
@@ -169,6 +193,9 @@ FAILED_ENTRIES=()
 # variable works for sudo and doas, and so --dry-run can print the command it
 # would really run.
 SUDO="sudo"
+# 0 when neither sudo nor doas exists. Only Gentoo (where the package step is
+# advisory) and --dry-run get this far without one.
+HAVE_PRIV=1
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'
@@ -219,6 +246,7 @@ What it will touch:
   configs      $CONFIG_DIR
   backups      $STATE_DIR/backups/<timestamp>
   dependencies through your distro's package manager (sudo or doas)
+               on Gentoo: printed as an emerge command for you to run, never emerged unasked
 EOF
 }
 
@@ -242,6 +270,19 @@ confirm() {
         esac
     fi
     die "no terminal to ask on. Re-run with --yes once you have read the plan above."
+}
+
+# A yes/no for optional extras. Unlike confirm, "no" and "no terminal" are
+# ordinary answers here: they skip the extra, they do not abort the install.
+ask() {
+    local prompt="$1" reply=""
+    (exec 3</dev/tty) 2>/dev/null || return 1
+    printf '%s [y/N] ' "$prompt" > /dev/tty
+    read -r reply < /dev/tty || reply=""
+    case "$reply" in
+        [yY]*) return 0 ;;
+        *)     return 1 ;;
+    esac
 }
 
 cleanup() {
@@ -305,14 +346,19 @@ detect_distro() {
 # sudo is the default on the distros this script grew up with, but Alpine and
 # a fair number of Void installs use doas instead. Probe once, and only make it
 # fatal on a real run: --dry-run should still print the plan on a machine with
-# neither installed.
+# neither installed. On Gentoo nothing is emerged without a second, explicit
+# yes, so a missing sudo is only a problem if you take that offer.
 detect_privilege() {
     if command -v sudo >/dev/null 2>&1; then
         SUDO="sudo"
     elif command -v doas >/dev/null 2>&1; then
         SUDO="doas"
+    elif [ "$PM" = "emerge" ]; then
+        SUDO="sudo"
+        HAVE_PRIV=0
     elif [ "$DRY_RUN" = "1" ]; then
         SUDO="sudo"
+        HAVE_PRIV=0
         warn "neither sudo nor doas is installed; a real run would need one"
     else
         die "need sudo or doas to install packages (or re-run with --no-deps)"
@@ -360,14 +406,131 @@ pm_plan() {
     esac
 }
 
+# Installed means a vdb entry: /var/db/pkg/<category>/<name>-<version>. Read
+# straight from disk so this works without portage-utils or gentoolkit. The
+# digit after the dash keeps kitty from matching kitty-shell-integration.
+gentoo_installed() {
+    local d
+    for d in /var/db/pkg/"$1"-[0-9]*; do
+        [ -d "$d" ] && return 0
+    done
+    return 1
+}
+
+gentoo_repo_enabled() {
+    if command -v portageq >/dev/null 2>&1; then
+        portageq get_repos / 2>/dev/null | tr ' ' '\n' | grep -qx -- "$1"
+        return
+    fi
+    [ -d "/var/db/repos/$1" ]
+}
+
+# The keyword overlay packages need on this machine (~amd64, ~arm64, ...).
+gentoo_arch() {
+    local a=""
+    command -v portageq >/dev/null 2>&1 && a="$(portageq envvar ARCH 2>/dev/null || true)"
+    if [ -z "$a" ]; then
+        case "$(uname -m)" in
+            x86_64)  a="amd64" ;;
+            aarch64) a="arm64" ;;
+            i?86)    a="x86" ;;
+            riscv64) a="riscv" ;;
+            *)       a="$(uname -m)" ;;
+        esac
+    fi
+    printf '%s' "$a"
+}
+
+# Gentoo is the one family where the installer writes the plan and you run it.
+# USE flags, keywords and the decision to spend an hour compiling are yours,
+# so this does not feed a list to emerge behind your back. What it does do:
+# drop what is already installed, name the overlays that are missing, and
+# print one command that is correct for this machine. Running it is a
+# separate yes, and emerge --ask then asks a third time with the real plan.
+install_packages_gentoo() {
+    local -a want=() repos=() overlay_atoms=()
+    local atom repo arch
+
+    for atom in "$@"; do
+        gentoo_installed "$atom" && continue
+        want+=("$atom")
+        repo="${GENTOO_REPO_OF[$atom]:-}"
+        [ -n "$repo" ] || continue
+        overlay_atoms+=("$atom")
+        if ! has_item "$repo" "${repos[@]}" && ! gentoo_repo_enabled "$repo"; then
+            repos+=("$repo")
+        fi
+    done
+
+    if [ "${#want[@]}" -eq 0 ]; then
+        note "Gentoo: all $# packages are already installed"
+        return 0
+    fi
+
+    note "Gentoo: ${#want[@]} of $# packages are not installed yet."
+    note "Nothing is emerged for you; USE flags and keywords stay your call."
+
+    if [ "${#repos[@]}" -gt 0 ]; then
+        printf '\n'
+        note "1. Enable the overlays these need:"
+        gentoo_installed app-eselect/eselect-repository \
+            || note "   $SUDO emerge --ask --noreplace app-eselect/eselect-repository"
+        note "   $SUDO eselect repository enable ${repos[*]}"
+        note "   $SUDO emaint sync$(printf -- ' -r %s' "${repos[@]}")"
+    fi
+
+    if [ "${#overlay_atoms[@]}" -gt 0 ]; then
+        arch="$(gentoo_arch)"
+        printf '\n'
+        note "Overlay packages are usually keyworded ~$arch only. If you run stable,"
+        note "accept them in /etc/portage/package.accept_keywords/silhouette:"
+        for atom in "${overlay_atoms[@]}"; do
+            dim "  $atom ~$arch"
+        done
+        if has_item gui-wm/hyprland "${overlay_atoms[@]}"; then
+            note "Hyprland pulls in its own hypr* libraries from hyproverlay; emerge"
+            note "--autounmask will list the extra keywords those need."
+        fi
+    fi
+
+    printf '\n'
+    local lead=""
+    [ "${#repos[@]}" -gt 0 ] && lead="2. "
+    note "${lead}$SUDO emerge --ask --noreplace --verbose ${want[*]}"
+
+    [ "$DRY_RUN" = "1" ] && return 0
+    if [ "$ASSUME_YES" = "1" ]; then
+        dim "--yes does not extend to emerge; run the command above when you are ready."
+        return 0
+    fi
+    if [ "${#repos[@]}" -gt 0 ]; then
+        dim "Enable the overlays first, then run the command above (or re-run this installer)."
+        return 0
+    fi
+    if [ "$HAVE_PRIV" != "1" ]; then
+        dim "No sudo or doas here: run the command above as root."
+        return 0
+    fi
+
+    printf '\n'
+    if ask "Run that emerge now? It shows its own plan and asks again before building."; then
+        # emerge --ask reads its answer from stdin, which is the script itself
+        # under `curl | bash`; point it at the terminal like confirm does.
+        if ! "$SUDO" emerge --ask --noreplace --verbose "${want[@]}" < /dev/tty; then
+            warn "emerge did not finish. The configs still deploy; re-run the command above when ready."
+        fi
+    else
+        dim "skipped; the configs deploy either way"
+    fi
+}
+
 install_packages() {
     local -a pkgs=("$@")
     local p
     [ "${#pkgs[@]}" -gt 0 ] || return 0
 
     if [ "$PM" = "emerge" ]; then
-        note "Gentoo: these are yours to emerge, flags and USE masks included:"
-        note "  ${pkgs[*]}"
+        install_packages_gentoo "${pkgs[@]}"
         return 0
     fi
     if [ -z "$PM" ]; then
@@ -405,6 +568,19 @@ ensure_bootstrap_tools() {
         apt)    run "$SUDO" apt-get update && run "$SUDO" apt-get install -y "${missing[@]}" ;;
         zypper) run "$SUDO" zypper --non-interactive install "${missing[@]}" ;;
         xbps)   run "$SUDO" xbps-install -Sy "${missing[@]}" ;;
+        emerge)
+            # By now the source is already on disk (fetch_source checks for
+            # git itself), so a missing git only matters for future updates.
+            # Portage needs python, so python3 missing here means a broken
+            # eselect python target rather than a missing package.
+            local -a atoms=()
+            has_item git "${missing[@]}" && atoms+=(dev-vcs/git)
+            has_item python3 "${missing[@]}" && atoms+=(dev-lang/python)
+            warn "Gentoo: not emerging these for you: ${atoms[*]}"
+            note "$SUDO emerge --ask --noreplace ${atoms[*]}"
+            has_item python3 "${missing[@]}" && note "if python is installed, check: eselect python list"
+            return 0
+            ;;
         *)      die "need ${missing[*]} and do not know how to install it on this distro" ;;
     esac
     command -v git >/dev/null 2>&1 || [ "$DRY_RUN" = "1" ] || die "git is still missing"
@@ -425,6 +601,16 @@ fetch_source() {
         SRC_DIR="$SCRIPT_DIR"
         note "using the checkout this script lives in: $SRC_DIR"
         return 0
+    fi
+
+    # Everything past here clones or pulls, and this runs before the package
+    # step, so git cannot be installed for you yet. A Gentoo stage3 is the
+    # common case: it ships without git.
+    if ! command -v git >/dev/null 2>&1; then
+        case "$PM" in
+            emerge) die "git is needed to fetch the repo: $SUDO emerge --ask dev-vcs/git (or pass --source PATH)" ;;
+            *)      die "git is needed to fetch the repo; install it, or pass --source PATH" ;;
+        esac
     fi
 
     if [ "$DRY_RUN" = "1" ] && [ ! -d "$DEFAULT_SRC" ]; then
@@ -613,6 +799,7 @@ report_missing() {
             fedora) note "quickshell: $SUDO dnf copr enable errornointernet/quickshell && $SUDO dnf install quickshell" ;;
             arch)   note "quickshell: $SUDO pacman -S quickshell (or quickshell-git from the AUR for the newest)" ;;
             void)   note "quickshell: $SUDO xbps-install -S quickshell" ;;
+            gentoo) note "quickshell: in GURU: $SUDO eselect repository enable guru && $SUDO emerge --ask gui-apps/quickshell" ;;
             alpine) note "quickshell: not packaged for Alpine; build it from source: https://quickshell.org/docs/" ;;
             *)      note "quickshell is not in most distro repos, see https://quickshell.org/docs/ for your options" ;;
         esac
@@ -622,6 +809,14 @@ report_missing() {
         printf '\n'
         note "Hyprland: not in Void's official repositories. The community repo is"
         note "  https://github.com/Makrennel/hyprland-void (xbps-src templates and binaries)"
+    fi
+    # Gentoo dropped Hyprland from the main tree; the old ::gentoo ebuild is
+    # gone, not just masked, so `emerge hyprland` alone finds nothing.
+    if has_item Hyprland "${missing[@]}" && [ "$FAMILY" = "gentoo" ]; then
+        printf '\n'
+        note "Hyprland: no longer in ::gentoo. It lives in the hyproverlay repository:"
+        note "  $SUDO eselect repository enable hyproverlay && $SUDO emaint sync -r hyproverlay"
+        note "  https://wiki.gentoo.org/wiki/Hyprland"
     fi
     # Alpine's stable repos stop short of these two; they live in edge/testing.
     if [ "$FAMILY" = "alpine" ]; then
@@ -636,6 +831,57 @@ report_missing() {
         fi
     fi
     note "A missing tool degrades the one feature that uses it, not the session."
+}
+
+# The rice was built on systemd, and a few features call it directly: the power
+# menus run `systemctl suspend|reboot|poweroff`, the idle-lock and night-light
+# toggles restart systemd user units, the pill inhibits idle through
+# systemd-inhibit, and the music scripts manage mpd as a user unit. None of
+# that is rewritten yet, so on any other init say which features are affected
+# rather than letting them fail silently. On OpenRC (Gentoo's default) also
+# check the services a Hyprland session leans on.
+report_init() {
+    [ -d /run/systemd/system ] && return 0
+
+    local init="a non-systemd init"
+    if [ -d /run/openrc ] || command -v openrc >/dev/null 2>&1; then
+        init="OpenRC"
+    fi
+
+    step "Init system: $init"
+    warn "parts of the shell call systemd directly and will not work as-is here:"
+    note "power menus (sleep, restart, shutdown)   systemctl suspend|reboot|poweroff"
+    note "idle-lock and night-light toggles        systemctl --user restart hypridle|hyprsunset"
+    note "caffeine / idle inhibit                  systemd-inhibit"
+    note "music scripts                            systemctl --user ... mpd"
+    note "With elogind, loginctl suspend|reboot|poweroff are the drop-in equivalents."
+    note "hypridle is not started by Hyprland's autostart; without systemd user units,"
+    note "add hl.exec_cmd(\"hypridle\") to ~/.config/hypr/modules/autostart.lua."
+
+    [ "$init" = "OpenRC" ] || return 0
+
+    # service:runlevel. elogind provides the seat, logind API and loginctl
+    # that Hyprland, the lockscreen and the polkit agent expect.
+    local pair svc level
+    local -a todo=()
+    for pair in elogind:boot dbus:default NetworkManager:default bluetooth:default; do
+        svc="${pair%%:*}" level="${pair##*:}"
+        [ -e "/etc/init.d/$svc" ] || continue
+        compgen -G "/etc/runlevels/*/$svc" >/dev/null && continue
+        todo+=("$SUDO rc-update add $svc $level")
+    done
+    if [ ! -e /etc/init.d/elogind ] && [ ! -e /etc/init.d/seatd ]; then
+        printf '\n'
+        warn "neither elogind nor seatd is installed; Hyprland needs one for seat access"
+        note "$SUDO emerge --ask sys-auth/elogind  (and USE=elogind globally)"
+    fi
+    if [ "${#todo[@]}" -gt 0 ]; then
+        printf '\n'
+        note "OpenRC services installed but not in any runlevel:"
+        for pair in "${todo[@]}"; do
+            dim "  $pair"
+        done
+    fi
 }
 
 main() {
@@ -673,6 +919,9 @@ main() {
         say ""
         if [ "$NO_DEPS" = "1" ]; then
             say "About to deploy ${#CONFIG_ENTRIES[@]} config entries into $CONFIG_DIR."
+        elif [ "$PM" = "emerge" ]; then
+            say "About to check which Gentoo packages are missing (nothing is emerged without"
+            say "asking again), then deploy ${#CONFIG_ENTRIES[@]} config entries into $CONFIG_DIR."
         else
             say "About to install packages with $SUDO, then deploy ${#CONFIG_ENTRIES[@]} config entries into $CONFIG_DIR."
         fi
@@ -702,6 +951,7 @@ main() {
     install_portable_monitors
 
     report_missing
+    report_init
 
     step "Done"
     if [ "$DRY_RUN" = "1" ]; then
@@ -715,6 +965,9 @@ main() {
         for hint in "${OPTIONAL_HINTS[@]}"; do
             dim "  $hint"
         done
+        if [ "$FAMILY" = "gentoo" ]; then
+            dim "  Gentoo: awww and gpu-screen-recorder are in GURU (gui-apps/awww, media-video/gpu-screen-recorder)"
+        fi
         printf '\n'
         note "rishot, the screenshot tool, lives in its own repo: grab it from there."
     fi
