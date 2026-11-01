@@ -1,3 +1,4 @@
-- Add a migration docuement from Fedora -> Gentoo (something I am currently thinking about).
+- Add a migration docuement from Fedora -> Gentoo (something I am thinking about).
 - Optimize and hunt pests inside the shell.
 - Very far future: Rewrite entire shell in Rust, get it below 100 MB, and distribute as binary.
+- Create keybind for quick notes (in vim), make it look nice, maybe with a toggle inside the config itself.
