@@ -4,7 +4,7 @@
 
 UA="Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/126.0"
 
-GITHUB_REPO="Triangulation5/wallpapers"
+GITHUB_REPO="Triangulation5/wallpapers" # Switch this to yours if you want your own wallpaper repository to be used
 GITHUB_BRANCH="main"
 
 # {{{ DO NOT OPEN: Borderline Safety Filter

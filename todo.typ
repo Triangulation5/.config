@@ -2,3 +2,5 @@
 - Optimize and hunt pests inside the shell.
 - Very far future: Rewrite entire shell in Rust, get it below 100 MB, and distribute as binary.
 - Create keybind for quick notes (in vim), make it look nice, maybe with a toggle inside the config itself.
+- Create custom build of st (simple terminal), kitty takes up too much memory.
+- Simlink some files to automatically update configs.
