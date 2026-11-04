@@ -56,6 +56,7 @@ bindkey -s $'\e\C-f' '~/.config/scripts/tmux-session-dispensary.sh\n'
 # Load the plugin last
 source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
-
+# Pi
+export PATH="/home/josh/.pi/agent/bin:$PATH"
 # Added by Antigravity CLI installer
 export PATH="/home/josh/.local/bin:$PATH"
