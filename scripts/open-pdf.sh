@@ -6,6 +6,13 @@ DIRS=(
     "$HOME/Downloads/"
 )
 
+# Determine PDF reader: fallback to xdg-open if sioyek is not installed
+if command -v sioyek >/dev/null 2>&1; then
+    READER="sioyek"
+else
+    READER="xdg-open"
+fi
+
 shell_join() {
     local arg
     for arg in "$@"; do
@@ -93,12 +100,17 @@ fi
 
 if [[ -n "${TMUX:-}" ]]; then
     runner_session="${TMUX_RUNNER_SESSION:-background}"
-    run_in_runner_session "$runner_session" "pdf" "exec $(shell_join sioyek "$selected")"
-    focus_sioyek
+    run_in_runner_session "$runner_session" "pdf" "exec $(shell_join "$READER" "$selected") >/dev/null 2>&1"
+    if [[ "$READER" == "sioyek" ]]; then
+        focus_sioyek
+    fi
     tmux display-message "Opened PDF in tmux session: $runner_session"
     exit 0
 fi
 
-sioyek "$selected" &
-focus_sioyek
-wait "$!"
+"$READER" "$selected" >/dev/null 2>&1 &
+pid="$!"
+if [[ "$READER" == "sioyek" ]]; then
+    focus_sioyek
+fi
+wait "$pid" 2>/dev/null || true
