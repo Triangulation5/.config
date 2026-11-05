@@ -67,7 +67,7 @@ ShellRoot {
 
     Timer {
         id: collapse
-        interval: 720
+        interval: Math.random() < 0.5 ? 620 : 540
         onTriggered: root.finishUnlock()
     }
 
