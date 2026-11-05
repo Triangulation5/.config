@@ -277,8 +277,9 @@ Item {
         target: surface
         property: "maskP"
         to: 1
-        duration: 620
-        easing.type: Easing.InOutCubic
+        duration: 700
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: [0.32, 0.72, 0, 1, 1, 1]
     }
 
     NumberAnimation {
@@ -286,7 +287,7 @@ Item {
         target: surface
         property: "maskP"
         to: 0
-        duration: 560
+        duration: 700
         easing.type: Easing.BezierSpline
         easing.bezierCurve: [0.16, 1, 0.3, 1, 1, 1]
     }

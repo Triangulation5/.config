@@ -1,0 +1,16 @@
+vm_library_path = "/home/josh/Projects/vm-space/"
+metadata_path = "/home/josh/.config/vm-curator/metadata"
+ascii_art_path = "/home/josh/.config/vm-curator/ascii"
+snapshot_prefix = "snapshot"
+default_memory_mb = 4096
+default_cpu_cores = 2
+default_disk_size_gb = 64
+default_display = "gtk"
+default_enable_kvm = true
+confirm_before_launch = true
+enable_multi_gpu_passthrough = false
+default_ivshmem_size_mb = 64
+show_gpu_warnings = true
+single_gpu_enabled = false
+single_gpu_auto_tty = false
+looking_glass_auto_launch = true

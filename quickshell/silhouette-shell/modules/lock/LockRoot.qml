@@ -38,18 +38,18 @@ ShellRoot {
     Auth {
         id: pamAuth
         user: root.currentUser
-        onSucceeded: {
+        onSucceeded: root.kickThen(1, () => {
             root.revealed = false;
             /**
              * The collapse is the lock receding back into the pill. The minimal bar
              * has no pill to recede into and nothing to animate, so the session goes
-             * straight back instead of 640ms later.
+             * straight back instead of 720ms later.
              */
             if (Flags.barEnabled)
                 root.finishUnlock();
             else
                 collapse.restart();
-        }
+        })
     }
 
     /**
@@ -67,7 +67,7 @@ ShellRoot {
 
     Timer {
         id: collapse
-        interval: 640
+        interval: 720
         onTriggered: root.finishUnlock()
     }
 
@@ -99,6 +99,8 @@ ShellRoot {
         if (sessionLock.locked && !collapse.running)
             return;
         collapse.stop();
+        renderKick.stop();
+        renderKick.after = null;
         root.pw.text = "";
         /**
          * The minimal bar's lock has no wipe to play, so it is revealed here rather
@@ -113,8 +115,32 @@ ShellRoot {
           * dropped with the blur layers (see components/effects/GlowField.qml). */
         Cava.enabled = Flags.lockViz && !Flags.liteMode;
         if (!Flags.barEnabled)
-            reveal.restart();
+            root.kickThen(2, () => reveal.restart());
         root.reportLockState(true);
+    }
+
+    /** Hyprland leaves the lock surface's frame callback unanswered (hyprwm/Hyprland#16105), so forced repaints run before an animation starts, never during it. */
+    Timer {
+        id: renderKick
+        property int left: 0
+        property var after: null
+        interval: 80
+        repeat: true
+        onTriggered: {
+            if (renderKick.left-- > 0) {
+                Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.force_renderer_reload()"]);
+                return;
+            }
+            renderKick.stop();
+            if (renderKick.after)
+                renderKick.after();
+        }
+    }
+
+    function kickThen(times: int, after: var): void {
+        renderKick.left = times;
+        renderKick.after = after;
+        renderKick.restart();
     }
 
     /**
