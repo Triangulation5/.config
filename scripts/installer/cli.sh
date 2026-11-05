@@ -48,7 +48,8 @@ What it will touch:
                $STATE_DIR/backups/<timestamp>
   packages     through your distro's package manager (sudo or doas). Packages are
                outside the transaction: a rollback leaves them installed.
-               On Gentoo they are printed as an emerge command, never emerged unasked.
+               On Gentoo this enables the guru and hyproverlay overlays, accepts their
+               keywords, and emerges everything: it compiles, and can take hours.
 
 Exit status:
   0  done              every stage ok, skipped or warned

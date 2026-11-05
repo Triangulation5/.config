@@ -27,13 +27,12 @@ CORE_debian=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
 CORE_suse=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-tools slurp NetworkManager neovim bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python)
-# Gentoo takes full category/package atoms, and three of these are not in
-# ::gentoo at all: Hyprland was dropped from the main tree in 2026 and now
-# lives in the hyproverlay repository, and brightnessctl, cliphist and
-# quickshell are in GURU. GENTOO_REPO_OF below records which overlay each one
-# needs, so the report can say what to enable instead of letting emerge fail
-# with "no ebuilds to satisfy". Quickshell is in the list because, unlike on
-# most distros, it is packaged.
+# Gentoo takes full category/package atoms, and several are not in ::gentoo:
+# gui-wm/hyprland is in hyproverlay; gui-apps/quickshell, app-misc/brightnessctl,
+# app-misc/cliphist and (below) app-misc/yazi are in GURU. gentoo.sh enables both
+# overlays and accepts their keywords before anything is emerged, and checks each
+# atom with portageq, so a name that has moved is reported instead of failing the
+# whole emerge. Atoms checked against packages.gentoo.org and the overlays, 2026-11.
 # shellcheck disable=SC2034
 CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
     net-misc/curl dev-lang/python app-misc/brightnessctl app-misc/ddcutil
@@ -81,20 +80,18 @@ FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
     poppler-tools p7zip fd ripgrep fzf zoxide bat chafa)
 # yazi is GURU's; the rest are ::gentoo. poppler's `utils` USE flag (on by
 # default) is what provides pdftoppm for yazi's PDF previews.
+# Two deliberate choices on Gentoo:
+#   app-arch/7zip     app-arch/p7zip was last-rited and removed (2026-08-15); 7zip
+#                     is its replacement and provides the 7zz yazi looks for.
+#   www-client/firefox-bin
+#                     the source build compiles Rust and LLVM for hours and wants
+#                     many GB of RAM; the binary package is the dependable choice.
 # shellcheck disable=SC2034
-FULL_gentoo=(gnome-base/nautilus www-client/firefox app-misc/yazi
+FULL_gentoo=(gnome-base/nautilus www-client/firefox-bin app-misc/yazi
     media-sound/mpd media-sound/ncmpcpp sys-process/btop
-    media-video/ffmpegthumbnailer app-text/poppler app-arch/p7zip sys-apps/fd
+    media-video/ffmpegthumbnailer app-text/poppler app-arch/7zip sys-apps/fd
     sys-apps/ripgrep app-shells/fzf app-shells/zoxide sys-apps/bat
     media-gfx/chafa)
-# Atoms that need an overlay enabled first. Anything not listed is ::gentoo.
-declare -A GENTOO_REPO_OF=(
-    [gui-wm/hyprland]=hyproverlay
-    [gui-apps/quickshell]=guru
-    [app-misc/brightnessctl]=guru
-    [app-misc/cliphist]=guru
-    [app-misc/yazi]=guru
-)
 # Alpine does not package p7zip; the upstream 7zip package provides both 7z
 # and 7zz, which is what yazi looks for.
 # shellcheck disable=SC2034

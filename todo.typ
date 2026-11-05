@@ -4,3 +4,4 @@
 - Create keybind for quick notes (in vim), make it look nice, maybe with a toggle inside the config itself.
 - Create custom build of st (simple terminal), kitty takes up too much memory.
 - Simlink some files to automatically update configs.
+- Test out installer using vm-curator and Gentoo.

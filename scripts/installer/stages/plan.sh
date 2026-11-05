@@ -50,7 +50,9 @@ stage_plan() {
     if [ "$NO_DEPS" = "1" ]; then
         pkgline="skipped (--no-deps)"
     elif [ "$PM" = "emerge" ]; then
-        pkgline="checked, then printed as an emerge command for you to run"
+        pkgline="emerge from ::gentoo plus the guru and hyproverlay overlays, which are enabled and synced first;"
+        pkgline="$pkgline their keywords go to /etc/portage/package.accept_keywords. Compiles from source:"
+        pkgline="$pkgline can take hours (not part of the rollback)"
     elif [ -z "$PM" ]; then
         pkgline="unrecognised distro: listed for you to install"
     else

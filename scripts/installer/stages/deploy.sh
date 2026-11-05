@@ -80,7 +80,11 @@ deploy_entry() {
             return 1
         fi
     else
-        if ! run cp -af -- "$src" "$dst"; then
+        # A single file is replaced by rename, never rewritten in place: one of
+        # them is install.sh, which may be the script that is running right now.
+        # A rename leaves the running copy's inode untouched.
+        if ! run cp -af -- "$src" "$dst.new.$$" || ! run mv -f -- "$dst.new.$$" "$dst"; then
+            [ "$DRY_RUN" = "1" ] || rm -f -- "$dst.new.$$"
             warn "could not copy ~/.config/$entry"
             return 1
         fi

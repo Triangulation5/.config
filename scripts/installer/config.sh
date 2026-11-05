@@ -14,9 +14,10 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-install"
 # SILHOUETTE_RISHOT_URL exists so the stage can be tested without the network.
 RISHOT_URL="${SILHOUETTE_RISHOT_URL:-https://raw.githubusercontent.com/Gakuseei/rishot/main/install.sh}"
 
-# Top-level entries in the repo that belong in ~/.config. install.sh itself,
-# the README and .gitignore are deliberately not here: they are repo furniture,
-# not config. Neither are the machine-local ones .gitignore keeps out of the
+# Top-level entries in the repo that belong in ~/.config. install.sh and
+# installer/ are here on purpose: the installer lives in ~/.config too, so a
+# deployed machine can run ~/.config/install.sh --rollback. The README and
+# .gitignore are deliberately not here: they are repo furniture, not config. Neither are the machine-local ones .gitignore keeps out of the
 # repo - rygel.conf and QtProject.conf belong to the packages that own them on
 # each machine, so there is nothing here to deploy. mpd is here for its
 # configuration alone: the library database, the log, the pid and the session
@@ -24,12 +25,12 @@ RISHOT_URL="${SILHOUETTE_RISHOT_URL:-https://raw.githubusercontent.com/Gakuseei/
 # Keep this in sync when a new top-level config lands.
 #
 # NOTE: `scripts` is not listed, yet stage_script_modes expects
-# ~/.config/scripts. If scripts/ is meant to be deployed, add it here, and keep
-# scripts/installer out of the copy (it is the installer, not config).
+# ~/.config/scripts. If scripts/ is meant to be deployed, add it here.
 CONFIG_ENTRIES=(
     bash btop cava fastfetch hypr kitty mpd ncmpcpp nvim nwg-look
     quickshell rishot sioyek tmux vim xsettingsd yazi zsh
     user-dirs.dirs user-dirs.locale
+    install.sh installer
 )
 
 # Configs that hardcode the original author's home. Rewritten to $HOME after

@@ -1,6 +1,16 @@
-# scripts/installer
+# installer/
 
-The modules behind `install.sh`. `install.sh` only decides the order of the
+<!--toc:start-->
+- [installer/](#installer)
+  - [Layout](#layout)
+  - [Stage order](#stage-order)
+  - [The stage contract](#the-stage-contract)
+  - [The journal](#the-journal)
+  - [Exit status](#exit-status)
+<!--toc:end-->
+
+The modules behind `install.sh`. Both live at the top of the repo, which is
+`~/.config`: `~/.config/install.sh` and `~/.config/installer/*.sh`. `install.sh` only decides the order of the
 stages; everything else lives here.
 
 **Goal:** deploy the dotfiles into `~/.config` so that either all of it lands
@@ -17,7 +27,7 @@ or `~/.config` is left exactly as it was.
     packages.sh      package names per distro family
     cli.sh           usage and option parsing
     distro.sh        distro, privilege (sudo/doas), package-manager calls
-    gentoo.sh        Gentoo's print-the-plan flow
+    gentoo.sh        Gentoo: overlays, keywords, atom checks, emerge (unattended)
     stages/          one file per phase; each defines stage_* functions
 
 `lib/` knows nothing about Silhouette and could be reused. Modules declare

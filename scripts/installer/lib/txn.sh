@@ -145,7 +145,10 @@ _txn_restore() {
     if [ -d "$src" ] && [ ! -L "$src" ]; then
         mkdir -p -- "$dst" && cp -af -- "$src/." "$dst/"
     else
-        mkdir -p -- "$(dirname -- "$dst")" && cp -af -- "$src" "$dst"
+        # By rename, so restoring install.sh while it is running is safe.
+        mkdir -p -- "$(dirname -- "$dst")" \
+            && cp -af -- "$src" "$dst.rb.$$" \
+            && mv -f -- "$dst.rb.$$" "$dst"
     fi
 }
 

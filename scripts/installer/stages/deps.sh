@@ -32,17 +32,13 @@ stage_bootstrap_tools() {
         zypper) run "$SUDO" zypper --non-interactive install "${missing[@]}" || return "$ST_FAIL" ;;
         xbps)   run "$SUDO" xbps-install -Sy "${missing[@]}" || return "$ST_FAIL" ;;
         emerge)
-            # By now the source is already on disk (stage_source checks for git
-            # itself), so a missing git only matters for future updates. Portage
-            # needs python, so python3 missing here means a broken eselect
-            # python target rather than a missing package.
+            # Portage needs python, so python3 missing here means a broken
+            # eselect python target rather than a missing package.
             has_item git "${missing[@]}" && atoms+=(dev-vcs/git)
             has_item python3 "${missing[@]}" && atoms+=(dev-lang/python)
-            warn "Gentoo: not emerging these for you: ${atoms[*]}"
-            note "$SUDO emerge --ask --noreplace ${atoms[*]}"
+            gentoo_check_privilege || return "$ST_FAIL"
+            gentoo_emerge "${atoms[@]}" || return "$ST_FAIL"
             has_item python3 "${missing[@]}" && note "if python is installed, check: eselect python list"
-            STAGE_DETAIL="emerge ${atoms[*]} yourself"
-            return "$ST_WARN"
             ;;
         *)      err "need ${missing[*]} and do not know how to install it on this distro"
                 return "$ST_FAIL" ;;
@@ -122,8 +118,9 @@ stage_packages() {
 }
 
 # Third-party repositories, enabled before the package step. Outside the config
-# transaction like the packages themselves. Today only Fedora has any, through
-# COPR (see COPR_fedora in packages.sh); a failure is a setback, not a stop: the
+# transaction like the packages themselves. Today only Fedora and Gentoo have any, through
+# COPR (see COPR_fedora in packages.sh), and Gentoo, through its overlays
+# (gentoo.sh); a failure is a setback, not a stop: the
 # packages stage retries per package and reports whatever does not resolve.
 stage_repos() {
     local r
@@ -132,6 +129,10 @@ stage_repos() {
     if [ "$NO_DEPS" = "1" ]; then
         STAGE_DETAIL="--no-deps"
         return "$ST_SKIP"
+    fi
+    if [ "$PM" = "emerge" ]; then
+        gentoo_enable_repos
+        return
     fi
     if [ "$PM" != "dnf" ] || ! declare -p "COPR_${FAMILY}" >/dev/null 2>&1; then
         STAGE_DETAIL="none needed for ${FAMILY}"

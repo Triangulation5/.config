@@ -28,7 +28,7 @@ stage_report_tools() {
             fedora) note "quickshell: $SUDO dnf copr enable errornointernet/quickshell && $SUDO dnf install quickshell (the installer does this unless --no-deps)" ;;
             arch)   note "quickshell: $SUDO pacman -S quickshell (or quickshell-git from the AUR for the newest)" ;;
             void)   note "quickshell: $SUDO xbps-install -S quickshell" ;;
-            gentoo) note "quickshell: in GURU: $SUDO eselect repository enable guru && $SUDO emerge --ask gui-apps/quickshell" ;;
+            gentoo) note "quickshell: in GURU: $SUDO eselect repository enable guru && $SUDO emaint sync -r guru && $SUDO emerge --ask gui-apps/quickshell" ;;
             alpine) note "quickshell: not packaged for Alpine; build it from source: https://quickshell.org/docs/" ;;
             *)      note "quickshell is not in most distro repos, see https://quickshell.org/docs/ for your options" ;;
         esac
@@ -134,10 +134,7 @@ print_next_steps() {
         dim "  $hint"
     done
     if [ "$FAMILY" = "gentoo" ]; then
-        dim "  Gentoo: both optional tools are available in GURU."
-        dim "  $SUDO emerge --ask --noreplace app-eselect/eselect-repository"
-        dim "  $SUDO eselect repository enable guru"
-        dim "  $SUDO emaint sync -r guru"
+        dim "  Gentoo: both optional tools are in GURU, which is enabled now:"
         dim "  $SUDO emerge --ask --noreplace gui-apps/awww media-video/gpu-screen-recorder"
     fi
     if [ "$WANT_RISHOT" != "1" ]; then
