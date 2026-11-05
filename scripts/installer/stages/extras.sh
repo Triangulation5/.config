@@ -107,3 +107,39 @@ stage_retroarch() {
     STAGE_DETAIL="$RETROARCH_ID, user install"
     return "$ST_OK"
 }
+
+# Sioyek, as a per-user Flatpak from Flathub.
+stage_sioyek() {
+    if [ "$WANT_SIOYEK" != "1" ]; then
+        STAGE_DETAIL="not requested"
+        return "$ST_SKIP"
+    fi
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "flatpak remote-add --user --if-not-exists flathub $FLATHUB_URL"
+        would_do run "flatpak install --user -y --noninteractive flathub $SIOYEK_ID"
+        return "$ST_OK"
+    fi
+    if ! command -v flatpak >/dev/null 2>&1; then
+        err "flatpak is not installed. It is in the core package list; check the package step,"
+        err "or install it and re-run with --with-sioyek."
+        return "$ST_FAIL"
+    fi
+    if flatpak info "$SIOYEK_ID" >/dev/null 2>&1; then
+        STAGE_DETAIL="already installed"
+        return "$ST_OK"
+    fi
+
+    OUTSIDE_TXN_CHANGES=1
+    note "adding the Flathub remote (for your user only)"
+    if ! flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" < /dev/null; then
+        err "could not add the Flathub remote (network?)"
+        return "$ST_FAIL"
+    fi
+    note "installing $SIOYEK_ID from Flathub"
+    if ! flatpak install --user -y --noninteractive flathub "$SIOYEK_ID" < /dev/null; then
+        err "flatpak could not install $SIOYEK_ID"
+        return "$ST_FAIL"
+    fi
+    STAGE_DETAIL="$SIOYEK_ID, user install"
+    return "$ST_OK"
+}

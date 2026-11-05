@@ -43,8 +43,19 @@ stage_plan() {
             esac
         fi
 
+        if [ -z "$WANT_SIOYEK" ]; then
+            note "Sioyek is a PDF reader focused on research papers, books, and"
+            note "technical documents. Installs as a user Flatpak"
+            note "($SIOYEK_ID from Flathub); no root needed, and flatpak itself is core."
+            if ask_yn "    Install Sioyek?" n; then
+                WANT_SIOYEK=1
+            else
+                WANT_SIOYEK=0
+            fi
+        fi
+
         if [ -z "$WANT_RETROARCH" ]; then
-            note "RetroArch is a game emulator front end. It installs as a user Flatpak"
+            note "RetroArch is a game emulator front end. Installs as a user Flatpak"
             note "($RETROARCH_ID from Flathub); no root needed, and flatpak itself is core."
             if ask_yn "    Install RetroArch?" n; then
                 WANT_RETROARCH=1
@@ -69,6 +80,7 @@ stage_plan() {
     : "${KEEP_MONITORS:=0}"
     : "${WANT_RISHOT:=0}"
     : "${WANT_RETROARCH:=0}"
+    : "${WANT_SIOYEK:=0}"
     : "${SHELL_CHOICE:=keep}"
 
     if [ "$NO_DEPS" = "1" ]; then
@@ -96,6 +108,7 @@ stage_plan() {
     else
         shellline="$SHELL_CHOICE; you switch to it yourself, the steps are printed at the end"
     fi
+    if [ "$WANT_SIOYEK" = "1" ]; then sioyekline="yes, $SIOYEK_ID as a user Flatpak"; else sioyekline="no"; fi
     if [ "$WANT_RETROARCH" = "1" ]; then retroline="yes, $RETROARCH_ID as a user Flatpak"; else retroline="no"; fi
 
     say ""
@@ -105,6 +118,7 @@ stage_plan() {
     note "packages   $pkgline"
     note "monitors   $monline"
     note "shell      $shellline"
+    note "sioyek     $sioyekline"
     note "retroarch  $retroline"
     note "rishot     $rishotline"
     note "safety     every path is saved to $BACKUP_DIR before it changes;"

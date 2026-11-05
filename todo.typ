@@ -7,3 +7,4 @@
 - Test out installer using vm-curator and Gentoo.
 - Create custom repository for st and make it a part of the installer script.
 - Add other basic tools that I use inside the installer, like Sioyek, etc (end of thinking capacity).
+- Get a nice long running progress bar like thing for the installer.

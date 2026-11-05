@@ -129,6 +129,11 @@ print_next_steps() {
     note "Reload an existing session with Super + R, or log out and start Hyprland."
     note "Undo this install with: $self --rollback $STAMP"
     print_shell_steps
+    if [ "$WANT_SIOYEK" = "1" ]; then
+        printf '\n'
+        note "Sioyek: flatpak run $SIOYEK_ID. It shows up in your launcher after you"
+        note "log out and back in (Flatpak adds its menu entries to your session then)."
+    fi
     if [ "$WANT_RETROARCH" = "1" ]; then
         printf '\n'
         note "RetroArch: flatpak run $RETROARCH_ID. It shows up in your launcher after you"
@@ -142,6 +147,11 @@ print_next_steps() {
     if [ "$FAMILY" = "gentoo" ]; then
         dim "  Gentoo: both optional tools are in GURU, which is enabled now:"
         dim "  $SUDO emerge --ask --noreplace gui-apps/awww media-video/gpu-screen-recorder"
+    fi
+    if [ "$WANT_SIOYEK" != "1" ]; then
+        printf '\n'
+        note "Sioyek was not installed. To add it later: re-run with --with-sioyek,"
+        note "or: flatpak install --user flathub $SIOYEK_ID"
     fi
     if [ "$WANT_RETROARCH" != "1" ]; then
         printf '\n'

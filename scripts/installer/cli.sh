@@ -23,6 +23,9 @@ Questions (asked on a terminal; a flag answers the question in advance):
       --with-retroarch / --no-retroarch
                                  install RetroArch as a user Flatpak
                                  ($RETROARCH_ID from Flathub)
+      --with-sioyek / --no-sioyek
+                                 install Sioyek as a user Flatpak
+                                 ($SIOYEK_ID from Flathub)
       --shell bash|zsh|keep      install bash or zsh, or keep the shell you have.
                                  Switching your login shell is never done for you:
                                  the steps are printed at the end.
@@ -31,7 +34,7 @@ Run control:
   -y, --yes           take the default answer to every question and skip the
                       final confirmation. It never opts into anything extra:
                       rishot needs --with-rishot, RetroArch --with-retroarch,
-                      and your shell is kept unless you pass --shell.
+                      Sioyek --with-sioyek, and your shell is kept unless you pass --shell.
       --quickstart    same as --yes
       --no-deps       skip the package step, only deploy the configs
       --dry-run       walk the whole flow and change nothing
@@ -62,7 +65,7 @@ Exit status:
   0  done              every stage ok, skipped or warned
   1  stopped           a required stage failed or you said no; config rolled back
   2  bad usage         nothing ran
-  3  done, with gaps   finished, but an optional stage (packages, rishot, RetroArch) failed
+  3  done, with gaps   finished, but an optional stage (packages, rishot, RetroArch, Sioyek) failed
 EOF
 }
 
@@ -82,6 +85,8 @@ parse_args() {
             --no-rishot)          WANT_RISHOT=0 ;;
             --with-retroarch)     WANT_RETROARCH=1 ;;
             --no-retroarch)       WANT_RETROARCH=0 ;;
+            --with-sioyek)        WANT_SIOYEK=1 ;;
+            --no-sioyek)          WANT_SIOYEK=0 ;;
             --shell)              SHELL_CHOICE="${2:?--shell needs bash, zsh or keep}"; shift ;;
             --dir)                DEFAULT_SRC="${2:?--dir needs a path}"; shift ;;
             --source)             SRC_OVERRIDE="${2:?--source needs a path}"; shift ;;
