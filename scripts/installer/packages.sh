@@ -68,16 +68,16 @@ CORE_unknown=(hyprland quickshell kitty jq curl python3 brightnessctl ddcutil ca
 # manager previews instead of erroring on every file type.
 # shellcheck disable=SC2034
 FULL_fedora=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils p7zip fd-find ripgrep fzf zoxide bat chafa)
+    poppler-utils p7zip fd-find ripgrep fzf chafa)
 # shellcheck disable=SC2034
 FULL_arch=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
-    p7zip fd ripgrep fzf zoxide bat chafa)
+    p7zip fd ripgrep fzf chafa)
 # shellcheck disable=SC2034
 FULL_debian=(nautilus firefox-esr yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils p7zip-full fd-find ripgrep fzf zoxide bat chafa)
+    poppler-utils p7zip-full fd-find ripgrep fzf chafa)
 # shellcheck disable=SC2034
 FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-tools p7zip fd ripgrep fzf zoxide bat chafa)
+    poppler-tools p7zip fd ripgrep fzf chafa)
 # yazi is GURU's; the rest are ::gentoo. poppler's `utils` USE flag (on by
 # default) is what provides pdftoppm for yazi's PDF previews.
 # Two deliberate choices on Gentoo:
@@ -90,19 +90,19 @@ FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
 FULL_gentoo=(gnome-base/nautilus www-client/firefox-bin app-misc/yazi
     media-sound/mpd media-sound/ncmpcpp sys-process/btop
     media-video/ffmpegthumbnailer app-text/poppler app-arch/7zip sys-apps/fd
-    sys-apps/ripgrep app-shells/fzf app-shells/zoxide sys-apps/bat
+    sys-apps/ripgrep app-shells/fzf
     media-gfx/chafa)
 # Alpine does not package p7zip; the upstream 7zip package provides both 7z
 # and 7zz, which is what yazi looks for.
 # shellcheck disable=SC2034
 FULL_alpine=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils 7zip fd ripgrep fzf zoxide bat chafa)
+    poppler-utils 7zip fd ripgrep fzf chafa)
 # shellcheck disable=SC2034
 FULL_void=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils p7zip fd ripgrep fzf zoxide bat chafa)
+    poppler-utils p7zip fd ripgrep fzf chafa)
 # shellcheck disable=SC2034
 FULL_unknown=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
-    p7zip fd ripgrep fzf zoxide bat chafa)
+    p7zip fd ripgrep fzf chafa)
 
 
 # COPR projects enabled before the package step (Fedora only; dnf copr enable).

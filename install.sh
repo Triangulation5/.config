@@ -93,14 +93,14 @@ bootstrap() {
     done
 
     if [ -n "${SILHOUETTE_BOOTSTRAPPED:-}" ]; then
-        printf '%s\n' "  x installer modules not found next to $0 (the installer/ directory is missing from this checkout)." >&2
+        printf '%s\n' "  x installer modules not found next to $0 (neither installer/ nor scripts/installer/ exists in that checkout)." >&2
         exit 1
     fi
     [ -n "${HOME:-}" ] || { printf '%s\n' "  x HOME is not set" >&2; exit 1; }
     export SILHOUETTE_BOOTSTRAPPED=1
 
     if [ -n "$src" ]; then
-        if [ ! -f "$src/install.sh" ] || [ ! -d "$src/installer" ]; then
+        if [ ! -f "$src/install.sh" ] || { [ ! -d "$src/installer" ] && [ ! -d "$src/scripts/installer" ]; }; then
             printf '%s\n' "  x --source $src has no installer/ directory; is it a current checkout?" >&2
             exit 1
         fi
@@ -147,9 +147,28 @@ SCRIPT_DIR=""
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 fi
-INSTALLER_DIR="$SCRIPT_DIR/installer"
+# The modules live in installer/ next to this file. scripts/installer/ is where
+# the first release put them; it is still found, so an old tree keeps working
+# until it is moved (mv scripts/installer installer).
+INSTALLER_DIR=""
+if [ -n "$SCRIPT_DIR" ]; then
+    for _dir in "$SCRIPT_DIR/installer" "$SCRIPT_DIR/scripts/installer"; do
+        if [ -f "$_dir/lib/ui.sh" ]; then INSTALLER_DIR="$_dir"; break; fi
+    done
+    unset _dir
+fi
 
-if [ -z "$SCRIPT_DIR" ] || [ ! -f "$INSTALLER_DIR/lib/ui.sh" ]; then
+if [ -z "$INSTALLER_DIR" ]; then
+    # Inside a config checkout the modules are simply missing. Say so rather
+    # than fetching a different copy of the repo, which may be older and would
+    # fail with a more confusing message.
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/hypr/hyprland.lua" ]; then
+        printf '%s\n' "  x installer modules not found. Looked in:" \
+            "      $SCRIPT_DIR/installer" \
+            "      $SCRIPT_DIR/scripts/installer" \
+            "    Put the installer/ directory from the zip next to install.sh." >&2
+        exit 1
+    fi
     bootstrap "$@"
 fi
 
