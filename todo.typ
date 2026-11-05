@@ -1,10 +1,11 @@
 - Add a migration docuement from Fedora -> Gentoo (something I am thinking about).
-- Optimize and hunt pests inside the shell.
+- Save wireguard, and vpm configurations before switching over.
+
+- Test out installer using Gentoo on vm-curator.
+
 - Very far future: Rewrite entire shell in Rust, get it below 100 MB, and distribute as binary.
-- Create keybind for quick notes (in vim), make it look nice, maybe with a toggle inside the config itself.
+- Optimize and hunt pests inside the shell.
+- Symlink files to automatically update configs. Think about using GNU stow (and saving more than just ~/.config).
+
 - Create custom build of st (simple terminal), kitty takes up too much memory.
-- Simlink some files to automatically update configs.
-- Test out installer using vm-curator and Gentoo.
-- Create custom repository for st and make it a part of the installer script.
-- Add other basic tools that I use inside the installer, like Sioyek, etc (end of thinking capacity).
-- Get a nice long running progress bar like thing for the installer.
+- Create repository for st and make it a part of the installer script, ask user to chose between st (default), kitty, or ghostty

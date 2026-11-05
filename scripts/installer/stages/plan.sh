@@ -47,7 +47,7 @@ stage_plan() {
             note "Sioyek is a PDF reader focused on research papers, books, and"
             note "technical documents. Installs as a user Flatpak"
             note "($SIOYEK_ID from Flathub); no root needed, and flatpak itself is core."
-            if ask_yn "    Install Sioyek?" n; then
+            if ask_yn "    Install Sioyek?" y; then
                 WANT_SIOYEK=1
             else
                 WANT_SIOYEK=0
@@ -62,6 +62,30 @@ stage_plan() {
             else
                 WANT_RETROARCH=0
             fi
+        fi
+
+        if [ -z "$WANT_GRUB_THEME" ]; then
+            note "Evangelion GRUB theme ($EVA_REPO_URL)"
+            note "Clones to ~/Projects/Evangelion and configures SEELE theme profile."
+            if ask_yn "    Install Evangelion GRUB theme?" n; then
+                WANT_GRUB_THEME=1
+            else
+                WANT_GRUB_THEME=0
+            fi
+        fi
+
+        if [ "$WANT_GRUB_THEME" = "1" ] && [ -z "$GRUB_PROFILE" ]; then
+            say ""
+            say "    Choose a display profile:"
+            say "      1) 720p  1280x720"
+            say "      2) 1080p  1920x1080"
+            say "      3) 1440p  2560x1440 and larger"
+            ask_choice "    Select profile [1-3]? [2]" 2 1 2 3
+            case "$CHOICE" in
+                1) GRUB_PROFILE="720p" ;;
+                3) GRUB_PROFILE="1440p" ;;
+                *) GRUB_PROFILE="1080p" ;;
+            esac
         fi
 
         if [ -z "$WANT_RISHOT" ]; then
@@ -80,7 +104,9 @@ stage_plan() {
     : "${KEEP_MONITORS:=0}"
     : "${WANT_RISHOT:=0}"
     : "${WANT_RETROARCH:=0}"
-    : "${WANT_SIOYEK:=0}"
+    : "${WANT_SIOYEK:=1}"
+    : "${WANT_GRUB_THEME:=0}"
+    : "${GRUB_PROFILE:=1080p}"
     : "${SHELL_CHOICE:=keep}"
 
     if [ "$NO_DEPS" = "1" ]; then
@@ -110,6 +136,7 @@ stage_plan() {
     fi
     if [ "$WANT_SIOYEK" = "1" ]; then sioyekline="yes, $SIOYEK_ID as a user Flatpak"; else sioyekline="no"; fi
     if [ "$WANT_RETROARCH" = "1" ]; then retroline="yes, $RETROARCH_ID as a user Flatpak"; else retroline="no"; fi
+    if [ "$WANT_GRUB_THEME" = "1" ]; then grubline="yes, SEELE ($GRUB_PROFILE) into ~/Projects/Evangelion"; else grubline="no"; fi
 
     say ""
     say "${BOLD}Plan${RESET}"
@@ -120,6 +147,7 @@ stage_plan() {
     note "shell      $shellline"
     note "sioyek     $sioyekline"
     note "retroarch  $retroline"
+    note "grub theme $grubline"
     note "rishot     $rishotline"
     note "safety     every path is saved to $BACKUP_DIR before it changes;"
     note "           if the deploy fails, all of it is undone"

@@ -21,6 +21,7 @@ interactive() {
 
 # ask_yn QUESTION DEFAULT(y|n)      status 0 = yes, 1 = no
 ask_yn() {
+    progress_stop 2>/dev/null || true
     local prompt="$1" def="${2:-n}" hint reply=""
     if ! interactive; then
         [ "$def" = y ]
@@ -39,6 +40,7 @@ ask_yn() {
 # confirm QUESTION     status 0 = yes, 1 = no, 2 = no terminal to ask on.
 # --yes counts as an explicit yes: it is the "I read the plan" flag.
 confirm() {
+    progress_stop 2>/dev/null || true
     local reply=""
     [ "${ASSUME_YES:-0}" = "1" ] && return 0
     tty_available || return 2
@@ -53,6 +55,7 @@ confirm() {
 # ask_choice PROMPT DEFAULT KEY...    sets CHOICE to the (first letter of the)
 # answer if it is one of KEY, otherwise to DEFAULT.
 ask_choice() {
+    progress_stop 2>/dev/null || true
     local prompt="$1" def="$2" k reply=""
     shift 2
     CHOICE="$def"

@@ -257,6 +257,7 @@ main() {
     stage optional "Install rishot"        stage_rishot
     stage optional "Install RetroArch"     stage_retroarch
     stage optional "Install Sioyek"        stage_sioyek
+    stage optional "Install GRUB theme"    stage_grub_theme
     stage optional "Check runtime tools"   stage_report_tools
     stage optional "Check init system"     stage_report_init
     stage optional "Check shell"           stage_shell

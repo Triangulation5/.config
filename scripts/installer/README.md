@@ -18,7 +18,7 @@ or `~/.config` is left exactly as it was.
 
 ## Layout
 
-    lib/ui.sh        status tags ([   Ok   ] / [ Failed ] ...), say/note/warn/err, run
+    lib/ui.sh        status tags, progress bars (progress_bar, progress_run), say/note/warn/err, run
     lib/util.sh      has_item, temp-path registry
     lib/prompt.sh    ask_yn, confirm, ask_choice (all read /dev/tty)
     lib/txn.sh       the undo journal: begin / protect / commit / rollback
@@ -41,7 +41,7 @@ functions and data only; nothing runs until `main` in `install.sh` does.
     required  Begin transaction
               Deploy configs, Rewrite home paths, Set script modes, Monitor layout
     required  Commit transaction
-    optional  Install rishot, Check runtime tools, Check init system
+    optional  Install rishot, Install RetroArch, Install Sioyek, Install GRUB theme, Check runtime tools, Check init system
 
 "Review plan" asks every question first, so the plan that is confirmed is the
 plan that runs.

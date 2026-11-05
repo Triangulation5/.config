@@ -59,13 +59,15 @@ NO_DEPS=0
 SRC_OVERRIDE=""
 # Questions the installer can ask. Empty means "not decided yet": ask if
 # there is a terminal, otherwise take the default (core only, portable
-# monitors, no rishot, no RetroArch, no Sioyek, keep the shell). A flag answers the
+# monitors, no rishot, no RetroArch, Sioyek (opt-out), no GRUB theme, keep the shell). A flag answers the
 # question in advance.
 FULL=""
 KEEP_MONITORS=""
 WANT_RISHOT=""
 WANT_RETROARCH=""
 WANT_SIOYEK=""
+WANT_GRUB_THEME=""
+GRUB_PROFILE=""
 # bash | zsh | keep. NOT called SHELL: that is the user's login shell, which the
 # environment owns. Empty means undecided; the default is keep.
 SHELL_CHOICE=""
@@ -74,6 +76,10 @@ SHELL_CHOICE=""
 RETROARCH_ID="org.libretro.RetroArch"
 SIOYEK_ID="com.github.ahrm.sioyek"
 FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
+
+# Evangelion GRUB theme
+EVA_REPO_URL="https://github.com/Aleph1-9012/Evangelion.git"
+EVA_DIR="${HOME:-}/Projects/Evangelion"
 
 # ---- filled in by the stages --------------------------------------------------
 FAMILY=""               # stage_detect

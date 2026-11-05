@@ -102,12 +102,16 @@ stage_packages() {
     if [ "$PM" = "xbps" ]; then
         note "Void: if xbps itself is out of date, run '$SUDO xbps-install -Suy xbps' first."
     fi
+    local i=0
     for p in "${pkgs[@]}"; do
+        i=$((i + 1))
+        progress_bar "$i" "$total" "retrying $p"
         if ! pm_install "$p"; then
             warn "skipped, not found in your repos: $p"
             skipped+=("$p")
         fi
     done
+    progress_stop
 
     if [ "${#skipped[@]}" -eq "$total" ]; then
         # Not one package installed: that is not a few wrong names, it is

@@ -100,7 +100,7 @@ stage_retroarch() {
         return "$ST_FAIL"
     fi
     note "installing $RETROARCH_ID from Flathub"
-    if ! flatpak install --user -y --noninteractive flathub "$RETROARCH_ID" < /dev/null; then
+    if ! progress_run "Installing $RETROARCH_ID from Flathub" flatpak install --user -y --noninteractive flathub "$RETROARCH_ID"; then
         err "flatpak could not install $RETROARCH_ID"
         return "$ST_FAIL"
     fi
@@ -136,10 +136,97 @@ stage_sioyek() {
         return "$ST_FAIL"
     fi
     note "installing $SIOYEK_ID from Flathub"
-    if ! flatpak install --user -y --noninteractive flathub "$SIOYEK_ID" < /dev/null; then
+    if ! progress_run "Installing $SIOYEK_ID from Flathub" flatpak install --user -y --noninteractive flathub "$SIOYEK_ID"; then
         err "flatpak could not install $SIOYEK_ID"
         return "$ST_FAIL"
     fi
     STAGE_DETAIL="$SIOYEK_ID, user install"
+    return "$ST_OK"
+}
+
+# Evangelion GRUB theme, cloned to ~/Projects/Evangelion and installed with SEELE theme.
+stage_grub_theme() {
+    local rc=0 installer eva_cmd
+
+    if [ "$WANT_GRUB_THEME" != "1" ]; then
+        STAGE_DETAIL="not requested"
+        return "$ST_SKIP"
+    fi
+
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "git clone $EVA_REPO_URL $EVA_DIR"
+        would_do run "cd $EVA_DIR && $SUDO ./bin/install.sh"
+        would_do run "$SUDO eva set seele $GRUB_PROFILE"
+        STAGE_DETAIL="dry run: Evangelion seele $GRUB_PROFILE"
+        return "$ST_OK"
+    fi
+
+    if ! command -v git >/dev/null 2>&1; then
+        err "git is needed to fetch the Evangelion GRUB theme"
+        return "$ST_FAIL"
+    fi
+
+    mkdir -p "$(dirname -- "$EVA_DIR")"
+
+    if [ -d "$EVA_DIR/.git" ]; then
+        note "using existing Evangelion repository at $EVA_DIR"
+    elif [ -d "$EVA_DIR" ]; then
+        note "directory $EVA_DIR exists; using it"
+    else
+        note "cloning $EVA_REPO_URL into $EVA_DIR"
+        if ! progress_run "Cloning Evangelion repository" git clone --depth 1 "$EVA_REPO_URL" "$EVA_DIR"; then
+            err "could not clone $EVA_REPO_URL"
+            return "$ST_FAIL"
+        fi
+    fi
+
+    if [ ! -d "$EVA_DIR" ]; then
+        err "Evangelion directory $EVA_DIR not found"
+        return "$ST_FAIL"
+    fi
+
+    # Ensure installer scripts are executable
+    chmod +x "$EVA_DIR/bin/install.sh" "$EVA_DIR/bin/eva" "$EVA_DIR/install.sh" 2>/dev/null || true
+
+    OUTSIDE_TXN_CHANGES=1
+    note "running Evangelion installer in $EVA_DIR"
+
+    (
+        cd -- "$EVA_DIR" || exit 1
+        installer="./bin/install.sh"
+        [ -f "$installer" ] || installer="./install.sh"
+
+        if tty_available; then
+            "$SUDO" "$installer" < /dev/tty || exit $?
+        else
+            "$SUDO" "$installer" < /dev/null || exit $?
+        fi
+    ) || rc=$?
+
+    if [ "$rc" -ne 0 ]; then
+        err "Evangelion install script exited with status $rc"
+        return "$ST_FAIL"
+    fi
+
+    note "setting Evangelion theme to seele with profile $GRUB_PROFILE"
+    eva_cmd="eva"
+    if ! command -v eva >/dev/null 2>&1; then
+        if [ -x "$EVA_DIR/bin/eva" ]; then
+            eva_cmd="$EVA_DIR/bin/eva"
+        fi
+    fi
+
+    if tty_available; then
+        "$SUDO" $eva_cmd set seele "$GRUB_PROFILE" < /dev/tty || rc=$?
+    else
+        "$SUDO" $eva_cmd set seele "$GRUB_PROFILE" < /dev/null || rc=$?
+    fi
+
+    if [ "$rc" -ne 0 ]; then
+        err "failed to set Evangelion seele theme ($GRUB_PROFILE)"
+        return "$ST_FAIL"
+    fi
+
+    STAGE_DETAIL="seele, $GRUB_PROFILE"
     return "$ST_OK"
 }

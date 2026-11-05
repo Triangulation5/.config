@@ -24,8 +24,13 @@ Questions (asked on a terminal; a flag answers the question in advance):
                                  install RetroArch as a user Flatpak
                                  ($RETROARCH_ID from Flathub)
       --with-sioyek / --no-sioyek
-                                 install Sioyek as a user Flatpak
+                                 install Sioyek as a user Flatpak (installed by default)
                                  ($SIOYEK_ID from Flathub)
+      --with-grub-theme / --no-grub-theme
+                                 install Evangelion GRUB theme
+                                 (clones to ~/Projects/Evangelion, sets seele theme)
+      --grub-profile 720p|1080p|1440p
+                                 display profile for Evangelion GRUB theme (default: 1080p)
       --shell bash|zsh|keep      install bash or zsh, or keep the shell you have.
                                  Switching your login shell is never done for you:
                                  the steps are printed at the end.
@@ -34,7 +39,8 @@ Run control:
   -y, --yes           take the default answer to every question and skip the
                       final confirmation. It never opts into anything extra:
                       rishot needs --with-rishot, RetroArch --with-retroarch,
-                      Sioyek --with-sioyek, and your shell is kept unless you pass --shell.
+                      GRUB theme needs --with-grub-theme, Sioyek is installed
+                      unless --no-sioyek, and your shell is kept unless you pass --shell.
       --quickstart    same as --yes
       --no-deps       skip the package step, only deploy the configs
       --dry-run       walk the whole flow and change nothing
@@ -65,7 +71,7 @@ Exit status:
   0  done              every stage ok, skipped or warned
   1  stopped           a required stage failed or you said no; config rolled back
   2  bad usage         nothing ran
-  3  done, with gaps   finished, but an optional stage (packages, rishot, RetroArch, Sioyek) failed
+  3  done, with gaps   finished, but an optional stage (packages, rishot, RetroArch, Sioyek, GRUB theme) failed
 EOF
 }
 
@@ -87,6 +93,16 @@ parse_args() {
             --no-retroarch)       WANT_RETROARCH=0 ;;
             --with-sioyek)        WANT_SIOYEK=1 ;;
             --no-sioyek)          WANT_SIOYEK=0 ;;
+            --with-grub-theme|--with-eva)  WANT_GRUB_THEME=1 ;;
+            --no-grub-theme|--no-eva)      WANT_GRUB_THEME=0 ;;
+            --grub-profile|--eva-profile)
+                GRUB_PROFILE="${2:?--grub-profile needs 720p, 1080p or 1440p}"
+                shift
+                case "$GRUB_PROFILE" in
+                    720p|1080p|1440p) ;;
+                    *) die "--grub-profile: $GRUB_PROFILE is not 720p, 1080p or 1440p" ;;
+                esac
+                ;;
             --shell)              SHELL_CHOICE="${2:?--shell needs bash, zsh or keep}"; shift ;;
             --dir)                DEFAULT_SRC="${2:?--dir needs a path}"; shift ;;
             --source)             SRC_OVERRIDE="${2:?--source needs a path}"; shift ;;

@@ -106,7 +106,9 @@ stage() {
         STAGE_DETAIL=""
         DRY_SKIPPED=0
         rc=0
+        progress_start "$title in progress..."
         "$fn" || rc=$?
+        progress_stop
 
         case "$rc" in
             0) kind=ok ;;
@@ -158,6 +160,7 @@ stage() {
 # survives the process: the safety net behind the explicit rollbacks above.
 on_exit() {
     local rc=$?
+    progress_stop 2>/dev/null || true
     trap - EXIT
     trap '' INT TERM
     if [ "${TXN_ACTIVE:-0}" = "1" ]; then

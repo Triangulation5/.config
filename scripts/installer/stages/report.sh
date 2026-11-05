@@ -139,6 +139,11 @@ print_next_steps() {
         note "RetroArch: flatpak run $RETROARCH_ID. It shows up in your launcher after you"
         note "log out and back in (Flatpak adds its menu entries to your session then)."
     fi
+    if [ "$WANT_GRUB_THEME" = "1" ]; then
+        printf '\n'
+        note "GRUB theme: Evangelion SEELE ($GRUB_PROFILE) installed."
+        note "Switch themes anytime with: sudo eva"
+    fi
     printf '\n'
     note "Optional tools this rice expects, install them if you want the feature:"
     for hint in "${OPTIONAL_HINTS[@]}"; do
@@ -162,6 +167,11 @@ print_next_steps() {
         printf '\n'
         note "The rishot screenshot tool was not installed. To add it later, re-run with"
         note "--with-rishot, or run: curl -fsSL $RISHOT_URL | sh"
+    fi
+    if [ "$WANT_GRUB_THEME" != "1" ]; then
+        printf '\n'
+        note "Evangelion GRUB theme was not installed. To add it later, re-run with"
+        note "--with-grub-theme, or clone $EVA_REPO_URL to ~/Projects/Evangelion and run ./bin/install.sh"
     fi
     return 0
 }
