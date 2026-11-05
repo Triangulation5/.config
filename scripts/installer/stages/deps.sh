@@ -78,7 +78,7 @@ stage_packages() {
 
     if [ "$PM" = "emerge" ]; then
         install_packages_gentoo "${pkgs[@]}"
-        return
+        return $?
     fi
     if [ -z "$PM" ]; then
         warn "unrecognised distro, install these yourself: ${pkgs[*]}"
@@ -139,7 +139,7 @@ stage_repos() {
     fi
     if [ "$PM" = "emerge" ]; then
         gentoo_enable_repos
-        return
+        return $?
     fi
     if [ "$PM" != "dnf" ] || ! declare -p "COPR_${FAMILY}" >/dev/null 2>&1; then
         STAGE_DETAIL="none needed for ${FAMILY}"

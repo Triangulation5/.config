@@ -197,9 +197,9 @@ stage_grub_theme() {
         [ -f "$installer" ] || installer="./install.sh"
 
         if tty_available; then
-            "$SUDO" "$installer" < /dev/tty || exit $?
+            priv_run "$installer" < /dev/tty || exit $?
         else
-            "$SUDO" "$installer" < /dev/null || exit $?
+            priv_run "$installer" < /dev/null || exit $?
         fi
     ) || rc=$?
 
@@ -217,9 +217,9 @@ stage_grub_theme() {
     fi
 
     if tty_available; then
-        "$SUDO" $eva_cmd set seele "$GRUB_PROFILE" < /dev/tty || rc=$?
+        priv_run $eva_cmd set seele "$GRUB_PROFILE" < /dev/tty || rc=$?
     else
-        "$SUDO" $eva_cmd set seele "$GRUB_PROFILE" < /dev/null || rc=$?
+        priv_run $eva_cmd set seele "$GRUB_PROFILE" < /dev/null || rc=$?
     fi
 
     if [ "$rc" -ne 0 ]; then

@@ -61,6 +61,20 @@ detect_privilege() {
     return 0
 }
 
+# Run a command with elevated privileges. Uses $SUDO if available,
+# or su -c on Gentoo/minimal installs without sudo or doas.
+priv_run() {
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+        would_do run "$SUDO $*"
+        return 0
+    fi
+    if [ "${HAVE_PRIV:-1}" = "1" ] || command -v "$SUDO" >/dev/null 2>&1; then
+        "$SUDO" "$@"
+        return $?
+    fi
+    su -c "$(printf '%q ' "$@")"
+}
+
 # Alpine's archive is split: main has the base, community has hyprland, kitty,
 # wireplumber and most of the desktop stack. A minimal install can enable only
 # main, which would make the whole batch fail for a reason the user can fix in

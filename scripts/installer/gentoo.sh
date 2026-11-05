@@ -49,19 +49,9 @@ gentoo_atom_available() {
     [ -n "$out" ]
 }
 
-# Run a command as root. --dry-run prints it instead.
+# Run a command as root. Uses priv_run (sudo, doas, or su).
 gentoo_root() {
-    if [ "$DRY_RUN" = "1" ]; then
-        would_do run "$SUDO $*"
-        return 0
-    fi
-    if [ "$HAVE_PRIV" = "1" ]; then
-        "$SUDO" "$@"
-        return
-    fi
-    # Neither sudo nor doas, which is normal on a fresh Gentoo: su is always
-    # there (sys-apps/shadow) and asks for root's password on the terminal.
-    su -c "$(printf '%q ' "$@")"
+    priv_run "$@"
 }
 
 # Can root be reached at all? A real run with no sudo/doas needs a terminal for
@@ -174,12 +164,13 @@ gentoo_enable_repos() {
             err "eselect repository enable ${need[*]} failed"
             return "$ST_FAIL"
         fi
-        for repo in "${need[@]}"; do sync_args+=(-r "$repo"); done
-        note "syncing ${need[*]}"
-        if ! gentoo_root emaint sync "${sync_args[@]}"; then
-            err "emaint sync ${need[*]} failed (network?)"
-            return "$ST_FAIL"
-        fi
+        for repo in "${need[@]}"; do
+            note "syncing overlay $repo"
+            if ! progress_run "Syncing overlay $repo" gentoo_root emaint sync -r "$repo"; then
+                err "emaint sync -r $repo failed (network?)"
+                return "$ST_FAIL"
+            fi
+        done
     fi
 
     if ! gentoo_accept_overlay_keywords; then
@@ -236,6 +227,7 @@ install_packages_gentoo() {
 
     note "emerging ${#avail[@]} packages. They compile from source, so this can take a long time."
     OUTSIDE_TXN_CHANGES=1
+    progress_stop 2>/dev/null || true
     gentoo_emerge "${avail[@]}" || warn "emerge reported failures; checking what did get installed"
     gentoo_merge_portage_config
 
