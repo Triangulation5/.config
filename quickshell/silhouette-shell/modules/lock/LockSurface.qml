@@ -52,6 +52,7 @@ Item {
 
     readonly property bool overlayReady: deskOverlay.status === Image.Ready
     readonly property bool shouldOpen: active && overlayReady
+    property bool useBezierStyle: Math.random() < 0.25
     onShouldOpenChanged: if (shouldOpen && !surface.instant)
         openAnim.restart()
     onActiveChanged: if (!active && !surface.instant)
@@ -277,9 +278,9 @@ Item {
         target: surface
         property: "maskP"
         to: 1
-        duration: 700
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: [0.32, 0.72, 0, 1, 1, 1]
+        duration: useBezierStyle ? 700 : 620
+        easing.type: useBezierStyle ? Easing.BezierSpline : Easing.InOutCubic
+        easing.bezierCurve: useBezierStyle ? [0.32, 0.72, 0, 1, 1, 1] : []
     }
 
     NumberAnimation {
@@ -287,7 +288,7 @@ Item {
         target: surface
         property: "maskP"
         to: 0
-        duration: 700
+        duration: useBezierStyle ? 700 : 500
         easing.type: Easing.BezierSpline
         easing.bezierCurve: [0.16, 1, 0.3, 1, 1, 1]
     }
