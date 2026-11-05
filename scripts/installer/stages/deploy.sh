@@ -172,10 +172,9 @@ stage_home_paths() {
     return "$ST_OK"
 }
 
-# A few files in scripts are not executable in the repo (a helper meant to be
-# run by hand, and python engines the shell invokes as `python3 <file>`). Make
-# the lot executable anyway: Hyprland's binds exec these by path, and a
-# non-executable one is a bind that silently does nothing.
+# Shell scripts in scripts/ are bound in Hyprland or called directly, so ensure
+# they are executable. Python engines are invoked via `python3 <file>` and do
+# not need +x.
 stage_script_modes() {
     local dir f rel n=0 bad=0
     dir="$(live_path scripts)"
@@ -185,10 +184,10 @@ stage_script_modes() {
         return "$ST_SKIP"
     fi
     if [ "$DRY_RUN" = "1" ]; then
-        would_do run "chmod +x $dir/*.sh $dir/*.py"
+        would_do run "chmod +x $dir/*.sh"
         return "$ST_OK"
     fi
-    for f in "$dir"/*.sh "$dir"/*.py; do
+    for f in "$dir"/*.sh; do
         [ -f "$f" ] || continue
         [ -x "$f" ] && continue
         rel="scripts/$(basename -- "$f")"
