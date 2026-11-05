@@ -7,7 +7,7 @@
 # terminal (or --yes) a question takes its default.
 
 stage_plan() {
-    local rc=0 pkgline monline rishotline
+    local rc=0 pkgline monline rishotline shellline retroline cur
 
     if interactive; then
         say ""
@@ -31,6 +31,28 @@ stage_plan() {
             fi
         fi
 
+        if [ -z "$SHELL_CHOICE" ]; then
+            cur="$(current_shell)"
+            note "Shell: you are using $cur. The configs for bash and zsh are both deployed."
+            note "Switching your login shell is never done for you; the steps are printed at the end."
+            ask_choice "    Install [b]ash, install [z]sh, or [k]eep what you have? [k]" k b z k
+            case "$CHOICE" in
+                b) SHELL_CHOICE=bash ;;
+                z) SHELL_CHOICE=zsh ;;
+                *) SHELL_CHOICE=keep ;;
+            esac
+        fi
+
+        if [ -z "$WANT_RETROARCH" ]; then
+            note "RetroArch is a game emulator front end. It installs as a user Flatpak"
+            note "($RETROARCH_ID from Flathub); no root needed, and flatpak itself is core."
+            if ask_yn "    Install RetroArch?" n; then
+                WANT_RETROARCH=1
+            else
+                WANT_RETROARCH=0
+            fi
+        fi
+
         if [ -z "$WANT_RISHOT" ]; then
             note "rishot is a screenshot tool with its own installer. It is a separate"
             note "project: this would download and run $RISHOT_URL"
@@ -46,6 +68,8 @@ stage_plan() {
     : "${FULL:=0}"
     : "${KEEP_MONITORS:=0}"
     : "${WANT_RISHOT:=0}"
+    : "${WANT_RETROARCH:=0}"
+    : "${SHELL_CHOICE:=keep}"
 
     if [ "$NO_DEPS" = "1" ]; then
         pkgline="skipped (--no-deps)"
@@ -67,12 +91,21 @@ stage_plan() {
     if [ "$KEEP_MONITORS" = "1" ]; then monline="the repo's layout, unchanged"; else monline="portable default, original kept as monitors.lua.example"; fi
     if [ "$WANT_RISHOT" = "1" ]; then rishotline="yes, runs its installer"; else rishotline="no"; fi
 
+    if [ "$SHELL_CHOICE" = "keep" ]; then
+        shellline="keep $(current_shell); the hook-up steps for it are printed at the end"
+    else
+        shellline="$SHELL_CHOICE; you switch to it yourself, the steps are printed at the end"
+    fi
+    if [ "$WANT_RETROARCH" = "1" ]; then retroline="yes, $RETROARCH_ID as a user Flatpak"; else retroline="no"; fi
+
     say ""
     say "${BOLD}Plan${RESET}"
     note "source     $SRC_DIR"
     note "configs    ${#CONFIG_ENTRIES[@]} entries into $CONFIG_DIR, merged in: nothing is deleted"
     note "packages   $pkgline"
     note "monitors   $monline"
+    note "shell      $shellline"
+    note "retroarch  $retroline"
     note "rishot     $rishotline"
     note "safety     every path is saved to $BACKUP_DIR before it changes;"
     note "           if the deploy fails, all of it is undone"

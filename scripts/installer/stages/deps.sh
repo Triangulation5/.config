@@ -71,6 +71,9 @@ stage_packages() {
         local -n extra="FULL_${FAMILY}"
         pkgs+=("${extra[@]}")
     fi
+    case "$SHELL_CHOICE" in
+        bash|zsh) pkgs+=("$(shell_package "$SHELL_CHOICE")") ;;
+    esac
     total="${#pkgs[@]}"
 
     if [ "$PM" = "emerge" ]; then

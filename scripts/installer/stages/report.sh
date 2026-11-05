@@ -11,7 +11,7 @@ stage_report_tools() {
 
     for b in Hyprland hyprctl qs kitty cava playerctl cliphist wl-copy \
              notify-send jq curl brightnessctl nmcli bluetoothctl upower \
-             wpctl python3 slurp; do
+             wpctl python3 slurp tmux w3m fastfetch flatpak mpd mpv; do
         command -v "$b" >/dev/null 2>&1 || missing+=("$b")
     done
     if [ "${#missing[@]}" -eq 0 ]; then
@@ -128,6 +128,12 @@ print_next_steps() {
     note "Configs are in $CONFIG_DIR, scripts are executable as shipped."
     note "Reload an existing session with Super + R, or log out and start Hyprland."
     note "Undo this install with: $self --rollback $STAMP"
+    print_shell_steps
+    if [ "$WANT_RETROARCH" = "1" ]; then
+        printf '\n'
+        note "RetroArch: flatpak run $RETROARCH_ID. It shows up in your launcher after you"
+        note "log out and back in (Flatpak adds its menu entries to your session then)."
+    fi
     printf '\n'
     note "Optional tools this rice expects, install them if you want the feature:"
     for hint in "${OPTIONAL_HINTS[@]}"; do
@@ -136,6 +142,11 @@ print_next_steps() {
     if [ "$FAMILY" = "gentoo" ]; then
         dim "  Gentoo: both optional tools are in GURU, which is enabled now:"
         dim "  $SUDO emerge --ask --noreplace gui-apps/awww media-video/gpu-screen-recorder"
+    fi
+    if [ "$WANT_RETROARCH" != "1" ]; then
+        printf '\n'
+        note "RetroArch was not installed. To add it later: re-run with --with-retroarch,"
+        note "or: flatpak install --user flathub $RETROARCH_ID"
     fi
     if [ "$WANT_RISHOT" != "1" ]; then
         printf '\n'

@@ -28,7 +28,7 @@ RISHOT_URL="${SILHOUETTE_RISHOT_URL:-https://raw.githubusercontent.com/Gakuseei/
 # ~/.config/scripts. If scripts/ is meant to be deployed, add it here.
 CONFIG_ENTRIES=(
     bash btop cava fastfetch hypr kitty mpd ncmpcpp nvim nwg-look
-    quickshell rishot sioyek tmux vim xsettingsd yazi zsh
+    quickshell rishot sioyek tmux vim xsettingsd yazi zsh w3m mpv
     user-dirs.dirs user-dirs.locale
     install.sh installer
 )
@@ -57,12 +57,21 @@ DRY_RUN=0
 ASSUME_YES=0
 NO_DEPS=0
 SRC_OVERRIDE=""
-# Three questions the installer can ask. Empty means "not decided yet": ask if
+# Questions the installer can ask. Empty means "not decided yet": ask if
 # there is a terminal, otherwise take the default (core only, portable
-# monitors, no rishot). A flag answers the question in advance.
+# monitors, no rishot, no RetroArch, keep the shell). A flag answers the
+# question in advance.
 FULL=""
 KEEP_MONITORS=""
 WANT_RISHOT=""
+WANT_RETROARCH=""
+# bash | zsh | keep. NOT called SHELL: that is the user's login shell, which the
+# environment owns. Empty means undecided; the default is keep.
+SHELL_CHOICE=""
+
+# RetroArch comes from Flathub, as a per-user Flatpak (no root needed).
+RETROARCH_ID="org.libretro.RetroArch"
+FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
 
 # ---- filled in by the stages --------------------------------------------------
 FAMILY=""               # stage_detect

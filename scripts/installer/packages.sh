@@ -8,25 +8,30 @@
 # These are plain arrays read through namerefs, which shellcheck cannot follow.
 # shellcheck disable=SC2034
 
-# Core packages: what the session and the shell actually call out to. Names are
+# Core packages: what the session and the shell actually call out to, plus the
+# terminal tools (tmux, w3m, fastfetch) and media/app tools (mpd, mpv, flatpak). Names are
 # per distro family because they genuinely differ (libnotify vs libnotify-bin,
 # python3-dbus vs python-dbus).
 # shellcheck disable=SC2034 # selected through the CORE_${FAMILY} nameref
 CORE_fedora=(hyprland-git quickshell kitty jq curl python3 brightnessctl ddcutil cava
     playerctl cliphist wl-clipboard libnotify slurp NetworkManager neovim bluez upower
-    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus)
+    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_arch=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick python-dbus)
+    wireplumber xdg-utils ffmpeg imagemagick python-dbus
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_debian=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-bin slurp network-manager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick python3-dbus)
+    wireplumber xdg-utils ffmpeg imagemagick python3-dbus
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_suse=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-tools slurp NetworkManager neovim bluez upower
-    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python)
+    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python
+    tmux w3m fastfetch flatpak mpd mpv)
 # Gentoo takes full category/package atoms, and several are not in ::gentoo:
 # gui-wm/hyprland is in hyproverlay; gui-apps/quickshell, app-misc/brightnessctl,
 # app-misc/cliphist and (below) app-misc/yazi are in GURU. gentoo.sh enables both
@@ -40,7 +45,8 @@ CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
     gui-apps/wl-clipboard x11-libs/libnotify gui-apps/slurp
     net-misc/networkmanager app-editors/neovim net-wireless/bluez sys-power/upower
     media-video/wireplumber x11-misc/xdg-utils media-video/ffmpeg
-    media-gfx/imagemagick dev-python/dbus-python)
+    media-gfx/imagemagick dev-python/dbus-python
+    app-misc/tmux www-client/w3m app-misc/fastfetch sys-apps/flatpak media-sound/mpd media-video/mpv)
 # Alpine's stable repos carry the desktop stack in community, but cava and
 # cliphist only exist in edge/testing. They are left out on purpose: pulling a
 # testing repo in would make an install less predictable than a missing
@@ -48,7 +54,8 @@ CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
 # shellcheck disable=SC2034
 CORE_alpine=(hyprland kitty jq curl python3 brightnessctl ddcutil playerctl
     wl-clipboard libnotify slurp networkmanager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick py3-dbus)
+    wireplumber xdg-utils ffmpeg imagemagick py3-dbus
+    tmux w3m fastfetch flatpak mpd mpv)
 # Hyprland is not in Void's official repositories (see the hyprland-void repo
 # in report_missing). Everything else here is in the current repo, spelled the
 # way xbps spells it: NetworkManager and ImageMagick keep their capitals, and
@@ -56,28 +63,30 @@ CORE_alpine=(hyprland kitty jq curl python3 brightnessctl ddcutil playerctl
 # shellcheck disable=SC2034
 CORE_void=(kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp NetworkManager neovim bluez upower
-    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus quickshell)
+    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus quickshell
+    tmux w3m fastfetch flatpak mpd mpv)
 # Nothing to guess from. The generic names are listed so the report is concrete
 # and the user can map them to whatever their package manager calls them.
 # shellcheck disable=SC2034
 CORE_unknown=(hyprland quickshell kitty jq curl python3 brightnessctl ddcutil cava
     playerctl cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick)
+    wireplumber xdg-utils ffmpeg imagemagick
+    tmux w3m fastfetch flatpak mpd mpv)
 
-# --full: the daily apps on top of the core, plus yazi's helpers so the file
+# --full: the daily apps on top of the core (mpd is core now), plus yazi's helpers so the file
 # manager previews instead of erroring on every file type.
 # shellcheck disable=SC2034
-FULL_fedora=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils p7zip fd-find ripgrep fzf chafa)
+FULL_fedora=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler-utils 7zip
+    fd-find ripgrep fzf zoxide bat chafa)
 # shellcheck disable=SC2034
-FULL_arch=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
-    p7zip fd ripgrep fzf chafa)
+FULL_arch=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler p7zip fd
+    ripgrep fzf zoxide bat chafa)
 # shellcheck disable=SC2034
-FULL_debian=(nautilus firefox-esr yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils p7zip-full fd-find ripgrep fzf chafa)
+FULL_debian=(nautilus firefox-esr yazi ncmpcpp btop ffmpegthumbnailer poppler-utils
+    p7zip-full fd-find ripgrep fzf zoxide bat chafa)
 # shellcheck disable=SC2034
-FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-tools p7zip fd ripgrep fzf chafa)
+FULL_suse=(nautilus MozillaFirefox yazi ncmpcpp btop ffmpegthumbnailer poppler-tools
+    p7zip fd ripgrep fzf zoxide bat chafa)
 # yazi is GURU's; the rest are ::gentoo. poppler's `utils` USE flag (on by
 # default) is what provides pdftoppm for yazi's PDF previews.
 # Two deliberate choices on Gentoo:
@@ -88,21 +97,20 @@ FULL_suse=(nautilus MozillaFirefox yazi mpd ncmpcpp btop ffmpegthumbnailer
 #                     many GB of RAM; the binary package is the dependable choice.
 # shellcheck disable=SC2034
 FULL_gentoo=(gnome-base/nautilus www-client/firefox-bin app-misc/yazi
-    media-sound/mpd media-sound/ncmpcpp sys-process/btop
-    media-video/ffmpegthumbnailer app-text/poppler app-arch/7zip sys-apps/fd
-    sys-apps/ripgrep app-shells/fzf
-    media-gfx/chafa)
+    media-sound/ncmpcpp sys-process/btop media-video/ffmpegthumbnailer
+    app-text/poppler app-arch/7zip sys-apps/fd sys-apps/ripgrep
+    app-shells/fzf app-shells/zoxide sys-apps/bat media-gfx/chafa)
 # Alpine does not package p7zip; the upstream 7zip package provides both 7z
 # and 7zz, which is what yazi looks for.
 # shellcheck disable=SC2034
-FULL_alpine=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils 7zip fd ripgrep fzf chafa)
+FULL_alpine=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler-utils 7zip fd
+    ripgrep fzf zoxide bat chafa)
 # shellcheck disable=SC2034
-FULL_void=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer
-    poppler-utils p7zip fd ripgrep fzf chafa)
+FULL_void=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler-utils p7zip
+    fd ripgrep fzf zoxide bat chafa)
 # shellcheck disable=SC2034
-FULL_unknown=(nautilus firefox yazi mpd ncmpcpp btop ffmpegthumbnailer poppler
-    p7zip fd ripgrep fzf chafa)
+FULL_unknown=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler p7zip fd
+    ripgrep fzf zoxide bat chafa)
 
 
 # COPR projects enabled before the package step (Fedora only; dnf copr enable).
@@ -118,3 +126,13 @@ declare -A HYPRLAND_PKG=(
     [fedora]=hyprland-git [arch]=hyprland [debian]=hyprland [suse]=hyprland
     [alpine]=hyprland [gentoo]=gui-wm/hyprland
 )
+
+# The package for a shell the user picked (--shell bash|zsh). The name is the
+# same on every family except Gentoo, which wants the category.
+shell_package() {
+    case "$FAMILY:$1" in
+        gentoo:bash) printf '%s' "app-shells/bash" ;;
+        gentoo:zsh)  printf '%s' "app-shells/zsh" ;;
+        *)           printf '%s' "$1" ;;
+    esac
+}

@@ -5,3 +5,5 @@
 - Create custom build of st (simple terminal), kitty takes up too much memory.
 - Simlink some files to automatically update configs.
 - Test out installer using vm-curator and Gentoo.
+- Create custom repository for st and make it a part of the installer script.
+- Add other basic tools that I use inside the installer, like Sioyek, etc (end of thinking capacity).

@@ -69,3 +69,41 @@ stage_rishot() {
     STAGE_DETAIL="installed, not on PATH yet"
     return "$ST_WARN"
 }
+
+# RetroArch, as a per-user Flatpak from Flathub. Per-user (--user) on purpose:
+# no root, nothing touches the system, and it comes out with one command. flatpak
+# itself is a core package, so this stage only needs it to be on PATH.
+stage_retroarch() {
+    if [ "$WANT_RETROARCH" != "1" ]; then
+        STAGE_DETAIL="not requested"
+        return "$ST_SKIP"
+    fi
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "flatpak remote-add --user --if-not-exists flathub $FLATHUB_URL"
+        would_do run "flatpak install --user -y --noninteractive flathub $RETROARCH_ID"
+        return "$ST_OK"
+    fi
+    if ! command -v flatpak >/dev/null 2>&1; then
+        err "flatpak is not installed. It is in the core package list; check the package step,"
+        err "or install it and re-run with --with-retroarch."
+        return "$ST_FAIL"
+    fi
+    if flatpak info "$RETROARCH_ID" >/dev/null 2>&1; then
+        STAGE_DETAIL="already installed"
+        return "$ST_OK"
+    fi
+
+    OUTSIDE_TXN_CHANGES=1
+    note "adding the Flathub remote (for your user only)"
+    if ! flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" < /dev/null; then
+        err "could not add the Flathub remote (network?)"
+        return "$ST_FAIL"
+    fi
+    note "installing $RETROARCH_ID from Flathub"
+    if ! flatpak install --user -y --noninteractive flathub "$RETROARCH_ID" < /dev/null; then
+        err "flatpak could not install $RETROARCH_ID"
+        return "$ST_FAIL"
+    fi
+    STAGE_DETAIL="$RETROARCH_ID, user install"
+    return "$ST_OK"
+}
