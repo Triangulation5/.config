@@ -218,6 +218,7 @@ main() {
         _n=$((_n + 1)); STAMP="$_base-$_n"
     done
     BACKUP_DIR="$STATE_DIR/backups/$STAMP"
+    LOG_DIR="$STATE_DIR/logs/$STAMP"
     TMP_SRC=""
     install_traps
 
@@ -255,8 +256,7 @@ main() {
 
     # After the commit: a failure here cannot undo the dotfiles.
     stage optional "Install rishot"        stage_rishot
-    stage optional "Install RetroArch"     stage_retroarch
-    stage optional "Install Sioyek"        stage_sioyek
+    stage optional "Install Flatpak apps"  stage_flatpaks
     stage optional "Install GRUB theme"    stage_grub_theme
     stage optional "Check runtime tools"   stage_report_tools
     stage optional "Check init system"     stage_report_init

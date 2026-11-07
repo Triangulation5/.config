@@ -24,13 +24,14 @@ stage_bootstrap_tools() {
     [ "$DRY_RUN" = "1" ] || OUTSIDE_TXN_CHANGES=1
     # These have the same name everywhere Silhouette claims to support.
     case "$PM" in
-        dnf)    run "$SUDO" dnf install -y "${missing[@]}" || return "$ST_FAIL" ;;
-        apk)    run "$SUDO" apk add --no-cache "${missing[@]}" || return "$ST_FAIL" ;;
-        pacman) run "$SUDO" pacman -S --needed --noconfirm "${missing[@]}" || return "$ST_FAIL" ;;
-        apt)    run "$SUDO" apt-get update && run "$SUDO" apt-get install -y "${missing[@]}" \
+        dnf)    priv_progress "Installing ${missing[*]}" dnf install -y "${missing[@]}" || return "$ST_FAIL" ;;
+        apk)    priv_progress "Installing ${missing[*]}" apk add --no-cache "${missing[@]}" || return "$ST_FAIL" ;;
+        pacman) priv_progress "Installing ${missing[*]}" pacman -S --needed --noconfirm "${missing[@]}" || return "$ST_FAIL" ;;
+        apt)    priv_progress "Refreshing package lists" apt-get update \
+                    && pm_install_quiet "Installing ${missing[*]}" "${missing[@]}" \
                     || return "$ST_FAIL" ;;
-        zypper) run "$SUDO" zypper --non-interactive install "${missing[@]}" || return "$ST_FAIL" ;;
-        xbps)   run "$SUDO" xbps-install -Sy "${missing[@]}" || return "$ST_FAIL" ;;
+        zypper) priv_progress "Installing ${missing[*]}" zypper --non-interactive install "${missing[@]}" || return "$ST_FAIL" ;;
+        xbps)   priv_progress "Installing ${missing[*]}" xbps-install -Sy "${missing[@]}" || return "$ST_FAIL" ;;
         emerge)
             # Portage needs python, so python3 missing here means a broken
             # eselect python target rather than a missing package.
@@ -93,7 +94,7 @@ stage_packages() {
 
     note "installing $total packages with $PM"
     OUTSIDE_TXN_CHANGES=1
-    if pm_install "${pkgs[@]}"; then
+    if pm_install_quiet "Installing $total packages with $PM" "${pkgs[@]}"; then
         STAGE_DETAIL="$total packages"
         return "$ST_OK"
     fi
@@ -105,13 +106,13 @@ stage_packages() {
     local i=0
     for p in "${pkgs[@]}"; do
         i=$((i + 1))
-        progress_bar "$i" "$total" "retrying $p"
-        if ! pm_install "$p"; then
+        # One shared log for the whole loop, and no per-package line: the spinner
+        # shows the one being tried, and a failure is reported below.
+        if ! PROGRESS_LOGNAME=package-retries pm_install_quiet "Retrying $p ($i/$total)" "$p"; then
             warn "skipped, not found in your repos: $p"
             skipped+=("$p")
         fi
     done
-    progress_stop
 
     if [ "${#skipped[@]}" -eq "$total" ]; then
         # Not one package installed: that is not a few wrong names, it is
@@ -145,7 +146,14 @@ stage_repos() {
         STAGE_DETAIL="none needed for ${FAMILY}"
         return "$ST_SKIP"
     fi
-    local -n repos="COPR_${FAMILY}"
+    local -n _base_repos="COPR_${FAMILY}"
+    local -a repos=("${_base_repos[@]}")
+    # yazi lives in its own COPR and is only installed with the daily apps, so a
+    # core install does not enable a third-party repository it has no use for.
+    if [ "$FULL" = "1" ] && declare -p "COPR_${FAMILY}_full" >/dev/null 2>&1; then
+        local -n _full_repos="COPR_${FAMILY}_full"
+        repos+=("${_full_repos[@]}")
+    fi
 
     [ "$DRY_RUN" = "1" ] || OUTSIDE_TXN_CHANGES=1
     if ! dnf_copr_ready; then
@@ -154,7 +162,7 @@ stage_repos() {
     fi
     for r in "${repos[@]}"; do
         note "enabling COPR $r"
-        if ! run "$SUDO" dnf copr enable -y "$r"; then
+        if ! priv_progress "Enabling COPR $r" dnf copr enable -y "$r"; then
             warn "could not enable $r"
             failed+=("$r")
         fi
@@ -192,7 +200,7 @@ stage_hyprctl() {
     if [ -n "$pkg" ] && [ -n "$PM" ] && [ "$PM" != "emerge" ] && [ "$NO_DEPS" != "1" ]; then
         note "hyprctl is missing; retrying $pkg on its own"
         OUTSIDE_TXN_CHANGES=1
-        if pm_install "$pkg" && command -v hyprctl >/dev/null 2>&1; then
+        if pm_install_quiet "Retrying $pkg" "$pkg" && command -v hyprctl >/dev/null 2>&1; then
             STAGE_DETAIL="installed with $pkg"
             return "$ST_OK"
         fi

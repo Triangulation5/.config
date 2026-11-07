@@ -59,12 +59,15 @@ NO_DEPS=0
 SRC_OVERRIDE=""
 # Questions the installer can ask. Empty means "not decided yet": ask if
 # there is a terminal, otherwise take the default (core only, portable
-# monitors, no rishot, no RetroArch, Sioyek (opt-out), no GRUB theme, keep the shell). A flag answers the
+# monitors, no rishot, no RetroArch, no GRUB theme, Sioyek yes, keep the shell).
+# A flag answers the
 # question in advance.
 FULL=""
 KEEP_MONITORS=""
 WANT_RISHOT=""
 WANT_RETROARCH=""
+# Sioyek is on by default: "" undecided, 1 asked for, 0 declined, auto = the
+# default applied (quietly skipped if flatpak is not there).
 WANT_SIOYEK=""
 WANT_GRUB_THEME=""
 GRUB_PROFILE=""
@@ -78,7 +81,10 @@ SIOYEK_ID="com.github.ahrm.sioyek"
 FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
 
 # Evangelion GRUB theme
-EVA_REPO_URL="https://github.com/Aleph1-9012/Evangelion.git"
+EVA_REPO_URL="${SILHOUETTE_EVA_URL:-https://github.com/Aleph1-9012/Evangelion.git}"
+# A release tag, not the default branch: this runs as root and edits GRUB.
+# SILHOUETTE_EVA_REF overrides it (a newer tag, once you have looked at it).
+EVA_REF="${SILHOUETTE_EVA_REF:-v2.1.0}"
 EVA_DIR="${HOME:-}/Projects/Evangelion"
 
 # ---- filled in by the stages --------------------------------------------------

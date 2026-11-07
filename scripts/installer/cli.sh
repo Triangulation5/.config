@@ -71,7 +71,7 @@ Exit status:
   0  done              every stage ok, skipped or warned
   1  stopped           a required stage failed or you said no; config rolled back
   2  bad usage         nothing ran
-  3  done, with gaps   finished, but an optional stage (packages, rishot, RetroArch, Sioyek, GRUB theme) failed
+  3  done, with gaps   finished, but an optional stage (packages, rishot, Flatpak apps, GRUB theme) failed
 EOF
 }
 

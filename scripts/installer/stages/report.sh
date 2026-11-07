@@ -129,20 +129,23 @@ print_next_steps() {
     note "Reload an existing session with Super + R, or log out and start Hyprland."
     note "Undo this install with: $self --rollback $STAMP"
     print_shell_steps
-    if [ "$WANT_SIOYEK" = "1" ]; then
+    if [ "$WANT_SIOYEK" != "0" ] && command -v flatpak >/dev/null 2>&1 && flatpak info "$SIOYEK_ID" >/dev/null 2>&1; then
         printf '\n'
-        note "Sioyek: flatpak run $SIOYEK_ID. It shows up in your launcher after you"
-        note "log out and back in (Flatpak adds its menu entries to your session then)."
+        note "Sioyek: flatpak run $SIOYEK_ID. It reads $CONFIG_DIR/sioyek. Its Flatpak sees"
+        # shellcheck disable=SC2088  # literal ~ on purpose: it is text for the user to read and paste
+        note "~/Documents and that config directory only; for PDFs elsewhere open them from"
+        note "its file dialog, or grant the folder once:"
+        dim "  flatpak override --user --filesystem=~/Books $SIOYEK_ID"
     fi
     if [ "$WANT_RETROARCH" = "1" ]; then
         printf '\n'
-        note "RetroArch: flatpak run $RETROARCH_ID. It shows up in your launcher after you"
-        note "log out and back in (Flatpak adds its menu entries to your session then)."
+        note "RetroArch: flatpak run $RETROARCH_ID"
     fi
-    if [ "$WANT_GRUB_THEME" = "1" ]; then
+    if [ "$WANT_GRUB_THEME" = "1" ] && command -v eva >/dev/null 2>&1; then
         printf '\n'
-        note "GRUB theme: Evangelion SEELE ($GRUB_PROFILE) installed."
-        note "Switch themes anytime with: sudo eva"
+        note "GRUB theme: Evangelion SEELE ($GRUB_PROFILE) is set; reboot to see it."
+        note "Change it: sudo eva      Put the old theme back: sudo eva uninstall"
+        note "Your original /etc/default/grub is saved in $BACKUP_DIR/grub"
     fi
     printf '\n'
     note "Optional tools this rice expects, install them if you want the feature:"
@@ -171,7 +174,7 @@ print_next_steps() {
     if [ "$WANT_GRUB_THEME" != "1" ]; then
         printf '\n'
         note "Evangelion GRUB theme was not installed. To add it later, re-run with"
-        note "--with-grub-theme, or clone $EVA_REPO_URL to ~/Projects/Evangelion and run ./bin/install.sh"
+        note "--with-grub-theme, or clone $EVA_REPO_URL (tag $EVA_REF) and run: sudo ./install.sh"
     fi
     return 0
 }

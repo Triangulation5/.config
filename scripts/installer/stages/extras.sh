@@ -70,94 +70,154 @@ stage_rishot() {
     return "$ST_WARN"
 }
 
-# RetroArch, as a per-user Flatpak from Flathub. Per-user (--user) on purpose:
-# no root, nothing touches the system, and it comes out with one command. flatpak
-# itself is a core package, so this stage only needs it to be on PATH.
-stage_retroarch() {
-    if [ "$WANT_RETROARCH" != "1" ]; then
-        STAGE_DETAIL="not requested"
+# Flatpak apps from Flathub: Sioyek (on by default) and RetroArch (opt-in).
+# Per-user installs (--user) on purpose: no root, nothing touches the system, and
+# each comes out with one command. flatpak itself is a core package, so this
+# stage only needs it on PATH. The Flathub remote is added once, for both.
+#
+# WANT_SIOYEK is 1 (asked for), 0 (declined) or auto (nobody asked, so the
+# default applies). With auto and no flatpak the stage skips quietly: a default
+# should not turn a --no-deps run into a [ Failed ] and an exit status of 3.
+#
+# Sioyek's Flathub build is granted ~/.config/sioyek and Documents only, so the
+# deployed sioyek config is picked up as it is; PDFs elsewhere need an override
+# (printed at the end).
+stage_flatpaks() {
+    local id remote_done=0
+    local -a apps=() installed=() failed=()
+
+    case "$WANT_SIOYEK" in 1|auto) apps+=("$SIOYEK_ID") ;; esac
+    if [ "$WANT_RETROARCH" = "1" ]; then apps+=("$RETROARCH_ID"); fi
+    if [ "${#apps[@]}" -eq 0 ]; then
+        STAGE_DETAIL="none requested"
         return "$ST_SKIP"
     fi
+
     if [ "$DRY_RUN" = "1" ]; then
         would_do run "flatpak remote-add --user --if-not-exists flathub $FLATHUB_URL"
-        would_do run "flatpak install --user -y --noninteractive flathub $RETROARCH_ID"
-        return "$ST_OK"
-    fi
-    if ! command -v flatpak >/dev/null 2>&1; then
-        err "flatpak is not installed. It is in the core package list; check the package step,"
-        err "or install it and re-run with --with-retroarch."
-        return "$ST_FAIL"
-    fi
-    if flatpak info "$RETROARCH_ID" >/dev/null 2>&1; then
-        STAGE_DETAIL="already installed"
+        for id in "${apps[@]}"; do
+            would_do run "flatpak install --user -y --noninteractive flathub $id"
+        done
+        STAGE_DETAIL="${apps[*]}"
         return "$ST_OK"
     fi
 
-    OUTSIDE_TXN_CHANGES=1
-    note "adding the Flathub remote (for your user only)"
-    if ! flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" < /dev/null; then
-        err "could not add the Flathub remote (network?)"
+    if ! command -v flatpak >/dev/null 2>&1; then
+        if [ "${#apps[@]}" -eq 1 ] && [ "$WANT_SIOYEK" = "auto" ]; then
+            STAGE_DETAIL="flatpak is not installed, so Sioyek was skipped"
+            return "$ST_SKIP"
+        fi
+        err "flatpak is not installed. It is in the core package list; check the package step,"
+        err "or install it and re-run with --with-sioyek / --with-retroarch."
         return "$ST_FAIL"
     fi
-    note "installing $RETROARCH_ID from Flathub"
-    if ! progress_run "Installing $RETROARCH_ID from Flathub" flatpak install --user -y --noninteractive flathub "$RETROARCH_ID"; then
-        err "flatpak could not install $RETROARCH_ID"
+
+    for id in "${apps[@]}"; do
+        if flatpak info "$id" >/dev/null 2>&1; then
+            installed+=("$id")
+            dim "already installed: $id"
+            continue
+        fi
+        OUTSIDE_TXN_CHANGES=1
+        if [ "$remote_done" = "0" ]; then
+            note "adding the Flathub remote (for your user only)"
+            if ! flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" < /dev/null; then
+                err "could not add the Flathub remote (network?)"
+                return "$ST_FAIL"
+            fi
+            remote_done=1
+        fi
+        note "installing $id from Flathub"
+        if progress_run "Installing $id from Flathub" \
+               flatpak install --user -y --noninteractive flathub "$id"; then
+            installed+=("$id")
+        else
+            err "flatpak could not install $id"
+            failed+=("$id")
+        fi
+    done
+
+    if [ "${#failed[@]}" -eq 0 ]; then
+        STAGE_DETAIL="${installed[*]}"
+        return "$ST_OK"
+    fi
+    if [ "${#installed[@]}" -eq 0 ]; then
+        STAGE_DETAIL="failed: ${failed[*]}"
         return "$ST_FAIL"
     fi
-    STAGE_DETAIL="$RETROARCH_ID, user install"
-    return "$ST_OK"
+    STAGE_DETAIL="installed ${installed[*]}; failed ${failed[*]}"
+    return "$ST_WARN"
 }
 
-# Sioyek, as a per-user Flatpak from Flathub.
-stage_sioyek() {
-    if [ "$WANT_SIOYEK" != "1" ]; then
-        STAGE_DETAIL="not requested"
-        return "$ST_SKIP"
-    fi
-    if [ "$DRY_RUN" = "1" ]; then
-        would_do run "flatpak remote-add --user --if-not-exists flathub $FLATHUB_URL"
-        would_do run "flatpak install --user -y --noninteractive flathub $SIOYEK_ID"
-        return "$ST_OK"
-    fi
-    if ! command -v flatpak >/dev/null 2>&1; then
-        err "flatpak is not installed. It is in the core package list; check the package step,"
-        err "or install it and re-run with --with-sioyek."
-        return "$ST_FAIL"
-    fi
-    if flatpak info "$SIOYEK_ID" >/dev/null 2>&1; then
-        STAGE_DETAIL="already installed"
-        return "$ST_OK"
-    fi
+# ---- Evangelion GRUB theme -----------------------------------------------------
+#
+# This changes the bootloader, so it is the most careful stage in the installer:
+#
+#   * It only runs where GRUB 2 is actually in use. The themes are GRUB-only.
+#   * It runs a third party's script as root, so it is pinned to a release tag
+#     (EVA_REF), not whatever is on the default branch today, and it says which
+#     commit it is running.
+#   * Upstream's install.sh is interactive (it asks for a theme and a profile).
+#     The profile was already chosen in the plan, so it is run with --no-apply,
+#     which installs the `eva` command and the theme catalog without applying
+#     anything, and the theme is then applied directly with `eva set`. You are
+#     asked once, not twice.
+#   * /etc/default/grub is copied into the run's backup directory first. The
+#     config transaction does not cover the bootloader; `sudo eva uninstall`
+#     (upstream's own undo) does.
 
-    OUTSIDE_TXN_CHANGES=1
-    note "adding the Flathub remote (for your user only)"
-    if ! flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL" < /dev/null; then
-        err "could not add the Flathub remote (network?)"
-        return "$ST_FAIL"
-    fi
-    note "installing $SIOYEK_ID from Flathub"
-    if ! progress_run "Installing $SIOYEK_ID from Flathub" flatpak install --user -y --noninteractive flathub "$SIOYEK_ID"; then
-        err "flatpak could not install $SIOYEK_ID"
-        return "$ST_FAIL"
-    fi
-    STAGE_DETAIL="$SIOYEK_ID, user install"
-    return "$ST_OK"
+# GRUB 2 present: its directory, and the tool that regenerates its config.
+grub_present() {
+    { [ -d /boot/grub ] || [ -d /boot/grub2 ]; } || return 1
+    command -v grub-mkconfig >/dev/null 2>&1 || command -v grub2-mkconfig >/dev/null 2>&1
 }
 
-# Evangelion GRUB theme, cloned to ~/Projects/Evangelion and installed with SEELE theme.
+# Get EVA_DIR to the pinned tag: clone it, or move an existing clone onto it.
+eva_fetch_repo() {
+    if [ ! -e "$EVA_DIR" ]; then
+        mkdir -p -- "$(dirname -- "$EVA_DIR")" || return 1
+        note "cloning $EVA_REPO_URL ($EVA_REF) into $EVA_DIR"
+        # No git credential prompt: it would be hidden behind the spinner.
+        progress_run "Cloning Evangelion $EVA_REF" \
+            env GIT_TERMINAL_PROMPT=0 git clone --quiet --depth 1 --branch "$EVA_REF" \
+                -- "$EVA_REPO_URL" "$EVA_DIR"
+        return
+    fi
+    if [ -d "$EVA_DIR/.git" ]; then
+        note "moving $EVA_DIR to $EVA_REF"
+        if progress_run "Fetching Evangelion $EVA_REF" \
+               env GIT_TERMINAL_PROMPT=0 git -C "$EVA_DIR" fetch --quiet --depth 1 origin \
+                   "refs/tags/$EVA_REF:refs/tags/$EVA_REF" \
+           && git -C "$EVA_DIR" checkout --quiet "$EVA_REF"; then
+            return 0
+        fi
+        warn "could not move $EVA_DIR to $EVA_REF; using it as it is"
+        return 0
+    fi
+    err "$EVA_DIR exists and is not a git checkout; move it away or remove it"
+    return 1
+}
+
 stage_grub_theme() {
-    local rc=0 installer eva_cmd
+    local rev="" bk="$BACKUP_DIR/grub" rc=0
 
     if [ "$WANT_GRUB_THEME" != "1" ]; then
         STAGE_DETAIL="not requested"
         return "$ST_SKIP"
     fi
+    if ! grub_present; then
+        warn "GRUB 2 was not found (no /boot/grub or /boot/grub2, or no grub-mkconfig)."
+        note "The Evangelion themes are GRUB 2 only, so nothing was changed."
+        STAGE_DETAIL="GRUB not detected"
+        return "$ST_WARN"
+    fi
 
     if [ "$DRY_RUN" = "1" ]; then
-        would_do run "git clone $EVA_REPO_URL $EVA_DIR"
-        would_do run "cd $EVA_DIR && $SUDO ./bin/install.sh"
+        would_do run "git clone --depth 1 --branch $EVA_REF $EVA_REPO_URL $EVA_DIR"
+        would_do run "cp /etc/default/grub $bk/default-grub"
+        would_do run "cd $EVA_DIR && $SUDO ./install.sh --no-apply"
         would_do run "$SUDO eva set seele $GRUB_PROFILE"
-        STAGE_DETAIL="dry run: Evangelion seele $GRUB_PROFILE"
+        STAGE_DETAIL="SEELE $GRUB_PROFILE, $EVA_REF"
         return "$ST_OK"
     fi
 
@@ -165,68 +225,54 @@ stage_grub_theme() {
         err "git is needed to fetch the Evangelion GRUB theme"
         return "$ST_FAIL"
     fi
+    priv_check || return "$ST_FAIL"
 
-    mkdir -p "$(dirname -- "$EVA_DIR")"
-
-    if [ -d "$EVA_DIR/.git" ]; then
-        note "using existing Evangelion repository at $EVA_DIR"
-    elif [ -d "$EVA_DIR" ]; then
-        note "directory $EVA_DIR exists; using it"
-    else
-        note "cloning $EVA_REPO_URL into $EVA_DIR"
-        if ! progress_run "Cloning Evangelion repository" git clone --depth 1 "$EVA_REPO_URL" "$EVA_DIR"; then
-            err "could not clone $EVA_REPO_URL"
-            return "$ST_FAIL"
-        fi
-    fi
-
-    if [ ! -d "$EVA_DIR" ]; then
-        err "Evangelion directory $EVA_DIR not found"
+    # A copy of the one file the theme installer edits, before anything runs.
+    if ! mkdir -p -- "$bk"; then
+        err "could not create $bk; not touching the bootloader"
         return "$ST_FAIL"
     fi
+    if [ -f /etc/default/grub ] && ! cp -p -- /etc/default/grub "$bk/default-grub"; then
+        err "could not save /etc/default/grub to $bk; not touching the bootloader"
+        return "$ST_FAIL"
+    fi
+    note "saved /etc/default/grub to $bk"
 
-    # Ensure installer scripts are executable
-    chmod +x "$EVA_DIR/bin/install.sh" "$EVA_DIR/bin/eva" "$EVA_DIR/install.sh" 2>/dev/null || true
+    eva_fetch_repo || return "$ST_FAIL"
+    if [ ! -f "$EVA_DIR/install.sh" ]; then
+        err "$EVA_DIR/install.sh not found; is that the Evangelion repository?"
+        return "$ST_FAIL"
+    fi
+    rev="$(git -C "$EVA_DIR" describe --tags --always 2>/dev/null || true)"
 
     OUTSIDE_TXN_CHANGES=1
-    note "running Evangelion installer in $EVA_DIR"
-
-    (
-        cd -- "$EVA_DIR" || exit 1
-        installer="./bin/install.sh"
-        [ -f "$installer" ] || installer="./install.sh"
-
-        if tty_available; then
-            priv_run "$installer" < /dev/tty || exit $?
-        else
-            priv_run "$installer" < /dev/null || exit $?
-        fi
-    ) || rc=$?
-
-    if [ "$rc" -ne 0 ]; then
-        err "Evangelion install script exited with status $rc"
-        return "$ST_FAIL"
-    fi
-
-    note "setting Evangelion theme to seele with profile $GRUB_PROFILE"
-    eva_cmd="eva"
-    if ! command -v eva >/dev/null 2>&1; then
-        if [ -x "$EVA_DIR/bin/eva" ]; then
-            eva_cmd="$EVA_DIR/bin/eva"
-        fi
-    fi
-
+    note "running Evangelion ${rev:-$EVA_REF} as root (this edits your GRUB configuration)"
+    # Its stdin is the terminal when there is one, so a sudo password prompt or
+    # a question from the installer can be answered; otherwise it gets none.
     if tty_available; then
-        priv_run $eva_cmd set seele "$GRUB_PROFILE" < /dev/tty || rc=$?
+        ( cd -- "$EVA_DIR" && priv_run ./install.sh --no-apply < /dev/tty ) || rc=$?
     else
-        priv_run $eva_cmd set seele "$GRUB_PROFILE" < /dev/null || rc=$?
+        ( cd -- "$EVA_DIR" && priv_run ./install.sh --no-apply < /dev/null ) || rc=$?
     fi
-
     if [ "$rc" -ne 0 ]; then
-        err "failed to set Evangelion seele theme ($GRUB_PROFILE)"
+        err "the Evangelion installer exited with status $rc"
+        note "Nothing was applied. /etc/default/grub is saved in $bk"
         return "$ST_FAIL"
     fi
 
-    STAGE_DETAIL="seele, $GRUB_PROFILE"
+    note "applying SEELE ($GRUB_PROFILE)"
+    if tty_available; then
+        priv_run eva set seele "$GRUB_PROFILE" < /dev/tty || rc=$?
+    else
+        priv_run eva set seele "$GRUB_PROFILE" < /dev/null || rc=$?
+    fi
+    if [ "$rc" -ne 0 ]; then
+        err "could not apply the SEELE theme (status $rc)"
+        note "Try it by hand: $SUDO eva set seele $GRUB_PROFILE      (list: eva list)"
+        note "Undo anything it changed with: $SUDO eva uninstall"
+        return "$ST_FAIL"
+    fi
+
+    STAGE_DETAIL="SEELE $GRUB_PROFILE, ${rev:-$EVA_REF}"
     return "$ST_OK"
 }

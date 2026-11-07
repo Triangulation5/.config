@@ -51,6 +51,7 @@ OUTSIDE_TXN_CHANGES=0
 summary() {
     printf '\n%s%d ok, %d warn, %d skipped, %d failed%s\n' \
         "$BOLD" "$N_OK" "$N_WARN" "$N_SKIP" "$N_FAIL" "$RESET"
+    if [ "$LOGS_WRITTEN" = "1" ]; then dim "full logs of the quiet steps: $LOG_DIR"; fi
 }
 
 # Undo the open transaction, loudly. Safe to call when none is open.
@@ -106,9 +107,7 @@ stage() {
         STAGE_DETAIL=""
         DRY_SKIPPED=0
         rc=0
-        progress_start "$title in progress..."
         "$fn" || rc=$?
-        progress_stop
 
         case "$rc" in
             0) kind=ok ;;

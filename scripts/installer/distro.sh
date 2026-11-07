@@ -98,7 +98,10 @@ pm_install() {
         dnf)    "$SUDO" dnf install -y "$@" ;;
         apk)    "$SUDO" apk add --no-cache "$@" ;;
         pacman) "$SUDO" pacman -S --needed --noconfirm "$@" ;;
-        apt)    "$SUDO" apt-get install -y "$@" ;;
+        # Non-interactive and keeping existing config files: this can run behind a
+        # quiet task, where a debconf question would look exactly like a hang.
+        apt)    "$SUDO" env DEBIAN_FRONTEND=noninteractive \
+                    apt-get install -y -o Dpkg::Options::=--force-confold "$@" ;;
         zypper) "$SUDO" zypper --non-interactive install "$@" ;;
         xbps)   "$SUDO" xbps-install -Sy "$@" ;;
         *)      return 1 ;;
@@ -123,9 +126,65 @@ pm_plan() {
 # Returns 0 when `dnf copr` works afterwards.
 dnf_copr_ready() {
     dnf copr --help >/dev/null 2>&1 && return 0
-    run "$SUDO" dnf install -y dnf-plugins-core || true
+    priv_progress "Installing dnf-plugins-core" dnf install -y dnf-plugins-core || true
     [ "${DRY_RUN:-0}" = "1" ] && return 0
     dnf copr --help >/dev/null 2>&1 && return 0
-    run "$SUDO" dnf install -y dnf5-plugins || true
+    priv_progress "Installing dnf5-plugins" dnf install -y dnf5-plugins || true
     dnf copr --help >/dev/null 2>&1
+}
+
+# Can root be reached at all? A real run with no sudo or doas needs a terminal
+# for su's password prompt. Used by every stage that runs a privileged command.
+priv_check() {
+    [ "${DRY_RUN:-0}" = "1" ] && return 0
+    [ "${HAVE_PRIV:-1}" = "1" ] && return 0
+    if tty_available; then
+        note "no sudo or doas here: root's password will be asked (su)"
+        return 0
+    fi
+    err "no sudo or doas, and no terminal to ask root's password on. Install one, or run on a terminal."
+    return 1
+}
+
+# Will a privileged command run WITHOUT asking for a password? If a prompt is
+# still possible it must not be hidden behind a spinner, so this answers that.
+# For sudo it asks for the password right here, in the foreground, which also
+# caches it for the command that follows. doas and su cannot be primed.
+priv_ready() {
+    [ "${DRY_RUN:-0}" = "1" ] && return 0
+    [ "${HAVE_PRIV:-1}" = "1" ] || return 1
+    case "$SUDO" in
+        sudo) sudo -v ;;
+        doas) doas -n true 2>/dev/null ;;
+        *)    return 1 ;;
+    esac
+}
+
+# priv_progress LABEL COMMAND...   a privileged, quiet command: as a background
+# task (spinner, live status, log on disk) when no prompt can appear, plainly
+# (output visible) when one might.
+priv_progress() {
+    local label="$1"
+    shift
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+        priv_run "$@"
+        return
+    fi
+    if priv_ready; then
+        progress_run "$label" priv_run "$@"
+    else
+        priv_run "$@"
+    fi
+}
+
+# pm_install_quiet LABEL PACKAGE...   pm_install as a background task, on the same
+# rule: hidden only when it cannot ask for a password.
+pm_install_quiet() {
+    local label="$1"
+    shift
+    if priv_ready; then
+        progress_run "$label" pm_install "$@"
+    else
+        pm_install "$@"
+    fi
 }

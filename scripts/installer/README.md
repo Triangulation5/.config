@@ -18,7 +18,7 @@ or `~/.config` is left exactly as it was.
 
 ## Layout
 
-    lib/ui.sh        status tags, progress bars (progress_bar, progress_run), say/note/warn/err, run
+    lib/ui.sh        status tags, background tasks (progress_run), say/note/warn/err, run
     lib/util.sh      has_item, temp-path registry
     lib/prompt.sh    ask_yn, confirm, ask_choice (all read /dev/tty)
     lib/txn.sh       the undo journal: begin / protect / commit / rollback
@@ -41,7 +41,8 @@ functions and data only; nothing runs until `main` in `install.sh` does.
     required  Begin transaction
               Deploy configs, Rewrite home paths, Set script modes, Monitor layout
     required  Commit transaction
-    optional  Install rishot, Install RetroArch, Install Sioyek, Install GRUB theme, Check runtime tools, Check init system
+    optional  Install rishot, Install Flatpak apps (Sioyek, RetroArch), Install GRUB theme,
+              Check runtime tools, Check init system, Check shell
 
 "Review plan" asks every question first, so the plan that is confirmed is the
 plan that runs.
@@ -86,3 +87,34 @@ here). They run outside the transaction and never trigger a rollback.
 ## Exit status
 
     0 done   1 stopped, config rolled back   2 bad usage   3 done, an optional stage failed
+
+## Background tasks and logs
+
+A long command (package install, COPR enable, overlay sync, clone, Flatpak
+install, emerge) runs as a quiet background-style task through `progress_run`:
+one spinner line that updates in place, a live one-line status read from the
+command's own log (`Installing: mpv`, `>>> Emerging (3 of 20) ...`), and no raw
+package-manager output. The full log of each one is kept in
+`~/.local/state/silhouette-install/logs/<stamp>/`; if a command fails, its last
+lines and the log's path are shown.
+
+Rules (in `lib/ui.sh`, `distro.sh`):
+
+- Only wrap a **quiet** command. Never wrap a stage: stages print and ask.
+- Never hide anything that may prompt. `priv_progress` / `pm_install_quiet` run a
+  privileged command quietly only when `priv_ready` says no password can be
+  asked (for sudo it asks right there, in the foreground, and caches it); with
+  doas or su the command runs plainly, output visible.
+- Off a terminal there is no animation and commands keep their output.
+- A loop of small commands shares one log with `PROGRESS_LOGNAME=name`.
+
+## Third-party repositories
+
+- **Fedora** enables COPRs before packages: `lionheartp/Hyprland` (hyprland-git),
+  `errornointernet/quickshell`, and, only with `--full`, `lihaohong/yazi`.
+- **Gentoo** enables the `hyproverlay` (hosted on Codeberg) and `guru` overlays and
+  accepts their keywords; every atom is checked with `portageq` first.
+- **GRUB theme** (Evangelion) is pinned to a release tag (`EVA_REF`), runs only
+  where GRUB 2 exists, saves `/etc/default/grub` first, and is applied with
+  `install.sh --no-apply` then `eva set`, so you are asked once. It is outside
+  `--rollback`; upstream's own undo is `sudo eva uninstall`.

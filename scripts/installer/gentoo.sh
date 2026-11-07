@@ -54,18 +54,8 @@ gentoo_root() {
     priv_run "$@"
 }
 
-# Can root be reached at all? A real run with no sudo/doas needs a terminal for
-# su's password prompt.
-gentoo_check_privilege() {
-    [ "$DRY_RUN" = "1" ] && return 0
-    [ "$HAVE_PRIV" = "1" ] && return 0
-    if tty_available; then
-        note "no sudo or doas here: root's password will be asked (su)"
-        return 0
-    fi
-    err "no sudo or doas, and no terminal to ask root's password on. Install one, or run on a terminal."
-    return 1
-}
+# Can root be reached at all? (the check itself is priv_check, in distro.sh)
+gentoo_check_privilege() { priv_check; }
 
 # The one emerge invocation every install uses.
 #   --ask=n                 beats an EMERGE_DEFAULT_OPTS that says --ask
@@ -73,8 +63,12 @@ gentoo_check_privilege() {
 #   --autounmask* =y        keyword/USE/license changes the dependency graph
 #                           needs are applied, and written to /etc/portage
 gentoo_emerge() {
-    gentoo_root emerge --ask=n --noreplace --verbose --keep-going \
-        --autounmask=y --autounmask-write=y --autounmask-continue=y "$@" < /dev/null
+    local label="Emerging ${#} package(s)"
+    # Quiet when no password prompt can appear: a hours-long build shows one live
+    # line (">>> Emerging (3 of 20) ..." from emerge's own log) instead of a wall
+    # of compiler output; the full log stays on disk. Otherwise plainly.
+    priv_progress "$label" emerge --ask=n --noreplace --verbose --keep-going \
+        --autounmask=y --autounmask-write=y --autounmask-continue=y "$@"
 }
 
 # Autounmask writes its changes as ._cfgNNNN_ files because /etc is
@@ -166,7 +160,7 @@ gentoo_enable_repos() {
         fi
         for repo in "${need[@]}"; do
             note "syncing overlay $repo"
-            if ! progress_run "Syncing overlay $repo" gentoo_root emaint sync -r "$repo"; then
+            if ! priv_progress "Syncing overlay $repo" emaint sync -r "$repo"; then
                 err "emaint sync -r $repo failed (network?)"
                 return "$ST_FAIL"
             fi
@@ -227,7 +221,6 @@ install_packages_gentoo() {
 
     note "emerging ${#avail[@]} packages. They compile from source, so this can take a long time."
     OUTSIDE_TXN_CHANGES=1
-    progress_stop 2>/dev/null || true
     gentoo_emerge "${avail[@]}" || warn "emerge reported failures; checking what did get installed"
     gentoo_merge_portage_config
 

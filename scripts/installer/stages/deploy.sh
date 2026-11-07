@@ -94,18 +94,15 @@ deploy_entry() {
 }
 
 stage_deploy_configs() {
-    local entry i=0 total="${#CONFIG_ENTRIES[@]}"
+    local entry
     FAILED_ENTRIES=()
     if ! run mkdir -p "$CONFIG_DIR"; then
         err "could not create $CONFIG_DIR"
         return "$ST_FAIL"
     fi
     for entry in "${CONFIG_ENTRIES[@]}"; do
-        i=$((i + 1))
-        progress_bar "$i" "$total" "deploying ~/.config/$entry"
         deploy_entry "$entry" || FAILED_ENTRIES+=("$entry")
     done
-    progress_stop
 
     if [ "${#FAILED_ENTRIES[@]}" -gt 0 ]; then
         err "did not copy cleanly: ${FAILED_ENTRIES[*]}"

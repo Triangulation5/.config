@@ -119,6 +119,9 @@ FULL_unknown=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler p7zip
 # hyprland-git conflicts with the plain hyprland package: if that is installed
 # from another repo, dnf refuses and the package is reported as skipped.
 COPR_fedora=(lionheartp/Hyprland errornointernet/quickshell)
+# yazi is not in Fedora's repos; its own docs point at this COPR (maintained by
+# Peter Li). Only enabled with --full, the one list that installs yazi.
+COPR_fedora_full=(lihaohong/yazi)
 
 # The package that carries hyprctl. hyprctl is not packaged on its own anywhere:
 # it ships inside the compositor package. Void has none (see report_missing).

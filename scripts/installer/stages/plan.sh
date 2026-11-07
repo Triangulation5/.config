@@ -7,7 +7,7 @@
 # terminal (or --yes) a question takes its default.
 
 stage_plan() {
-    local rc=0 pkgline monline rishotline shellline retroline cur
+    local rc=0 pkgline monline rishotline shellline retroline sioyekline grubline cur
 
     if interactive; then
         say ""
@@ -65,12 +65,18 @@ stage_plan() {
         fi
 
         if [ -z "$WANT_GRUB_THEME" ]; then
-            note "Evangelion GRUB theme ($EVA_REPO_URL)"
-            note "Clones to ~/Projects/Evangelion and configures SEELE theme profile."
-            if ask_yn "    Install Evangelion GRUB theme?" n; then
-                WANT_GRUB_THEME=1
+            if grub_present; then
+                note "Evangelion GRUB theme ($EVA_REPO_URL, release $EVA_REF)."
+                note "This edits your bootloader configuration (/etc/default/grub and /boot). A copy of"
+                note "that file is saved first, and 'sudo eva uninstall' puts the old theme back."
+                if ask_yn "    Install the Evangelion GRUB theme?" n; then
+                    WANT_GRUB_THEME=1
+                else
+                    WANT_GRUB_THEME=0
+                fi
             else
                 WANT_GRUB_THEME=0
+                dim "GRUB 2 was not found on this machine, so the GRUB theme is not offered."
             fi
         fi
 
@@ -104,7 +110,7 @@ stage_plan() {
     : "${KEEP_MONITORS:=0}"
     : "${WANT_RISHOT:=0}"
     : "${WANT_RETROARCH:=0}"
-    : "${WANT_SIOYEK:=1}"
+    : "${WANT_SIOYEK:=auto}"
     : "${WANT_GRUB_THEME:=0}"
     : "${GRUB_PROFILE:=1080p}"
     : "${SHELL_CHOICE:=keep}"
@@ -123,7 +129,13 @@ stage_plan() {
             local -n _copr="COPR_${FAMILY}"
             pkgline="$pkgline; enables third-party COPR repos: ${_copr[*]}"
         fi
-        [ "$FULL" = "1" ] && pkgline="$pkgline plus the daily apps"
+        if [ "$FULL" = "1" ]; then
+            pkgline="$pkgline plus the daily apps"
+            if declare -p "COPR_${FAMILY}_full" >/dev/null 2>&1; then
+                local -n _copr_full="COPR_${FAMILY}_full"
+                pkgline="$pkgline (and COPR ${_copr_full[*]} for yazi)"
+            fi
+        fi
         pkgline="$pkgline (not part of the rollback)"
     fi
     if [ "$KEEP_MONITORS" = "1" ]; then monline="the repo's layout, unchanged"; else monline="portable default, original kept as monitors.lua.example"; fi
@@ -134,9 +146,19 @@ stage_plan() {
     else
         shellline="$SHELL_CHOICE; you switch to it yourself, the steps are printed at the end"
     fi
-    if [ "$WANT_SIOYEK" = "1" ]; then sioyekline="yes, $SIOYEK_ID as a user Flatpak"; else sioyekline="no"; fi
+    case "$WANT_SIOYEK" in
+        0)    sioyekline="no" ;;
+        auto) sioyekline="yes, $SIOYEK_ID as a user Flatpak (skipped if flatpak is missing)" ;;
+        *)    sioyekline="yes, $SIOYEK_ID as a user Flatpak" ;;
+    esac
     if [ "$WANT_RETROARCH" = "1" ]; then retroline="yes, $RETROARCH_ID as a user Flatpak"; else retroline="no"; fi
-    if [ "$WANT_GRUB_THEME" = "1" ]; then grubline="yes, SEELE ($GRUB_PROFILE) into ~/Projects/Evangelion"; else grubline="no"; fi
+    if [ "$WANT_GRUB_THEME" = "1" ] && ! grub_present; then
+        grubline="requested, but GRUB 2 was not found here, so it will be skipped"
+    elif [ "$WANT_GRUB_THEME" = "1" ]; then
+        grubline="yes, SEELE ($GRUB_PROFILE), release $EVA_REF, cloned into ~/Projects/Evangelion; edits GRUB config"
+    else
+        grubline="no"
+    fi
 
     say ""
     say "${BOLD}Plan${RESET}"

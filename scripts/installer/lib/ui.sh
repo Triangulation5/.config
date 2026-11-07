@@ -29,13 +29,21 @@ ui_init() {
 }
 ui_init
 
-PROGRESS_PID=""
+PROGRESS_PID=""     # the background spinner, while progress_run has one going
+LOG_DIR=""          # where progress_run keeps each command's full log (set by main)
+LOGS_WRITTEN=0      # 1 once a log exists, so the summary can say where they are
 
-say()  { [ -n "$PROGRESS_PID" ] && printf '\r\033[K'; printf '%s\n' "$*"; }
-note() { [ -n "$PROGRESS_PID" ] && printf '\r\033[K'; printf '    %s\n' "$*"; }
-dim()  { [ -n "$PROGRESS_PID" ] && printf '\r\033[K'; printf '    %s%s%s\n' "$DIM" "$*" "$RESET"; }
-warn() { [ -n "$PROGRESS_PID" ] && printf '\r\033[K'; printf '%s  ! %s%s\n' "$E_YELLOW" "$*" "$E_RESET" >&2; }
-err()  { [ -n "$PROGRESS_PID" ] && printf '\r\033[K'; printf '%s  x %s%s\n' "$E_RED" "$*" "$E_RESET" >&2; }
+# Make sure no half-drawn spinner line is on screen before anything is printed.
+_ui_clear() {
+    if [ -n "$PROGRESS_PID" ] && [ -t 1 ]; then printf '\r\033[K'; fi
+    return 0
+}
+
+say()  { _ui_clear; printf '%s\n' "$*"; }
+note() { _ui_clear; printf '    %s\n' "$*"; }
+dim()  { _ui_clear; printf '    %s%s%s\n' "$DIM" "$*" "$RESET"; }
+warn() { _ui_clear; printf '%s  ! %s%s\n' "$E_YELLOW" "$*" "$E_RESET" >&2; }
+err()  { _ui_clear; printf '%s  x %s%s\n' "$E_RED" "$*" "$E_RESET" >&2; }
 
 # die is for a bad invocation, before any stage has run. Exit status 2.
 die()  { progress_stop; err "$*"; exit 2; }
@@ -43,6 +51,7 @@ die()  { progress_stop; err "$*"; exit 2; }
 # ui_status KIND TITLE [DETAIL]
 ui_status() {
     progress_stop
+    _ui_clear
     local kind="$1" title="$2" detail="${3:-}" tag color=""
     case "$kind" in
         ok)    tag="   Ok   "; color="$GREEN" ;;
@@ -80,31 +89,66 @@ run() {
     "$@"
 }
 
-# ---- Progress indicators ------------------------------------------------------
+# ---- Background tasks ----------------------------------------------------------
+#
+# A long command (a package install, a clone, an overlay sync) runs as a quiet
+# background-style task: ONE spinner line that updates in place, a live one-line
+# status taken from the command's own log, and no raw package-manager output on
+# screen. The complete log is kept on disk; its last lines are shown only if the
+# command fails.
+#
+#     [    ====>        ] Installing 30 packages with dnf (42s) · Installing: mpv
+#
+# Rules that keep it from fighting the rest of the output:
+#
+#   * It only ever wraps a QUIET command, so nothing else writes to the terminal
+#     while it animates. It is never started around a whole stage (a stage prints
+#     notes and asks questions).
+#   * It is never put in front of anything that may prompt (a sudo or su
+#     password). A prompt hidden behind a spinner looks exactly like a hang. Use
+#     priv_progress / pm_install_quiet (distro.sh) for privileged commands.
+#   * Off a terminal there is no animation and the command keeps its output.
 
-# progress_start [LABEL]
-# Starts an animated indeterminate progress bar in the background.
-# Delays 0.3s before first draw to avoid flicker on instant tasks.
+# The newest meaningful line of a log, for the spinner's status: colour codes and
+# carriage-return redraws removed, truncated to $2 characters.
+_progress_tail() {
+    local line
+    [ -r "$1" ] || return 0
+    line="$(tail -c 4096 -- "$1" 2>/dev/null | tr '\r' '\n' \
+            | sed -e 's/\x1b\[[0-9;?]*[A-Za-z]//g' | grep -v '^[[:space:]]*$' | tail -n 1)"
+    line="${line//$'\t'/ }"
+    printf '%s' "${line:0:$2}"
+}
+
+# progress_start LABEL [LOGFILE]   animate in the background. The first frame
+# waits 0.3s so near-instant commands never flicker; the status line is re-read
+# from LOGFILE about once a second.
 progress_start() {
-    local label="${1:-Operation in progress...}"
+    local label="${1:-Working...}" log="${2:-}" parent="$$" cols
     [ -t 1 ] || return 0
-    [ -n "$PROGRESS_PID" ] && progress_stop
+    [ -z "$PROGRESS_PID" ] || progress_stop
+    cols="${COLUMNS:-}"
+    [ -n "$cols" ] || cols="$(tput cols 2>/dev/null || true)"
+    [ -n "$cols" ] || cols=80
 
     (
-        local bar_width=16 block_len=5 pos=0 dir=1 i bar elapsed=0
-        local start_time
-        start_time="$(date +%s)"
+        # Always leave the cursor visible, however this process ends.
+        trap 'printf "\r\033[K\033[?25h"; exit 0' TERM HUP
+        local bar_width=16 block_len=5 pos=0 dir=1 i bar elapsed frame=0
+        local start="$SECONDS" status="" room
 
-        # Sleep briefly so near-instant tasks do not flicker
         sleep 0.3 || exit 0
-
-        # Hide cursor during progress animation
         printf '\033[?25l'
-
-        while :; do
-            elapsed=$(( $(date +%s) - start_time ))
+        # Stop on our own if the installer is gone (SIGKILL cannot be trapped),
+        # so a dead run never leaves a spinner drawing on the terminal.
+        while kill -0 "$parent" 2>/dev/null; do
+            elapsed=$(( SECONDS - start ))
+            if [ -n "$log" ] && [ $(( frame % 10 )) -eq 0 ]; then
+                room=$(( cols - bar_width - ${#label} - 20 ))
+                if [ "$room" -ge 12 ]; then status="$(_progress_tail "$log" "$room")"; fi
+            fi
             bar=""
-            for ((i=0; i<bar_width; i++)); do
+            for ((i = 0; i < bar_width; i++)); do
                 if [ "$i" -ge "$pos" ] && [ "$i" -lt "$((pos + block_len))" ]; then
                     if [ "$dir" -eq 1 ] && [ "$i" -eq "$((pos + block_len - 1))" ]; then
                         bar="${bar}>"
@@ -117,9 +161,9 @@ progress_start() {
                     bar="${bar} "
                 fi
             done
-
-            printf '\r    [%s%s%s] %s %s(%ds)%s\033[K' \
-                "$CYAN" "$bar" "$RESET" "$label" "$DIM" "$elapsed" "$RESET"
+            printf '\r    [%s%s%s] %s %s(%ds)%s%s\033[K' \
+                "$CYAN" "$bar" "$RESET" "$label" "$DIM" "$elapsed" "$RESET" \
+                "${status:+ $DIM· $status$RESET}"
 
             pos=$((pos + dir))
             if [ "$pos" -ge "$((bar_width - block_len))" ]; then
@@ -127,96 +171,91 @@ progress_start() {
             elif [ "$pos" -le 0 ]; then
                 dir=1
             fi
+            frame=$((frame + 1))
             sleep 0.1
         done
+        printf '\r\033[K\033[?25h'
     ) 2>/dev/null &
     PROGRESS_PID=$!
+    # Not a tracked job: bash will not print "Terminated" for it, and will not
+    # complain with "No record of process" when it is reaped behind our back.
+    disown "$PROGRESS_PID" 2>/dev/null || true
 }
 
-# progress_stop
-# Stops the background progress bar and clears the line.
+# progress_stop   stop the spinner, clear its line, restore the cursor.
 progress_stop() {
-    if [ -n "$PROGRESS_PID" ]; then
-        kill "$PROGRESS_PID" 2>/dev/null || true
-        wait "$PROGRESS_PID" 2>/dev/null || true
-        PROGRESS_PID=""
-        if [ -t 1 ]; then
-            printf '\r\033[K\033[?25h'
-        fi
-    fi
-}
-
-# progress_bar CURRENT TOTAL [LABEL]
-# Renders a determinate progress bar: [=========>    ] 65% (13/20) Deploying configs
-progress_bar() {
-    local cur="$1" total="$2" label="${3:-Operation in progress...}"
-    local width=16 filled empty pct bar="" i
-
-    [ "$total" -gt 0 ] 2>/dev/null || return 0
-    [ -t 1 ] || return 0
-
-    pct=$(( cur * 100 / total ))
-    filled=$(( cur * width / total ))
-    empty=$(( width - filled ))
-
-    for ((i=0; i<filled; i++)); do bar="${bar}="; done
-    if [ "$filled" -lt "$width" ]; then
-        bar="${bar}>"
-        empty=$(( empty - 1 ))
-    fi
-    for ((i=0; i<empty; i++)); do bar="${bar} "; done
-
-    printf '\r    [%s%s%s] %3d%% (%d/%d) %s\033[K' \
-        "$CYAN" "$bar" "$RESET" "$pct" "$cur" "$total" "$label"
-
-    if [ "$cur" -ge "$total" ]; then
-        printf '\r\033[K'
-    fi
-}
-
-# progress_wait PID [LABEL]
-# Monitors a background PID while animating the progress bar.
-progress_wait() {
-    local pid="$1" label="${2:-Operation in progress...}"
-    if [ ! -t 1 ]; then
-        wait "$pid"
-        return $?
-    fi
-
-    progress_start "$label"
-    while kill -0 "$pid" 2>/dev/null; do
-        sleep 0.1
+    local pid="$PROGRESS_PID" n
+    [ -n "$pid" ] || return 0
+    PROGRESS_PID=""
+    kill "$pid" 2>/dev/null || true
+    # Wait until it is really gone (it is disowned, so no `wait`), so that one
+    # last frame cannot land after the line has been cleared.
+    for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 0.02
     done
-    progress_stop
-
-    wait "$pid"
-    return $?
+    kill -9 "$pid" 2>/dev/null || true
+    if [ -t 1 ]; then printf '\r\033[K\033[?25h'; fi
+    return 0
 }
 
 # progress_run LABEL COMMAND [ARGS...]
-# Runs a command while showing the progress bar.
+# Run a quiet command as a background-style task. Output goes to a log kept in
+# LOG_DIR; on failure its last 12 lines (only its own, in a shared log) are shown and the log's path is named. The
+# command runs in the FOREGROUND, so Ctrl-C reaches it directly. The caller must
+# not pass anything that may prompt.
 progress_run() {
-    local label="$1"
+    local label="$1" log slug line rc=0 keep=0 from=0
     shift
+
     if [ "${DRY_RUN:-0}" = "1" ]; then
         would_do run "$*"
         return 0
     fi
+    # No terminal (CI, a pipe, a log file): no animation, and the command's own
+    # output stays in the log where a person debugging it will look.
+    if [ ! -t 1 ]; then
+        "$@"
+        return
+    fi
 
-    local log
-    log="$(mktemp 2>/dev/null || echo "/tmp/silhouette-cmd.$$.log")"
-    [ -n "$log" ] && temp_register "$log" 2>/dev/null || true
+    if [ -n "$LOG_DIR" ] && mkdir -p -- "$LOG_DIR" 2>/dev/null; then
+        # PROGRESS_LOGNAME lets a loop of small commands share ONE log (appended
+        # to) instead of leaving one file per iteration.
+        slug="${PROGRESS_LOGNAME:-${label//[^A-Za-z0-9._-]/_}}"
+        log="$LOG_DIR/${slug:0:60}.log"
+        if [ -n "${PROGRESS_LOGNAME:-}" ]; then
+            printf '== %s\n' "$label" >> "$log" 2>/dev/null && keep=1
+        else
+            : > "$log" 2>/dev/null && keep=1
+        fi
+    fi
+    if [ "$keep" = "0" ]; then
+        if ! log="$(mktemp)"; then
+            "$@"
+            return
+        fi
+        temp_register "$log"
+    else
+        LOGS_WRITTEN=1
+    fi
 
-    "$@" > "$log" 2>&1 &
-    local cmd_pid=$!
-    progress_wait "$cmd_pid" "$label"
-    local rc=$?
+    # Where this command's own output starts in the log (it may be shared).
+    from=0
+    if [ "$keep" = "1" ]; then from="$(wc -l < "$log" 2>/dev/null || echo 0)"; from="${from//[[:space:]]/}"; fi
+
+    progress_start "$label" "$log"
+    if [ -n "${PROGRESS_LOGNAME:-}" ]; then
+        "$@" >> "$log" 2>&1 < /dev/null || rc=$?
+    else
+        "$@" > "$log" 2>&1 < /dev/null || rc=$?
+    fi
+    progress_stop
 
     if [ "$rc" -ne 0 ] && [ -s "$log" ]; then
-        tail -n 8 "$log" | while IFS= read -r line; do
-            dim "$line"
-        done
+        tail -n +"$((from + 1))" "$log" | tail -n 12 | while IFS= read -r line; do dim "$line"; done
+        if [ "$keep" = "1" ]; then dim "full log: $log"; fi
     fi
-    [ -n "$log" ] && rm -f -- "$log" 2>/dev/null || true
+    if [ "$keep" = "0" ]; then rm -f -- "$log"; fi
     return "$rc"
 }
