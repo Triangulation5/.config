@@ -9,6 +9,10 @@ DIRS=(
 # Determine PDF reader: fallback to xdg-open if sioyek is not installed
 if command -v sioyek >/dev/null 2>&1; then
     READER="sioyek"
+elif command -v zathura >/dev/null 2>&1; then
+    READER="zathura"
+elif command -v mupdf >/dev/null 2>&1; then
+    READER="mupdf"
 else
     READER="xdg-open"
 fi
