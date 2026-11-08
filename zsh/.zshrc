@@ -41,22 +41,23 @@ function y() {
 export EDITOR=nvim
 export VISUAL=nvim
 export MANPAGER='nvim +Man!'
+export WWW_HOME="https://lite.duckduckgo.com/lite"
 
 alias v='nvim'
 alias vi='vim'
-
-# Not based at all but temporary
+alias crawl='wget --recursive --page-requisites --adjust-extension --convert-links'
 alias cc="gcc -Wall -Wextra -std=c23 -pedantic "
 
 export PATH="$HOME/.local/bin:$PATH"
 
 bindkey -s '^F' 'cd "$(dirname "$(fzf)")"\n'
 bindkey -s $'\e\C-f' '~/.config/scripts/tmux-session-dispensary.sh\n'
-
-# Load the plugin last
-source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+bindkey -s $'\e\C-p' '~/.config/scripts/open-pdf.sh\n'
 
 # Pi
 export PATH="/home/josh/.pi/agent/bin:$PATH"
 # Added by Antigravity CLI installer
 export PATH="/home/josh/.local/bin:$PATH"
+
+# Load the plugin last
+source ~/.config/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
