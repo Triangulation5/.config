@@ -28,10 +28,12 @@ MODE="${1:-install}"
 BACKUP_DIR="$PI_DIR/backups/pi-agent-config/$(date +%Y%m%d-%H%M%S)"
 
 # Packages
+# Make pi-subagents optional
+# Make it so that they use my custom version of pi-claude-code-ui
 
 packages=(
     "npm:@juicesharp/rpiv-ask-user-question"
-    "npm:pi-subagents"
+    # "npm:pi-subagents"
     "npm:pi-claude-code-ui"
 )
 
