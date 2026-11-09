@@ -38,7 +38,6 @@ packages=(
 extensions=(
     "btw"
     "continue"
-    "whimsical"
 )
 
 # Output
