@@ -15,13 +15,15 @@ set -Eeuo pipefail
 # Optional:
 #   PI_CODING_AGENT_DIR=/custom/path ./install.sh
 
-VERSION="1.2.0"
+VERSION="1.3.0"
 
 PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 EXT_DIR="$PI_DIR/extensions"
 SKILL_DIR="$PI_DIR/skills/commit"
+PDF_SKILL_DIR="$PI_DIR/skills/pdf-reader"
 
 RAW="https://raw.githubusercontent.com/mitsuhiko/agent-stuff/main"
+PDF_REPO="https://codeload.github.com/amosblomqvist/pi-config/tar.gz/refs/heads/main"
 
 MODE="${1:-install}"
 
@@ -68,10 +70,15 @@ die() {
 # Cleanup
 
 TEMP_FILES=()
+TEMP_DIRS=()
 
 cleanup() {
     for file in "${TEMP_FILES[@]}"; do
         [[ -f "$file" ]] && rm -f "$file"
+    done
+
+    for dir in "${TEMP_DIRS[@]}"; do
+        [[ -d "$dir" ]] && rm -rf "$dir"
     done
 }
 
@@ -80,7 +87,7 @@ trap cleanup EXIT
 # Dependencies
 
 check_dependencies() {
-    for cmd in curl mktemp date cp mv cmp mkdir; do
+    for cmd in curl mktemp date cp mv cmp mkdir tar find python3; do
         command -v "$cmd" >/dev/null 2>&1 ||
             die "Missing required dependency: $cmd"
     done
@@ -195,7 +202,7 @@ install_extensions() {
     done
 }
 
-# Skill installation
+# Commit skill installation
 
 install_skills() {
     info "Installing commit skill..."
@@ -205,6 +212,103 @@ install_skills() {
     download \
         "$RAW/skills/commit/SKILL.md" \
         "$SKILL_DIR/SKILL.md"
+}
+
+# PDF Reader skill installation
+
+install_pdf_reader() {
+    local archive
+    local staging
+    local staged_skill
+    local source
+    local relative
+    local destination
+    local temporary
+
+    info "Installing PDF Reader skill..."
+
+    archive="$(mktemp "${TMPDIR:-/tmp}/pi-pdf-reader.XXXXXX.tar.gz")"
+    TEMP_FILES+=("$archive")
+
+    staging="$(mktemp -d "${TMPDIR:-/tmp}/pi-pdf-reader.XXXXXX")"
+    TEMP_DIRS+=("$staging")
+
+    info "Downloading upstream PDF Reader skill..."
+
+    if ! curl -fsSL --retry 3 --retry-delay 2 \
+        "$PDF_REPO" -o "$archive"; then
+        die "Failed to download PDF Reader repository."
+    fi
+
+    if ! tar -xzf "$archive" \
+        -C "$staging" \
+        --strip-components=2 \
+        pi-config-main/skills/pdf-reader; then
+        die "Failed to extract PDF Reader skill."
+    fi
+
+    staged_skill="$staging/pdf-reader"
+
+    [[ -f "$staged_skill/SKILL.md" ]] ||
+        die "PDF Reader archive is missing SKILL.md."
+
+    [[ -f "$staged_skill/requirements.txt" ]] ||
+        die "PDF Reader archive is missing requirements.txt."
+
+    mkdir -p "$PDF_SKILL_DIR"
+
+    # Merge individual files rather than replacing the skill directory.
+    # Unrelated local files are preserved.
+    while IFS= read -r -d '' source; do
+        relative="${source#"$staged_skill"/}"
+        destination="$PDF_SKILL_DIR/$relative"
+
+        mkdir -p "$(dirname "$destination")"
+
+        # Skip unchanged files.
+        if [[ -f "$destination" ]] &&
+           cmp -s "$source" "$destination"; then
+            continue
+        fi
+
+        # Back up files before replacing them.
+        if [[ -f "$destination" ]]; then
+            local backup_relative
+            backup_relative="${destination#"$PI_DIR"/}"
+
+            mkdir -p "$BACKUP_DIR/$(dirname "$backup_relative")"
+            cp -p "$destination" "$BACKUP_DIR/$backup_relative"
+
+            warn "Backed up existing PDF Reader file: $backup_relative"
+        fi
+
+        temporary="$(mktemp "${destination}.tmp.XXXXXX")"
+        TEMP_FILES+=("$temporary")
+
+        cp -p "$source" "$temporary"
+        mv "$temporary" "$destination"
+
+        success "Installed PDF Reader file: $relative"
+
+    done < <(find "$staged_skill" -type f -print0)
+
+    # Create an isolated virtual environment.
+    if [[ ! -x "$PDF_SKILL_DIR/.venv/bin/python" ]]; then
+        info "Creating PDF Reader Python virtual environment..."
+
+        python3 -m venv "$PDF_SKILL_DIR/.venv"
+    fi
+
+    [[ -x "$PDF_SKILL_DIR/.venv/bin/pip" ]] ||
+        die "PDF Reader virtual environment is missing pip."
+
+    info "Installing PDF Reader Python dependencies..."
+
+    "$PDF_SKILL_DIR/.venv/bin/pip" install \
+        --disable-pip-version-check \
+        -r "$PDF_SKILL_DIR/requirements.txt"
+
+    success "PDF Reader skill installed."
 }
 
 # Verification
@@ -232,12 +336,44 @@ check_installation() {
         fi
     done
 
-    info "Checking skills..."
+    info "Checking commit skill..."
 
     if [[ -f "$SKILL_DIR/SKILL.md" ]]; then
         success "Commit skill found."
     else
         error "Commit skill missing."
+        failed=1
+    fi
+
+    info "Checking PDF Reader skill..."
+
+    if [[ -f "$PDF_SKILL_DIR/SKILL.md" ]]; then
+        success "PDF Reader SKILL.md found."
+    else
+        error "PDF Reader SKILL.md missing."
+        failed=1
+    fi
+
+    if [[ -f "$PDF_SKILL_DIR/requirements.txt" ]]; then
+        success "PDF Reader requirements found."
+    else
+        error "PDF Reader requirements missing."
+        failed=1
+    fi
+
+    for script in pdf_info.py pdf_extract.py pdf_render.py pdf_search.py; do
+        if [[ -f "$PDF_SKILL_DIR/scripts/$script" ]]; then
+            success "PDF Reader: $script"
+        else
+            error "PDF Reader script missing: $script"
+            failed=1
+        fi
+    done
+
+    if [[ -x "$PDF_SKILL_DIR/.venv/bin/python" ]]; then
+        success "PDF Reader virtual environment found."
+    else
+        error "PDF Reader virtual environment missing."
         failed=1
     fi
 
@@ -272,10 +408,11 @@ print_summary() {
     echo
     echo "Installed skills:"
     echo "  - commit"
+    echo "  - pdf-reader"
 
     echo
     echo "Pi directory: $PI_DIR"
-    echo "Restart Pi to load the extensions."
+    echo "Restart Pi or run /reload to load the skills and extensions."
     echo
 }
 
@@ -290,6 +427,7 @@ main() {
             install_packages
             install_extensions
             install_skills
+            install_pdf_reader
             print_summary
             ;;
 
@@ -300,6 +438,7 @@ main() {
             update_packages
             install_extensions
             install_skills
+            install_pdf_reader
             print_summary
             ;;
 
