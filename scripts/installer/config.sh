@@ -71,6 +71,8 @@ WANT_RETROARCH=""
 WANT_SIOYEK=""
 WANT_GRUB_THEME=""
 GRUB_PROFILE=""
+WANT_PI_HARNESS=""
+WANT_OLLAMA=""
 # bash | zsh | keep. NOT called SHELL: that is the user's login shell, which the
 # environment owns. Empty means undecided; the default is keep.
 SHELL_CHOICE=""

@@ -7,7 +7,7 @@
 # terminal (or --yes) a question takes its default.
 
 stage_plan() {
-    local rc=0 pkgline monline rishotline shellline retroline sioyekline grubline cur
+    local rc=0 pkgline monline rishotline shellline retroline sioyekline grubline piharnessline ollamaline cur
 
     if interactive; then
         say ""
@@ -103,6 +103,25 @@ stage_plan() {
                 WANT_RISHOT=0
             fi
         fi
+
+        if [ -z "$WANT_PI_HARNESS" ]; then
+            note "Pi agent harness: coding agent setup with custom extensions, skills,"
+            note "and tools (uses local pi-claude-code-ui if available)."
+            if ask_yn "    Install Pi agent harness?" n; then
+                WANT_PI_HARNESS=1
+            else
+                WANT_PI_HARNESS=0
+            fi
+        fi
+
+        if [ -z "$WANT_OLLAMA" ]; then
+            note "Ollama: local LLM runner and model setup (interactive model selector)."
+            if ask_yn "    Install Ollama and select local models?" n; then
+                WANT_OLLAMA=1
+            else
+                WANT_OLLAMA=0
+            fi
+        fi
     fi
 
     # Defaults for anything still undecided: the conservative answer.
@@ -113,6 +132,8 @@ stage_plan() {
     : "${WANT_SIOYEK:=auto}"
     : "${WANT_GRUB_THEME:=0}"
     : "${GRUB_PROFILE:=1080p}"
+    : "${WANT_PI_HARNESS:=0}"
+    : "${WANT_OLLAMA:=0}"
     : "${SHELL_CHOICE:=keep}"
 
     if [ "$NO_DEPS" = "1" ]; then
@@ -159,6 +180,8 @@ stage_plan() {
     else
         grubline="no"
     fi
+    if [ "$WANT_PI_HARNESS" = "1" ]; then piharnessline="yes, installs pi agent harness, extensions, and skills"; else piharnessline="no"; fi
+    if [ "$WANT_OLLAMA" = "1" ]; then ollamaline="yes, runs Ollama installer and model selector"; else ollamaline="no"; fi
 
     say ""
     say "${BOLD}Plan${RESET}"
@@ -170,6 +193,8 @@ stage_plan() {
     note "sioyek     $sioyekline"
     note "retroarch  $retroline"
     note "grub theme $grubline"
+    note "pi harness $piharnessline"
+    note "ollama     $ollamaline"
     note "rishot     $rishotline"
     note "safety     every path is saved to $BACKUP_DIR before it changes;"
     note "           if the deploy fails, all of it is undone"

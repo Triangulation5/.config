@@ -21,7 +21,7 @@
 #
 # Safety notes:
 #   * Download sizes are read live from registry.ollama.ai before anything is
-#     pulled, and total size is checked against free disk space and RAM.
+#     pulled, and total size is checked against free disk space and RAM/VRAM.
 #   * The Ollama installer is downloaded to a temp file first, so you can view
 #     it before it runs. Nothing is piped straight into a shell.
 #   * Model names are validated; no eval; all variables are quoted.
@@ -58,7 +58,8 @@ usage() { sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 ASSUME_YES=0; SKIP_INSTALL=0; DRY_RUN=0; FORCE=0; KEEP_SERVER=0
 EXPLICIT_MODELS=""
 WORKDIR=""; SERVER_PID=""; CURSOR_HIDDEN=0; HAVE_TTY=0
-OS=""; RAM_BYTES=0; INSTALLED_LIST=""
+OS=""; RAM_BYTES=0; RAM_AVAIL_BYTES=0; INSTALLED_LIST=""
+VRAM_BYTES=0; GPU_NAME=""; IS_UNIFIED_MEM=0
 RENDERED=0
 
 cleanup() {
@@ -88,10 +89,12 @@ TIER_DESC=(
 )
 
 M_NAME=(); M_TIER=(); M_REC=(); M_SIZE=(); M_INST=(); M_SEL=()
+M_SIZE_FMT=(); M_FIT=()
 
 add_model() { # tier name [recommended]
   M_NAME+=("$2"); M_TIER+=("$1"); M_REC+=("${3:-0}")
   M_SIZE+=("unknown"); M_INST+=(0); M_SEL+=(0)
+  M_SIZE_FMT+=("?"); M_FIT+=("unknown")
 }
 
 build_catalog() {
@@ -141,19 +144,152 @@ find_model() { # name -> prints index, returns 1 if absent
   return 1
 }
 
-# Utilities
+# Pure bash byte formatting (avoids slow subshell & awk forks during interactive rendering)
 fmt_bytes() {
-  awk -v b="$1" 'BEGIN { if (b >= 1e9) printf "%.1f GB", b/1e9; else printf "%.0f MB", b/1e6 }'
+  local b="${1:-0}"
+  if ! is_num "$b" || [ "$b" -le 0 ]; then
+    printf '0 B'
+    return 0
+  fi
+  if [ "$b" -ge 1000000000 ]; then
+    local dec=$(( (b + 50000000) / 100000000 ))
+    printf '%d.%d GB' $(( dec / 10 )) $(( dec % 10 ))
+  elif [ "$b" -ge 1000000 ]; then
+    printf '%d MB' $(( (b + 500000) / 1000000 ))
+  elif [ "$b" -ge 1000 ]; then
+    printf '%d KB' $(( (b + 500) / 1000 ))
+  else
+    printf '%d B' "$b"
+  fi
+}
+
+# Hardware detection (RAM, VRAM, and GPU architecture)
+detect_vram() {
+  VRAM_BYTES=0
+  GPU_NAME=""
+  IS_UNIFIED_MEM=0
+
+  case "$OS" in
+    Linux)
+      # 1. NVIDIA
+      if have nvidia-smi; then
+        local out
+        out="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits 2>/dev/null || true)"
+        if [ -n "$out" ]; then
+          local total_mib=0 g_names=()
+          while IFS=',' read -r g_name g_mib; do
+            g_name="$(printf '%s' "$g_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            g_mib="$(printf '%s' "$g_mib" | tr -d '[:space:]')"
+            if is_num "$g_mib" && [ "$g_mib" -gt 0 ]; then
+              total_mib=$(( total_mib + g_mib ))
+              g_names+=("$g_name")
+            fi
+          done <<< "$out"
+          if [ "$total_mib" -gt 0 ]; then
+            VRAM_BYTES=$(( total_mib * 1024 * 1024 ))
+            GPU_NAME="${g_names[0]}"
+            if [ "${#g_names[@]}" -gt 1 ]; then
+              GPU_NAME="${#g_names[@]}x $GPU_NAME"
+            fi
+            GPU_NAME="$GPU_NAME ($(fmt_bytes "$VRAM_BYTES"))"
+            IS_UNIFIED_MEM=0
+            return 0
+          fi
+        fi
+      fi
+
+      # 2. AMD GPU via kernel sysfs DRM or rocm-smi
+      local amd_vram=0 amd_name=""
+      for f in /sys/class/drm/card*/device/mem_info_vram_total; do
+        if [ -r "$f" ]; then
+          local bytes
+          bytes="$(cat "$f" 2>/dev/null || true)"
+          if is_num "$bytes" && [ "$bytes" -gt 1073741824 ]; then
+            amd_vram=$(( amd_vram + bytes ))
+            local dev_dir
+            dev_dir="$(dirname "$f")"
+            if [ -r "$dev_dir/product_name" ] && [ -z "$amd_name" ]; then
+              amd_name="$(cat "$dev_dir/product_name" 2>/dev/null || true)"
+            fi
+          fi
+        fi
+      done
+      if [ "$amd_vram" -gt 0 ]; then
+        VRAM_BYTES=$amd_vram
+        if [ -z "$amd_name" ]; then amd_name="AMD Radeon GPU"; fi
+        GPU_NAME="$amd_name ($(fmt_bytes "$VRAM_BYTES"))"
+        IS_UNIFIED_MEM=0
+        return 0
+      fi
+
+      # 3. Integrated GPU / CPU inference fallback
+      if have lspci; then
+        local gpu_line
+        gpu_line="$(lspci 2>/dev/null | grep -i -E "vga|3d|display" | head -n1 || true)"
+        if [ -n "$gpu_line" ]; then
+          gpu_line="$(printf '%s' "$gpu_line" | sed -E 's/^[0-9a-fA-F:.]+ [^:]+: //; s/ \(rev [0-9a-fA-F]+\)//')"
+          GPU_NAME="$gpu_line (CPU inference)"
+        fi
+      fi
+      if [ -z "$GPU_NAME" ]; then
+        GPU_NAME="CPU only (No dedicated GPU)"
+      fi
+      ;;
+
+    Darwin)
+      local arch
+      arch="$(uname -m)"
+      if [ "$arch" = "arm64" ]; then
+        # Apple Silicon unified memory (GPU Metal shares RAM)
+        local chip wired_limit
+        chip="$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Apple Silicon")"
+        wired_limit="$(sysctl -n iogpu.wired_mem_limit 2>/dev/null || true)"
+        if is_num "$wired_limit" && [ "$wired_limit" -gt 0 ]; then
+          VRAM_BYTES=$wired_limit
+        else
+          VRAM_BYTES=$(( RAM_BYTES * 3 / 4 ))
+        fi
+        GPU_NAME="$chip (Unified $(fmt_bytes "$RAM_BYTES"))"
+        IS_UNIFIED_MEM=1
+      else
+        VRAM_BYTES=0
+        GPU_NAME="Intel Mac GPU (CPU fallback)"
+        IS_UNIFIED_MEM=0
+      fi
+      ;;
+
+    *)
+      GPU_NAME="Generic GPU / CPU"
+      ;;
+  esac
+  return 0
 }
 
 detect_system() {
   OS="$(uname -s)"
   RAM_BYTES=0
+  RAM_AVAIL_BYTES=0
   case "$OS" in
-    Linux)  RAM_BYTES="$(awk '/^MemTotal:/ {printf "%.0f", $2*1024}' /proc/meminfo 2>/dev/null || true)" ;;
-    Darwin) RAM_BYTES="$(sysctl -n hw.memsize 2>/dev/null || true)" ;;
+    Linux)
+      if [ -f /proc/meminfo ]; then
+        while read -r key val rest; do
+          case "$key" in
+            MemTotal:)     RAM_BYTES=$(( val * 1024 )) ;;
+            MemAvailable:) RAM_AVAIL_BYTES=$(( val * 1024 )) ;;
+          esac
+        done < /proc/meminfo
+      fi
+      ;;
+    Darwin)
+      RAM_BYTES="$(sysctl -n hw.memsize 2>/dev/null || true)"
+      is_num "$RAM_BYTES" || RAM_BYTES=0
+      RAM_AVAIL_BYTES=$(( RAM_BYTES * 7 / 10 ))
+      ;;
   esac
   is_num "$RAM_BYTES" || RAM_BYTES=0
+  is_num "$RAM_AVAIL_BYTES" || RAM_AVAIL_BYTES=$(( RAM_BYTES * 7 / 10 ))
+
+  detect_vram
 }
 
 models_dir() {
@@ -169,9 +305,53 @@ free_bytes() { # path (walks up to an existing parent)
   df -Pk "$d" 2>/dev/null | awk 'NR==2 { printf "%.0f", $4*1024 }'
 }
 
-# Is the model bigger than ~70% of system RAM?
+# Model memory fit evaluator
+# Returns:
+#   vram:    Fits completely in dedicated VRAM (full GPU acceleration)
+#   unified: Fits in Apple Silicon unified memory (Metal GPU acceleration)
+#   partial: Exceeds VRAM but fits combined VRAM + RAM (partial offload, moderate speed)
+#   cpu:     No GPU present; fits in system RAM (pure CPU inference)
+#   exceed:  Exceeds total available memory (likely to OOM, crash, or freeze)
+model_fit() {
+  local s="$1"
+  if ! is_num "$s" || [ "$s" -le 0 ]; then
+    printf 'unknown'; return 0
+  fi
+
+  if [ "$IS_UNIFIED_MEM" -eq 1 ]; then
+    if [ "$VRAM_BYTES" -gt 0 ] && [ "$s" -le "$VRAM_BYTES" ]; then
+      printf 'unified'
+    elif [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 9 )) ]; then
+      printf 'partial'
+    else
+      printf 'exceed'
+    fi
+  elif [ "$VRAM_BYTES" -gt 0 ]; then
+    # Full VRAM fit threshold: 90% of VRAM (reserves buffer for KV cache and OS display)
+    if [ $(( s * 10 )) -le $(( VRAM_BYTES * 9 )) ]; then
+      printf 'vram'
+    # Partial GPU offload: fits VRAM + 70% of system RAM
+    elif [ "$RAM_BYTES" -gt 0 ] && [ "$s" -le $(( VRAM_BYTES + RAM_BYTES * 7 / 10 )) ]; then
+      printf 'partial'
+    else
+      printf 'exceed'
+    fi
+  else
+    # CPU only
+    if [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 7 )) ]; then
+      printf 'cpu'
+    else
+      printf 'exceed'
+    fi
+  fi
+}
+
 too_big_for_ram() { # bytes
   [ "$RAM_BYTES" -gt 0 ] && is_num "$1" && [ $(( $1 * 10 )) -gt $(( RAM_BYTES * 7 )) ]
+}
+
+too_big_for_vram() { # bytes
+  [ "$VRAM_BYTES" -gt 0 ] && is_num "$1" && [ $(( $1 * 10 )) -gt $(( VRAM_BYTES * 9 )) ]
 }
 
 # Terminal I/O
@@ -282,7 +462,6 @@ mark_installed() {
 }
 
 # Registry sizes
-# Prints total download size in bytes, "missing" (404), or "unknown".
 registry_size() {
   local name="$1" repo tag code total body="$WORKDIR/manifest.$$.$RANDOM"
   repo="${name%%:*}"; tag="latest"
@@ -308,30 +487,39 @@ registry_size() {
 fetch_sizes() { # indices...
   if [ "$#" -eq 0 ]; then return 0; fi
   info "Checking download sizes on registry.ollama.ai ..."
-  local i n=0
+  local i
   for i in "$@"; do
     ( registry_size "${M_NAME[$i]}" >"$WORKDIR/size.$i" 2>/dev/null || true ) &
-    n=$((n + 1))
-    if [ $((n % 8)) -eq 0 ]; then wait; fi
   done
   wait
   for i in "$@"; do
     if [ -s "$WORKDIR/size.$i" ]; then M_SIZE[$i]="$(cat "$WORKDIR/size.$i")"; fi
+    if is_num "${M_SIZE[$i]}"; then
+      M_SIZE_FMT[$i]="$(fmt_bytes "${M_SIZE[$i]}")"
+      M_FIT[$i]="$(model_fit "${M_SIZE[$i]}")"
+    else
+      M_SIZE_FMT[$i]="-"
+      M_FIT[$i]="unknown"
+    fi
   done
 }
 
-# Totals/flags
-SEL_COUNT=0; SEL_BYTES=0; SEL_UNK=0; SEL_BIG=0
+# Totals & selection state
+SEL_COUNT=0; SEL_BYTES=0; SEL_UNK=0; SEL_PARTIAL=0; SEL_EXCEED=0
 
 compute_totals() {
-  SEL_COUNT=0; SEL_BYTES=0; SEL_UNK=0; SEL_BIG=0
-  local i
+  SEL_COUNT=0; SEL_BYTES=0; SEL_UNK=0; SEL_PARTIAL=0; SEL_EXCEED=0
+  local i s
   for i in "${!M_NAME[@]}"; do
     if [ "${M_SEL[$i]}" = "1" ]; then
       SEL_COUNT=$((SEL_COUNT + 1))
-      if is_num "${M_SIZE[$i]}"; then
-        SEL_BYTES=$((SEL_BYTES + ${M_SIZE[$i]}))
-        if too_big_for_ram "${M_SIZE[$i]}"; then SEL_BIG=$((SEL_BIG + 1)); fi
+      s="${M_SIZE[$i]}"
+      if is_num "$s"; then
+        SEL_BYTES=$((SEL_BYTES + s))
+        case "${M_FIT[$i]:-}" in
+          exceed)  SEL_EXCEED=$((SEL_EXCEED + 1)) ;;
+          partial) SEL_PARTIAL=$((SEL_PARTIAL + 1)) ;;
+        esac
       else
         SEL_UNK=$((SEL_UNK + 1))
       fi
@@ -343,9 +531,9 @@ selectable() { # idx
   [ "${M_INST[$1]}" = "0" ] && [ "${M_SIZE[$1]}" != "missing" ]
 }
 
-# Checkbox selector
+# Checkbox selector UI
 ROW_T=(); ROW_I=()
-CUR=0; TOP=0; VIEW_H=10; FRAME=15; FREE_BYTES=0
+CUR=0; TOP=0; VIEW_H=10; FRAME=16; FREE_BYTES=0
 
 build_rows() {
   ROW_T=(); ROW_I=()
@@ -358,27 +546,58 @@ build_rows() {
   done
 }
 
-emit() { printf '\r\033[2K%s\n' "$1" >&2; }
-
-item_line() { # idx is_cursor
+# Pure bash in-memory line formatting (no subshells, no slow process forks)
+format_item() { # idx is_cursor out_var
   local i="$1" cur="$2" mark=" " box="[ ]" size="?" tag=""
-  if [ "$cur" = "1" ]; then mark=">"; fi
-  if [ "${M_INST[$i]}" = "1" ]; then box="[=]"; tag="${DIM}already installed${RESET}"
-  elif [ "${M_SIZE[$i]}" = "missing" ]; then box="[-]"; tag="${RED}not found in registry${RESET}"
-  elif [ "${M_SEL[$i]}" = "1" ]; then box="[x]"; fi
+  [ "$cur" = "1" ] && mark=">"
+  if [ "${M_INST[$i]}" = "1" ]; then
+    box="[=]"
+    tag="${DIM}already installed${RESET}"
+  elif [ "${M_SIZE[$i]}" = "missing" ]; then
+    box="[-]"
+    tag="${RED}not found in registry${RESET}"
+  elif [ "${M_SEL[$i]}" = "1" ]; then
+    box="[x]"
+  fi
 
-  if is_num "${M_SIZE[$i]}"; then size="$(fmt_bytes "${M_SIZE[$i]}")"
-  elif [ "${M_SIZE[$i]}" = "missing" ]; then size="-"; fi
+  size="${M_SIZE_FMT[$i]:-?}"
+  [ "${M_SIZE[$i]}" = "missing" ] && size="-"
 
   if [ -z "$tag" ]; then
-    if [ "${M_REC[$i]}" = "1" ]; then tag="${GREEN}recommended${RESET}"; fi
-    if too_big_for_ram "${M_SIZE[$i]}"; then tag="${tag:+$tag }${YELLOW}! may exceed RAM${RESET}"; fi
+    if [ "${M_REC[$i]}" = "1" ]; then
+      tag="${GREEN}recommended${RESET}"
+    fi
+    case "${M_FIT[$i]:-unknown}" in
+      vram)
+        local t="${GREEN}✓ fits VRAM${RESET}"
+        tag="${tag:+$tag · }$t"
+        ;;
+      unified)
+        local t="${GREEN}✓ fits unified RAM${RESET}"
+        tag="${tag:+$tag · }$t"
+        ;;
+      partial)
+        local t="${YELLOW}⚠ partial GPU offload${RESET}"
+        tag="${tag:+$tag · }$t"
+        ;;
+      cpu)
+        local t="${DIM}CPU only${RESET}"
+        tag="${tag:+$tag · }$t"
+        ;;
+      exceed)
+        local t="${RED}✗ exceeds memory${RESET}"
+        tag="${tag:+$tag · }$t"
+        ;;
+    esac
   fi
 
   local line
-  line="$(printf '%s %s %-22s %9s  %s' "$mark" "$box" "${M_NAME[$i]}" "$size" "$tag")"
-  if [ "$cur" = "1" ]; then line="${BOLD}${line}${RESET}"; fi
-  printf '%s' "$line"
+  printf -v line '%s %s %-22s %9s  %b' "$mark" "$box" "${M_NAME[$i]}" "$size" "$tag"
+  if [ "$cur" = "1" ]; then
+    printf -v "$3" '%s%s%s' "$BOLD" "$line" "$RESET"
+  else
+    printf -v "$3" '%s' "$line"
+  fi
 }
 
 adjust_view() {
@@ -393,22 +612,33 @@ adjust_view() {
 }
 
 render() {
-  if [ "$RENDERED" -eq 1 ]; then printf '\033[%dA' "$FRAME" >&2; fi
-  RENDERED=1
   adjust_view
   compute_totals
 
-  emit "${BOLD}Select the Ollama models to download${RESET}"
-  emit "${DIM}↑/↓ move · space toggle · a select tier · n clear all · enter confirm · q quit${RESET}"
+  # Single buffered atomic write to terminal eliminates lag and cursor flicker
+  local BUF=""
+  if [ "$RENDERED" -eq 1 ]; then
+    BUF+=$'\033['"$FRAME"$'\x41'
+  fi
+  RENDERED=1
 
-  local r i t
+  BUF+=$'\r\033[2K'"${BOLD}Select Ollama models to download${RESET}"$'\n'
+  BUF+=$'\r\033[2K'"${DIM}Host: RAM $(fmt_bytes "$RAM_BYTES") · GPU: $GPU_NAME${RESET}"$'\n'
+  BUF+=$'\r\033[2K'"${DIM}↑/↓ move · space toggle · a tier · r recommended · n clear · enter confirm · q quit${RESET}"$'\n'
+
+  local r i
   for ((r = TOP; r < TOP + VIEW_H; r++)); do
-    if [ "$r" -ge "${#ROW_T[@]}" ]; then emit ""; continue; fi
+    if [ "$r" -ge "${#ROW_T[@]}" ]; then
+      BUF+=$'\r\033[2K\n'
+      continue
+    fi
     i="${ROW_I[$r]}"
     if [ "${ROW_T[$r]}" = "H" ]; then
-      emit "${BOLD}-- ${TIER_NAMES[$i]}${RESET}${DIM} — ${TIER_DESC[$i]}${RESET}"
+      BUF+=$'\r\033[2K'"${BOLD}-- ${TIER_NAMES[$i]}${RESET}${DIM} — ${TIER_DESC[$i]}${RESET}"$'\n'
     else
-      if [ "$r" -eq "$CUR" ]; then emit "$(item_line "$i" 1)"; else emit "$(item_line "$i" 0)"; fi
+      local line=""
+      format_item "$i" "$([ "$r" -eq "$CUR" ] && echo 1 || echo 0)" line
+      BUF+=$'\r\033[2K'"$line"$'\n'
     fi
   done
 
@@ -416,14 +646,20 @@ render() {
   if [ "$FREE_BYTES" -gt 0 ] && [ "$SEL_BYTES" -gt "$FREE_BYTES" ]; then colour="$RED"; fi
   status="Selected: $SEL_COUNT · download ≈ $(fmt_bytes "$SEL_BYTES")"
   if [ "$FREE_BYTES" -gt 0 ]; then status="$status · free disk: $(fmt_bytes "$FREE_BYTES")"; fi
-  emit "${colour}${status}${RESET}"
+  BUF+=$'\r\033[2K'"${colour}${status}${RESET}"$'\n'
 
   local w=""
   if [ "$SEL_UNK" -gt 0 ]; then w="$SEL_UNK selected model(s) have unknown size. "; fi
-  if [ "$SEL_BIG" -gt 0 ]; then w="${w}! $SEL_BIG selected model(s) may not fit in RAM."; fi
-  if [ -n "$w" ]; then emit "${YELLOW}${w}${RESET}"; else emit ""; fi
+  if [ "$SEL_EXCEED" -gt 0 ]; then
+    w="${w}${RED}✗ $SEL_EXCEED model(s) exceed available memory!${RESET} "
+  elif [ "$SEL_PARTIAL" -gt 0 ]; then
+    w="${w}${YELLOW}⚠ $SEL_PARTIAL model(s) exceed VRAM (partial GPU offload).${RESET} "
+  fi
+  BUF+=$'\r\033[2K'"$w"$'\n'
 
-  emit "${DIM}Sizes are live from registry.ollama.ai · ! = over ~70% of RAM ($(fmt_bytes "$RAM_BYTES")); GPU VRAM not checked${RESET}"
+  BUF+=$'\r\033[2K'"${DIM}Sizes from registry.ollama.ai · ✓ fits VRAM · ⚠ partial offload · ✗ exceeds memory${RESET}"$'\n'
+
+  printf '%b' "$BUF" >&2
 }
 
 KEY=""
@@ -435,29 +671,59 @@ read_key() {
     "")   KEY="enter" ;;
     " ")  KEY="toggle" ;;
     $'\033')
-      IFS= read -rsn2 -t 0.05 -u 3 rest 2>/dev/null \
-        || IFS= read -rsn2 -t 1 -u 3 rest 2>/dev/null \
-        || rest=""
-      case "$rest" in
-        '[A'|'OA') KEY="up" ;;
-        '[B'|'OB') KEY="down" ;;
-      esac
+      # Escape sequence reader with low latency and clean multi-byte escape handling
+      if IFS= read -rsn1 -t 0.02 -u 3 rest 2>/dev/null; then
+        if [ "$rest" = "[" ] || [ "$rest" = "O" ]; then
+          local rest2=""
+          if IFS= read -rsn1 -t 0.02 -u 3 rest2 2>/dev/null; then
+            case "$rest$rest2" in
+              '[A'|'OA') KEY="up" ;;
+              '[B'|'OB') KEY="down" ;;
+              '[C'|'OC') KEY="right" ;;
+              '[D'|'OD') KEY="left" ;;
+              '[H'|'1~'|'[1') KEY="home" ;;
+              '[F'|'4~'|'[4') KEY="end" ;;
+              '[5')
+                IFS= read -rsn1 -t 0.02 -u 3 _ 2>/dev/null || true
+                KEY="pageup"
+                ;;
+              '[6')
+                IFS= read -rsn1 -t 0.02 -u 3 _ 2>/dev/null || true
+                KEY="pagedown"
+                ;;
+            esac
+          fi
+        fi
+      else
+        KEY="quit"
+      fi
       ;;
     k|K) KEY="up" ;;
     j|J) KEY="down" ;;
     a|A) KEY="tier" ;;
+    r|R) KEY="rec" ;;
     n|N) KEY="none" ;;
     q|Q) KEY="quit" ;;
   esac
   return 0
 }
 
-move_cursor() { # +1 / -1
+move_cursor() { # delta (+1, -1, +N, -N)
+  local delta=$1
+  local step=1
+  [ "$delta" -lt 0 ] && step=-1
+  local count=$delta
+  [ "$count" -lt 0 ] && count=$(( -count ))
+
   local r=$CUR
-  while :; do
-    r=$((r + $1))
-    if [ "$r" -lt 0 ] || [ "$r" -ge "${#ROW_T[@]}" ]; then return 0; fi
-    if [ "${ROW_T[$r]}" = "M" ]; then CUR=$r; return 0; fi
+  while [ "$count" -gt 0 ]; do
+    local next=$(( r + step ))
+    if [ "$next" -lt 0 ] || [ "$next" -ge "${#ROW_T[@]}" ]; then break; fi
+    r=$next
+    if [ "${ROW_T[$r]}" = "M" ]; then
+      count=$(( count - 1 ))
+      CUR=$r
+    fi
   done
 }
 
@@ -470,8 +736,30 @@ toggle_current() {
 
 select_current_tier() {
   local i t="${M_TIER[${ROW_I[$CUR]}]}"
+  local all_sel=1
   for i in "${!M_NAME[@]}"; do
-    if [ "${M_TIER[$i]}" = "$t" ] && selectable "$i"; then M_SEL[$i]=1; fi
+    if [ "${M_TIER[$i]}" = "$t" ] && selectable "$i"; then
+      if [ "${M_SEL[$i]}" != "1" ]; then all_sel=0; break; fi
+    fi
+  done
+  local new_val=1
+  [ "$all_sel" -eq 1 ] && new_val=0
+  for i in "${!M_NAME[@]}"; do
+    if [ "${M_TIER[$i]}" = "$t" ] && selectable "$i"; then M_SEL[$i]=$new_val; fi
+  done
+}
+
+select_recommended() {
+  local all_rec_sel=1 i
+  for i in "${!M_NAME[@]}"; do
+    if [ "${M_REC[$i]}" = "1" ] && selectable "$i"; then
+      if [ "${M_SEL[$i]}" != "1" ]; then all_rec_sel=0; break; fi
+    fi
+  done
+  local new_val=1
+  [ "$all_rec_sel" -eq 1 ] && new_val=0
+  for i in "${!M_NAME[@]}"; do
+    if [ "${M_REC[$i]}" = "1" ] && selectable "$i"; then M_SEL[$i]=$new_val; fi
   done
 }
 
@@ -482,11 +770,14 @@ run_menu() {
   case "${TERM:-dumb}" in dumb) die "TERM=dumb can't draw the selector. Use --models or --yes." ;; esac
 
   build_rows
-  local lines
-  lines="$(tput lines 2>/dev/null || echo 24)"; is_num "$lines" || lines=24
-  VIEW_H=$((lines - 8)); [ "$VIEW_H" -lt 6 ] && VIEW_H=6
+  local lines="${LINES:-}"
+  if ! is_num "$lines" || [ "$lines" -le 0 ]; then
+    lines="$(tput lines 2>/dev/null || echo 24)"
+  fi
+  is_num "$lines" || lines=24
+  VIEW_H=$((lines - 9)); [ "$VIEW_H" -lt 6 ] && VIEW_H=6
   [ "$VIEW_H" -gt "${#ROW_T[@]}" ] && VIEW_H=${#ROW_T[@]}
-  FRAME=$((VIEW_H + 5))
+  FRAME=$((VIEW_H + 6))
 
   CUR=1; TOP=0     # row 0 is a header; row 1 is the first model
   printf '\033[?25l' >&2; CURSOR_HIDDEN=1
@@ -495,13 +786,18 @@ run_menu() {
     render
     read_key
     case "$KEY" in
-      up)     move_cursor -1 ;;
-      down)   move_cursor 1 ;;
-      toggle) toggle_current ;;
-      tier)   select_current_tier ;;
-      none)   clear_all ;;
-      enter)  break ;;
-      quit)   printf '\033[?25h' >&2; CURSOR_HIDDEN=0; printf '\n' >&2; info "Aborted. Nothing was downloaded."; exit 0 ;;
+      up)       move_cursor -1 ;;
+      down)     move_cursor 1 ;;
+      pageup)   move_cursor -$(( VIEW_H - 2 )) ;;
+      pagedown) move_cursor $(( VIEW_H - 2 )) ;;
+      home)     CUR=1 ;;
+      end)      CUR=$(( ${#ROW_T[@]} - 1 )); [ "${ROW_T[$CUR]}" = "H" ] && move_cursor -1 ;;
+      toggle)   toggle_current ;;
+      tier)     select_current_tier ;;
+      rec)      select_recommended ;;
+      none)     clear_all ;;
+      enter)    break ;;
+      quit)     printf '\033[?25h' >&2; CURSOR_HIDDEN=0; printf '\n' >&2; info "Aborted. Nothing was downloaded."; exit 0 ;;
     esac
   done
   printf '\033[?25h\n' >&2; CURSOR_HIDDEN=0
@@ -527,13 +823,6 @@ apply_explicit() {
   done
 }
 
-select_recommended() {
-  local i
-  for i in "${!M_NAME[@]}"; do
-    if [ "${M_REC[$i]}" = "1" ]; then M_SEL[$i]=1; fi
-  done
-}
-
 # Review + confirm
 review_and_confirm() {
   compute_totals
@@ -547,28 +836,53 @@ review_and_confirm() {
   compute_totals
   if [ "$SEL_COUNT" -eq 0 ]; then info "Nothing to download."; exit 0; fi
 
+  printf '\n%sHardware Profile:%s\n' "$BOLD" "$RESET" >&2
+  printf '  - RAM: %s total' "$(fmt_bytes "$RAM_BYTES")" >&2
+  if [ "$RAM_AVAIL_BYTES" -gt 0 ]; then
+    printf ' (%s available)\n' "$(fmt_bytes "$RAM_AVAIL_BYTES")" >&2
+  else
+    printf '\n' >&2
+  fi
+  printf '  - GPU: %s\n' "$GPU_NAME" >&2
+  if [ "$VRAM_BYTES" -gt 0 ] && [ "$IS_UNIFIED_MEM" -eq 0 ]; then
+    printf '  - VRAM: %s dedicated\n' "$(fmt_bytes "$VRAM_BYTES")" >&2
+  fi
+
   printf '\n%sAbout to download:%s\n' "$BOLD" "$RESET" >&2
   for i in "${!M_NAME[@]}"; do
     if [ "${M_SEL[$i]}" = "1" ]; then
-      local s="size unknown"
-      if is_num "${M_SIZE[$i]}"; then s="$(fmt_bytes "${M_SIZE[$i]}")"; fi
-      printf '  - %-24s %10s\n' "${M_NAME[$i]}" "$s" >&2
+      local s="size unknown" fit_str=""
+      if is_num "${M_SIZE[$i]}"; then
+        s="$(fmt_bytes "${M_SIZE[$i]}")"
+        case "${M_FIT[$i]:-unknown}" in
+          vram)    fit_str="${GREEN}Full GPU (VRAM)${RESET}" ;;
+          unified) fit_str="${GREEN}Unified GPU (Metal)${RESET}" ;;
+          partial) fit_str="${YELLOW}Partial GPU offload (GPU+RAM)${RESET}" ;;
+          cpu)     fit_str="${DIM}CPU only${RESET}" ;;
+          exceed)  fit_str="${RED}Warning: Exceeds available memory!${RESET}" ;;
+        esac
+      fi
+      printf '  - %-22s %9s   %b\n' "${M_NAME[$i]}" "$s" "$fit_str" >&2
     fi
   done
-  printf '  %s\n' "------------------------------------" >&2
-  printf '  %-24s %10s\n' "Total" "$(fmt_bytes "$SEL_BYTES")" >&2
+  printf '  %s\n' "----------------------------------------------------" >&2
+  printf '  %-22s %9s\n' "Total" "$(fmt_bytes "$SEL_BYTES")" >&2
 
   local dir need
   dir="$(models_dir)"
   FREE_BYTES="$(free_bytes "$dir")"; is_num "$FREE_BYTES" || FREE_BYTES=0
+  printf '\n' >&2
   info "Models are stored in: $dir"
   if [ "$FREE_BYTES" -gt 0 ]; then info "Free disk space there: $(fmt_bytes "$FREE_BYTES")"; fi
 
   if [ "$SEL_UNK" -gt 0 ]; then
     warn "$SEL_UNK model(s) have unknown size (registry unreachable?); the total is understated."
   fi
-  if [ "$SEL_BIG" -gt 0 ]; then
-    warn "$SEL_BIG model(s) are larger than ~70% of your RAM ($(fmt_bytes "$RAM_BYTES")); they may be slow or fail to load without a big GPU."
+  if [ "$SEL_EXCEED" -gt 0 ]; then
+    warn "$SEL_EXCEED selected model(s) exceed available memory limit. They may fail to load or cause severe memory thrashing."
+  fi
+  if [ "$SEL_PARTIAL" -gt 0 ]; then
+    info "$SEL_PARTIAL selected model(s) exceed VRAM and will use partial GPU offload (splitting layers with system RAM)."
   fi
 
   need=$(( SEL_BYTES + SEL_BYTES / 10 ))
@@ -663,8 +977,6 @@ main() {
     apply_explicit
   elif [ "$ASSUME_YES" -eq 1 ]; then
     select_recommended
-  else
-    select_recommended          # pre-checked; you can untick them
   fi
   mark_installed
 

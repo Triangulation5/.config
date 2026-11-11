@@ -31,6 +31,10 @@ Questions (asked on a terminal; a flag answers the question in advance):
                                  (clones to ~/Projects/Evangelion, sets seele theme)
       --grub-profile 720p|1080p|1440p
                                  display profile for Evangelion GRUB theme (default: 1080p)
+      --with-pi-harness / --no-pi-harness
+                                 install Pi coding agent harness, extensions, and skills
+      --with-ollama / --no-ollama
+                                 install Ollama and select local LLM models
       --shell bash|zsh|keep      install bash or zsh, or keep the shell you have.
                                  Switching your login shell is never done for you:
                                  the steps are printed at the end.
@@ -39,7 +43,8 @@ Run control:
   -y, --yes           take the default answer to every question and skip the
                       final confirmation. It never opts into anything extra:
                       rishot needs --with-rishot, RetroArch --with-retroarch,
-                      GRUB theme needs --with-grub-theme, Sioyek is installed
+                      GRUB theme needs --with-grub-theme, Pi harness needs --with-pi-harness,
+                      Ollama needs --with-ollama, Sioyek is installed
                       unless --no-sioyek, and your shell is kept unless you pass --shell.
       --quickstart    same as --yes
       --no-deps       skip the package step, only deploy the configs
@@ -95,6 +100,10 @@ parse_args() {
             --no-sioyek)          WANT_SIOYEK=0 ;;
             --with-grub-theme|--with-eva)  WANT_GRUB_THEME=1 ;;
             --no-grub-theme|--no-eva)      WANT_GRUB_THEME=0 ;;
+            --with-pi-harness)             WANT_PI_HARNESS=1 ;;
+            --no-pi-harness)               WANT_PI_HARNESS=0 ;;
+            --with-ollama)                 WANT_OLLAMA=1 ;;
+            --no-ollama)                   WANT_OLLAMA=0 ;;
             --grub-profile|--eva-profile)
                 GRUB_PROFILE="${2:?--grub-profile needs 720p, 1080p or 1440p}"
                 shift

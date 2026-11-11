@@ -276,3 +276,97 @@ stage_grub_theme() {
     STAGE_DETAIL="SEELE $GRUB_PROFILE, ${rev:-$EVA_REF}"
     return "$ST_OK"
 }
+
+# Helper to locate staged installer scripts across various execution layouts
+find_installer_stage_script() {
+    local name="$1" d
+    for d in \
+        "${INSTALLER_DIR:-}/stages" \
+        "$(dirname "${BASH_SOURCE[0]}")" \
+        "${SRC_DIR:-}/scripts/installer/stages" \
+        "${SRC_DIR:-}/installer/stages" \
+        "${XDG_CONFIG_HOME:-$HOME/.config}/scripts/installer/stages"; do
+        if [ -n "$d" ] && [ -f "$d/$name" ]; then
+            printf '%s' "$d/$name"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# ---- Pi agent harness -----------------------------------------------------------
+stage_pi_harness() {
+    local script rc=0
+    if [ "$WANT_PI_HARNESS" != "1" ]; then
+        STAGE_DETAIL="not requested"
+        return "$ST_SKIP"
+    fi
+
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "stages/harness.sh install"
+        STAGE_DETAIL="dry run"
+        return "$ST_OK"
+    fi
+
+    if ! script="$(find_installer_stage_script "harness.sh")"; then
+        err "could not find stages/harness.sh"
+        return "$ST_FAIL"
+    fi
+
+    OUTSIDE_TXN_CHANGES=1
+    note "running Pi agent harness installer ($script)"
+    if tty_available; then
+        bash "$script" install < /dev/tty || rc=$?
+    else
+        bash "$script" install < /dev/null || rc=$?
+    fi
+
+    if [ "$rc" -ne 0 ]; then
+        err "the Pi agent harness installer exited with status $rc"
+        return "$ST_FAIL"
+    fi
+
+    STAGE_DETAIL="installed"
+    return "$ST_OK"
+}
+
+# ---- Ollama setup & model selector ---------------------------------------------
+stage_ollama() {
+    local script rc=0
+    if [ "$WANT_OLLAMA" != "1" ]; then
+        STAGE_DETAIL="not requested"
+        return "$ST_SKIP"
+    fi
+
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "stages/ollama.sh --dry-run"
+        STAGE_DETAIL="dry run"
+        return "$ST_OK"
+    fi
+
+    if ! script="$(find_installer_stage_script "ollama.sh")"; then
+        err "could not find stages/ollama.sh"
+        return "$ST_FAIL"
+    fi
+
+    OUTSIDE_TXN_CHANGES=1
+    note "running Ollama setup script ($script)"
+    local -a args=()
+    if [ "$ASSUME_YES" = "1" ]; then
+        args+=("--yes")
+    fi
+
+    if tty_available; then
+        bash "$script" "${args[@]}" < /dev/tty || rc=$?
+    else
+        bash "$script" "${args[@]}" < /dev/null || rc=$?
+    fi
+
+    if [ "$rc" -ne 0 ]; then
+        err "the Ollama setup script exited with status $rc"
+        return "$ST_FAIL"
+    fi
+
+    STAGE_DETAIL="completed"
+    return "$ST_OK"
+}

@@ -30,13 +30,17 @@ MODE="${1:-install}"
 BACKUP_DIR="$PI_DIR/backups/pi-agent-config/$(date +%Y%m%d-%H%M%S)"
 
 # Packages
-# Make pi-subagents optional
-# Make it so that they use my custom version of pi-claude-code-ui
+CUSTOM_PI_CC_UI="${PI_CLAUDE_CODE_UI_PATH:-$HOME/Projects/pi-claude-code-ui}"
+if [[ -d "$CUSTOM_PI_CC_UI" ]]; then
+    PI_CC_UI_PKG="$CUSTOM_PI_CC_UI"
+else
+    PI_CC_UI_PKG="npm:pi-claude-code-ui"
+fi
 
 packages=(
     "npm:@juicesharp/rpiv-ask-user-question"
     # "npm:pi-subagents"
-    "npm:pi-claude-code-ui"
+    "$PI_CC_UI_PKG"
 )
 
 extensions=(
@@ -170,6 +174,14 @@ download() {
 
 install_packages() {
     info "Installing Pi packages..."
+
+    # If using custom local pi-claude-code-ui, remove npm package if installed
+    if [[ "$PI_CC_UI_PKG" != "npm:pi-claude-code-ui" ]] && command -v pi >/dev/null 2>&1; then
+        if pi list 2>/dev/null | grep -q "npm:pi-claude-code-ui"; then
+            info "Removing npm:pi-claude-code-ui in favor of custom local version ($PI_CC_UI_PKG)..."
+            pi remove npm:pi-claude-code-ui || true
+        fi
+    fi
 
     for package in "${packages[@]}"; do
         info "Installing $package"
