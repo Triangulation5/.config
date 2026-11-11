@@ -176,8 +176,12 @@ install_packages() {
     info "Installing Pi packages..."
 
     # If using custom local pi-claude-code-ui, remove npm package if installed
-    if [[ "$PI_CC_UI_PKG" != "npm:pi-claude-code-ui" ]] && command -v pi >/dev/null 2>&1; then
-        if pi list 2>/dev/null | grep -q "npm:pi-claude-code-ui"; then
+    if [[ "$PI_CC_UI_PKG" != "npm:pi-claude-code-ui" ]]; then
+        if [[ ! -d "$PI_CC_UI_PKG/node_modules" ]] && command -v npm >/dev/null 2>&1; then
+            info "Installing dependencies for custom pi-claude-code-ui..."
+            (cd "$PI_CC_UI_PKG" && npm install)
+        fi
+        if command -v pi >/dev/null 2>&1 && pi list 2>/dev/null | grep -q "npm:pi-claude-code-ui"; then
             info "Removing npm:pi-claude-code-ui in favor of custom local version ($PI_CC_UI_PKG)..."
             pi remove npm:pi-claude-code-ui || true
         fi
