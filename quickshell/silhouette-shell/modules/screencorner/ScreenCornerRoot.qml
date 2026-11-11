@@ -72,6 +72,16 @@ Variants {
          */
         readonly property bool gameMode: Flags.gameMode
         readonly property bool notchStyle: Flags.notchStyle
+        readonly property bool monFullscreen: Fullscreen.isFullscreen(modelData.name)
+
+        opacity: monFullscreen ? 0 : 1
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Motion.fast
+                easing.type: Motion.easeStandard
+            }
+        }
 
         /**
          * True while nothing on the top edge wants the corners: game mode, or the
