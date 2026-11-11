@@ -74,9 +74,9 @@ Variants {
         readonly property bool notchStyle: Flags.notchStyle
         readonly property bool monFullscreen: Fullscreen.isFullscreen(modelData.name)
 
-        opacity: monFullscreen ? 0 : 1
+        property real cornerOpacity: monFullscreen ? 0 : 1
 
-        Behavior on opacity {
+        Behavior on cornerOpacity {
             NumberAnimation {
                 duration: Motion.fast
                 easing.type: Motion.easeStandard
@@ -161,6 +161,7 @@ Variants {
             delegate: RoundCorner {
                 id: corner
 
+                opacity: corners.cornerOpacity
                 size: corners.cornerSize
                 corner: modelData.c
                 color: corners.cornerColor
