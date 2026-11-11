@@ -175,6 +175,8 @@ download() {
 install_packages() {
     info "Installing Pi packages..."
 
+    # Link for custom pi-claude-code-ui extension replace the other one (https://github.com/Triangulation5/pi-claude-code-ui/)
+
     # If using custom local pi-claude-code-ui, remove npm package if installed
     if [[ "$PI_CC_UI_PKG" != "npm:pi-claude-code-ui" ]]; then
         if [[ ! -d "$PI_CC_UI_PKG/node_modules" ]] && command -v npm >/dev/null 2>&1; then

@@ -8,12 +8,10 @@
   to chose between st (default), kitty, or ghostty
 
 - Get fonts like JetBrainsMono, Iosevka, FiraCode, SF Pro, and Rubik fonts
-  installer. (Let them chose between 1, 2, 3, etc or 1-5, all).
+  installer. (Let them chose like interactive CLI like the ollama install script does).
 - Get the Papirus-Dark icon pack, GTK settings and those stuff (only what is needed not bloat).
 - xdg-desktop-portal-hyprland and other xdg-desktop-portal-*.* ones that are required by this.
 
 - Future: Have two major themeing styles Vague theme (default), and Flexoki theme (just
-- Make installer better for Alpine, and Arch/Artix linux.
-  the dark theme, secondary)
 
 - Save wireguard, and vpn configurations before switching over.

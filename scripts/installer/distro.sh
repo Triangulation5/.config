@@ -16,6 +16,7 @@ detect_distro() {
     case " $id $like " in
         *fedora*|*rhel*|*centos*) FAMILY="fedora" ;;
         *alpine*)                 FAMILY="alpine" ;;
+        *artix*)                  FAMILY="artix" ;;
         *arch*)                   FAMILY="arch" ;;
         *debian*|*ubuntu*)        FAMILY="debian" ;;
         *suse*)                   FAMILY="suse" ;;

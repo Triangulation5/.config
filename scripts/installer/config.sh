@@ -27,7 +27,7 @@ RISHOT_URL="${SILHOUETTE_RISHOT_URL:-https://raw.githubusercontent.com/Gakuseei/
 # NOTE: `scripts` is not listed, yet stage_script_modes expects
 # ~/.config/scripts. If scripts/ is meant to be deployed, add it here.
 CONFIG_ENTRIES=(
-    bash btop cava fastfetch hypr kitty mpd ncmpcpp nvim nwg-look
+    bash btop cava fastfetch gtk-3.0 gtk-4.0 hypr kitty mpd ncmpcpp nvim nwg-look
     quickshell rishot sioyek tmux vim xsettingsd yazi zsh w3m mpv
     user-dirs.dirs user-dirs.locale
     install.sh installer

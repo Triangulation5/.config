@@ -7,7 +7,7 @@
 # terminal (or --yes) a question takes its default.
 
 stage_plan() {
-    local rc=0 pkgline monline rishotline shellline retroline sioyekline grubline piharnessline ollamaline cur
+    local rc=0 pkgline monline rishotline shellline retroline sioyekline grubline piharnessline ollamaline assetline cur
 
     if interactive; then
         say ""
@@ -122,6 +122,10 @@ stage_plan() {
                 WANT_OLLAMA=0
             fi
         fi
+
+        if [ "$DRY_RUN" != "1" ]; then
+            select_asset_fonts
+        fi
     fi
 
     # Defaults for anything still undecided: the conservative answer.
@@ -182,6 +186,11 @@ stage_plan() {
     fi
     if [ "$WANT_PI_HARNESS" = "1" ]; then piharnessline="yes, installs pi agent harness, extensions, and skills"; else piharnessline="no"; fi
     if [ "$WANT_OLLAMA" = "1" ]; then ollamaline="yes, runs Ollama installer and model selector"; else ollamaline="no"; fi
+    if [ "${#FONT_CHOICES[@]}" -gt 0 ]; then
+        assetline="Papirus-Dark; fonts: ${FONT_CHOICES[*]}"
+    else
+        assetline="Papirus-Dark; no extra fonts selected"
+    fi
 
     say ""
     say "${BOLD}Plan${RESET}"
@@ -196,6 +205,7 @@ stage_plan() {
     note "pi harness $piharnessline"
     note "ollama     $ollamaline"
     note "rishot     $rishotline"
+    note "assets     $assetline"
     note "safety     every path is saved to $BACKUP_DIR before it changes;"
     note "           if the deploy fails, all of it is undone"
 

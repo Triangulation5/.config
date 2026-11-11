@@ -42,7 +42,7 @@ functions and data only; nothing runs until `main` in `install.sh` does.
               Deploy configs, Rewrite home paths, Set script modes, Monitor layout
     required  Commit transaction
     optional  Install rishot, Install Flatpak apps (Sioyek, RetroArch), Install GRUB theme,
-              Check runtime tools, Check init system, Check shell
+    Check runtime tools, Check init system, Check shell, Install extra assets
 
 "Review plan" asks every question first, so the plan that is confirmed is the
 plan that runs.
@@ -112,6 +112,10 @@ Rules (in `lib/ui.sh`, `distro.sh`):
 
 - **Fedora** enables COPRs before packages: `lionheartp/Hyprland` (hyprland-git),
   `errornointernet/quickshell`, and, only with `--full`, `lihaohong/yazi`.
+- The core package set includes the XDG desktop portal, GTK chooser backend,
+  Hyprland portal backend, and Papirus icon theme. The post-install asset stage
+  offers optional user-local fonts; SF Pro is linked for manual installation
+  because it is Apple-licensed.
 - **Gentoo** enables the `hyproverlay` (hosted on Codeberg) and `guru` overlays and
   accepts their keywords; every atom is checked with `portageq` first.
 - **GRUB theme** (Evangelion) is pinned to a release tag (`EVA_REF`), runs only

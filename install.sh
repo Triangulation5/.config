@@ -181,7 +181,7 @@ for _module in \
     lib/ui lib/util lib/prompt lib/txn lib/stage \
     config cli packages distro gentoo \
     stages/preflight stages/source stages/plan stages/deps stages/deploy \
-    stages/extras stages/shell stages/report stages/rollback
+    stages/extras stages/shell stages/report stages/assets stages/rollback
 do
     if [ ! -f "$INSTALLER_DIR/$_module.sh" ]; then
         printf '%s\n' "  x installer module missing: $INSTALLER_DIR/$_module.sh" >&2
@@ -263,6 +263,7 @@ main() {
     stage optional "Check runtime tools"   stage_report_tools
     stage optional "Check init system"     stage_report_init
     stage optional "Check shell"           stage_shell
+    stage optional "Install extra assets"   stage_assets
 
     finish
 }
