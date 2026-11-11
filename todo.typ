@@ -12,32 +12,8 @@
 - Get the Papirus-Dark icon pack, GTK settings and those stuff (only what is needed not bloat).
 - xdg-desktop-portal-hyprland and other xdg-desktop-portal-*.* ones that are required by this.
 
-
-- Have two major themeing styles Vague theme (default), and Flexoki theme (just
+- Future: Have two major themeing styles Vague theme (default), and Flexoki theme (just
 - Make installer better for Alpine, and Arch/Artix linux.
   the dark theme, secondary)
-- Make it so that the shell fades the screen corners when on fullscreen
-  windows.
-- Dotfiles turning into desktop...
 
 - Save wireguard, and vpn configurations before switching over.
-
-- Prompt pi agent harness setup script, to ask what ollama models you want, and add setup/install script for ollama.
-- Models you are prompted for:
-- Smaller (testing, subagents, etc):
-  qwen3:1.7b
-  qwen3:4b (recommended, fast)
-  qwen3.5:2b
-  qwen3.5:4b
-  gemma4:e4b
-  gemma4:e2b
-  ministral-3:3b
-  nemotron-3-nano:4b
-  deepseek-r1:7b
-
-- Larger (reasonable sized agents):
-  gpt-oss:20b (recommended)
-  glm-4.7-flash
-  qwen3:30b-a3b
-  qwen3.6:27b-q4_K_M
-  qwen3.6:35b-a3b
