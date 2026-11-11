@@ -17,25 +17,25 @@ CORE_fedora=(hyprland-git quickshell kitty jq curl python3 brightnessctl ddcutil
     playerctl cliphist wl-clipboard libnotify slurp NetworkManager neovim bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_arch=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
     wireplumber xdg-utils ffmpeg imagemagick python-dbus xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_debian=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-bin slurp network-manager neovim bluez upower
     wireplumber xdg-utils ffmpeg imagemagick python3-dbus xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_suse=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-tools slurp NetworkManager neovim bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
     net-misc/curl dev-lang/python app-misc/brightnessctl app-misc/ddcutil
@@ -45,26 +45,26 @@ CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
     media-video/wireplumber x11-misc/xdg-utils media-video/ffmpeg
     media-gfx/imagemagick dev-python/dbus-python gui-libs/xdg-desktop-portal
     gui-libs/xdg-desktop-portal-gtk gui-apps/xdg-desktop-portal-hyprland
-    x11-themes/papirus-icon-theme app-misc/tmux www-client/w3m app-misc/fastfetch
-    sys-apps/flatpak media-sound/mpd media-video/mpv)
+    app-misc/tmux www-client/w3m app-misc/fastfetch sys-apps/flatpak
+    media-sound/mpd media-video/mpv)
 # shellcheck disable=SC2034
 CORE_alpine=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
     wireplumber xdg-utils ffmpeg imagemagick py3-dbus xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_void=(kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp NetworkManager neovim bluez upower
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus quickshell xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # shellcheck disable=SC2034
 CORE_artix=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
     wireplumber xdg-utils ffmpeg imagemagick python-dbus xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 # Nothing to guess from. The generic names are listed so the report is concrete
 # and the user can map them to whatever their package manager calls them.
 # shellcheck disable=SC2034
@@ -72,7 +72,7 @@ CORE_unknown=(hyprland quickshell kitty jq curl python3 brightnessctl ddcutil ca
     playerctl cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
     wireplumber xdg-utils ffmpeg imagemagick xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
-    papirus-icon-theme tmux w3m fastfetch flatpak mpd mpv)
+    tmux w3m fastfetch flatpak mpd mpv)
 
 # --full: the daily apps on top of the core (mpd is core now), plus yazi's helpers so the file
 # manager previews instead of erroring on every file type.

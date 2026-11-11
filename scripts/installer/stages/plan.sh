@@ -106,7 +106,7 @@ stage_plan() {
 
         if [ -z "$WANT_PI_HARNESS" ]; then
             note "Pi agent harness: coding agent setup with custom extensions, skills,"
-            note "and tools (uses local pi-claude-code-ui if available)."
+            note "and tools (uses Triangulation5/pi-claude-code-ui from ~/Projects)."
             if ask_yn "    Install Pi agent harness?" n; then
                 WANT_PI_HARNESS=1
             else
@@ -124,7 +124,7 @@ stage_plan() {
         fi
 
         if [ "$DRY_RUN" != "1" ]; then
-            select_asset_fonts
+            select_assets
         fi
     fi
 
@@ -186,10 +186,11 @@ stage_plan() {
     fi
     if [ "$WANT_PI_HARNESS" = "1" ]; then piharnessline="yes, installs pi agent harness, extensions, and skills"; else piharnessline="no"; fi
     if [ "$WANT_OLLAMA" = "1" ]; then ollamaline="yes, runs Ollama installer and model selector"; else ollamaline="no"; fi
+    assetline="icon $ICON_THEME; cursor $CURSOR_THEME; GTK $GTK_THEME"
     if [ "${#FONT_CHOICES[@]}" -gt 0 ]; then
-        assetline="Papirus-Dark; fonts: ${FONT_CHOICES[*]}"
+        assetline="$assetline; fonts: ${FONT_CHOICES[*]}"
     else
-        assetline="Papirus-Dark; no extra fonts selected"
+        assetline="$assetline; no extra fonts"
     fi
 
     say ""

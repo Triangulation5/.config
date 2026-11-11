@@ -14,6 +14,7 @@ set -Eeuo pipefail
 #
 # Optional:
 #   PI_CODING_AGENT_DIR=/custom/path ./install.sh
+#   PI_CLAUDE_CODE_UI_PATH=/custom/checkout ./install.sh
 
 VERSION="1.3.0"
 
@@ -31,11 +32,8 @@ BACKUP_DIR="$PI_DIR/backups/pi-agent-config/$(date +%Y%m%d-%H%M%S)"
 
 # Packages
 CUSTOM_PI_CC_UI="${PI_CLAUDE_CODE_UI_PATH:-$HOME/Projects/pi-claude-code-ui}"
-if [[ -d "$CUSTOM_PI_CC_UI" ]]; then
-    PI_CC_UI_PKG="$CUSTOM_PI_CC_UI"
-else
-    PI_CC_UI_PKG="npm:pi-claude-code-ui"
-fi
+CUSTOM_PI_CC_UI_REPO="${PI_CLAUDE_CODE_UI_REPO:-https://github.com/Triangulation5/pi-claude-code-ui.git}"
+PI_CC_UI_PKG="$CUSTOM_PI_CC_UI"
 
 packages=(
     "npm:@juicesharp/rpiv-ask-user-question"
@@ -170,24 +168,49 @@ download() {
     success "Installed: $(basename "$destination")"
 }
 
+ensure_custom_pi_cc_ui() {
+    local package_name
+
+    if [[ ! -d "$CUSTOM_PI_CC_UI" ]]; then
+        command -v git >/dev/null 2>&1 ||
+            die "git is required to clone the custom pi-claude-code-ui repository."
+        mkdir -p "$(dirname "$CUSTOM_PI_CC_UI")"
+        info "Cloning custom pi-claude-code-ui from $CUSTOM_PI_CC_UI_REPO..."
+        git clone --depth 1 -- "$CUSTOM_PI_CC_UI_REPO" "$CUSTOM_PI_CC_UI" ||
+            die "Failed to clone the custom pi-claude-code-ui repository."
+    fi
+
+    [[ -f "$CUSTOM_PI_CC_UI/package.json" ]] ||
+        die "Custom pi-claude-code-ui checkout has no package.json: $CUSTOM_PI_CC_UI"
+    package_name="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("name", ""))' \
+        "$CUSTOM_PI_CC_UI/package.json")"
+    [[ "$package_name" == "pi-claude-code-ui" ]] ||
+        die "Expected pi-claude-code-ui at $CUSTOM_PI_CC_UI, found package '$package_name'."
+
+    if [[ ! -d "$PI_CC_UI_PKG/node_modules" ]]; then
+        command -v npm >/dev/null 2>&1 ||
+            die "npm is required to install dependencies for $PI_CC_UI_PKG."
+        info "Installing dependencies for custom pi-claude-code-ui..."
+        (cd "$PI_CC_UI_PKG" && npm install)
+    fi
+
+    return 0
+}
+
+remove_npm_pi_cc_ui() {
+    if command -v pi >/dev/null 2>&1 && pi list 2>/dev/null | grep -q "npm:pi-claude-code-ui"; then
+        info "Removing the npm pi-claude-code-ui package in favor of $PI_CC_UI_PKG..."
+        pi remove npm:pi-claude-code-ui ||
+            die "Could not remove npm:pi-claude-code-ui before installing the custom version."
+    fi
+}
+
 # Package installation
 
 install_packages() {
     info "Installing Pi packages..."
-
-    # Link for custom pi-claude-code-ui extension replace the other one (https://github.com/Triangulation5/pi-claude-code-ui/)
-
-    # If using custom local pi-claude-code-ui, remove npm package if installed
-    if [[ "$PI_CC_UI_PKG" != "npm:pi-claude-code-ui" ]]; then
-        if [[ ! -d "$PI_CC_UI_PKG/node_modules" ]] && command -v npm >/dev/null 2>&1; then
-            info "Installing dependencies for custom pi-claude-code-ui..."
-            (cd "$PI_CC_UI_PKG" && npm install)
-        fi
-        if command -v pi >/dev/null 2>&1 && pi list 2>/dev/null | grep -q "npm:pi-claude-code-ui"; then
-            info "Removing npm:pi-claude-code-ui in favor of custom local version ($PI_CC_UI_PKG)..."
-            pi remove npm:pi-claude-code-ui || true
-        fi
-    fi
+    ensure_custom_pi_cc_ui
+    remove_npm_pi_cc_ui
 
     for package in "${packages[@]}"; do
         info "Installing $package"
@@ -201,7 +224,11 @@ install_packages() {
 update_packages() {
     info "Updating installed Pi packages..."
 
+    ensure_custom_pi_cc_ui
+    remove_npm_pi_cc_ui
     pi update --extensions
+    info "Reinstalling custom pi-claude-code-ui from $PI_CC_UI_PKG..."
+    pi install "$PI_CC_UI_PKG"
 
     success "Package updates complete."
 }

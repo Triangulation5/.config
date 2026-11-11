@@ -245,6 +245,7 @@ main() {
     stage optional "Enable package repos"  stage_repos
     stage optional "Install packages"      stage_packages
     stage optional "Verify hyprctl"        stage_hyprctl
+    stage optional "Install selected assets" stage_assets
 
     # The transaction. Everything between begin and commit is undone together.
     stage required "Begin transaction"     stage_txn_begin
@@ -252,6 +253,7 @@ main() {
     stage required "Rewrite home paths"    stage_home_paths
     stage required "Set script modes"      stage_script_modes
     stage required "Monitor layout"        stage_monitors
+    stage required "Apply appearance settings" stage_asset_settings
     stage required "Commit transaction"    stage_txn_commit
 
     # After the commit: a failure here cannot undo the dotfiles.
@@ -263,7 +265,6 @@ main() {
     stage optional "Check runtime tools"   stage_report_tools
     stage optional "Check init system"     stage_report_init
     stage optional "Check shell"           stage_shell
-    stage optional "Install extra assets"   stage_assets
 
     finish
 }

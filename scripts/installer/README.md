@@ -36,13 +36,15 @@ functions and data only; nothing runs until `main` in `install.sh` does.
 ## Stage order
 
     required  Preflight checks, Detect system, Fetch source, Review plan
-    optional  Bootstrap tools, Enable package repos, Install packages, Verify hyprctl
+    optional  Bootstrap tools, Enable package repos, Install packages, Verify hyprctl,
+              Install selected fonts/icons/cursors/GTK dependencies
                                                          (outside the transaction)
     required  Begin transaction
-              Deploy configs, Rewrite home paths, Set script modes, Monitor layout
+              Deploy configs, Rewrite home paths, Set script modes, Monitor layout,
+              Apply selected appearance settings
     required  Commit transaction
     optional  Install rishot, Install Flatpak apps (Sioyek, RetroArch), Install GRUB theme,
-    Check runtime tools, Check init system, Check shell, Install extra assets
+              Check runtime tools, Check init system, Check shell
 
 "Review plan" asks every question first, so the plan that is confirmed is the
 plan that runs.
@@ -81,8 +83,9 @@ Replay is in reverse. Directories are restored by merging the backup back, so
 files you added since are kept. No `COMMIT` and no `ROLLED_BACK` means the run
 died; the next run warns, and `install.sh --rollback` can still undo it.
 
-Not covered: packages and rishot (a package manager cannot be rolled back from
-here). They run outside the transaction and never trigger a rollback.
+Not covered: packages, selected fonts/icons/cursors/themes, and rishot (a package
+manager or an external installer cannot be rolled back from here). They run
+outside the transaction and never trigger a rollback.
 
 ## Exit status
 
@@ -113,9 +116,11 @@ Rules (in `lib/ui.sh`, `distro.sh`):
 - **Fedora** enables COPRs before packages: `lionheartp/Hyprland` (hyprland-git),
   `errornointernet/quickshell`, and, only with `--full`, `lihaohong/yazi`.
 - The core package set includes the XDG desktop portal, GTK chooser backend,
-  Hyprland portal backend, and Papirus icon theme. The post-install asset stage
-  offers optional user-local fonts; SF Pro is linked for manual installation
-  because it is Apple-licensed.
+  and Hyprland portal backend. The pre-transaction asset stage offers selected
+  user-local fonts, icons, cursors, and GTK themes; Vague GTK is copied from
+  `vague-theme/vague-gtk` without running its scripts, and SF Pro is manual
+  because it is Apple-licensed. Appearance settings are applied inside the
+  config transaction.
 - **Gentoo** enables the `hyproverlay` (hosted on Codeberg) and `guru` overlays and
   accepts their keywords; every atom is checked with `portageq` first.
 - **GRUB theme** (Evangelion) is pinned to a release tag (`EVA_REF`), runs only
