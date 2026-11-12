@@ -175,23 +175,23 @@ find_model() { # name -> prints index, returns 1 if absent
 # Pure bash byte formatting (avoids slow subshell & awk forks during interactive rendering)
 # fmt_bytes BYTES [OUT_VAR]
 fmt_bytes() {
-  local b="${1:-0}" out=""
-  if ! is_num "$b" || [ "$b" -le 0 ]; then
-    out="0 B"
-  elif [ "$b" -ge 1000000000 ]; then
-    local dec=$(( (b + 50000000) / 100000000 ))
-    printf -v out '%d.%d GB' $(( dec / 10 )) $(( dec % 10 ))
-  elif [ "$b" -ge 1000000 ]; then
-    printf -v out '%d MB' $(( (b + 500000) / 1000000 ))
-  elif [ "$b" -ge 1000 ]; then
-    printf -v out '%d KB' $(( (b + 500) / 1000 ))
+  local _b="${1:-0}" _out=""
+  if ! is_num "$_b" || [ "$_b" -le 0 ]; then
+    _out="0 B"
+  elif [ "$_b" -ge 1000000000 ]; then
+    local _dec=$(( (_b + 50000000) / 100000000 ))
+    printf -v _out '%d.%d GB' $(( _dec / 10 )) $(( _dec % 10 ))
+  elif [ "$_b" -ge 1000000 ]; then
+    printf -v _out '%d MB' $(( (_b + 500000) / 1000000 ))
+  elif [ "$_b" -ge 1000 ]; then
+    printf -v _out '%d KB' $(( (_b + 500) / 1000 ))
   else
-    printf -v out '%d B' "$b"
+    printf -v _out '%d B' "$_b"
   fi
   if [ -n "${2:-}" ]; then
-    printf -v "$2" '%s' "$out"
+    printf -v "$2" '%s' "$_out"
   else
-    printf '%s' "$out"
+    printf '%s' "$_out"
   fi
 }
 
@@ -346,39 +346,39 @@ free_bytes() { # path (walks up to an existing parent)
 #   cpu:     No GPU present; fits in system RAM (pure CPU inference)
 #   exceed:  Exceeds total available memory (likely to OOM, crash, or freeze)
 model_fit() {
-  local s="$1" fit="unknown"
-  if is_num "$s" && [ "$s" -gt 0 ]; then
+  local _s="$1" _fit="unknown"
+  if is_num "$_s" && [ "$_s" -gt 0 ]; then
     if [ "$IS_UNIFIED_MEM" -eq 1 ]; then
-      if [ "$VRAM_BYTES" -gt 0 ] && [ "$s" -le "$VRAM_BYTES" ]; then
-        fit="unified"
-      elif [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 9 )) ]; then
-        fit="partial"
+      if [ "$VRAM_BYTES" -gt 0 ] && [ "$_s" -le "$VRAM_BYTES" ]; then
+        _fit="unified"
+      elif [ "$RAM_BYTES" -gt 0 ] && [ $(( _s * 10 )) -le $(( RAM_BYTES * 9 )) ]; then
+        _fit="partial"
       else
-        fit="exceed"
+        _fit="exceed"
       fi
     elif [ "$VRAM_BYTES" -gt 0 ]; then
       # Full VRAM fit threshold: 90% of VRAM (reserves buffer for KV cache and OS display)
-      if [ $(( s * 10 )) -le $(( VRAM_BYTES * 9 )) ]; then
-        fit="vram"
+      if [ $(( _s * 10 )) -le $(( VRAM_BYTES * 9 )) ]; then
+        _fit="vram"
       # Partial GPU offload: fits VRAM + 70% of system RAM
-      elif [ "$RAM_BYTES" -gt 0 ] && [ "$s" -le $(( VRAM_BYTES + RAM_BYTES * 7 / 10 )) ]; then
-        fit="partial"
+      elif [ "$RAM_BYTES" -gt 0 ] && [ "$_s" -le $(( VRAM_BYTES + RAM_BYTES * 7 / 10 )) ]; then
+        _fit="partial"
       else
-        fit="exceed"
+        _fit="exceed"
       fi
     else
       # CPU only
-      if [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 7 )) ]; then
-        fit="cpu"
+      if [ "$RAM_BYTES" -gt 0 ] && [ $(( _s * 10 )) -le $(( RAM_BYTES * 7 )) ]; then
+        _fit="cpu"
       else
-        fit="exceed"
+        _fit="exceed"
       fi
     fi
   fi
   if [ -n "${2:-}" ]; then
-    printf -v "$2" '%s' "$fit"
+    printf -v "$2" '%s' "$_fit"
   else
-    printf '%s' "$fit"
+    printf '%s' "$_fit"
   fi
 }
 
@@ -694,12 +694,12 @@ format_item() { # idx is_cursor out_var
     esac
   fi
 
-  local line
-  printf -v line '    %s %s %-22s %9s  %b' "$mark" "$box" "${M_NAME[$i]}" "$size" "$tag"
+  local _fmt_line
+  printf -v _fmt_line '    %s %s %-22s %9s  %b' "$mark" "$box" "${M_NAME[$i]}" "$size" "$tag"
   if [ "$cur" = "1" ]; then
-    printf -v "$3" '%s%s%s' "$BOLD" "$line" "$RESET"
+    printf -v "$3" '%s%s%s' "$BOLD" "$_fmt_line" "$RESET"
   else
-    printf -v "$3" '%s' "$line"
+    printf -v "$3" '%s' "$_fmt_line"
   fi
 }
 
@@ -739,10 +739,10 @@ render() {
     if [ "${ROW_T[$r]}" = "H" ]; then
       BUF+=$'\r\033[2K'"    ${BOLD}-- ${TIER_NAMES[$i]}${RESET}${DIM} — ${TIER_DESC[$i]}${RESET}"$'\n'
     else
-      local line=""
-      is_cur=0; [ "$r" -eq "$CUR" ] && is_cur=1
-      format_item "$i" "$is_cur" line
-      BUF+=$'\r\033[2K'"$line"$'\n'
+    local row_line=""
+    is_cur=0; [ "$r" -eq "$CUR" ] && is_cur=1
+    format_item "$i" "$is_cur" row_line
+    BUF+=$'\r\033[2K'"$row_line"$'\n'
     fi
   done
 
