@@ -7,13 +7,14 @@
 # terminal (or --yes) a question takes its default.
 
 stage_plan() {
-    local rc=0 pkgline monline rishotline shellline retroline sioyekline grubline piharnessline ollamaline assetline cur
+    local rc=0 termline pkgline monline rishotline shellline retroline sioyekline grubline piharnessline ollamaline assetline cur
 
     if interactive; then
         say ""
         note "A few questions first. Enter takes the answer in brackets."
 
         if [ "$NO_DEPS" != "1" ] && [ -z "$FULL" ]; then
+            section "Apps"
             if ask_yn "    Install the daily apps too (file manager, browser, yazi's preview helpers)?" n; then
                 FULL=1
             else
@@ -22,6 +23,7 @@ stage_plan() {
         fi
 
         if [ -z "$KEEP_MONITORS" ] && [ -f "$SRC_DIR/hypr/modules/monitors.lua" ]; then
+            section "Monitors"
             note "The repo ships the author's monitor layout. A portable default uses each"
             note "screen's preferred mode; the original is kept as monitors.lua.example."
             if ask_yn "    Use the portable monitor layout?" y; then
@@ -32,6 +34,7 @@ stage_plan() {
         fi
 
         if [ -z "$SHELL_CHOICE" ]; then
+            section "Shell"
             cur="$(current_shell)"
             note "Shell: you are using $cur. The configs for bash and zsh are both deployed."
             note "Switching your login shell is never done for you; the steps are printed at the end."
@@ -43,7 +46,24 @@ stage_plan() {
             esac
         fi
 
+        if [ -z "$TERMINAL_CHOICE" ]; then
+            section "Terminal"
+            note "kitty is the default terminal and is always installed (the configs use it)."
+            note "st is the author's custom Simple Terminal (${ST_REPO_URL%.git}),"
+            note "built from source into /usr/local; choosing it installs it alongside kitty."
+            say ""
+            say "      1) kitty  (default)"
+            say "      2) st     custom Simple Terminal, built from source"
+            say ""
+            ask_choice "    Select terminal [1-2]? [1]" 1 1 2
+            case "$CHOICE" in
+                2) TERMINAL_CHOICE=st ;;
+                *) TERMINAL_CHOICE=kitty ;;
+            esac
+        fi
+
         if [ -z "$WANT_SIOYEK" ]; then
+            section "Sioyek"
             note "Sioyek is a PDF reader focused on research papers, books, and"
             note "technical documents. Installs as a user Flatpak"
             note "($SIOYEK_ID from Flathub); no root needed, and flatpak itself is core."
@@ -55,6 +75,7 @@ stage_plan() {
         fi
 
         if [ -z "$WANT_RETROARCH" ]; then
+            section "RetroArch"
             note "RetroArch is a game emulator front end. Installs as a user Flatpak"
             note "($RETROARCH_ID from Flathub); no root needed, and flatpak itself is core."
             if ask_yn "    Install RetroArch?" n; then
@@ -65,6 +86,7 @@ stage_plan() {
         fi
 
         if [ -z "$WANT_GRUB_THEME" ]; then
+            section "GRUB theme"
             if grub_present; then
                 note "Evangelion GRUB theme ($EVA_REPO_URL, release $EVA_REF)."
                 note "This edits your bootloader configuration (/etc/default/grub and /boot). A copy of"
@@ -82,10 +104,12 @@ stage_plan() {
 
         if [ "$WANT_GRUB_THEME" = "1" ] && [ -z "$GRUB_PROFILE" ]; then
             say ""
-            say "    Choose a display profile:"
-            say "      1) 720p  1280x720"
+            note "Choose a display profile:"
+            say ""
+            say "      1) 720p   1280x720"
             say "      2) 1080p  1920x1080"
             say "      3) 1440p  2560x1440 and larger"
+            say ""
             ask_choice "    Select profile [1-3]? [2]" 2 1 2 3
             case "$CHOICE" in
                 1) GRUB_PROFILE="720p" ;;
@@ -95,6 +119,7 @@ stage_plan() {
         fi
 
         if [ -z "$WANT_RISHOT" ]; then
+            section "rishot"
             note "rishot is a screenshot tool with its own installer. It is a separate"
             note "project: this would download and run $RISHOT_URL"
             if ask_yn "    Install rishot?" n; then
@@ -105,6 +130,7 @@ stage_plan() {
         fi
 
         if [ -z "$WANT_PI_HARNESS" ]; then
+            section "Pi agent harness"
             note "Pi agent harness: coding agent setup with custom extensions, skills,"
             note "and tools (uses Triangulation5/pi-claude-code-ui from ~/Projects)."
             if ask_yn "    Install Pi agent harness?" n; then
@@ -115,6 +141,7 @@ stage_plan() {
         fi
 
         if [ -z "$WANT_OLLAMA" ]; then
+            section "Ollama"
             note "Ollama: local LLM runner and model setup (interactive model selector)."
             if ask_yn "    Install Ollama and select local models?" n; then
                 WANT_OLLAMA=1
@@ -138,6 +165,7 @@ stage_plan() {
     : "${GRUB_PROFILE:=1080p}"
     : "${WANT_PI_HARNESS:=0}"
     : "${WANT_OLLAMA:=0}"
+    : "${TERMINAL_CHOICE:=kitty}"
     : "${SHELL_CHOICE:=keep}"
 
     if [ "$NO_DEPS" = "1" ]; then
@@ -186,6 +214,11 @@ stage_plan() {
     fi
     if [ "$WANT_PI_HARNESS" = "1" ]; then piharnessline="yes, installs pi agent harness, extensions, and skills"; else piharnessline="no"; fi
     if [ "$WANT_OLLAMA" = "1" ]; then ollamaline="yes, runs Ollama installer and model selector"; else ollamaline="no"; fi
+    if [ "$TERMINAL_CHOICE" = "st" ]; then
+        termline="kitty (core) plus custom st from $ST_REPO_URL, built into ~/Projects/st and installed with make (not part of the rollback)"
+    else
+        termline="kitty"
+    fi
     assetline="icon $ICON_THEME; cursor $CURSOR_THEME; GTK $GTK_THEME"
     if [ "${#FONT_CHOICES[@]}" -gt 0 ]; then
         assetline="$assetline; fonts: ${FONT_CHOICES[*]}"
@@ -193,13 +226,13 @@ stage_plan() {
         assetline="$assetline; no extra fonts"
     fi
 
-    say ""
-    say "${BOLD}Plan${RESET}"
+    section "Plan"
     note "source     $SRC_DIR"
     note "configs    ${#CONFIG_ENTRIES[@]} entries into $CONFIG_DIR, merged in: nothing is deleted"
     note "packages   $pkgline"
     note "monitors   $monline"
     note "shell      $shellline"
+    note "terminal   $termline"
     note "sioyek     $sioyekline"
     note "retroarch  $retroline"
     note "grub theme $grubline"
@@ -220,7 +253,7 @@ stage_plan() {
     fi
 
     say ""
-    confirm "Continue?" || rc=$?
+    confirm "    Continue?" || rc=$?
     case "$rc" in
         0) STAGE_DETAIL="confirmed"; return "$ST_OK" ;;
         1) return "$ST_ABORT" ;;

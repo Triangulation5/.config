@@ -48,20 +48,52 @@ extensions=(
 
 # Output
 
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    BOLD=$'\033[1m'; DIM=$'\033[2m'; GREEN=$'\033[32m'
+    YELLOW=$'\033[33m'; RED=$'\033[31m'; RESET=$'\033[0m'
+else
+    BOLD=""; DIM=""; GREEN=""; YELLOW=""; RED=""; RESET=""
+fi
+if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
+    E_RED=$'\033[31m'; E_YELLOW=$'\033[33m'; E_RESET=$'\033[0m'
+else
+    E_RED=""; E_YELLOW=""; E_RESET=""
+fi
+
+section() {
+    printf '\n  %s%s%s\n' "$BOLD" "$*" "$RESET"
+}
+
 info() {
-    printf '\033[1;34m[pi-config]\033[0m %s\n' "$1"
+    printf '    %s\n' "$*"
 }
 
 success() {
-    printf '\033[1;32m[  OK  ]\033[0m %s\n' "$1"
+    printf '    %s%s%s\n' "$DIM" "$*" "$RESET"
+}
+
+ui_status() {
+    local kind="$1" title="$2" detail="${3:-}" tag color=""
+    case "$kind" in
+        ok)   tag="   Ok   "; color="$GREEN" ;;
+        fail) tag=" Failed "; color="$RED" ;;
+        warn) tag="  Warn  "; color="$YELLOW" ;;
+        skip) tag="  Skip  "; color="$DIM" ;;
+        *)    tag="   ??   " ;;
+    esac
+    printf '[%s%s%s] %s' "$color" "$tag" "$RESET" "$title"
+    if [ -n "$detail" ]; then
+        printf ' %s(%s)%s' "$DIM" "$detail" "$RESET"
+    fi
+    printf '\n'
 }
 
 warn() {
-    printf '\033[1;33m[ WARN ]\033[0m %s\n' "$1"
+    printf '%s  ! %s%s\n' "$E_YELLOW" "$*" "$E_RESET" >&2
 }
 
 error() {
-    printf '\033[1;31m[ERROR ]\033[0m %s\n' "$1" >&2
+    printf '%s  x %s%s\n' "$E_RED" "$*" "$E_RESET" >&2
 }
 
 die() {
@@ -361,69 +393,63 @@ install_pdf_reader() {
 check_installation() {
     local failed=0
 
-    info "Checking Pi installation..."
+    section "Checking Pi installation"
 
     if command -v pi >/dev/null 2>&1; then
-        success "Pi executable found."
+        ui_status ok "Pi executable" "$(command -v pi)"
     else
-        error "Pi executable not found."
+        ui_status fail "Pi executable" "not found"
         failed=1
     fi
 
-    info "Checking extensions..."
-
     for extension in "${extensions[@]}"; do
         if [[ -f "$EXT_DIR/$extension.ts" ]]; then
-            success "$extension.ts"
+            ui_status ok "Extension $extension.ts"
         else
-            error "Missing $extension.ts"
+            ui_status fail "Extension $extension.ts" "missing"
             failed=1
         fi
     done
 
-    info "Checking commit skill..."
-
     if [[ -f "$SKILL_DIR/SKILL.md" ]]; then
-        success "Commit skill found."
+        ui_status ok "Commit skill"
     else
-        error "Commit skill missing."
+        ui_status fail "Commit skill" "missing"
         failed=1
     fi
 
-    info "Checking PDF Reader skill..."
-
     if [[ -f "$PDF_SKILL_DIR/SKILL.md" ]]; then
-        success "PDF Reader SKILL.md found."
+        ui_status ok "PDF Reader SKILL.md"
     else
-        error "PDF Reader SKILL.md missing."
+        ui_status fail "PDF Reader SKILL.md" "missing"
         failed=1
     fi
 
     if [[ -f "$PDF_SKILL_DIR/requirements.txt" ]]; then
-        success "PDF Reader requirements found."
+        ui_status ok "PDF Reader requirements"
     else
-        error "PDF Reader requirements missing."
+        ui_status fail "PDF Reader requirements" "missing"
         failed=1
     fi
 
     for script in pdf_info.py pdf_extract.py pdf_render.py pdf_search.py; do
         if [[ -f "$PDF_SKILL_DIR/scripts/$script" ]]; then
-            success "PDF Reader: $script"
+            ui_status ok "PDF Reader: $script"
         else
-            error "PDF Reader script missing: $script"
+            ui_status fail "PDF Reader: $script" "missing"
             failed=1
         fi
     done
 
     if [[ -x "$PDF_SKILL_DIR/.venv/bin/python" ]]; then
-        success "PDF Reader virtual environment found."
+        ui_status ok "PDF Reader virtual environment"
     else
-        error "PDF Reader virtual environment missing."
+        ui_status fail "PDF Reader virtual environment" "missing"
         failed=1
     fi
 
     if command -v pi >/dev/null 2>&1; then
-        info "Installed Pi packages:"
+        section "Installed Pi packages"
         pi list
     fi
 
@@ -433,32 +459,12 @@ check_installation() {
 # Summary
 
 print_summary() {
-    echo
-    success "Pi configuration $VERSION completed."
-
-    echo
-    echo "Installed packages:"
-
-    for package in "${packages[@]}"; do
-        echo "  - $package"
-    done
-
-    echo
-    echo "Installed extensions:"
-
-    for extension in "${extensions[@]}"; do
-        echo "  - $extension.ts"
-    done
-
-    echo
-    echo "Installed skills:"
-    echo "  - commit"
-    echo "  - pdf-reader"
-
-    echo
-    echo "Pi directory: $PI_DIR"
-    echo "Restart Pi or run /reload to load the skills and extensions."
-    echo
+    section "Pi configuration $VERSION completed"
+    info "packages     ${packages[*]}"
+    info "extensions   ${extensions[*]}"
+    info "skills       commit, pdf-reader"
+    info "directory    $PI_DIR"
+    success "Restart Pi or run /reload to load the skills and extensions."
 }
 
 # Main

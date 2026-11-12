@@ -23,6 +23,9 @@ Questions (asked on a terminal; a flag answers the question in advance):
       --with-retroarch / --no-retroarch
                                  install RetroArch as a user Flatpak
                                  ($RETROARCH_ID from Flathub)
+      --terminal kitty|st
+                      kitty is the default; st also builds the custom Simple
+                      Terminal from github.com/triangulation5/st
       --with-sioyek / --no-sioyek
                                  install Sioyek as a user Flatpak (installed by default)
                                  ($SIOYEK_ID from Flathub)
@@ -102,6 +105,8 @@ parse_args() {
             --no-grub-theme|--no-eva)      WANT_GRUB_THEME=0 ;;
             --with-pi-harness)             WANT_PI_HARNESS=1 ;;
             --no-pi-harness)               WANT_PI_HARNESS=0 ;;
+            --terminal)                    TERMINAL_CHOICE="${2:?--terminal needs kitty or st}"; shift
+                case "$TERMINAL_CHOICE" in kitty|st) ;; *) die "--terminal: $TERMINAL_CHOICE is not kitty or st" ;; esac ;;
             --with-ollama)                 WANT_OLLAMA=1 ;;
             --no-ollama)                   WANT_OLLAMA=0 ;;
             --grub-profile|--eva-profile)

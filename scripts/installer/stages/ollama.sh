@@ -38,19 +38,46 @@ BIG_DOWNLOAD_BYTES=40000000000   # above this, you must type "yes" to continue
 MAX_PULL_ATTEMPTS=3
 
 # Output
-if [ -t 2 ]; then
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BOLD=$'\033[1m'; DIM=$'\033[2m'; GREEN=$'\033[32m'
-  YELLOW=$'\033[33m'; RED=$'\033[31m'; RESET=$'\033[0m'
+  YELLOW=$'\033[33m'; RED=$'\033[31m'; CYAN=$'\033[36m'; RESET=$'\033[0m'
 else
-  BOLD=""; DIM=""; GREEN=""; YELLOW=""; RED=""; RESET=""
+  BOLD=""; DIM=""; GREEN=""; YELLOW=""; RED=""; CYAN=""; RESET=""
+fi
+if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
+  E_RED=$'\033[31m'; E_YELLOW=$'\033[33m'; E_RESET=$'\033[0m'
+else
+  E_RED=""; E_YELLOW=""; E_RESET=""
 fi
 
-info() { printf '%s==>%s %s\n' "$GREEN" "$RESET" "$*" >&2; }
-warn() { printf '%s!! %s%s\n' "$YELLOW" "$*" "$RESET" >&2; }
-err()  { printf '%sxx %s%s\n' "$RED" "$*" "$RESET" >&2; }
-die()  { err "$*"; exit 1; }
-have() { command -v "$1" >/dev/null 2>&1; }
-is_num() { [[ "${1:-}" =~ ^[0-9]+$ ]]; }
+say()     { printf '%s\n' "$*"; }
+section() { printf '\n  %s%s%s\n' "$BOLD" "$*" "$RESET"; }
+note()    { printf '    %s\n' "$*"; }
+dim()     { printf '    %s%s%s\n' "$DIM" "$*" "$RESET"; }
+info()    { note "$*"; }
+warn()    { printf '%s  ! %s%s\n' "$E_YELLOW" "$*" "$E_RESET" >&2; }
+err()     { printf '%s  x %s%s\n' "$E_RED" "$*" "$E_RESET" >&2; }
+die()     { err "$*"; exit 1; }
+have()    { command -v "$1" >/dev/null 2>&1; }
+is_num()  { [[ "${1:-}" =~ ^[0-9]+$ ]]; }
+
+ui_status() {
+  local kind="$1" title="$2" detail="${3:-}" tag color=""
+  case "$kind" in
+    ok)    tag="   Ok   "; color="$GREEN" ;;
+    fail)  tag=" Failed "; color="$RED" ;;
+    warn)  tag="  Warn  "; color="$YELLOW" ;;
+    skip)  tag="  Skip  "; color="$DIM" ;;
+    dry)   tag="  Dry   "; color="$CYAN" ;;
+    abort) tag=" Abort  "; color="$YELLOW" ;;
+    *)     tag="   ??   " ;;
+  esac
+  printf '[%s%s%s] %s' "$color" "$tag" "$RESET" "$title"
+  if [ -n "$detail" ]; then
+    printf ' %s(%s)%s' "$DIM" "$detail" "$RESET"
+  fi
+  printf '\n'
+}
 
 usage() { sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 
@@ -60,14 +87,15 @@ EXPLICIT_MODELS=""
 WORKDIR=""; SERVER_PID=""; CURSOR_HIDDEN=0; HAVE_TTY=0
 OS=""; RAM_BYTES=0; RAM_AVAIL_BYTES=0; INSTALLED_LIST=""
 VRAM_BYTES=0; GPU_NAME=""; IS_UNIFIED_MEM=0
+RAM_FMT="0 B"; FREE_FMT="0 B"
 RENDERED=0
 
 cleanup() {
   local rc=$?
-  if [ "$CURSOR_HIDDEN" -eq 1 ]; then printf '\033[?25h' >&2; fi
+  if [ "$CURSOR_HIDDEN" -eq 1 ]; then printf '\033[?25h' > /dev/tty 2>/dev/null || printf '\033[?25h' >&2; fi
   if [ -n "$SERVER_PID" ] && [ "$KEEP_SERVER" -eq 0 ]; then
     if kill "$SERVER_PID" 2>/dev/null; then
-      info "Stopped the Ollama server this script started (use --keep-server to leave it running)."
+      dim "Stopped the Ollama server this script started (use --keep-server to leave it running)."
     fi
   fi
   if [ -n "$WORKDIR" ]; then rm -rf "$WORKDIR"; fi
@@ -145,21 +173,25 @@ find_model() { # name -> prints index, returns 1 if absent
 }
 
 # Pure bash byte formatting (avoids slow subshell & awk forks during interactive rendering)
+# fmt_bytes BYTES [OUT_VAR]
 fmt_bytes() {
-  local b="${1:-0}"
+  local b="${1:-0}" out=""
   if ! is_num "$b" || [ "$b" -le 0 ]; then
-    printf '0 B'
-    return 0
-  fi
-  if [ "$b" -ge 1000000000 ]; then
+    out="0 B"
+  elif [ "$b" -ge 1000000000 ]; then
     local dec=$(( (b + 50000000) / 100000000 ))
-    printf '%d.%d GB' $(( dec / 10 )) $(( dec % 10 ))
+    printf -v out '%d.%d GB' $(( dec / 10 )) $(( dec % 10 ))
   elif [ "$b" -ge 1000000 ]; then
-    printf '%d MB' $(( (b + 500000) / 1000000 ))
+    printf -v out '%d MB' $(( (b + 500000) / 1000000 ))
   elif [ "$b" -ge 1000 ]; then
-    printf '%d KB' $(( (b + 500) / 1000 ))
+    printf -v out '%d KB' $(( (b + 500) / 1000 ))
   else
-    printf '%d B' "$b"
+    printf -v out '%d B' "$b"
+  fi
+  if [ -n "${2:-}" ]; then
+    printf -v "$2" '%s' "$out"
+  else
+    printf '%s' "$out"
   fi
 }
 
@@ -172,14 +204,15 @@ detect_vram() {
   case "$OS" in
     Linux)
       # 1. NVIDIA
-      if have nvidia-smi; then
+      if [ -e /dev/nvidiactl ] && have nvidia-smi; then
         local out
         out="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits 2>/dev/null || true)"
         if [ -n "$out" ]; then
           local total_mib=0 g_names=()
           while IFS=',' read -r g_name g_mib; do
-            g_name="$(printf '%s' "$g_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-            g_mib="$(printf '%s' "$g_mib" | tr -d '[:space:]')"
+            g_name="${g_name#"${g_name%%[![:space:]]*}"}"
+            g_name="${g_name%"${g_name##*[![:space:]]}"}"
+            g_mib="${g_mib//[[:space:]]/}"
             if is_num "$g_mib" && [ "$g_mib" -gt 0 ]; then
               total_mib=$(( total_mib + g_mib ))
               g_names+=("$g_name")
@@ -202,14 +235,13 @@ detect_vram() {
       local amd_vram=0 amd_name=""
       for f in /sys/class/drm/card*/device/mem_info_vram_total; do
         if [ -r "$f" ]; then
-          local bytes
-          bytes="$(cat "$f" 2>/dev/null || true)"
+          local bytes=""
+          read -r bytes < "$f" 2>/dev/null || true
           if is_num "$bytes" && [ "$bytes" -gt 1073741824 ]; then
             amd_vram=$(( amd_vram + bytes ))
-            local dev_dir
-            dev_dir="$(dirname "$f")"
+            local dev_dir="${f%/mem_info_vram_total}"
             if [ -r "$dev_dir/product_name" ] && [ -z "$amd_name" ]; then
-              amd_name="$(cat "$dev_dir/product_name" 2>/dev/null || true)"
+              read -r amd_name < "$dev_dir/product_name" 2>/dev/null || true
             fi
           fi
         fi
@@ -227,7 +259,8 @@ detect_vram() {
         local gpu_line
         gpu_line="$(lspci 2>/dev/null | grep -i -E "vga|3d|display" | head -n1 || true)"
         if [ -n "$gpu_line" ]; then
-          gpu_line="$(printf '%s' "$gpu_line" | sed -E 's/^[0-9a-fA-F:.]+ [^:]+: //; s/ \(rev [0-9a-fA-F]+\)//')"
+          gpu_line="${gpu_line#*: }"
+          gpu_line="${gpu_line% (rev *)}"
           GPU_NAME="$gpu_line (CPU inference)"
         fi
       fi
@@ -306,43 +339,46 @@ free_bytes() { # path (walks up to an existing parent)
 }
 
 # Model memory fit evaluator
-# Returns:
+# Returns (or stores into $2):
 #   vram:    Fits completely in dedicated VRAM (full GPU acceleration)
 #   unified: Fits in Apple Silicon unified memory (Metal GPU acceleration)
 #   partial: Exceeds VRAM but fits combined VRAM + RAM (partial offload, moderate speed)
 #   cpu:     No GPU present; fits in system RAM (pure CPU inference)
 #   exceed:  Exceeds total available memory (likely to OOM, crash, or freeze)
 model_fit() {
-  local s="$1"
-  if ! is_num "$s" || [ "$s" -le 0 ]; then
-    printf 'unknown'; return 0
+  local s="$1" fit="unknown"
+  if is_num "$s" && [ "$s" -gt 0 ]; then
+    if [ "$IS_UNIFIED_MEM" -eq 1 ]; then
+      if [ "$VRAM_BYTES" -gt 0 ] && [ "$s" -le "$VRAM_BYTES" ]; then
+        fit="unified"
+      elif [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 9 )) ]; then
+        fit="partial"
+      else
+        fit="exceed"
+      fi
+    elif [ "$VRAM_BYTES" -gt 0 ]; then
+      # Full VRAM fit threshold: 90% of VRAM (reserves buffer for KV cache and OS display)
+      if [ $(( s * 10 )) -le $(( VRAM_BYTES * 9 )) ]; then
+        fit="vram"
+      # Partial GPU offload: fits VRAM + 70% of system RAM
+      elif [ "$RAM_BYTES" -gt 0 ] && [ "$s" -le $(( VRAM_BYTES + RAM_BYTES * 7 / 10 )) ]; then
+        fit="partial"
+      else
+        fit="exceed"
+      fi
+    else
+      # CPU only
+      if [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 7 )) ]; then
+        fit="cpu"
+      else
+        fit="exceed"
+      fi
+    fi
   fi
-
-  if [ "$IS_UNIFIED_MEM" -eq 1 ]; then
-    if [ "$VRAM_BYTES" -gt 0 ] && [ "$s" -le "$VRAM_BYTES" ]; then
-      printf 'unified'
-    elif [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 9 )) ]; then
-      printf 'partial'
-    else
-      printf 'exceed'
-    fi
-  elif [ "$VRAM_BYTES" -gt 0 ]; then
-    # Full VRAM fit threshold: 90% of VRAM (reserves buffer for KV cache and OS display)
-    if [ $(( s * 10 )) -le $(( VRAM_BYTES * 9 )) ]; then
-      printf 'vram'
-    # Partial GPU offload: fits VRAM + 70% of system RAM
-    elif [ "$RAM_BYTES" -gt 0 ] && [ "$s" -le $(( VRAM_BYTES + RAM_BYTES * 7 / 10 )) ]; then
-      printf 'partial'
-    else
-      printf 'exceed'
-    fi
+  if [ -n "${2:-}" ]; then
+    printf -v "$2" '%s' "$fit"
   else
-    # CPU only
-    if [ "$RAM_BYTES" -gt 0 ] && [ $(( s * 10 )) -le $(( RAM_BYTES * 7 )) ]; then
-      printf 'cpu'
-    else
-      printf 'exceed'
-    fi
+    printf '%s' "$fit"
   fi
 }
 
@@ -362,37 +398,40 @@ open_tty() {
 ask() { # prompt -> REPLY
   REPLY=""
   if [ "$HAVE_TTY" -ne 1 ]; then return 1; fi
-  printf '%s' "$1" >&2
+  printf '%s' "$1" > /dev/tty
   IFS= read -r -u 3 REPLY || REPLY=""
 }
 
-lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+lower() { printf '%s' "${1,,}"; }
 
 # Install step
 install_ollama() {
   if have ollama; then
-    info "Ollama already installed: $(ollama --version 2>&1 | head -n1)"
+    local ver
+    ver="$(ollama --version 2>&1 | tail -n1)"
+    ver="${ver##*version is }"
+    dim "Ollama already installed ($ver)"
     return 0
   fi
   if [ "$SKIP_INSTALL" -eq 1 ]; then die "Ollama not found and --skip-install was given."; fi
-  if [ "$DRY_RUN" -eq 1 ]; then info "[dry-run] Ollama not found; would install it."; return 0; fi
+  if [ "$DRY_RUN" -eq 1 ]; then dim "would install Ollama"; return 0; fi
 
   warn "Ollama is not installed."
   case "$OS" in
     Linux)
       have curl || die "curl is required to download the Ollama installer."
       local script="$WORKDIR/ollama-install.sh" sum="" ans
-      info "Downloading the official installer (https://ollama.com/install.sh) ..."
+      note "downloading the official installer (https://ollama.com/install.sh)"
       curl -fsSL --proto '=https' --tlsv1.2 -o "$script" https://ollama.com/install.sh \
         || die "Could not download the installer."
       [ -s "$script" ] || die "Installer download is empty."
       head -n1 "$script" | grep -q '^#!' || die "Downloaded installer doesn't look like a script; aborting."
-      if have sha256sum; then sum="$(sha256sum "$script" | cut -d' ' -f1)"
-      elif have shasum;  then sum="$(shasum -a 256 "$script" | cut -d' ' -f1)"; fi
-      [ -n "$sum" ] && info "Installer sha256: $sum"
+      if have sha256sum; then sum="$(sha256sum "$script" | cut -c1-16)"
+      elif have shasum;  then sum="$(shasum -a 256 "$script" | cut -c1-16)"; fi
+      [ -n "$sum" ] && dim "installer sha256: $sum..."
       while :; do
         if [ "$ASSUME_YES" -eq 1 ]; then break; fi
-        ask "Run the installer now? It will use sudo. [y/N/v=view first] " \
+        ask "    Run the installer now? It will use sudo. [y/N/v=view first] " \
           || die "No terminal to confirm with. Re-run with --yes to allow the install."
         ans="$(lower "$REPLY")"
         case "$ans" in
@@ -406,7 +445,7 @@ install_ollama() {
     Darwin)
       if have brew; then
         if [ "$ASSUME_YES" -ne 1 ]; then
-          ask "Install Ollama with Homebrew (brew install ollama)? [y/N] " \
+          ask "    Install Ollama with Homebrew (brew install ollama)? [y/N] " \
             || die "No terminal to confirm with. Re-run with --yes."
           case "$(lower "$REPLY")" in y|yes) ;; *) die "Aborted: Ollama is required." ;; esac
         fi
@@ -421,24 +460,27 @@ install_ollama() {
   esac
 
   have ollama || die "Install finished but 'ollama' is not on PATH. Open a new shell and re-run."
-  info "Installed: $(ollama --version 2>&1 | head -n1)"
+  local ver
+  ver="$(ollama --version 2>&1 | tail -n1)"
+  ver="${ver##*version is }"
+  note "installed Ollama ($ver)"
 }
 
-server_up() { curl -fs --max-time 2 "$OLLAMA_URL/api/version" >/dev/null 2>&1; }
+server_up() { curl -fs --max-time 0.3 "$OLLAMA_URL/api/version" >/dev/null 2>&1; }
 
 ensure_server() {
   if [ "$DRY_RUN" -eq 1 ]; then return 0; fi
-  if server_up; then info "Ollama server is running."; return 0; fi
+  if server_up; then dim "Ollama server is running."; return 0; fi
 
-  info "Starting a temporary 'ollama serve' ..."
+  note "starting a temporary 'ollama serve'"
   nohup ollama serve >"$WORKDIR/ollama-serve.log" 2>&1 &
   SERVER_PID=$!
 
   local i
-  for i in $(seq 1 30); do
-    if server_up; then info "Ollama server is up."; return 0; fi
+  for ((i = 1; i <= 150; i++)); do
+    if server_up; then dim "Ollama server is up."; return 0; fi
     if ! kill -0 "$SERVER_PID" 2>/dev/null; then break; fi
-    sleep 1
+    sleep 0.1
   done
   tail -n 20 "$WORKDIR/ollama-serve.log" >&2 || true
   die "Ollama server did not start."
@@ -451,52 +493,113 @@ load_installed() {
 }
 
 mark_installed() {
-  local i n
+  local i n list_nl=$'\n'"$INSTALLED_LIST"$'\n'
   for i in "${!M_NAME[@]}"; do
     n="${M_NAME[$i]}"
-    if printf '%s\n' "$INSTALLED_LIST" | grep -Fxq -- "$n"; then
-      if [ "${M_SEL[$i]}" = "1" ] && [ -n "$EXPLICIT_MODELS" ]; then info "$n is already installed; skipping."; fi
+    if [[ "$list_nl" == *$'\n'"$n"$'\n'* ]]; then
+      if [ "${M_SEL[$i]}" = "1" ] && [ -n "$EXPLICIT_MODELS" ]; then dim "$n is already installed; skipping."; fi
       M_INST[$i]=1; M_SEL[$i]=0
     fi
   done
 }
 
-# Registry sizes
-registry_size() {
-  local name="$1" repo tag code total body="$WORKDIR/manifest.$$.$RANDOM"
-  repo="${name%%:*}"; tag="latest"
-  case "$name" in *:*) tag="${name#*:}" ;; esac
-  case "$repo" in */*) ;; *) repo="library/$repo" ;; esac
+# Registry sizes (with 24h local cache + single parallel curl HTTP/2 multiplex)
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/silhouette-install"
+CACHE_FILE="$CACHE_DIR/ollama-sizes.tsv"
+CACHE_TTL=86400
 
-  code="$(curl -s --max-time 10 --proto '=https' -o "$body" -w '%{http_code}' \
-    -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
-    "$REGISTRY/v2/$repo/manifests/$tag" 2>/dev/null)" || code=000
-
-  case "$code" in
-    200)
-      total="$( { grep -o '"size":[[:space:]]*[0-9]*' "$body" | grep -o '[0-9]*$' \
-        | awk '{ s += $1 } END { if (NR > 0) printf "%.0f", s }'; } 2>/dev/null || true )"
-      if is_num "$total" && [ "$total" -gt 0 ]; then printf '%s' "$total"; else printf 'unknown'; fi
-      ;;
-    404) printf 'missing' ;;
-    *)   printf 'unknown' ;;
-  esac
-  rm -f "$body"
+parse_manifest_size() { # manifest_file -> prints size or missing/unknown
+  local f="$1"
+  if [ ! -s "$f" ]; then printf 'unknown'; return 0; fi
+  local content=""
+  content="$(<"$f")" 2>/dev/null || { printf 'unknown'; return 0; }
+  if [[ "$content" == *'"MANIFEST_UNKNOWN"'* ]] || [[ "$content" == *'"NAME_UNKNOWN"'* ]]; then
+    printf 'missing'
+    return 0
+  fi
+  local total=0 s rest="$content"
+  while [[ "$rest" =~ \"size\":[[:space:]]*([0-9]+) ]]; do
+    s="${BASH_REMATCH[1]}"
+    total=$(( total + s ))
+    rest="${rest#*"${BASH_REMATCH[0]}"}"
+  done
+  if [ "$total" -gt 0 ]; then printf '%s' "$total"; else printf 'unknown'; fi
 }
 
 fetch_sizes() { # indices...
   if [ "$#" -eq 0 ]; then return 0; fi
-  info "Checking download sizes on registry.ollama.ai ..."
-  local i
+  local now i name repo tag
+  printf -v now '%(%s)T' -1 2>/dev/null || now="$(date +%s)"
+
+  declare -A cached_size=()
+  if [ -r "$CACHE_FILE" ]; then
+    local c_ts c_name c_sz
+    while IFS=$'\t' read -r c_ts c_name c_sz; do
+      if is_num "$c_ts" && [ $(( now - c_ts )) -lt "$CACHE_TTL" ] && [ -n "$c_name" ]; then
+        if is_num "$c_sz" || [ "$c_sz" = "missing" ]; then
+          cached_size["$c_name"]="$c_sz"
+        fi
+      fi
+    done < "$CACHE_FILE"
+  fi
+
+  local need_idxs=() curl_args=()
   for i in "$@"; do
-    ( registry_size "${M_NAME[$i]}" >"$WORKDIR/size.$i" 2>/dev/null || true ) &
+    name="${M_NAME[$i]}"
+    if [ -n "${cached_size[$name]:-}" ]; then
+      M_SIZE[$i]="${cached_size[$name]}"
+    else
+      need_idxs+=("$i")
+      repo="${name%%:*}"; tag="latest"
+      case "$name" in *:*) tag="${name#*:}" ;; esac
+      case "$repo" in */*) ;; *) repo="library/$repo" ;; esac
+      curl_args+=("-o" "$WORKDIR/manifest.$i" "$REGISTRY/v2/$repo/manifests/$tag")
+    fi
   done
-  wait
+
+  if [ "${#need_idxs[@]}" -gt 0 ]; then
+    dim "checking download sizes on registry.ollama.ai"
+    if curl --parallel --parallel-max 16 -sL --max-time 6 --connect-timeout 3 \
+        --proto '=https' -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+        "${curl_args[@]}" 2>/dev/null; then
+      :
+    else
+      for i in "${need_idxs[@]}"; do
+        if [ ! -s "$WORKDIR/manifest.$i" ]; then
+          name="${M_NAME[$i]}"
+          repo="${name%%:*}"; tag="latest"
+          case "$name" in *:*) tag="${name#*:}" ;; esac
+          case "$repo" in */*) ;; *) repo="library/$repo" ;; esac
+          ( curl -sL --max-time 6 --connect-timeout 3 --proto '=https' \
+              -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+              -o "$WORKDIR/manifest.$i" "$REGISTRY/v2/$repo/manifests/$tag" 2>/dev/null || true ) &
+        fi
+      done
+      wait
+    fi
+
+    for i in "${need_idxs[@]}"; do
+      M_SIZE[$i]="$(parse_manifest_size "$WORKDIR/manifest.$i")"
+      rm -f "$WORKDIR/manifest.$i"
+      if is_num "${M_SIZE[$i]}" || [ "${M_SIZE[$i]}" = "missing" ]; then
+        cached_size["${M_NAME[$i]}"]="${M_SIZE[$i]}"
+      fi
+    done
+
+    if mkdir -p "$CACHE_DIR" 2>/dev/null; then
+      local tmp_cache="$WORKDIR/cache.tmp" k
+      : > "$tmp_cache"
+      for k in "${!cached_size[@]}"; do
+        printf '%s\t%s\t%s\n' "$now" "$k" "${cached_size[$k]}" >> "$tmp_cache"
+      done
+      mv -f "$tmp_cache" "$CACHE_FILE" 2>/dev/null || true
+    fi
+  fi
+
   for i in "$@"; do
-    if [ -s "$WORKDIR/size.$i" ]; then M_SIZE[$i]="$(cat "$WORKDIR/size.$i")"; fi
     if is_num "${M_SIZE[$i]}"; then
-      M_SIZE_FMT[$i]="$(fmt_bytes "${M_SIZE[$i]}")"
-      M_FIT[$i]="$(model_fit "${M_SIZE[$i]}")"
+      fmt_bytes "${M_SIZE[$i]}" "M_SIZE_FMT[$i]"
+      model_fit "${M_SIZE[$i]}" "M_FIT[$i]"
     else
       M_SIZE_FMT[$i]="-"
       M_FIT[$i]="unknown"
@@ -592,7 +695,7 @@ format_item() { # idx is_cursor out_var
   fi
 
   local line
-  printf -v line '%s %s %-22s %9s  %b' "$mark" "$box" "${M_NAME[$i]}" "$size" "$tag"
+  printf -v line '    %s %s %-22s %9s  %b' "$mark" "$box" "${M_NAME[$i]}" "$size" "$tag"
   if [ "$cur" = "1" ]; then
     printf -v "$3" '%s%s%s' "$BOLD" "$line" "$RESET"
   else
@@ -622,11 +725,11 @@ render() {
   fi
   RENDERED=1
 
-  BUF+=$'\r\033[2K'"${BOLD}Select Ollama models to download${RESET}"$'\n'
-  BUF+=$'\r\033[2K'"${DIM}Host: RAM $(fmt_bytes "$RAM_BYTES") · GPU: $GPU_NAME${RESET}"$'\n'
-  BUF+=$'\r\033[2K'"${DIM}↑/↓ move · space toggle · a tier · r recommended · n clear · enter confirm · q quit${RESET}"$'\n'
+  BUF+=$'\r\033[2K'"  ${BOLD}Select Ollama models to download${RESET}"$'\n'
+  BUF+=$'\r\033[2K'"    ${DIM}Host: RAM $RAM_FMT · GPU: $GPU_NAME${RESET}"$'\n'
+  BUF+=$'\r\033[2K'"    ${DIM}↑/↓ move · space toggle · a tier · r recommended · n clear · enter confirm · q quit${RESET}"$'\n'
 
-  local r i
+  local r i is_cur
   for ((r = TOP; r < TOP + VIEW_H; r++)); do
     if [ "$r" -ge "${#ROW_T[@]}" ]; then
       BUF+=$'\r\033[2K\n'
@@ -634,19 +737,21 @@ render() {
     fi
     i="${ROW_I[$r]}"
     if [ "${ROW_T[$r]}" = "H" ]; then
-      BUF+=$'\r\033[2K'"${BOLD}-- ${TIER_NAMES[$i]}${RESET}${DIM} — ${TIER_DESC[$i]}${RESET}"$'\n'
+      BUF+=$'\r\033[2K'"    ${BOLD}-- ${TIER_NAMES[$i]}${RESET}${DIM} — ${TIER_DESC[$i]}${RESET}"$'\n'
     else
       local line=""
-      format_item "$i" "$([ "$r" -eq "$CUR" ] && echo 1 || echo 0)" line
+      is_cur=0; [ "$r" -eq "$CUR" ] && is_cur=1
+      format_item "$i" "$is_cur" line
       BUF+=$'\r\033[2K'"$line"$'\n'
     fi
   done
 
-  local colour="$GREEN" status
+  local colour="$GREEN" status sel_fmt=""
   if [ "$FREE_BYTES" -gt 0 ] && [ "$SEL_BYTES" -gt "$FREE_BYTES" ]; then colour="$RED"; fi
-  status="Selected: $SEL_COUNT · download ≈ $(fmt_bytes "$SEL_BYTES")"
-  if [ "$FREE_BYTES" -gt 0 ]; then status="$status · free disk: $(fmt_bytes "$FREE_BYTES")"; fi
-  BUF+=$'\r\033[2K'"${colour}${status}${RESET}"$'\n'
+  fmt_bytes "$SEL_BYTES" sel_fmt
+  status="Selected: $SEL_COUNT · download ≈ $sel_fmt"
+  if [ "$FREE_BYTES" -gt 0 ]; then status="$status · free disk: $FREE_FMT"; fi
+  BUF+=$'\r\033[2K'"    ${colour}${status}${RESET}"$'\n'
 
   local w=""
   if [ "$SEL_UNK" -gt 0 ]; then w="$SEL_UNK selected model(s) have unknown size. "; fi
@@ -655,11 +760,11 @@ render() {
   elif [ "$SEL_PARTIAL" -gt 0 ]; then
     w="${w}${YELLOW}⚠ $SEL_PARTIAL model(s) exceed VRAM (partial GPU offload).${RESET} "
   fi
-  BUF+=$'\r\033[2K'"$w"$'\n'
+  BUF+=$'\r\033[2K'"    $w"$'\n'
 
-  BUF+=$'\r\033[2K'"${DIM}Sizes from registry.ollama.ai · ✓ fits VRAM · ⚠ partial offload · ✗ exceeds memory${RESET}"$'\n'
+  BUF+=$'\r\033[2K'"    ${DIM}Sizes from registry.ollama.ai · ✓ fits VRAM · ⚠ partial offload · ✗ exceeds memory${RESET}"$'\n'
 
-  printf '%b' "$BUF" >&2
+  printf '%b' "$BUF" > /dev/tty
 }
 
 KEY=""
@@ -780,7 +885,7 @@ run_menu() {
   FRAME=$((VIEW_H + 6))
 
   CUR=1; TOP=0     # row 0 is a header; row 1 is the first model
-  printf '\033[?25l' >&2; CURSOR_HIDDEN=1
+  printf '\n\033[?25l' > /dev/tty; CURSOR_HIDDEN=1
 
   while :; do
     render
@@ -797,10 +902,10 @@ run_menu() {
       rec)      select_recommended ;;
       none)     clear_all ;;
       enter)    break ;;
-      quit)     printf '\033[?25h' >&2; CURSOR_HIDDEN=0; printf '\n' >&2; info "Aborted. Nothing was downloaded."; exit 0 ;;
+      quit)     printf '\033[?25h\n' > /dev/tty; CURSOR_HIDDEN=0; note "Aborted. Nothing was downloaded."; exit 0 ;;
     esac
   done
-  printf '\033[?25h\n' >&2; CURSOR_HIDDEN=0
+  printf '\033[?25h' > /dev/tty; CURSOR_HIDDEN=0
 }
 
 # Model input
@@ -813,7 +918,7 @@ apply_explicit() {
   local list=($EXPLICIT_MODELS)
   IFS=$' \t\n'
   for raw in "${list[@]}"; do
-    n="$(printf '%s' "$raw" | tr -d '[:space:]')"
+    n="${raw//[[:space:]]/}"
     [ -n "$n" ] || continue
     [[ "$n" =~ $NAME_RE ]] || die "Invalid model name: '$n'"
     if idx="$(find_model "$n")"; then :; else
@@ -834,21 +939,21 @@ review_and_confirm() {
     fi
   done
   compute_totals
-  if [ "$SEL_COUNT" -eq 0 ]; then info "Nothing to download."; exit 0; fi
+  if [ "$SEL_COUNT" -eq 0 ]; then dim "nothing to download"; exit 0; fi
 
-  printf '\n%sHardware Profile:%s\n' "$BOLD" "$RESET" >&2
-  printf '  - RAM: %s total' "$(fmt_bytes "$RAM_BYTES")" >&2
+  section "Hardware profile"
+  local ram_str
+  ram_str="$(fmt_bytes "$RAM_BYTES") total"
   if [ "$RAM_AVAIL_BYTES" -gt 0 ]; then
-    printf ' (%s available)\n' "$(fmt_bytes "$RAM_AVAIL_BYTES")" >&2
-  else
-    printf '\n' >&2
+    ram_str="$ram_str ($(fmt_bytes "$RAM_AVAIL_BYTES") available)"
   fi
-  printf '  - GPU: %s\n' "$GPU_NAME" >&2
+  note "ram        $ram_str"
+  note "gpu        $GPU_NAME"
   if [ "$VRAM_BYTES" -gt 0 ] && [ "$IS_UNIFIED_MEM" -eq 0 ]; then
-    printf '  - VRAM: %s dedicated\n' "$(fmt_bytes "$VRAM_BYTES")" >&2
+    note "vram       $(fmt_bytes "$VRAM_BYTES") dedicated"
   fi
 
-  printf '\n%sAbout to download:%s\n' "$BOLD" "$RESET" >&2
+  section "Models to download"
   for i in "${!M_NAME[@]}"; do
     if [ "${M_SEL[$i]}" = "1" ]; then
       local s="size unknown" fit_str=""
@@ -862,18 +967,18 @@ review_and_confirm() {
           exceed)  fit_str="${RED}Warning: Exceeds available memory!${RESET}" ;;
         esac
       fi
-      printf '  - %-22s %9s   %b\n' "${M_NAME[$i]}" "$s" "$fit_str" >&2
+      printf '    %-24s %9s   %b\n' "${M_NAME[$i]}" "$s" "$fit_str"
     fi
   done
-  printf '  %s\n' "----------------------------------------------------" >&2
-  printf '  %-22s %9s\n' "Total" "$(fmt_bytes "$SEL_BYTES")" >&2
+  dim "----------------------------------------------------"
+  printf '    %-24s %9s\n' "Total" "$(fmt_bytes "$SEL_BYTES")"
 
   local dir need
   dir="$(models_dir)"
   FREE_BYTES="$(free_bytes "$dir")"; is_num "$FREE_BYTES" || FREE_BYTES=0
-  printf '\n' >&2
-  info "Models are stored in: $dir"
-  if [ "$FREE_BYTES" -gt 0 ]; then info "Free disk space there: $(fmt_bytes "$FREE_BYTES")"; fi
+  say ""
+  note "storage    $dir"
+  if [ "$FREE_BYTES" -gt 0 ]; then note "free disk  $(fmt_bytes "$FREE_BYTES")"; fi
 
   if [ "$SEL_UNK" -gt 0 ]; then
     warn "$SEL_UNK model(s) have unknown size (registry unreachable?); the total is understated."
@@ -882,7 +987,7 @@ review_and_confirm() {
     warn "$SEL_EXCEED selected model(s) exceed available memory limit. They may fail to load or cause severe memory thrashing."
   fi
   if [ "$SEL_PARTIAL" -gt 0 ]; then
-    info "$SEL_PARTIAL selected model(s) exceed VRAM and will use partial GPU offload (splitting layers with system RAM)."
+    note "$SEL_PARTIAL selected model(s) exceed VRAM and will use partial GPU offload (splitting layers with system RAM)."
   fi
 
   need=$(( SEL_BYTES + SEL_BYTES / 10 ))
@@ -894,16 +999,17 @@ review_and_confirm() {
     fi
   fi
 
-  if [ "$DRY_RUN" -eq 1 ]; then info "[dry-run] Would download the models above. Nothing was changed."; exit 0; fi
+  if [ "$DRY_RUN" -eq 1 ]; then dim "would download the models above (dry run)"; exit 0; fi
   if [ "$ASSUME_YES" -eq 1 ]; then return 0; fi
 
+  say ""
   if [ "$SEL_BYTES" -ge "$BIG_DOWNLOAD_BYTES" ]; then
     warn "This is a very large download ($(fmt_bytes "$SEL_BYTES"))."
-    ask "Type 'yes' to continue: " || die "No terminal to confirm with."
-    [ "$(lower "$REPLY")" = "yes" ] || { info "Aborted. Nothing was downloaded."; exit 0; }
+    ask "    Type 'yes' to continue: " || die "No terminal to confirm with."
+    [ "$(lower "$REPLY")" = "yes" ] || { note "Aborted. Nothing was downloaded."; exit 0; }
   else
-    ask "Download $(fmt_bytes "$SEL_BYTES") now? [y/N] " || die "No terminal to confirm with. Use --yes."
-    case "$(lower "$REPLY")" in y|yes) ;; *) info "Aborted. Nothing was downloaded."; exit 0 ;; esac
+    ask "    Download $(fmt_bytes "$SEL_BYTES") now? [y/N] " || die "No terminal to confirm with. Use --yes."
+    case "$(lower "$REPLY")" in y|yes) ;; *) note "Aborted. Nothing was downloaded."; exit 0 ;; esac
   fi
 }
 
@@ -922,22 +1028,26 @@ pull_all() {
   local OK=() FAILED=() i
   for i in "${!M_NAME[@]}"; do
     if [ "${M_SEL[$i]}" = "1" ]; then
-      info "Pulling ${M_NAME[$i]} ..."
-      if pull_one "${M_NAME[$i]}"; then OK+=("${M_NAME[$i]}"); else FAILED+=("${M_NAME[$i]}"); fi
+      note "pulling ${M_NAME[$i]}"
+      if pull_one "${M_NAME[$i]}"; then
+        ui_status ok "Pull ${M_NAME[$i]}"
+        OK+=("${M_NAME[$i]}")
+      else
+        ui_status fail "Pull ${M_NAME[$i]}"
+        FAILED+=("${M_NAME[$i]}")
+      fi
     fi
   done
 
-  printf '\n%sSummary%s\n' "$BOLD" "$RESET" >&2
+  section "Ollama summary"
   if [ "${#OK[@]}" -gt 0 ]; then
-    printf '%sDownloaded:%s\n' "$GREEN" "$RESET" >&2; printf '  + %s\n' "${OK[@]}" >&2
+    note "downloaded: ${OK[*]}"
   fi
   if [ "${#FAILED[@]}" -gt 0 ]; then
-    printf '%sFailed:%s\n' "$RED" "$RESET" >&2; printf '  - %s\n' "${FAILED[@]}" >&2
+    warn "failed: ${FAILED[*]}"
   fi
-  printf '\n' >&2
-  ollama list || true
   if [ -n "$SERVER_PID" ] && [ "$KEEP_SERVER" -eq 0 ]; then
-    info "Tip: start the server again later with 'ollama serve' (or your OS service)."
+    dim "start the server again later with 'ollama serve' (or your OS service)"
   fi
   [ "${#FAILED[@]}" -eq 0 ]
 }
@@ -999,6 +1109,8 @@ main() {
 
   if [ -z "$EXPLICIT_MODELS" ] && [ "$ASSUME_YES" -ne 1 ]; then
     FREE_BYTES="$(free_bytes "$(models_dir)")"; is_num "$FREE_BYTES" || FREE_BYTES=0
+    fmt_bytes "$RAM_BYTES" RAM_FMT
+    fmt_bytes "$FREE_BYTES" FREE_FMT
     run_menu
   fi
 

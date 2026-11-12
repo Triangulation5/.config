@@ -39,11 +39,12 @@ _ui_clear() {
     return 0
 }
 
-say()  { _ui_clear; printf '%s\n' "$*"; }
-note() { _ui_clear; printf '    %s\n' "$*"; }
-dim()  { _ui_clear; printf '    %s%s%s\n' "$DIM" "$*" "$RESET"; }
-warn() { _ui_clear; printf '%s  ! %s%s\n' "$E_YELLOW" "$*" "$E_RESET" >&2; }
-err()  { _ui_clear; printf '%s  x %s%s\n' "$E_RED" "$*" "$E_RESET" >&2; }
+say()     { _ui_clear; printf '%s\n' "$*"; }
+section() { _ui_clear; printf '\n  %s%s%s\n' "$BOLD" "$*" "$RESET"; }
+note()    { _ui_clear; printf '    %s\n' "$*"; }
+dim()     { _ui_clear; printf '    %s%s%s\n' "$DIM" "$*" "$RESET"; }
+warn()    { _ui_clear; printf '%s  ! %s%s\n' "$E_YELLOW" "$*" "$E_RESET" >&2; }
+err()     { _ui_clear; printf '%s  x %s%s\n' "$E_RED" "$*" "$E_RESET" >&2; }
 
 # die is for a bad invocation, before any stage has run. Exit status 2.
 die()  { progress_stop; err "$*"; exit 2; }

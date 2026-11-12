@@ -73,6 +73,9 @@ WANT_GRUB_THEME=""
 GRUB_PROFILE=""
 WANT_PI_HARNESS=""
 WANT_OLLAMA=""
+# Terminal: kitty (default, always installed as a core package) | st (also
+# builds the author's custom Simple Terminal). Empty means undecided.
+TERMINAL_CHOICE=""
 # bash | zsh | keep. NOT called SHELL: that is the user's login shell, which the
 # environment owns. Empty means undecided; the default is keep.
 SHELL_CHOICE=""
@@ -81,6 +84,10 @@ SHELL_CHOICE=""
 RETROARCH_ID="org.libretro.RetroArch"
 SIOYEK_ID="com.github.ahrm.sioyek"
 FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
+
+# Custom Simple Terminal (st), built from source and installed to /usr/local.
+ST_REPO_URL="${SILHOUETTE_ST_URL:-https://github.com/triangulation5/st.git}"
+ST_DIR="${HOME:-}/Projects/st"
 
 # Evangelion GRUB theme
 EVA_REPO_URL="${SILHOUETTE_EVA_URL:-https://github.com/Aleph1-9012/Evangelion.git}"

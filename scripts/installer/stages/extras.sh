@@ -370,3 +370,64 @@ stage_ollama() {
     STAGE_DETAIL="completed"
     return "$ST_OK"
 }
+
+# ---- custom Simple Terminal (st) ----------------------------------------------
+# Cloned to ST_DIR and built with make; `make install` needs root. kitty stays
+# installed (the deployed configs use it); st is an extra choice.
+st_build_deps() {
+    case "$PM" in
+        dnf)    echo "gcc make pkgconf-pkg-config libX11-devel libXft-devel fontconfig-devel freetype-devel ncurses" ;;
+        pacman) echo "base-devel libx11 libxft fontconfig freetype2 ncurses" ;;
+        apt)    echo "build-essential pkg-config libx11-dev libxft-dev libfontconfig1-dev libfreetype-dev ncurses-bin" ;;
+        zypper) echo "gcc make pkg-config libX11-devel libXft-devel fontconfig-devel freetype2-devel ncurses-utils" ;;
+        apk)    echo "build-base pkgconf libx11-dev libxft-dev fontconfig-dev freetype-dev ncurses" ;;
+        xbps)   echo "base-devel pkg-config libX11-devel libXft-devel fontconfig-devel freetype-devel ncurses" ;;
+        *)      echo "" ;;
+    esac
+}
+
+stage_st() {
+    local deps
+
+    if [ "$TERMINAL_CHOICE" != "st" ]; then
+        STAGE_DETAIL="kitty selected"
+        return "$ST_SKIP"
+    fi
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "git clone --depth 1 $ST_REPO_URL $ST_DIR"
+        would_do run "make -C $ST_DIR && $SUDO make -C $ST_DIR install"
+        return "$ST_OK"
+    fi
+    if ! command -v git >/dev/null 2>&1; then
+        err "git is needed to fetch st"
+        return "$ST_FAIL"
+    fi
+
+    deps="$(st_build_deps)"
+    if [ "$NO_DEPS" != "1" ] && [ -n "$deps" ] && [ -n "$PM" ]; then
+        # shellcheck disable=SC2086
+        progress_run "Installing st build dependencies" pm_install $deps \
+            || warn "could not install every st build dependency; the build may fail"
+    fi
+
+    if [ ! -e "$ST_DIR" ]; then
+        mkdir -p -- "$(dirname -- "$ST_DIR")" || return "$ST_FAIL"
+        progress_run "Cloning st" \
+            env GIT_TERMINAL_PROMPT=0 git clone --quiet --depth 1 -- "$ST_REPO_URL" "$ST_DIR" \
+            || { err "could not clone $ST_REPO_URL"; return "$ST_FAIL"; }
+    elif [ -d "$ST_DIR/.git" ]; then
+        progress_run "Updating st" env GIT_TERMINAL_PROMPT=0 git -C "$ST_DIR" pull --quiet --ff-only \
+            || warn "could not update $ST_DIR; building it as it is"
+    else
+        err "$ST_DIR exists and is not a git checkout; move it away or remove it"
+        return "$ST_FAIL"
+    fi
+
+    progress_run "Building st" make -C "$ST_DIR" \
+        || { err "st failed to build (see the log); build deps may be missing"; return "$ST_FAIL"; }
+    OUTSIDE_TXN_CHANGES=1
+    priv_run make -C "$ST_DIR" install \
+        || { err "make install failed for st"; return "$ST_FAIL"; }
+    STAGE_DETAIL="installed to /usr/local/bin/st"
+    return "$ST_OK"
+}

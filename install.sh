@@ -257,6 +257,7 @@ main() {
     stage required "Commit transaction"    stage_txn_commit
 
     # After the commit: a failure here cannot undo the dotfiles.
+    stage optional "Install st terminal"   stage_st
     stage optional "Install rishot"        stage_rishot
     stage optional "Install Flatpak apps"  stage_flatpaks
     stage optional "Install GRUB theme"    stage_grub_theme

@@ -35,9 +35,10 @@ ASSET_VALUES=(JetBrainsMono Iosevka FiraCode Rubik "SF Pro" Papirus-Dark Adwaita
 ASSET_DEFAULT_SELECTED=(0 0 0 0 0 1 0 1 0 1 0 0)
 ASSET_SELECTED=()
 ASSET_CURSOR=0
-ASSET_FRAME_LINES=20
+ASSET_FRAME_LINES=21
 ASSET_RENDERED=0
 ASSET_KEY=""
+ASSET_CURSOR_HIDDEN=0
 
 asset_reset_selection() {
     ASSET_SELECTED=("${ASSET_DEFAULT_SELECTED[@]}")
@@ -90,24 +91,24 @@ asset_move_cursor() {
 }
 
 asset_render() {
-    local i group="" marker box label
+    local i group="" marker box label buf=""
     if [ "$ASSET_RENDERED" = "1" ]; then
-        printf '\033[%dA\033[J' "$ASSET_FRAME_LINES" > /dev/tty
+        buf+=$'\033['"$ASSET_FRAME_LINES"$'A'
     fi
     ASSET_RENDERED=1
-    printf '%sSelect appearance assets%s\n' "$BOLD" "$RESET" > /dev/tty
-    printf '%s↑/↓ move · space select · a toggle all fonts · n clear fonts · enter confirm · q defaults%s\n' \
-        "$DIM" "$RESET" > /dev/tty
+    buf+=$'\r\033[2K\n'
+    buf+=$'\r\033[2K'"  ${BOLD}Appearance assets${RESET}"$'\n'
+    buf+=$'\r\033[2K'"    ${DIM}↑/↓ move · space select · a toggle all fonts · n clear fonts · enter confirm · q defaults${RESET}"$'\n'
     for i in "${!ASSET_KIND[@]}"; do
         if [ "${ASSET_KIND[$i]}" != "$group" ]; then
             group="${ASSET_KIND[$i]}"
             case "$group" in
-                font)  label="Fonts (optional; SF Pro is manual)" ;;
-                icon)  label="Icon theme" ;;
+                font)   label="Fonts (optional; SF Pro is manual)" ;;
+                icon)   label="Icon theme" ;;
                 cursor) label="Cursor theme" ;;
-                gtk)   label="GTK theme" ;;
+                gtk)    label="GTK theme" ;;
             esac
-            printf '%s%s%s\n' "$BOLD" "$label" "$RESET" > /dev/tty
+            buf+=$'\r\033[2K'"    ${BOLD}-- ${label}${RESET}"$'\n'
         fi
         marker=" "
         [ "$i" = "$ASSET_CURSOR" ] && marker=">"
@@ -118,19 +119,22 @@ asset_render() {
             box="( )"
             [ "${ASSET_SELECTED[$i]}" = "1" ] && box="(*)"
         fi
-        printf ' %s %s %s\n' "$marker" "$box" "${ASSET_LABELS[$i]}" > /dev/tty
-    done
-    printf '\n%sSelected fonts: ' "$DIM" > /dev/tty
-    local selected=0
-    for i in "${!ASSET_KIND[@]}"; do
-        if [ "${ASSET_KIND[$i]}" = "font" ] && [ "${ASSET_SELECTED[$i]}" = "1" ]; then
-            [ "$selected" -eq 0 ] || printf ', ' > /dev/tty
-            printf '%s' "${ASSET_LABELS[$i]}" > /dev/tty
-            selected=1
+        if [ "$i" = "$ASSET_CURSOR" ]; then
+            buf+=$'\r\033[2K'"    ${BOLD}${marker} ${box} ${ASSET_LABELS[$i]}${RESET}"$'\n'
+        else
+            buf+=$'\r\033[2K'"    ${marker} ${box} ${ASSET_LABELS[$i]}"$'\n'
         fi
     done
-    [ "$selected" = "1" ] || printf 'none' > /dev/tty
-    printf '%s\n' "$RESET" > /dev/tty
+    local font_list=""
+    for i in "${!ASSET_KIND[@]}"; do
+        if [ "${ASSET_KIND[$i]}" = "font" ] && [ "${ASSET_SELECTED[$i]}" = "1" ]; then
+            font_list="${font_list:+$font_list, }${ASSET_LABELS[$i]}"
+        fi
+    done
+    [ -n "$font_list" ] || font_list="none"
+    buf+=$'\r\033[2K\n'
+    buf+=$'\r\033[2K'"    ${DIM}Selected fonts: ${font_list}${RESET}"$'\n'
+    printf '%s' "$buf" > /dev/tty
 }
 
 asset_read_key() {
@@ -190,6 +194,8 @@ select_assets() {
 
     ASSET_CURSOR=0
     ASSET_RENDERED=0
+    printf '\033[?25l' > /dev/tty
+    ASSET_CURSOR_HIDDEN=1
     asset_render
     while :; do
         asset_read_key
@@ -202,13 +208,18 @@ select_assets() {
             enter) break ;;
             quit)
                 asset_reset_selection
+                printf '\033[?25h' > /dev/tty
+                ASSET_CURSOR_HIDDEN=0
                 note "Picker cancelled; keeping the defaults."
                 break
                 ;;
         esac
         asset_render
     done
-    printf '\n' > /dev/tty
+    if [ "$ASSET_CURSOR_HIDDEN" = "1" ]; then
+        printf '\033[?25h' > /dev/tty
+        ASSET_CURSOR_HIDDEN=0
+    fi
     exec 3<&-
     asset_apply_selection
 }
