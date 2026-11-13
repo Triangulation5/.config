@@ -5,13 +5,17 @@ vim.pack.add({
     { src = "https://github.com/echasnovski/mini.nvim" },
     { src = "https://github.com/vague-theme/vague.nvim", version = "24cd29d" },
     { src = "https://github.com/chomosuke/typst-preview.nvim" },
-    { src = "https://github.com/nuvic/flexoki-nvim" }
+    { src = "https://github.com/chentoast/marks.nvim" },
 })
+
 
 -- Eager: these are cheap and/or used immediately (pick, colorscheme, mason UI)
 require("plugins.mini")
 require("plugins.mason")
 require("plugins.colorscheme")
+require("marks").setup({
+    builtin_marks = { "<", ">", "^" },
+})
 
 -- Lazy: only registers the trigger (autocmd/keymap) here; the actual
 -- plugin setup is deferred via util.lazy until first use.
