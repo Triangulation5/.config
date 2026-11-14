@@ -68,12 +68,25 @@ Singleton {
         }
     }
 
+    /** Seconds of continuous idle before an idle sweep runs */
+    property int idleSeconds: 0
+
     Timer {
         id: memTimer
         interval: 8000
         repeat: true
         running: true
         triggeredOnStart: false
-        onTriggered: root.checkMemory()
+        onTriggered: {
+            root.checkMemory();
+            root.idleSeconds += 8;
+            /** Run an idle garbage collection pass every 32 seconds to stay around 150-180MB */
+            if (root.idleSeconds >= 32) {
+                root.idleSeconds = 0;
+                root.unloadClosed();
+                if (typeof gc === "function")
+                    gc();
+            }
+        }
     }
 }

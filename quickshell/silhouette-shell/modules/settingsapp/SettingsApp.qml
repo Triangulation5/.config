@@ -143,7 +143,11 @@ Item {
     Timer {
         id: teardown
         interval: root.teardownMs
-        onTriggered: root.built = false
+        onTriggered: {
+            root.built = false;
+            if (typeof gc === "function")
+                gc();
+        }
     }
 
     /**

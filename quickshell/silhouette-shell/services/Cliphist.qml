@@ -156,7 +156,7 @@ Singleton {
         var metaRe = /^\[\[ binary data (.*) \]\]$/;
         var imgRe = /\b(png|jpg|jpeg|gif|bmp|webp)\b/;
         var splitRe = /^(\S+ \S+) (\w+) (\d+)x(\d+)$/;
-        for (var i = 0; i < lines.length; i++) {
+        for (var i = 0; i < lines.length && out.length < 150; i++) {
             var line = lines[i];
             var tab = line.indexOf("\t");
             if (tab < 1)

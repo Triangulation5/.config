@@ -121,6 +121,7 @@ Rectangle {
             fillMode: Image.PreserveAspectCrop
             smooth: true
             asynchronous: true
+            cache: false
             visible: source.toString().length > 0
         }
 

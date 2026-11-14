@@ -23,7 +23,7 @@ set -u
 # background_thread + 100ms decay. 100ms is a deliberate compromise: low enough
 # that the shell gives pages back instead of parking at its peak, high enough
 # that it is not returning them mid-morph and immediately re-faulting them in.
-export MALLOC_CONF="background_thread:true,dirty_decay_ms:100,muzzy_decay_ms:100"
+export MALLOC_CONF="background_thread:true,narenas:2,dirty_decay_ms:100,muzzy_decay_ms:100"
 
 shell_dir="${SILHOUETTE_SHELL_DIR:-$HOME/.config/quickshell/silhouette-shell}"
 shell_dir="${shell_dir%/}"
