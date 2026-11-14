@@ -11,7 +11,7 @@ stage_report_tools() {
 
     for b in Hyprland hyprctl qs kitty cava playerctl cliphist wl-copy \
              notify-send jq curl brightnessctl nmcli bluetoothctl upower \
-             wpctl python3 slurp tmux w3m fastfetch flatpak mpd mpv; do
+             wpctl python3 slurp tmux w3m fastfetch flatpak mpd mpc mpv; do
         command -v "$b" >/dev/null 2>&1 || missing+=("$b")
     done
     if [ "${#missing[@]}" -eq 0 ]; then

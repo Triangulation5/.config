@@ -15,7 +15,7 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-install"
 RISHOT_URL="${SILHOUETTE_RISHOT_URL:-https://raw.githubusercontent.com/Gakuseei/rishot/main/install.sh}"
 
 # Top-level entries in the repo that belong in ~/.config. install.sh and
-# installer/ are here on purpose: the installer lives in ~/.config too, so a
+# scripts/ are here on purpose: the installer lives in ~/.config too, so a
 # deployed machine can run ~/.config/install.sh --rollback. The README and
 # .gitignore are deliberately not here: they are repo furniture, not config. Neither are the machine-local ones .gitignore keeps out of the
 # repo - rygel.conf and QtProject.conf belong to the packages that own them on
@@ -23,14 +23,11 @@ RISHOT_URL="${SILHOUETTE_RISHOT_URL:-https://raw.githubusercontent.com/Gakuseei/
 # configuration alone: the library database, the log, the pid and the session
 # state are ignored beside it, so a clone carries the conf and nothing else.
 # Keep this in sync when a new top-level config lands.
-#
-# NOTE: `scripts` is not listed, yet stage_script_modes expects
-# ~/.config/scripts. If scripts/ is meant to be deployed, add it here.
 CONFIG_ENTRIES=(
     bash btop cava fastfetch gtk-3.0 gtk-4.0 hypr kitty mpd ncmpcpp nvim nwg-look
-    quickshell rishot sioyek tmux vim xsettingsd yazi zsh w3m mpv
+    quickshell rishot scripts sioyek tmux vim xsettingsd yazi zsh w3m mpv
     user-dirs.dirs user-dirs.locale
-    install.sh installer
+    install.sh
 )
 
 # Configs that hardcode the original author's home. Rewritten to $HOME after

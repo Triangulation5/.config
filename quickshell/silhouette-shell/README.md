@@ -46,9 +46,10 @@ Required:
   weather
 - `gpu-screen-recorder` for recording, or `ffmpeg` for the fallback below
 
-Optional: `kdialog` or `zenity` for the native folder picker, `python3-dbus` for
-the polkit agent that puts admin prompts on the pill, `howdy` for face unlock,
-`nvibrant` for NVIDIA saturation, `xrandr` for XWayland.
+Optional: `mpd` and `mpc` for MPD now-playing and controls, `ncmpcpp` for its
+terminal UI, `kdialog` or `zenity` for the native folder picker, `python3-dbus`
+for the polkit agent that puts admin prompts on the pill, `howdy` for face
+unlock, `nvibrant` for NVIDIA saturation, `xrandr` for XWayland.
 
 ## If recording fails with "no video encoder was specified"
 
