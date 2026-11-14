@@ -21,6 +21,7 @@
 # These functions return stage statuses (ST_OK, ST_WARN, ...).
 
 GENTOO_OVERLAYS=(hyproverlay guru)
+GENTOO_PORTAGE_DIR=/etc/portage
 
 # Installed means a vdb entry: /var/db/pkg/<category>/<name>-<version>. Read
 # straight from disk so this works without portage-utils or gentoolkit. The
@@ -75,10 +76,10 @@ gentoo_emerge() {
 # CONFIG_PROTECTed. Merge those, and only those under /etc/portage.
 gentoo_merge_portage_config() {
     [ "$DRY_RUN" = "1" ] && return 0
-    if find /etc/portage -name '._cfg*' -print -quit 2>/dev/null | grep -q .; then
-        note "merging the keyword/USE changes emerge wrote to /etc/portage"
-        gentoo_root etc-update --automode -5 /etc/portage < /dev/null \
-            || warn "etc-update could not merge /etc/portage; run: etc-update /etc/portage"
+    if find "$GENTOO_PORTAGE_DIR" -name '._cfg*' -print -quit 2>/dev/null | grep -q .; then
+        note "merging the keyword/USE changes emerge wrote to $GENTOO_PORTAGE_DIR"
+        gentoo_root etc-update --automode -5 "$GENTOO_PORTAGE_DIR" < /dev/null \
+            || warn "etc-update could not merge $GENTOO_PORTAGE_DIR; run: etc-update $GENTOO_PORTAGE_DIR"
     fi
     return 0
 }
@@ -86,7 +87,7 @@ gentoo_merge_portage_config() {
 # Accept the testing keyword for the overlays. package.accept_keywords may be a
 # directory (the usual layout) or a single file; handle both. Idempotent.
 gentoo_accept_overlay_keywords() {
-    local base=/etc/portage/package.accept_keywords tmp repo added=0
+    local base="$GENTOO_PORTAGE_DIR/package.accept_keywords" tmp repo added=0
     local -a lines=()
     for repo in "${GENTOO_OVERLAYS[@]}"; do lines+=("*/*::$repo"); done
 
@@ -103,6 +104,9 @@ gentoo_accept_overlay_keywords() {
         cp -- "$base" "$tmp" || return 1
         for repo in "${lines[@]}"; do
             if ! grep -qxF -- "$repo" "$base"; then
+                if [ "$added" = "0" ] && [ -s "$tmp" ]; then
+                    printf '\n' >> "$tmp" || return 1
+                fi
                 printf '%s\n' "$repo" >> "$tmp"
                 added=1
             fi
@@ -112,13 +116,28 @@ gentoo_accept_overlay_keywords() {
         return
     fi
 
-    # Directory layout: one file of our own.
-    {
-        printf '%s\n' "# Written by the Silhouette installer. Third-party repositories carry no"
-        printf '%s\n' "# stable keyword, so accept the testing keyword for the two overlays its"
-        printf '%s\n' "# packages come from (Hyprland: hyproverlay; quickshell and friends: guru)."
-        printf '%s\n' "${lines[@]}"
-    } > "$tmp"
+    # Directory layout: keep user additions to our file and append only missing
+    # overlay entries.
+    if [ -f "$base/silhouette" ]; then
+        cp -- "$base/silhouette" "$tmp" || return 1
+        for repo in "${lines[@]}"; do
+            if ! grep -qxF -- "$repo" "$tmp"; then
+                if [ "$added" = "0" ] && [ -s "$tmp" ]; then
+                    printf '\n' >> "$tmp" || return 1
+                fi
+                printf '%s\n' "$repo" >> "$tmp"
+                added=1
+            fi
+        done
+        [ "$added" = "0" ] && return 0
+    else
+        {
+            printf '%s\n' "# Written by the Silhouette installer. Third-party repositories carry no"
+            printf '%s\n' "# stable keyword, so accept the testing keyword for the two overlays its"
+            printf '%s\n' "# packages come from (Hyprland: hyproverlay; quickshell and friends: guru)."
+            printf '%s\n' "${lines[@]}"
+        } > "$tmp"
+    fi
     if [ -f "$base/silhouette" ] && cmp -s -- "$tmp" "$base/silhouette"; then
         return 0
     fi
@@ -132,7 +151,7 @@ gentoo_accept_overlay_keywords() {
 # and the keywords that make the overlays' packages visible.
 gentoo_enable_repos() {
     local repo
-    local -a need=() tools=() sync_args=()
+    local -a need=() tools=()
 
     gentoo_check_privilege || return "$ST_FAIL"
     [ "$DRY_RUN" = "1" ] || OUTSIDE_TXN_CHANGES=1
@@ -158,14 +177,14 @@ gentoo_enable_repos() {
             err "eselect repository enable ${need[*]} failed"
             return "$ST_FAIL"
         fi
-        for repo in "${need[@]}"; do
-            note "syncing overlay $repo"
-            if ! priv_progress "Syncing overlay $repo" emaint sync -r "$repo"; then
-                err "emaint sync -r $repo failed (network?)"
-                return "$ST_FAIL"
-            fi
-        done
     fi
+    for repo in "${GENTOO_OVERLAYS[@]}"; do
+        note "syncing overlay $repo"
+        if ! priv_progress "Syncing overlay $repo" emaint sync -r "$repo"; then
+            err "emaint sync -r $repo failed (network?)"
+            return "$ST_FAIL"
+        fi
+    done
 
     if ! gentoo_accept_overlay_keywords; then
         err "could not write the overlay keywords to /etc/portage/package.accept_keywords"
@@ -173,9 +192,9 @@ gentoo_enable_repos() {
     fi
 
     if [ "${#need[@]}" -gt 0 ]; then
-        STAGE_DETAIL="enabled and synced ${need[*]}"
+        STAGE_DETAIL="enabled ${need[*]}; synced ${GENTOO_OVERLAYS[*]}"
     else
-        STAGE_DETAIL="${GENTOO_OVERLAYS[*]} already enabled"
+        STAGE_DETAIL="synced ${GENTOO_OVERLAYS[*]}"
     fi
     return "$ST_OK"
 }
