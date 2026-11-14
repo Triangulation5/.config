@@ -29,6 +29,13 @@ Item {
     property var pw: null
     property string screenName: ""
 
+    focus: true
+    Keys.forwardTo: [content]
+    Keys.onPressed: (event) => {
+        if (openAnim.running)
+            openAnim.complete();
+    }
+
     /**
      * Drives the lock-open morph. A pill-shaped hole grows from the pill's resting
      * spot out to the full screen, wiping the lock open over the grabbed desktop.
@@ -139,6 +146,7 @@ Item {
     }
 
     Content {
+        id: content
         anchors.fill: parent
 
         s: surface.s
@@ -146,7 +154,8 @@ Item {
         pw: surface.pw
         active: surface.active
 
-        enabled: surface.maskP >= 1
+        enabled: !closeAnim.running
+        focus: true
     }
 
     /**

@@ -31,6 +31,30 @@ Item {
     property bool showError: false
     property bool showCursor: false
 
+    focus: true
+    Keys.forwardTo: [input]
+
+    /** Ensure the input field receives active focus when the lock is visible. */
+    function ensureFocus(): void {
+        if (!content.clockExpanded && input.enabled)
+            input.forceActiveFocus();
+    }
+
+    Component.onCompleted: Qt.callLater(content.ensureFocus)
+    onEnabledChanged: if (enabled) Qt.callLater(content.ensureFocus)
+    onActiveChanged: if (active) Qt.callLater(content.ensureFocus)
+    onClockExpandedChanged: if (!clockExpanded) Qt.callLater(content.ensureFocus)
+
+    Keys.onPressed: (event) => {
+        if (content.clockExpanded)
+            content.clockExpanded = false;
+        if (!content.passwordArmed)
+            content.passwordArmed = true;
+        if (!input.activeFocus && input.enabled)
+            input.forceActiveFocus();
+        idleTimer.restart();
+    }
+
     /**
      * The minimal bar squares off the password capsule. The bar's own blocks are
      * flat chips on squared tags (see modules/bar/Chip.qml and the dwm tag block),
@@ -123,7 +147,12 @@ Item {
         sequence: "Escape"
 
         onActivated: {
-            content.clockExpanded = false;
+            if (content.clockExpanded) {
+                content.clockExpanded = false;
+            } else if (content.passwordArmed && input.text.length === 0) {
+                content.passwordArmed = false;
+                content.showError = false;
+            }
         }
     }
 
@@ -240,6 +269,27 @@ Item {
         anchors.rightMargin: parent.width * 0.055
         anchors.bottomMargin: parent.height * 0.09
         s: content.s
+    }
+
+    /**
+     * Clicking the backdrop wakes the capsule and focuses the input, or
+     * collapses the clock if expanded. Kept behind other controls (z: -1)
+     * so media controls, clock clicks, and the capsule itself take precedence.
+     */
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        enabled: !content.authenticating && !content.lockedOut
+
+        onClicked: {
+            if (content.clockExpanded) {
+                content.clockExpanded = false;
+            } else {
+                content.passwordArmed = true;
+                input.forceActiveFocus();
+                idleTimer.restart();
+            }
+        }
     }
 
     Clock {
@@ -385,8 +435,13 @@ Item {
             }
 
             Keys.onPressed: (event) => {
-                if (content.passwordArmed)
-                    idleTimer.restart();
+                if (content.clockExpanded)
+                    content.clockExpanded = false;
+                if (!content.passwordArmed) {
+                    content.passwordArmed = true;
+                    content.showError = false;
+                }
+                idleTimer.restart();
                 /** A held Backspace clears the whole field at once after 2.5s
                  * — key auto-repeat deletes one char per tick, which would
                  * otherwise leave the serialized dot cross-fades draining long

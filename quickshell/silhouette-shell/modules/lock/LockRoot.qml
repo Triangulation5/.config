@@ -321,11 +321,13 @@ ShellRoot {
         WlSessionLockSurface {
             id: lockSurface
             color: "#160f0a"
+            focus: true
 
             Loader {
                 id: surfaceLoader
                 anchors.fill: parent
                 active: sessionLock.locked
+                focus: true
 
                 sourceComponent: LockSurface {
                     s: lockSurface.screen ? lockSurface.screen.height / 1080 : 1
