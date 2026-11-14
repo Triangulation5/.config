@@ -32,12 +32,12 @@ MODE="${1:-install}"
 BACKUP_DIR="$PI_DIR/backups/pi-agent-config/$(date +%Y%m%d-%H%M%S)"
 
 # Packages
-CUSTOM_PI_HARMONY="${PI_HARMONY_PATH:-${PI_CLAUDE_CODE_UI_PATH:-$HOME/Projects/pi-claude-code-ui}}"
+CUSTOM_PI_HARMONY="${PI_HARMONY_PATH:-${PI_CLAUDE_CODE_UI_PATH:-$HOME/Projects/pi-harmony}}"
 CUSTOM_PI_HARMONY_REPO="${PI_HARMONY_REPO:-${PI_CLAUDE_CODE_UI_REPO:-https://github.com/Triangulation5/pi-harmony.git}}"
 PI_HARMONY_PKG="$CUSTOM_PI_HARMONY"
 
 packages=(
-    "$PI_CC_UI_PKG"
+    "$PI_HARMONY_PKG"
 )
 
 optional_packages=(
