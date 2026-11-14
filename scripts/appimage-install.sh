@@ -25,7 +25,11 @@ mkdir -p "$apps_dir" "$desktop_dir" "$icon_dir"
 [ -f "$registry" ] || echo '{}' >"$registry"
 
 _tmpdir=""
-cleanup() { [ -n "$_tmpdir" ] && rm -rf "$_tmpdir"; }
+cleanup() {
+	local rc=$?
+	[ -n "$_tmpdir" ] && rm -rf "$_tmpdir"
+	return "$rc"
+}
 trap cleanup EXIT
 
 die() { echo "$1" >&2; exit 1; }

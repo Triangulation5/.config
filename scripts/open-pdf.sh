@@ -25,13 +25,16 @@ shell_join() {
 }
 
 ensure_runner_session() {
-    local session="$1"
+    local session="$1" runner_shell="${SHELL:-}"
 
     if tmux has-session -t "$session" 2>/dev/null; then
         return 0
     fi
 
-    tmux new-session -d -s "$session" -c "$HOME" -n home "zsh"
+    if [[ ! -x "$runner_shell" ]]; then
+        runner_shell="$(command -v zsh || command -v bash || command -v sh)"
+    fi
+    tmux new-session -d -s "$session" -c "$HOME" -n home "$runner_shell"
 }
 
 run_in_runner_session() {

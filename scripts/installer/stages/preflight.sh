@@ -44,8 +44,13 @@ stage_preflight() {
 stage_detect() {
     local rc="$ST_OK"
     detect_distro
-    if [ "$NO_DEPS" != "1" ]; then
+    # Gentoo can reach root through su when sudo/doas are absent. Detect that
+    # even with --no-deps because later opt-in stages (for example GRUB or st)
+    # may still need a privileged command.
+    if [ "$NO_DEPS" != "1" ] || [ "$PM" = "emerge" ]; then
         detect_privilege || return "$ST_FAIL"
+    fi
+    if [ "$NO_DEPS" != "1" ]; then
         check_distro_repos || rc="$ST_WARN"
     fi
     STAGE_DETAIL="${FAMILY}${PM:+, via $PM}"

@@ -10,6 +10,8 @@ trap 'rm -rf -- "$tmp"' EXIT
 
 # shellcheck source=gentoo.sh
 . "$here/gentoo.sh"
+. "$here/distro.sh"
+. "$here/stages/preflight.sh"
 
 ST_OK=0
 ST_FAIL=1
@@ -43,5 +45,20 @@ grep -qxF '*/*::guru' "$GENTOO_PORTAGE_DIR/package.accept_keywords/silhouette"
 cp "$GENTOO_PORTAGE_DIR/package.accept_keywords/silhouette" "$tmp/expected"
 gentoo_accept_overlay_keywords
 cmp -s "$tmp/expected" "$GENTOO_PORTAGE_DIR/package.accept_keywords/silhouette"
+
+# --no-deps must still detect Gentoo's su fallback for optional privileged
+# stages such as installing st or the GRUB theme.
+NO_DEPS=1
+privilege_detected=0
+detect_distro() { FAMILY=gentoo; PM=emerge; }
+detect_privilege() {
+    privilege_detected=1
+    HAVE_PRIV=0
+    SUDO=sudo
+}
+check_distro_repos() { return 1; }
+stage_detect
+[ "$privilege_detected" = "1" ]
+[ "$HAVE_PRIV" = "0" ]
 
 printf '%s\n' ok

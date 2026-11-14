@@ -26,7 +26,11 @@ apply)
     token=$(date +%s%N)
     printf '%s' "$token" > "$pending_file"
     new_spec="hl.monitor({ output = \"$out\", mode = \"$mode\", position = \"$position\", scale = $scale }) return \"ok\""
-    hyprctl eval "$new_spec" >/dev/null 2>&1
+    if ! hyprctl eval "$new_spec" >/dev/null 2>&1; then
+        hyprctl eval "$(cat "$old_file")" >/dev/null 2>&1 || true
+        rm -f "$pending_file" "$old_file"
+        exit 1
+    fi
     setsid -f sh -c '
         pending=$1
         old=$2

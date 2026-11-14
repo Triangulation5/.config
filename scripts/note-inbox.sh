@@ -80,7 +80,7 @@ BEFORE="$(hypr clients | jq -c --arg c "$CLASS" '[.[] | select(.class == $c) | .
 kitty --class "$CLASS" \
     --override initial_window_width=87c \
     --override initial_window_height=26c \
-    nvim +2 +startinsert! "$NOTE"
+    nvim +2 +startinsert! "$NOTE" &
 
 # Wait for the NEW window (one whose address wasn't in the snapshot)
 WINDOW=""

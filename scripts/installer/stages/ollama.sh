@@ -26,7 +26,13 @@
 #     it before it runs. Nothing is piped straight into a shell.
 #   * Model names are validated; no eval; all variables are quoted.
 #
-# Works with bash 3.2+ (macOS default).
+# Requires Bash 4+; macOS's system Bash 3.2 is too old for its lowercase
+# expansion and associative cache.
+
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  printf '%s\n' "setup-ollama.sh needs Bash 4 or newer (macOS: install Bash with Homebrew)." >&2
+  exit 1
+fi
 
 set -euo pipefail
 IFS=$' \t\n'

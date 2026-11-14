@@ -184,15 +184,19 @@ eva_fetch_repo() {
         return
     fi
     if [ -d "$EVA_DIR/.git" ]; then
-        note "moving $EVA_DIR to $EVA_REF"
+        note "checking out pinned Evangelion release $EVA_REF"
         if progress_run "Fetching Evangelion $EVA_REF" \
                env GIT_TERMINAL_PROMPT=0 git -C "$EVA_DIR" fetch --quiet --depth 1 origin \
                    "refs/tags/$EVA_REF:refs/tags/$EVA_REF" \
-           && git -C "$EVA_DIR" checkout --quiet "$EVA_REF"; then
-            return 0
+           && git -C "$EVA_DIR" checkout --quiet --detach "$EVA_REF"; then
+               if [ -z "$(git -C "$EVA_DIR" status --porcelain)" ]; then
+                   return 0
+               fi
+               err "$EVA_DIR has local changes; refusing to run an unverified installer as root"
+               return 1
         fi
-        warn "could not move $EVA_DIR to $EVA_REF; using it as it is"
-        return 0
+        err "could not check out pinned release $EVA_REF in $EVA_DIR; refusing to run its installer as root"
+        return 1
     fi
     err "$EVA_DIR exists and is not a git checkout; move it away or remove it"
     return 1
@@ -376,6 +380,7 @@ stage_ollama() {
 # installed (the deployed configs use it); st is an extra choice.
 st_build_deps() {
     case "$PM" in
+        emerge) echo "x11-libs/libX11 x11-libs/libXft media-libs/fontconfig media-libs/freetype sys-libs/ncurses" ;;
         dnf)    echo "gcc make pkgconf-pkg-config libX11-devel libXft-devel fontconfig-devel freetype-devel ncurses" ;;
         pacman) echo "base-devel libx11 libxft fontconfig freetype2 ncurses" ;;
         apt)    echo "build-essential pkg-config libx11-dev libxft-dev libfontconfig1-dev libfreetype-dev ncurses-bin" ;;
@@ -405,9 +410,16 @@ stage_st() {
 
     deps="$(st_build_deps)"
     if [ "$NO_DEPS" != "1" ] && [ -n "$deps" ] && [ -n "$PM" ]; then
-        # shellcheck disable=SC2086
-        progress_run "Installing st build dependencies" pm_install $deps \
-            || warn "could not install every st build dependency; the build may fail"
+        if [ "$PM" = "emerge" ]; then
+            local -a atoms=()
+            read -r -a atoms <<< "$deps"
+            install_packages_gentoo "${atoms[@]}" \
+                || warn "could not install every st build dependency; the build may fail"
+        else
+            # shellcheck disable=SC2086
+            progress_run "Installing st build dependencies" pm_install $deps \
+                || warn "could not install every st build dependency; the build may fail"
+        fi
     fi
 
     if [ ! -e "$ST_DIR" ]; then

@@ -67,7 +67,11 @@ wh_gate() {
     budget="${WH_BUDGET:-30}"
     { [ "$budget" -gt 0 ] 2>/dev/null; } || budget=30
     exec 9>"$base/wh-window.lock"
-    flock 9
+    if [ "$nowait" = true ]; then
+        flock -n 9 || return 1
+    else
+        flock 9
+    fi
 
     # Cooling-off latch: a recent 429/403 parks every wallhaven request until
     # the timestamp passes. The lock is held throughout so the whole pipeline
@@ -263,7 +267,7 @@ thumbget() {
     digest=$(printf '%s\n' "$url" | sha1sum | cut -c1-24)
     cache="$base/$digest"
     [ -s "$cache" ] && { printf '%s\n' "$cache"; exit 0; }
-    wh_gate
+    wh_gate || exit 1
     tmp="$base/.$digest.tmp"
     trap 'rm -f "$tmp"' EXIT
     curl -fsSL --max-time 25 -A "$UA" -e "https://wallhaven.cc/" -o "$tmp" "$url" \

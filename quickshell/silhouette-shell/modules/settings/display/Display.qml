@@ -307,7 +307,14 @@ SettingsSurface {
         property string position: ""
         property real scale: 1
         command: ["sh", root.helper, "apply", out, mode, position, String(scale)]
-        onExited: root.startCountdown()
+        onExited: function (exitCode) {
+            if (exitCode === 0) {
+                root.startCountdown();
+            } else {
+                root.pendingOut = "";
+                root.note = "Could not apply the monitor change.";
+            }
+        }
     }
 
     Process {

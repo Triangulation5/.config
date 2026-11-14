@@ -76,10 +76,14 @@ fi
 # Leave the initial window unnamed so tmux can automatically
 # rename it based on the foreground command.
 if ! tmux has-session -t "=$selected_name" 2>/dev/null; then
+    runner_shell="${SHELL:-}"
+    if [[ ! -x "$runner_shell" ]]; then
+        runner_shell="$(command -v zsh || command -v bash || command -v sh)"
+    fi
     tmux new-session -d \
         -s "$selected_name" \
         -c "$selected" \
-        zsh
+        "$runner_shell"
 fi
 
 # Switch clients inside tmux; otherwise attach to the session.
