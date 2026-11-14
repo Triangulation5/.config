@@ -321,7 +321,6 @@ ShellRoot {
         WlSessionLockSurface {
             id: lockSurface
             color: "#160f0a"
-            focus: true
 
             Loader {
                 id: surfaceLoader

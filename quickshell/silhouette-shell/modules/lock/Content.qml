@@ -40,7 +40,6 @@ Item {
             input.forceActiveFocus();
     }
 
-    Component.onCompleted: Qt.callLater(content.ensureFocus)
     onEnabledChanged: if (enabled) Qt.callLater(content.ensureFocus)
     onActiveChanged: if (active) Qt.callLater(content.ensureFocus)
     onClockExpandedChanged: if (!clockExpanded) Qt.callLater(content.ensureFocus)
@@ -226,7 +225,10 @@ Item {
         && Flags.lockMedia && content.hasPlayer && !content.clockExpanded
 
     onTrackingPositionChanged: Players.setPositionTracking(content, trackingPosition)
-    Component.onCompleted: Players.setPositionTracking(content, trackingPosition)
+    Component.onCompleted: {
+        Qt.callLater(content.ensureFocus);
+        Players.setPositionTracking(content, trackingPosition);
+    }
     Component.onDestruction: Players.setPositionTracking(content, false)
 
     BatterySurface {
