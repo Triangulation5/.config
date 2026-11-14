@@ -153,7 +153,8 @@ PillSurface {
      */
     readonly property bool hasArt: hasPlayer && Players.artUrl && Players.artUrl.length > 0
     /** True while the app icon is being shown in the cover tile — only when the track has no art at all. */
-    readonly property bool artFallbackIcon: !root.hasArt && root.appIcon.length > 0
+    readonly property bool artFallbackIcon: (!root.hasArt || cover.status === Image.Error)
+        && root.appIcon.length > 0
 
     /** Source picker is open; only reachable when more than one player runs. */
     property bool picking: false
@@ -417,7 +418,7 @@ PillSurface {
                 height: width
                 name: "music"
                 color: Theme.subtle
-                visible: !root.hasArt && !root.artFallbackIcon
+                visible: (!root.hasArt || cover.status === Image.Error) && !root.artFallbackIcon
             }
         }
     }
@@ -780,7 +781,7 @@ PillSurface {
             onReleased: {
                 if (root.player && root.canScrub) {
                     root.commitSec = root.dragFrac * root.lengthSec;
-                    root.player.position = root.commitSec;
+                    Players.seek(root.player, root.commitSec);
                 }
                 root.dragging = false;
             }
@@ -840,7 +841,7 @@ PillSurface {
                 onReleased: {
                     if (root.player && root.canScrub) {
                         root.commitSec = root.dragFrac * root.lengthSec;
-                        root.player.position = root.commitSec;
+                        Players.seek(root.player, root.commitSec);
                     }
                     root.dragging = false;
                 }

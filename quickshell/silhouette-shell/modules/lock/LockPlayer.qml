@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import qs.services
+import qs.components.icons
 import qs.components.controls
 
 /**
@@ -68,6 +69,15 @@ Column {
                     maskEnabled: true
                     maskSource: coverMask
                 }
+            }
+
+            GlyphIcon {
+                anchors.centerIn: parent
+                width: 22 * root.s
+                height: width
+                name: "music"
+                color: Theme.subtle
+                visible: !root.redacted && coverImg.status !== Image.Ready
             }
 
             Item {

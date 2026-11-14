@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import Quickshell.Hyprland
 
@@ -41,12 +42,156 @@ Singleton {
         return false;
     }
 
+    property bool mpdAvailable: false
+    property bool mpdStopped: true
+    property real mpdPosition: 0
+    property double mpdPositionUpdatedAt: 0
+    property string mpdTrackFile: ""
+    property string mpdArtUrl: ""
+    property string mpdArtRequestFile: ""
+    property string mpdArtRequestPath: ""
+    property var mpdCommandQueue: []
+    property bool mpdStatusPending: false
+    readonly property string mpdArtCacheDir: (Quickshell.env("XDG_CACHE_HOME")
+        || (Quickshell.env("HOME") + "/.cache")) + "/silhouette/mpd-art"
+
+    function parseMpdTime(value) {
+        var parts = String(value || "").split(":");
+        var seconds = 0;
+        for (var i = 0; i < parts.length; i++)
+            seconds = seconds * 60 + (parseInt(parts[i]) || 0);
+        return seconds;
+    }
+
+    function updateMpdStatus(text, exitCode) {
+        if (exitCode !== 0) {
+            mpdPlayer.trackTitle = "";
+            mpdPlayer.trackArtist = "";
+            mpdPlayer.trackAlbum = "";
+            mpdPlayer.length = 0;
+            mpdPlayer.isPlaying = false;
+            mpdStopped = true;
+            mpdPosition = 0;
+            mpdPositionUpdatedAt = 0;
+            resolveMpdArt("");
+            mpdAvailable = false;
+            return;
+        }
+
+        var lines = String(text || "").trim().split(/\r?\n/);
+        var fields = lines.length > 0 ? lines[0].split("\u001f") : [];
+        var state = "stopped";
+        var position = 0;
+        var length = 0;
+        for (var i = 0; i < lines.length; i++) {
+            var stateMatch = lines[i].match(/\[(playing|paused|stopped)\]/);
+            if (!stateMatch)
+                continue;
+            state = stateMatch[1];
+            var timeMatch = lines[i].match(/(\d+(?::\d+){1,2})\/(\d+(?::\d+){1,2})/);
+            if (timeMatch) {
+                position = parseMpdTime(timeMatch[1]);
+                length = parseMpdTime(timeMatch[2]);
+            }
+        }
+
+        var file = fields.length > 3 ? fields[3] : "";
+        var title = fields.length > 1 ? fields[1] : "";
+        if (title.length === 0 && file.length > 0)
+            title = file.split("/").pop();
+        mpdPlayer.trackTitle = fields.length > 3 ? title : "";
+        mpdPlayer.trackArtist = fields.length > 0 ? fields[0] : "";
+        mpdPlayer.trackAlbum = fields.length > 2 ? fields[2] : "";
+        mpdPlayer.length = length;
+        mpdPlayer.isPlaying = state === "playing";
+        mpdStopped = state === "stopped";
+        mpdPosition = position;
+        mpdPositionUpdatedAt = Date.now();
+        resolveMpdArt(file);
+        mpdAvailable = true;
+    }
+
+    function refreshMpd() {
+        if (mpdStatusProcess.running) {
+            mpdStatusPending = true;
+            return;
+        }
+        mpdStatusProcess.running = true;
+    }
+
+    function mpdArtPath(file) {
+        var first = 5381;
+        var second = 0;
+        for (var i = 0; i < file.length; i++) {
+            var code = file.charCodeAt(i);
+            first = ((first << 5) + first) ^ code;
+            second = ((second << 5) - second + code) | 0;
+        }
+        return mpdArtCacheDir + "/" + (first >>> 0).toString(16)
+            + (second >>> 0).toString(16) + ".jpg";
+    }
+
+    function resolveMpdArt(file) {
+        if (file === mpdTrackFile)
+            return;
+        mpdTrackFile = file;
+        mpdArtUrl = "";
+        if (file.length === 0)
+            return;
+        if (!mpdArtProcess.running)
+            startMpdArtProcess(file);
+    }
+
+    function startMpdArtProcess(file) {
+        mpdArtRequestFile = file;
+        mpdArtRequestPath = mpdArtPath(file);
+        mpdArtProcess.command = ["sh", "-c",
+            "mkdir -p \"$1\" && if [ ! -s \"$2\" ]; then "
+            + "tmp=\"$2.tmp.$$\"; "
+            + "if ! mpc readpicture \"$3\" > \"$tmp\" || [ ! -s \"$tmp\" ]; then "
+            + "rm -f \"$tmp\"; mpc albumart \"$3\" > \"$tmp\" || { rm -f \"$tmp\"; exit 1; }; fi; "
+            + "if [ -s \"$tmp\" ]; then mv -f \"$tmp\" \"$2\"; else rm -f \"$tmp\"; exit 1; fi; fi",
+            "_", mpdArtCacheDir, mpdArtRequestPath, file];
+        mpdArtProcess.running = true;
+    }
+
+    function runMpdCommand(args) {
+        if (mpdControl.running) {
+            mpdCommandQueue = mpdCommandQueue.concat([args]);
+            return;
+        }
+        mpdControl.command = ["mpc"].concat(args);
+        mpdControl.running = true;
+    }
+
+    function seekMpd(seconds) {
+        runMpdCommand(["seek", String(Math.max(0, Math.floor(seconds)))]);
+    }
+
+    function seek(player, seconds) {
+        if (!player || !player.canSeek)
+            return;
+        var target = Math.max(0, Number(seconds) || 0);
+        if (player.length > 0)
+            target = Math.min(target, player.length);
+        if (player === mpdPlayer) {
+            mpdPosition = target;
+            mpdPositionUpdatedAt = Date.now();
+            seekMpd(mpdPosition);
+            return;
+        }
+        player.position = target;
+        player.positionChanged();
+    }
+
     readonly property var list: {
         var all = Mpris.players.values;
         var out = [];
         for (var i = 0; i < all.length; i++)
             if (all[i] && !isProxy(all[i]))
                 out.push(all[i]);
+        if (mpdAvailable)
+            out.push(mpdPlayer);
         return out;
     }
 
@@ -63,6 +208,137 @@ Singleton {
     property var preferred: null
     property var positionConsumers: []
 
+    QtObject {
+        id: mpdPlayer
+
+        readonly property string dbusName: "mpd"
+        readonly property string identity: "MPD"
+        readonly property string desktopEntry: "mpd"
+        readonly property var metadata: ({})
+        readonly property string trackArtUrl: root.mpdArtUrl
+        property real length: 0
+        property string trackTitle: ""
+        property string trackArtist: ""
+        property string trackAlbum: ""
+        property bool isPlaying: false
+        readonly property real position: root.mpdPosition
+        readonly property bool positionSupported: length > 0
+        readonly property bool canSeek: length > 0
+        readonly property bool canTogglePlaying: trackTitle.length > 0
+        readonly property bool canGoPrevious: trackTitle.length > 0
+        readonly property bool canGoNext: trackTitle.length > 0
+        readonly property var trackArtists: []
+        readonly property int playbackState: root.mpdStopped ? MprisPlaybackState.Stopped
+            : isPlaying ? MprisPlaybackState.Playing : MprisPlaybackState.Paused
+
+        function togglePlaying() { root.runMpdCommand(["toggle"]); }
+        function previous() { root.runMpdCommand(["prev"]); }
+        function next() { root.runMpdCommand(["next"]); }
+    }
+
+    Process {
+        id: mpdStatusProcess
+        command: ["mpc", "--format", "%artist%\u001f%title%\u001f%album%\u001f%file%", "status"]
+        stdout: StdioCollector { id: mpdStatusOutput }
+        onExited: function(exitCode) {
+            root.updateMpdStatus(mpdStatusOutput.text, exitCode);
+            if (root.mpdStatusPending) {
+                root.mpdStatusPending = false;
+                root.refreshMpd();
+            }
+        }
+    }
+
+    Process {
+        id: mpdIdleProcess
+        command: ["mpc", "idleloop", "player"]
+        stdout: SplitParser {
+            onRead: root.refreshMpd()
+        }
+        onRunningChanged: {
+            if (running) {
+                mpdReconnectTimer.stop();
+                root.refreshMpd();
+            }
+        }
+        onExited: {
+            root.refreshMpd();
+            mpdReconnectTimer.restart();
+        }
+    }
+
+    Process {
+        id: mpdControl
+        command: ["mpc"]
+        onExited: function(exitCode) {
+            if (exitCode !== 0)
+                console.warn("MPD control command failed:", command.join(" "));
+            if (root.mpdCommandQueue.length > 0) {
+                var next = root.mpdCommandQueue[0];
+                root.mpdCommandQueue = root.mpdCommandQueue.slice(1);
+                root.runMpdCommand(next);
+            }
+        }
+    }
+
+    Process {
+        id: mpdArtProcess
+        command: []
+        onExited: function(exitCode) {
+            if (exitCode === 0 && root.mpdTrackFile === root.mpdArtRequestFile)
+                root.mpdArtUrl = "file://" + root.mpdArtRequestPath;
+            if (root.mpdTrackFile.length > 0
+                    && root.mpdTrackFile !== root.mpdArtRequestFile)
+                root.startMpdArtProcess(root.mpdTrackFile);
+        }
+    }
+
+    Timer {
+        id: mpdReconnectTimer
+        interval: 3000
+        onTriggered: if (!mpdIdleProcess.running) mpdIdleProcess.running = true
+    }
+
+    Timer {
+        interval: 500
+        running: root.mpdAvailable && mpdPlayer.isPlaying && mpdPlayer.length > 0
+        repeat: true
+        onTriggered: {
+            var now = Date.now();
+            if (root.mpdPositionUpdatedAt > 0) {
+                root.mpdPosition = Math.min(mpdPlayer.length,
+                    root.mpdPosition + (now - root.mpdPositionUpdatedAt) / 1000);
+            }
+            root.mpdPositionUpdatedAt = now;
+        }
+    }
+
+    Timer {
+        interval: 10000
+        running: root.mpdAvailable
+        repeat: true
+        onTriggered: root.refreshMpd()
+    }
+
+    Connections {
+        target: mpdPlayer
+        function onIsPlayingChanged() {
+            if (!root.ready)
+                return;
+            if (mpdPlayer.isPlaying) {
+                root.preferred = mpdPlayer;
+                root.announce(mpdPlayer, "play");
+            } else if (mpdPlayer === root.active) {
+                root.announce(mpdPlayer, "play");
+            }
+        }
+        function onTrackTitleChanged() {
+            if (root.ready && mpdPlayer.trackTitle.length > 0
+                    && (mpdPlayer.isPlaying || mpdPlayer === root.active))
+                root.announce(mpdPlayer, "song");
+        }
+    }
+
     function setPositionTracking(owner, enabled) {
         if (!owner)
             return;
@@ -77,7 +353,7 @@ Singleton {
     }
 
     readonly property bool positionPolling: positionConsumers.length > 0
-        && has && playing && active.positionSupported
+        && has && playing && active.positionSupported && active !== mpdPlayer
 
     Timer {
         interval: 500
@@ -92,6 +368,8 @@ Singleton {
         resolveTwitch();
         resolveNetflix();
         resolveSpotify();
+        refreshMpd();
+        mpdIdleProcess.running = true;
     }
 
     onListChanged: {
@@ -228,7 +506,7 @@ Singleton {
      * tray uses, with a direct icon-theme lookup as the fallback.
      */
     function appIconFor(p) {
-        if (!p)
+        if (!p || p.dbusName === "mpd")
             return "";
         var id = (p.desktopEntry && p.desktopEntry.length > 0) ? p.desktopEntry : (p.identity || "");
         if (id.length === 0)

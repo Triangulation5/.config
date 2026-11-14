@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import qs.services
 import qs.components.icons
 import qs.components.controls
@@ -184,12 +185,60 @@ Item {
             loops: Animation.Infinite
             running: root.widgetId === "musicDisc" && Players.playing
         }
+        ClippingRectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: "transparent"
+
+            Image {
+                id: discArt
+                anchors.fill: parent
+                source: Players.artUrl
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: String(source).indexOf("file:") !== 0
+                visible: status === Image.Ready
+            }
+            GlyphIcon {
+                anchors.centerIn: parent
+                width: 23 * root.s
+                height: width
+                name: "music"
+                color: Theme.primary
+                visible: discArt.status !== Image.Ready
+            }
+        }
+    }
+
+    ClippingRectangle {
+        anchors.right: parent.right
+        anchors.rightMargin: root.inset
+        anchors.top: header.bottom
+        anchors.topMargin: 8 * root.s
+        width: 44 * root.s
+        height: width
+        radius: 8 * root.s
+        color: Theme.tileBg
+        visible: root.isMusic && root.widgetId !== "musicDisc"
+        z: 2
+
+        Image {
+            id: musicArt
+            anchors.fill: parent
+            source: Players.artUrl
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            cache: String(source).indexOf("file:") !== 0
+            visible: status === Image.Ready
+        }
+
         GlyphIcon {
             anchors.centerIn: parent
-            width: 23 * root.s
+            width: 21 * root.s
             height: width
             name: "music"
-            color: Theme.primary
+            color: Theme.subtle
+            visible: musicArt.status !== Image.Ready
         }
     }
 
@@ -899,9 +948,8 @@ Item {
             onClicked: function(mouse) {
                 if (!root.hasPlayer)
                     return;
-                root.player.position = Math.max(0, Math.min(1, mouse.x / width))
-                    * Players.lengthSec;
-                root.player.positionChanged();
+                Players.seek(root.player, Math.max(0, Math.min(1, mouse.x / width))
+                    * Players.lengthSec);
             }
         }
     }
@@ -935,9 +983,8 @@ Item {
             onClicked: function(mouse) {
                 if (!root.hasPlayer)
                     return;
-                root.player.position = Math.max(0, Math.min(1, mouse.x / width))
-                    * Players.lengthSec;
-                root.player.positionChanged();
+                Players.seek(root.player, Math.max(0, Math.min(1, mouse.x / width))
+                    * Players.lengthSec);
             }
         }
     }

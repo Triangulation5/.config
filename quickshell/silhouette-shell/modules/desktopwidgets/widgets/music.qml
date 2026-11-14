@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
+import Quickshell.Widgets
 import qs.services
 import qs.components.icons
 import qs.components.controls
@@ -100,6 +101,12 @@ Item {
         width: root.perforationX - 34 * root.s
         height: parent.height - 24 * root.s
 
+        CoverArt {
+            x: 0
+            y: 28 * root.s
+            edge: 34 * root.s
+        }
+
         Text {
             id: status
             text: Players.has ? "ADMIT ONE \u00B7 " + (Players.playing ? "NOW PLAYING" : "PAUSED") : "ADMIT ONE \u00B7 MUSIC"
@@ -112,8 +119,9 @@ Item {
 
         Text {
             id: titleText
+            x: 42 * root.s
             y: 17 * root.s
-            width: parent.width
+            width: parent.width - x
             text: root.title
             textFormat: Text.PlainText
             color: Theme.onSurface
@@ -125,9 +133,10 @@ Item {
         }
 
         Text {
+            anchors.left: titleText.left
             anchors.top: titleText.bottom
             anchors.topMargin: 1 * root.s
-            width: parent.width
+            width: parent.width - titleText.x
             text: root.artist
             textFormat: Text.PlainText
             color: Theme.onSurfaceVariant
@@ -270,8 +279,7 @@ Item {
                     if (!root.hasPlayer)
                         return;
                     var target = Math.max(0, Math.min(1, mouse.x / width)) * root.length;
-                    player.position = target;
-                    player.positionChanged();
+                    Players.seek(player, target);
                 }
             }
         }
@@ -324,11 +332,17 @@ Item {
             font.letterSpacing: 1.2 * root.s
         }
 
+        CoverArt {
+            x: 16 * root.s
+            y: 39 * root.s
+            edge: 34 * root.s
+        }
+
         Text {
             id: lineTitle
-            x: 16 * root.s
+            x: 58 * root.s
             y: 29 * root.s
-            width: parent.width - 156 * root.s
+            width: parent.width - 198 * root.s
             text: root.title
             textFormat: Text.PlainText
             color: Theme.onSurface
@@ -408,8 +422,7 @@ Item {
                 onClicked: function (mouse) {
                     if (!root.hasPlayer)
                         return;
-                    player.position = Math.max(0, Math.min(1, mouse.x / width)) * root.length;
-                    player.positionChanged();
+                    Players.seek(player, Math.max(0, Math.min(1, mouse.x / width)) * root.length);
                 }
             }
         }
@@ -445,6 +458,42 @@ Item {
             enabled: button.enabled
             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
             onClicked: button.activated()
+        }
+    }
+
+    component CoverArt: Item {
+        id: coverArt
+
+        property real edge: 34 * root.s
+        readonly property string url: Players.artUrl
+
+        width: edge
+        height: edge
+
+        ClippingRectangle {
+            anchors.fill: parent
+            radius: 5 * root.s
+            color: Theme.tileBg
+
+            Image {
+                id: coverImage
+                anchors.fill: parent
+                source: coverArt.url
+                sourceSize: Qt.size(Math.ceil(width * 2), Math.ceil(height * 2))
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: String(source).indexOf("file:") !== 0
+                visible: status === Image.Ready
+            }
+
+            GlyphIcon {
+                anchors.centerIn: parent
+                width: 18 * root.s
+                height: width
+                name: "music"
+                color: Theme.subtle
+                visible: coverImage.status !== Image.Ready
+            }
         }
     }
 }
