@@ -93,8 +93,8 @@ Singleton {
     /** True while a bar tree is driving this service. Derived, never assigned. */
     readonly property bool active: root.claimer !== 0
 
-    /** Poll cadence in ms: short enough that a layout-cycle bind feels immediate. */
-    property int intervalMs: 1000
+    /** Fallback poll cadence; announced workspace/window events refresh immediately. */
+    property int intervalMs: 3000
 
     /** workspace name -> { layout, windows }. */
     property var byName: ({})

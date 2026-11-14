@@ -227,6 +227,6 @@ After implementation, provide a concise report covering:
 
 The final result should feel like a native Silhouette Shell feature, not an external music widget bolted onto it.
 
-## And also fix the shell motion speed while in Material style, just make it the same as in Washi...
+- [x] Match shell motion speed in Material style to Washi timing ladder.
 
-## Create Android One UI like opening animation for screen.
+## Create Android One UI/Google Pixel like opening animation for screen turnon.

@@ -21,6 +21,7 @@ Item {
     property real s: 1.1
     property var auth: null
     property var pw: null
+    property bool active: false
 
     property bool clockExpanded: false
     property bool revealPassword: false
@@ -192,12 +193,12 @@ Item {
         return trackArtist.length > 0 ? trackArtist : t;
     }
 
-    Timer {
-        interval: 1000
-        running: content.playing
-        repeat: true
-        onTriggered: if (content.player) content.player.positionChanged()
-    }
+    readonly property bool trackingPosition: content.active && content.enabled
+        && Flags.lockMedia && content.hasPlayer && !content.clockExpanded
+
+    onTrackingPositionChanged: Players.setPositionTracking(content, trackingPosition)
+    Component.onCompleted: Players.setPositionTracking(content, trackingPosition)
+    Component.onDestruction: Players.setPositionTracking(content, false)
 
     BatterySurface {
         id: batteryIndicator

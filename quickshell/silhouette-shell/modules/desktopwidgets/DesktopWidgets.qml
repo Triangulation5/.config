@@ -152,8 +152,7 @@ Variants {
             if (Flags.ready)
                 DesktopWidgetState.handleFlagsReady();
             Sysmon.desktopOpen = DesktopWidgetState.isCategoryEnabled("System");
-            if (DesktopWidgetState.isCategoryEnabled("Weather")
-                    || DesktopWidgetState.isEnabled("moon"))
+            if (DesktopWidgetState.isCategoryEnabled("Weather"))
                 Weather.needed = true;
         }
         Component.onDestruction: Sysmon.desktopOpen = false
@@ -162,8 +161,7 @@ Variants {
             target: DesktopWidgetState
             function onLayoutChanged() {
                 Sysmon.desktopOpen = DesktopWidgetState.isCategoryEnabled("System");
-                if (DesktopWidgetState.isCategoryEnabled("Weather")
-                        || DesktopWidgetState.isEnabled("moon"))
+                if (DesktopWidgetState.isCategoryEnabled("Weather"))
                     Weather.needed = true;
             }
         }

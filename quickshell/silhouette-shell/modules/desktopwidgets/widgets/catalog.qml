@@ -17,6 +17,19 @@ Item {
     property alias musicTransportInput: musicControls
     property var musicSeekInput: widgetId === "musicPulse" ? pulseSeekArea : musicSeekArea
     property alias timerInput: timerToggle
+    property bool trackingPosition: false
+
+    function syncPositionTracking() {
+        var wanted = widgetId === "musicRail" || widgetId === "musicPulse";
+        if (trackingPosition === wanted)
+            return;
+        trackingPosition = wanted;
+        Players.setPositionTracking(root, wanted);
+    }
+
+    onWidgetIdChanged: syncPositionTracking()
+    Component.onCompleted: syncPositionTracking()
+    Component.onDestruction: Players.setPositionTracking(root, false)
 
     readonly property real s: Math.max(0.7, Math.min(1.7, Math.min(width / 240, height / 156)))
     readonly property real inset: 16 * root.s
@@ -490,14 +503,6 @@ Item {
     }
 
     Timer {
-        interval: 500
-        repeat: true
-        running: (root.widgetId === "musicRail" || root.widgetId === "musicPulse")
-            && root.hasPlayer && root.player.positionSupported
-        onTriggered: if (root.hasPlayer) root.player.positionChanged()
-    }
-
-    Timer {
         interval: 1000
         repeat: true
         running: root.widgetId === "profileRings" || root.widgetId === "sysOrbit"
@@ -768,6 +773,7 @@ Item {
                 Text {
                     width: parent.width
                     text: headlineEntry.modelData.preview.summary
+                    textFormat: Text.PlainText
                     color: Theme.onSurface
                     font.family: Theme.font
                     font.pixelSize: 10 * root.s
@@ -777,6 +783,7 @@ Item {
                 Text {
                     width: parent.width
                     text: headlineEntry.modelData.app
+                    textFormat: Text.PlainText
                     color: Theme.onSurfaceVariant
                     font.family: Theme.font
                     font.pixelSize: 8 * root.s

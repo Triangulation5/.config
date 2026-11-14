@@ -27,22 +27,27 @@ Singleton {
     property string user: ""
 
     /**
-     * Send the typed password back to the agent. The password rides through a
-     * short-lived argv into the response file; the file sits in the user-only
-     * runtime dir and is deleted by the agent as soon as it is read.
+     * Send the typed password back to the agent. The password is written directly
+     * in-process to the response file without passing through command-line argv;
+     * the file sits in the user-only runtime dir and is deleted by the agent as
+     * soon as it is read.
      */
     function respond(password) {
         if (!pending)
             return;
-        /** Reset first so a second answer (e.g. Cancel after a failed attempt) always re-runs the write. */
-        writeProc.running = false;
-        writeProc.command = ["sh", "-c", "printf '%s' \"$1\" > \"$2\"", "sh", password, root.respFile];
-        writeProc.running = true;
+        respWriter.setText(String(password || ""));
     }
 
     /** Dismiss the prompt: the agent reads CANCEL and clears the conversation. */
     function cancel() {
         respond("CANCEL");
+    }
+
+    FileView {
+        id: respWriter
+        path: root.respFile
+        atomicWrites: true
+        printErrors: false
     }
 
     /**
@@ -68,6 +73,4 @@ Singleton {
         interval: 2000
         onTriggered: agentProc.running = true
     }
-
-    Process { id: writeProc }
 }

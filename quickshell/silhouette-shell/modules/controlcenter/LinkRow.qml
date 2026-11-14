@@ -74,6 +74,7 @@ Item {
         Text {
             width: parent.width
             text: row.name
+            textFormat: Text.PlainText
             color: Theme.cream
             font.family: Theme.font
             font.pixelSize: 12.5 * s

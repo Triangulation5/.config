@@ -144,6 +144,7 @@ Item {
         s: surface.s
         auth: surface.auth
         pw: surface.pw
+        active: surface.active
 
         enabled: surface.maskP >= 1
     }

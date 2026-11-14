@@ -40,12 +40,8 @@ Item {
         return minutes + ":" + (rest < 10 ? "0" : "") + rest;
     }
 
-    Timer {
-        interval: 500
-        repeat: true
-        running: root.hasPlayer && root.player.positionSupported
-        onTriggered: if (root.hasPlayer) root.player.positionChanged()
-    }
+    Component.onCompleted: Players.setPositionTracking(root, true)
+    Component.onDestruction: Players.setPositionTracking(root, false)
 
     Shape {
         visible: root.ticketMode
@@ -119,6 +115,7 @@ Item {
             y: 17 * root.s
             width: parent.width
             text: root.title
+            textFormat: Text.PlainText
             color: Theme.onSurface
             font.family: Theme.font
             font.pixelSize: 20 * root.s
@@ -132,6 +129,7 @@ Item {
             anchors.topMargin: 1 * root.s
             width: parent.width
             text: root.artist
+            textFormat: Text.PlainText
             color: Theme.onSurfaceVariant
             font.family: Theme.font
             font.pixelSize: 11 * root.s
@@ -159,6 +157,7 @@ Item {
                 Text {
                     width: parent.width
                     text: root.album
+                    textFormat: Text.PlainText
                     color: Theme.onSurface
                     font.family: Theme.font
                     font.pixelSize: 9 * root.s
@@ -180,6 +179,7 @@ Item {
                 Text {
                     width: parent.width
                     text: root.source
+                    textFormat: Text.PlainText
                     color: Theme.onSurface
                     font.family: Theme.font
                     font.pixelSize: 9 * root.s
@@ -330,6 +330,7 @@ Item {
             y: 29 * root.s
             width: parent.width - 156 * root.s
             text: root.title
+            textFormat: Text.PlainText
             color: Theme.onSurface
             font.family: Theme.font
             font.pixelSize: 17 * root.s
@@ -344,6 +345,7 @@ Item {
             anchors.topMargin: 2 * root.s
             width: lineTitle.width
             text: root.artist
+            textFormat: Text.PlainText
             color: Theme.onSurfaceVariant
             font.family: Theme.font
             font.pixelSize: 10 * root.s

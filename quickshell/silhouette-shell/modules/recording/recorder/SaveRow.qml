@@ -85,6 +85,7 @@ Item {
         anchors.rightMargin: 12 * s
         anchors.verticalCenter: parent.verticalCenter
         text: row.shownDir
+        textFormat: Text.PlainText
         color: Theme.cream
         font.family: Theme.font
         font.pixelSize: 10 * s

@@ -306,16 +306,14 @@ SettingsSurface {
         property string mode: ""
         property string position: ""
         property real scale: 1
-        command: ["sh", "-c",
-            "sh \"$1\" apply \"$2\" \"$3\" \"$4\" \"$5\"",
-            "sh", root.helper, out, mode, position, String(scale)]
+        command: ["sh", root.helper, "apply", out, mode, position, String(scale)]
         onExited: root.startCountdown()
     }
 
     Process {
         id: keepProc
         property string out: ""
-        command: ["sh", "-c", "sh \"$1\" keep \"$2\"", "sh", root.helper, out]
+        command: ["sh", root.helper, "keep", out]
     }
 
     /** XWayland primary flag; runs only when a main swap is applied. */

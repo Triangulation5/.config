@@ -48,6 +48,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 76 * s
         text: arow.name
+        textFormat: Text.PlainText
         color: arow.on ? Theme.cream : Theme.subtle
         font.family: Theme.font
         font.pixelSize: 11.5 * s

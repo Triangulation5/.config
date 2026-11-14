@@ -510,7 +510,7 @@ Singleton {
      */
     Timer {
         interval: root.needed && !root.located ? Flags.weatherRetryMs : Flags.weatherRefreshMs
-        running: true
+        running: root.needed
         repeat: true
         onTriggered: {
             if (!root.needed)

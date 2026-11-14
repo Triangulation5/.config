@@ -61,6 +61,30 @@ Singleton {
 
     property var manualActive: null
     property var preferred: null
+    property var positionConsumers: []
+
+    function setPositionTracking(owner, enabled) {
+        if (!owner)
+            return;
+        var index = positionConsumers.indexOf(owner);
+        if (enabled && index < 0)
+            positionConsumers = positionConsumers.concat([owner]);
+        else if (!enabled && index >= 0) {
+            var next = positionConsumers.slice(0);
+            next.splice(index, 1);
+            positionConsumers = next;
+        }
+    }
+
+    readonly property bool positionPolling: positionConsumers.length > 0
+        && has && playing && active.positionSupported
+
+    Timer {
+        interval: 500
+        running: root.positionPolling
+        repeat: true
+        onTriggered: if (root.positionPolling && root.active) root.active.positionChanged()
+    }
 
     property bool ready: false
     Component.onCompleted: {

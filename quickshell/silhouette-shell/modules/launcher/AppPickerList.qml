@@ -35,6 +35,8 @@ Column {
     spacing: 0
 
     readonly property var allApps: DesktopEntries.applications.values
+    property var _resolvedCache: ({})
+    onAllAppsChanged: _resolvedCache = ({})
 
     /**
      * Collapse a window-class token to a comparable key: a two-char character
@@ -61,9 +63,17 @@ Column {
      * tokens cannot cross-link unrelated apps. Null when nothing matches.
      */
     function resolveEntry(cls) {
-        var want = picker.normalizeClass(cls);
-        if (want.length === 0)
+        var key = String(cls || "");
+        if (key.length === 0)
             return null;
+        if (picker._resolvedCache.hasOwnProperty(key))
+            return picker._resolvedCache[key];
+
+        var want = picker.normalizeClass(cls);
+        if (want.length === 0) {
+            picker._resolvedCache[key] = null;
+            return null;
+        }
         var apps = picker.allApps;
 
         /**
@@ -84,8 +94,10 @@ Column {
         for (var j = 0; j < apps.length; j++) {
             var cands = norms[j];
             if (!cands) continue;
-            if (cands[0] === want || cands[1] === want || cands[2] === want)
+            if (cands[0] === want || cands[1] === want || cands[2] === want) {
+                picker._resolvedCache[key] = apps[j];
                 return apps[j];
+            }
         }
 
         var best = null;
@@ -104,6 +116,7 @@ Column {
                 }
             }
         }
+        picker._resolvedCache[key] = best;
         return best;
     }
 
@@ -335,6 +348,7 @@ Column {
                     anchors.rightMargin: 12 * picker.s
                     anchors.verticalCenter: parent.verticalCenter
                     text: appRow.entry ? appRow.entry.name : ""
+                    textFormat: Text.PlainText
                     color: Theme.cream
                     font.family: Theme.font
                     font.pixelSize: 12.5 * picker.s

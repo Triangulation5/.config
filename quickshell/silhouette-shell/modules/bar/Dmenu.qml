@@ -220,6 +220,7 @@ Rectangle {
                             id: label
                             anchors.centerIn: parent
                             text: cell.modelData.name
+                            textFormat: Text.PlainText
                             color: cell.sel ? BarStyle.accentInk : BarStyle.fg
                             font.family: Theme.font
                             font.pixelSize: 12.5 * root.s

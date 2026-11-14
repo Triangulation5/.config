@@ -161,6 +161,7 @@ Variants {
             delegate: RoundCorner {
                 id: corner
 
+                visible: corners.cornerOpacity > 0 && corners.cornerSize > 0
                 opacity: corners.cornerOpacity
                 size: corners.cornerSize
                 corner: modelData.c

@@ -102,13 +102,16 @@ PillSurface {
     }
 
     /**
-     * True while the card is actually on screen. Drives the marquees and the
-     * 2Hz position poll so neither runs while the card is invisible. The host
+     * True while the card is actually on screen. Drives the marquees and shared
+     * 2Hz position updates so neither runs while the card is invisible. The host
      * supplies it: the full media surface passes its open state, and the hover
      * bud passes the pill's hover mode (the bud stays instantiated with
      * open: true even at rest, so `open` alone can't gate it). Defaults off.
      */
     property bool shown: false
+    onShownChanged: Players.setPositionTracking(root, shown)
+    Component.onCompleted: Players.setPositionTracking(root, shown)
+    Component.onDestruction: Players.setPositionTracking(root, false)
 
     /**
      * The dedicated surface's layout: a smaller transport and the scrubable
@@ -203,13 +206,6 @@ PillSurface {
     property real sealPulse: 0
 
     onTitleChanged: if (playing && active) pulseAnim.restart()
-
-    Timer {
-        interval: 500
-        running: root.shown && root.playing
-        repeat: true
-        onTriggered: if (root.player) root.player.positionChanged();
-    }
 
     SequentialAnimation {
         id: pulseAnim

@@ -1264,7 +1264,7 @@ Item {
              * spawns for a feature that is off.
              */
             function refreshArtColor() {
-                if (!enabled) {
+                if (!enabled || !Players.artUrl || Players.artUrl.length === 0) {
                     artColorProc.running = false;
                     aura.artHex = "";
                     return;

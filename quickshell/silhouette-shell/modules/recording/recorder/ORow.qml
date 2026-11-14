@@ -31,6 +31,7 @@ Item {
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         text: orow.name
+        textFormat: Text.PlainText
         color: Theme.cream
         font.family: Theme.font
         font.pixelSize: 12 * s

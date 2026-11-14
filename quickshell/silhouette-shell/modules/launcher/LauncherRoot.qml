@@ -52,7 +52,7 @@ ShellRoot {
     }
 
     readonly property int totalCount: allEntries.length
-    readonly property var results: Fuzzy.rank(allEntries, query, usage)
+    readonly property var results: root.shown ? Fuzzy.rank(allEntries, query, usage) : []
 
     function run(entry) {
         if (entry) {

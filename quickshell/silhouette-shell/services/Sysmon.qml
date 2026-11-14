@@ -8,9 +8,9 @@ import Quickshell.Io
  * network, disk and (when a discrete GPU is present) GPU load, temperature and
  * VRAM, exposing them as live properties the surface binds to. Polling only runs
  * while the system surface or Material desktop glance is visible, on three
- * decoupled cadences so a slow source never stalls the dials: the cheap /proc
- * and hwmon reads refresh every 500ms, the GPU query every 1s, and disk plus
- * uptime every 5s. Opening either view primes the sources so the readings land
+ * decoupled cadences so a slow source never stalls the dials: the /proc and
+ * hwmon reads refresh every 1s, the GPU query every 2s, and disk plus uptime
+ * every 5s. Opening either view primes the sources so the readings land
  * immediately.
  *
  * CPU load is a two-sample delta of /proc/stat (busy vs total jiffies); network
@@ -236,14 +236,14 @@ Singleton {
     }
 
     Timer {
-        interval: 500
+        interval: 1000
         running: root.active
         repeat: true
         onTriggered: if (!fastProc.running) fastProc.running = true
     }
 
     Timer {
-        interval: 1000
+        interval: 2000
         running: root.active && root.hasGpu
         repeat: true
         onTriggered: if (!gpuProc.running) gpuProc.running = true

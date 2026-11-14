@@ -96,6 +96,9 @@ EXTERNAL_TOKENS = re.compile(
     r"brow\.kbCmd|"
     r"result\.modelData\.output|"
     r"con\.name|dev\.modelData|dev\.meta|"
+    r"\b(row\.name|arow\.name|orow\.name|row\.shownDir|"
+    r"cell\.modelData\.name|appRow\.entry\.name|"
+    r"headlineEntry\.modelData\.(preview\.summary|app))|"
     r"profile\.realName|"
     r"title$)"
 )

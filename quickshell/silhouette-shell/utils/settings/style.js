@@ -231,19 +231,19 @@ var profiles = {
         pillShadowBlur: 0.85,
         pillShadowOffset: 4.0,
 
-        motionFast: 160,
+        motionFast: 140,
         motionStandard: 300,
-        motionMorph: 500,
-        motionShapeshift: 750,
-        motionGlide: 300,
-        motionHeat: 1000,
-        motionPulse: 400,
+        motionMorph: 420,
+        motionShapeshift: 820,
+        motionGlide: 260,
+        motionHeat: 1100,
+        motionPulse: 420,
         motionLiquid: false,
         /** Material 3 emphasized easing: (0.2, 0, 0, 1) with a breath of settle. */
         motionCurve: [0.20, 0.06, 0.00, 1.00, 1.00, 1.00],
-        appFast: 140,
-        appNormal: 220,
-        appWindow: 300
+        appFast: 120,
+        appNormal: 150,
+        appWindow: 220
     }
 }
 

@@ -55,6 +55,7 @@ Singleton {
     property var _watch: ({ path: "", target: "", last: 0, time: 0 })
     /** True once a downloads.json is known; stops the fast re-probe. */
     property bool probeSettled: false
+    property int probeIntervalMs: 4000
 
     function probeProfiles() {
         if (probeProc.running)
@@ -71,7 +72,7 @@ Singleton {
         id: probeProc
         command: ["sh", "-c",
             "for d in \"$HOME/.mozilla/firefox\" \"$HOME/.config/mozilla/firefox\" \"$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox\" \"$HOME/snap/firefox/common/.mozilla/firefox\"; do "
-            + "[ -d \"$d\" ] && find \"$d\" -name downloads.json -printf '%T@ %p\\n' 2>/dev/null; "
+            + "[ -d \"$d\" ] && find \"$d\" -maxdepth 2 -type f -name downloads.json -printf '%T@ %p\\n' 2>/dev/null; "
             + "done | sort -rn | head -1"]
         stdout: StdioCollector {
             function onStreamFinished() {
@@ -83,6 +84,7 @@ Singleton {
                     root.probeSettled = false;
                     return;
                 }
+                root.probeIntervalMs = 4000;
                 root.probeSettled = true;
                 if (p !== root._watch.path) {
                     root._watch.path = p;
@@ -103,6 +105,7 @@ Singleton {
         onLoadFailed: {
             root.active = false;
             root.probeSettled = false;
+            root.probeIntervalMs = 4000;
             root.probeProfiles();
         }
     }
@@ -191,15 +194,19 @@ Singleton {
 
     /**
      * Firefox removes downloads.json entirely when the list is empty, so with
-     * no known file the probe re-runs often enough that a freshly started
-     * download appears within a couple of ticks.
+     * no known file the probe backs off to avoid repeatedly scanning idle
+     * profile directories, while still finding a new download within 30s.
      */
     Timer {
         id: probeRetry
-        interval: 4000
+        interval: root.probeIntervalMs
         repeat: true
         running: !root.probeSettled
-        onTriggered: root.probeProfiles()
+        onTriggered: {
+            root.probeProfiles();
+            if (!root.probeSettled)
+                root.probeIntervalMs = Math.min(30000, root.probeIntervalMs * 2);
+        }
     }
 
     Component.onCompleted: probeProfiles()
