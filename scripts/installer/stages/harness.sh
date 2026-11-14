@@ -37,8 +37,12 @@ PI_CC_UI_PKG="$CUSTOM_PI_CC_UI"
 
 packages=(
     "npm:@juicesharp/rpiv-ask-user-question"
-    # "npm:pi-subagents"
     "$PI_CC_UI_PKG"
+)
+
+optional_packages=(
+    "npm:pi-subagents"
+    "npm:@tychenjiajun/pi-voice"
 )
 
 extensions=(
@@ -240,12 +244,33 @@ remove_npm_pi_cc_ui() {
 # Package installation
 
 install_packages() {
+    local package answer
+    local -a selected_optional=()
+
     info "Installing Pi packages..."
     ensure_custom_pi_cc_ui
     remove_npm_pi_cc_ui
 
+    if [[ -t 0 ]]; then
+        for package in "${optional_packages[@]}"; do
+            if read -r -p "    Install optional package $package? [y/N] " answer; then
+                case "$answer" in
+                    [yY]*) selected_optional+=("$package") ;;
+                esac
+            fi
+        done
+    fi
+
     for package in "${packages[@]}"; do
         info "Installing $package"
+
+        pi install "$package"
+
+        success "$package"
+    done
+
+    for package in "${selected_optional[@]}"; do
+        info "Installing optional package $package"
 
         pi install "$package"
 
