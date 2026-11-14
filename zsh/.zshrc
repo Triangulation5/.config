@@ -49,7 +49,7 @@ alias crawl='wget --recursive --page-requisites --adjust-extension --convert-lin
 alias cc="gcc -Wall -Wextra -std=c23 -pedantic "
 
 export PATH="$HOME/.local/bin:$PATH"
-command rm -rf ~/.npm >/dev/null 2>&1 &!
+command rm -rf ~/.npm ~/.w3m ~/.lyrics/ ~/.github-copilot-cli/ >/dev/null 2>&1 &!
 
 bindkey -s '^F' 'cd "$(dirname "$(fzf)")"\n'
 bindkey -s $'\e\C-f' '~/.config/scripts/tmux-session-dispensary.sh\n'
