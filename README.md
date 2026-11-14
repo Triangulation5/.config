@@ -251,8 +251,14 @@ my machine or my habits and will look strange anywhere else:
 - [flickowoa's dotfiles](https://github.com/flickowoa/dotfiles) — the flowing
   string music visualizer.
 - [howdy](https://github.com/boltgolt/howdy) — face unlock, yet to be implemented.
+- [LUCKYS1NGHH/ChillPill-Shell](https://github.com/LUCKYS1NGHH/ChillPill-Shell) — performance
+  optimizations (lite mode, fullscreen from foreign-toplevel protocol,
+  precomputed derived notifications, deduplication, volume ceiling beyond
+  unity).
 - [yazi](https://github.com/sxyazi/yazi) flavors and plugins in `yazi/flavors/`
   and `yazi/plugins/` are other people's work, vendored.
+- JetBrainsMono Nerd Font and FiraCode Nerd Font — the mono fonts used throughout.
+- Colloid-Grey-Dark GTK theme, Papirus-Dark GTK theme, and Bibata-Modern-Ice cursor.
 - The wallpapers, the lock screen art and the fastfetch art are not mine.
 
 `quickshell/silhouette-shell/CREDITS.md` has the longer version.

@@ -101,47 +101,41 @@ Item {
         width: root.perforationX - 34 * root.s
         height: parent.height - 24 * root.s
 
-        CoverArt {
-            x: 0
-            y: 28 * root.s
-            edge: 34 * root.s
-        }
-
         Text {
             id: status
             text: Players.has ? "ADMIT ONE \u00B7 " + (Players.playing ? "NOW PLAYING" : "PAUSED") : "ADMIT ONE \u00B7 MUSIC"
             color: Theme.primary
             font.family: Theme.font
-            font.pixelSize: 9 * root.s
+            font.pixelSize: 11 * root.s
             font.weight: Font.Bold
-            font.letterSpacing: 1.4 * root.s
+            font.letterSpacing: 1.5 * root.s
         }
 
         Text {
             id: titleText
-            x: 42 * root.s
-            y: 17 * root.s
-            width: parent.width - x
+            x: 0
+            y: 24 * root.s
+            width: parent.width
             text: root.title
             textFormat: Text.PlainText
             color: Theme.onSurface
             font.family: Theme.font
-            font.pixelSize: 20 * root.s
+            font.pixelSize: 24 * root.s
             font.weight: Font.Bold
             elide: Text.ElideRight
-            maximumLineCount: 1
+            maximumLineCount: 2
         }
 
         Text {
-            anchors.left: titleText.left
+            anchors.left: parent.left
             anchors.top: titleText.bottom
-            anchors.topMargin: 1 * root.s
-            width: parent.width - titleText.x
+            anchors.topMargin: 2 * root.s
+            width: parent.width
             text: root.artist
             textFormat: Text.PlainText
             color: Theme.onSurfaceVariant
             font.family: Theme.font
-            font.pixelSize: 11 * root.s
+            font.pixelSize: 14 * root.s
             elide: Text.ElideRight
             maximumLineCount: 1
         }
@@ -150,18 +144,18 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            spacing: 16 * root.s
+            spacing: 32 * root.s
 
             Column {
                 width: parent.width * 0.45
-                spacing: 1
+                spacing: 2
                 Text {
                     text: "ALBUM"
                     color: Theme.primary
                     font.family: Theme.font
-                    font.pixelSize: 8 * root.s
+                    font.pixelSize: 10 * root.s
                     font.weight: Font.Bold
-                    font.letterSpacing: 1.2 * root.s
+                    font.letterSpacing: 1.5 * root.s
                 }
                 Text {
                     width: parent.width
@@ -169,21 +163,21 @@ Item {
                     textFormat: Text.PlainText
                     color: Theme.onSurface
                     font.family: Theme.font
-                    font.pixelSize: 9 * root.s
+                    font.pixelSize: 12 * root.s
                     elide: Text.ElideRight
                 }
             }
 
             Column {
                 width: parent.width * 0.3
-                spacing: 1
+                spacing: 2
                 Text {
                     text: "PLAYER"
                     color: Theme.primary
                     font.family: Theme.font
-                    font.pixelSize: 8 * root.s
+                    font.pixelSize: 10 * root.s
                     font.weight: Font.Bold
-                    font.letterSpacing: 1.2 * root.s
+                    font.letterSpacing: 1.5 * root.s
                 }
                 Text {
                     width: parent.width
@@ -191,28 +185,29 @@ Item {
                     textFormat: Text.PlainText
                     color: Theme.onSurface
                     font.family: Theme.font
-                    font.pixelSize: 9 * root.s
+                    font.pixelSize: 12 * root.s
                     elide: Text.ElideRight
                 }
             }
 
             Column {
                 width: parent.width * 0.2
-                spacing: 1
+                spacing: 2
                 Text {
                     text: "LENGTH"
                     color: Theme.primary
                     font.family: Theme.font
-                    font.pixelSize: 8 * root.s
+                    font.pixelSize: 10 * root.s
                     font.weight: Font.Bold
-                    font.letterSpacing: 1.2 * root.s
+                    font.letterSpacing: 1.5 * root.s
                 }
                 Text {
                     width: parent.width
                     text: Players.has && !Players.live ? root.formatTime(root.length) : "\u2014"
                     color: Theme.onSurface
                     font.family: Theme.font
-                    font.pixelSize: 9 * root.s
+                    font.pixelSize: 12 * root.s
+                    font.features: ({ "tnum": 1 })
                 }
             }
         }
@@ -248,12 +243,15 @@ Item {
         Item {
             id: barcode
             width: parent.width
-            height: 22 * root.s
+            height: 18 * root.s
             anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: seekTime.bottom
+            anchors.bottomMargin: 2 * root.s
 
             Row {
                 anchors.fill: parent
-                spacing: 1.5 * root.s
+                width: parent.width
+                spacing: 2 * root.s
 
                 Repeater {
                     model: [3, 5, 2, 2, 4, 2, 3, 5, 2, 4, 2, 3, 2, 5, 3, 2, 4, 2, 3, 5, 2, 2, 4, 3]
@@ -261,8 +259,9 @@ Item {
                     delegate: Rectangle {
                         required property int modelData
                         required property int index
-                        width: modelData * 0.62 * root.s
-                        height: barcode.height
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: modelData * 0.52 * root.s
+                        height: parent.height
                         color: index / 24 < root.progress
                             ? Theme.onSurface : Qt.alpha(Theme.onSurface, 0.28)
                     }
