@@ -3,9 +3,6 @@ set -Eeuo pipefail
 
 # Triangulation's customized Pi configuration installer
 #
-# Repository:
-# https://github.com/triangulation5/pi-agent-config
-#
 # Usage:
 #   ./install.sh          Install configuration
 #   ./install.sh install  Install configuration
