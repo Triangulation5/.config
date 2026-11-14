@@ -322,13 +322,18 @@ ShellRoot {
             id: lockSurface
             color: "#160f0a"
 
-            LockSurface {
+            Loader {
+                id: surfaceLoader
                 anchors.fill: parent
-                s: lockSurface.screen ? lockSurface.screen.height / 1080 : 1
-                screenName: lockSurface.screen ? lockSurface.screen.name : ""
-                auth: pamAuth
-                pw: root.pw
-                active: root.revealed
+                active: sessionLock.locked
+
+                sourceComponent: LockSurface {
+                    s: lockSurface.screen ? lockSurface.screen.height / 1080 : 1
+                    screenName: lockSurface.screen ? lockSurface.screen.name : ""
+                    auth: pamAuth
+                    pw: root.pw
+                    active: root.revealed
+                }
             }
         }
     }

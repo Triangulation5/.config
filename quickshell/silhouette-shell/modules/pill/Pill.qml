@@ -419,9 +419,9 @@ Item {
             pill.closedAt[name] = Date.now();
     }
 
-    /** Tail (ms) for `name`: the harsh game-mode one while it is on, else the tier. */
+    /** Tail (ms) for `name`: the harsh game-mode or memory-pressure one, else the tier. */
     function unloadTail(name) {
-        if (pill.harshUnload)
+        if (pill.harshUnload || Surfaces.underPressure)
             return pill.gameUnloadMs;
         var t = pill.unloadIdleMs[name];
         return t !== undefined ? t : pill.unloadIdleMs["default"];
@@ -471,6 +471,7 @@ Item {
     function _cleanupIdleSurfaces() {
         var now = Date.now();
         var ld;
+        var evictedAny = false;
         for (var name in pill._surfaceLoaders) {
             ld = pill._surfaceLoaders[name];
             if (!ld || !ld.active)
@@ -489,9 +490,13 @@ Item {
              * to when it was last touched.
              */
             var since = pill.closedAt[name] !== undefined ? pill.closedAt[name] : (pill._surfaceLastOpened[name] || 0);
-            if (now - since >= pill.unloadTail(name))
+            if (now - since >= pill.unloadTail(name)) {
                 ld.active = false;
+                evictedAny = true;
+            }
         }
+        if (evictedAny && typeof gc === "function")
+            gc();
         /**
          * The hover media bud stays loaded for as long as a media source exists
          * (playing or paused), even at rest with the bud off-screen. It is the
@@ -529,6 +534,7 @@ Item {
      * tail at least gave it its window; a manual clear is not allowed to lose it.
      */
     function unloadClosedSurfaces() {
+        var evictedAny = false;
         for (var name in pill._surfaceLoaders) {
             var ld = pill._surfaceLoaders[name];
             if (!ld || !ld.active)
@@ -541,7 +547,10 @@ Item {
                 continue;
             ld.active = false;
             delete pill.closedAt[name];
+            evictedAny = true;
         }
+        if (evictedAny && typeof gc === "function")
+            gc();
     }
 
     /**

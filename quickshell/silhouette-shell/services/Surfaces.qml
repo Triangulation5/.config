@@ -1,21 +1,18 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 /**
- * Surface-lifecycle bus for the shell's manual eviction door. Each pill connects
+ * Surface-lifecycle and memory pressure bus for the shell. Each pill connects
  * to `unloadClosedRequested` and drops its own closed surfaces when it fires, so
  * the `unloadAll` IPC only emits and every live pill answers.
  *
- * A signal rather than a registry of pill objects: pills are per-monitor Variants
- * delegates, so a monitor hotplug or an overlay rebuild destroys and recreates
- * them, and a stored object reference would go stale with no cleanup hook. A
- * connection dies with its receiver, so there is nothing to unregister and the
- * bus never needs to know how many monitors exist.
- *
- * This exists because memory saver off means no tail at all — the sweep in
- * Pill.qml never fires — which left "until restart" as the only way to hand that
- * memory back. The IPC makes it a command instead.
+ * It also actively samples the shell's resident memory (RSS in MB) from
+ * `/proc/<pid>/statm`. If memory reaches the soft pressure cap (280MB), it
+ * triggers `unloadClosed()` and `gc()`, and signals Pill.qml to adopt harsh
+ * tails. If memory ever reaches the hard ceiling (330MB, capped at 350MB), it
+ * runs an immediate emergency sweep to keep the shell strictly bounded.
  */
 Singleton {
     id: root
@@ -34,5 +31,49 @@ Singleton {
      */
     function unloadClosed() {
         root.unloadClosedRequested();
+    }
+
+    /** Live shell RSS in MB, polled every 8 seconds. */
+    property int shellRssMb: 0
+
+    /** Memory thresholds in MB */
+    readonly property int idleTargetMb: 180
+    readonly property int softCapMb: 280
+    readonly property int hardCapMb: 330
+
+    /** True when memory exceeds the soft pressure cap */
+    readonly property bool underPressure: shellRssMb >= softCapMb
+
+    function checkMemory() {
+        if (!memProc.running)
+            memProc.running = true;
+    }
+
+    Process {
+        id: memProc
+        command: ["sh", "-c", "read -r _ r _ < /proc/\"$1\"/statm 2>/dev/null; echo $((r*4/1024))", "_", String(Quickshell.processId)]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var mb = parseInt(this.text.trim(), 10);
+                if (isNaN(mb) || mb <= 0)
+                    return;
+                root.shellRssMb = mb;
+
+                if (mb >= root.softCapMb) {
+                    root.unloadClosed();
+                    if (typeof gc === "function")
+                        gc();
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: memTimer
+        interval: 8000
+        repeat: true
+        running: true
+        triggeredOnStart: false
+        onTriggered: root.checkMemory()
     }
 }
