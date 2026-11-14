@@ -132,7 +132,7 @@ stage_plan() {
         if [ -z "$WANT_PI_HARNESS" ]; then
             section "Pi agent harness"
             note "Pi agent harness: coding agent setup with custom extensions, skills,"
-            note "and tools (uses Triangulation5/pi-claude-code-ui from ~/Projects)."
+            note "and tools (uses Triangulation5/pi-harmony from ~/Projects)."
             if ask_yn "    Install Pi agent harness?" n; then
                 WANT_PI_HARNESS=1
             else

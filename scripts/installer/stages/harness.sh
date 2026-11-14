@@ -14,7 +14,8 @@ set -Eeuo pipefail
 #
 # Optional:
 #   PI_CODING_AGENT_DIR=/custom/path ./install.sh
-#   PI_CLAUDE_CODE_UI_PATH=/custom/checkout ./install.sh
+#   PI_HARMONY_PATH=/custom/checkout ./install.sh
+#   PI_CLAUDE_CODE_UI_PATH=/custom/checkout ./install.sh (legacy override)
 
 VERSION="1.3.0"
 
@@ -31,12 +32,11 @@ MODE="${1:-install}"
 BACKUP_DIR="$PI_DIR/backups/pi-agent-config/$(date +%Y%m%d-%H%M%S)"
 
 # Packages
-CUSTOM_PI_CC_UI="${PI_CLAUDE_CODE_UI_PATH:-$HOME/Projects/pi-claude-code-ui}"
-CUSTOM_PI_CC_UI_REPO="${PI_CLAUDE_CODE_UI_REPO:-https://github.com/Triangulation5/pi-claude-code-ui.git}"
-PI_CC_UI_PKG="$CUSTOM_PI_CC_UI"
+CUSTOM_PI_HARMONY="${PI_HARMONY_PATH:-${PI_CLAUDE_CODE_UI_PATH:-$HOME/Projects/pi-claude-code-ui}}"
+CUSTOM_PI_HARMONY_REPO="${PI_HARMONY_REPO:-${PI_CLAUDE_CODE_UI_REPO:-https://github.com/Triangulation5/pi-harmony.git}}"
+PI_HARMONY_PKG="$CUSTOM_PI_HARMONY"
 
 packages=(
-    "npm:@juicesharp/rpiv-ask-user-question"
     "$PI_CC_UI_PKG"
 )
 
@@ -204,40 +204,49 @@ download() {
     success "Installed: $(basename "$destination")"
 }
 
-ensure_custom_pi_cc_ui() {
+ensure_custom_pi_harmony() {
     local package_name
 
-    if [[ ! -d "$CUSTOM_PI_CC_UI" ]]; then
+    if [[ ! -d "$CUSTOM_PI_HARMONY" ]]; then
         command -v git >/dev/null 2>&1 ||
-            die "git is required to clone the custom pi-claude-code-ui repository."
-        mkdir -p "$(dirname "$CUSTOM_PI_CC_UI")"
-        info "Cloning custom pi-claude-code-ui from $CUSTOM_PI_CC_UI_REPO..."
-        git clone --depth 1 -- "$CUSTOM_PI_CC_UI_REPO" "$CUSTOM_PI_CC_UI" ||
-            die "Failed to clone the custom pi-claude-code-ui repository."
+            die "git is required to clone the Pi Harmony repository."
+        mkdir -p "$(dirname "$CUSTOM_PI_HARMONY")"
+        info "Cloning Pi Harmony from $CUSTOM_PI_HARMONY_REPO..."
+        git clone --depth 1 -- "$CUSTOM_PI_HARMONY_REPO" "$CUSTOM_PI_HARMONY" ||
+            die "Failed to clone the Pi Harmony repository."
     fi
 
-    [[ -f "$CUSTOM_PI_CC_UI/package.json" ]] ||
-        die "Custom pi-claude-code-ui checkout has no package.json: $CUSTOM_PI_CC_UI"
+    [[ -f "$CUSTOM_PI_HARMONY/package.json" ]] ||
+        die "Pi Harmony checkout has no package.json: $CUSTOM_PI_HARMONY"
     package_name="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("name", ""))' \
-        "$CUSTOM_PI_CC_UI/package.json")"
-    [[ "$package_name" == "pi-claude-code-ui" ]] ||
-        die "Expected pi-claude-code-ui at $CUSTOM_PI_CC_UI, found package '$package_name'."
+        "$CUSTOM_PI_HARMONY/package.json")"
+    [[ "$package_name" == "pi-harmony" ]] ||
+        die "Expected pi-harmony at $CUSTOM_PI_HARMONY, found package '$package_name'."
 
-    if [[ ! -d "$PI_CC_UI_PKG/node_modules" ]]; then
+    if [[ ! -d "$PI_HARMONY_PKG/node_modules" ]]; then
         command -v npm >/dev/null 2>&1 ||
-            die "npm is required to install dependencies for $PI_CC_UI_PKG."
-        info "Installing dependencies for custom pi-claude-code-ui..."
-        (cd "$PI_CC_UI_PKG" && npm install)
+            die "npm is required to install dependencies for $PI_HARMONY_PKG."
+        info "Installing dependencies for Pi Harmony..."
+        (cd "$PI_HARMONY_PKG" && npm install)
     fi
 
     return 0
 }
 
-remove_npm_pi_cc_ui() {
+remove_npm_pi_claude_code_ui() {
     if command -v pi >/dev/null 2>&1 && pi list 2>/dev/null | grep -q "npm:pi-claude-code-ui"; then
-        info "Removing the npm pi-claude-code-ui package in favor of $PI_CC_UI_PKG..."
+        info "Removing the old npm pi-claude-code-ui package in favor of $PI_HARMONY_PKG..."
         pi remove npm:pi-claude-code-ui ||
             die "Could not remove npm:pi-claude-code-ui before installing the custom version."
+    fi
+}
+
+remove_npm_rpiv_ask_user_question() {
+    if command -v pi >/dev/null 2>&1 &&
+       pi list 2>/dev/null | grep -q "npm:@juicesharp/rpiv-ask-user-question"; then
+        info "Removing npm:@juicesharp/rpiv-ask-user-question in favor of the bundled extension..."
+        pi remove npm:@juicesharp/rpiv-ask-user-question ||
+            die "Could not remove npm:@juicesharp/rpiv-ask-user-question before installing the bundled extension."
     fi
 }
 
@@ -248,8 +257,9 @@ install_packages() {
     local -a selected_optional=()
 
     info "Installing Pi packages..."
-    ensure_custom_pi_cc_ui
-    remove_npm_pi_cc_ui
+    ensure_custom_pi_harmony
+    remove_npm_pi_claude_code_ui
+    remove_npm_rpiv_ask_user_question
 
     if [[ -t 0 ]]; then
         for package in "${optional_packages[@]}"; do
@@ -281,11 +291,12 @@ install_packages() {
 update_packages() {
     info "Updating installed Pi packages..."
 
-    ensure_custom_pi_cc_ui
-    remove_npm_pi_cc_ui
+    ensure_custom_pi_harmony
+    remove_npm_pi_claude_code_ui
+    remove_npm_rpiv_ask_user_question
     pi update --extensions
-    info "Reinstalling custom pi-claude-code-ui from $PI_CC_UI_PKG..."
-    pi install "$PI_CC_UI_PKG"
+    info "Reinstalling Pi Harmony from $PI_HARMONY_PKG..."
+    pi install "$PI_HARMONY_PKG"
 
     success "Package updates complete."
 }
