@@ -245,6 +245,41 @@ rename_appimage() {
 	update-desktop-database "$desktop_dir" 2>/dev/null || true
 }
 
+# Self-updating AppImages swap themselves for a newer file name, so repoint the entry at the newest same-slug file.
+channelless() {
+	printf '%s' "$1" | tr '-' '\n' | grep -vxE 'nightly|beta|alpha|canary|preview|insiders|dev|stable|rc[0-9]*' | paste -sd- - || true
+}
+
+# Self-updaters rename the file and may switch channel (nightly to stable), so repoint at the newest same-slug file, else the newest that differs only by channel word.
+heal_appimage() {
+	local missing="$1" slug loose fslug newest="" fallback="" f key desktop tmp
+	slug="$(slugify "$(basename "$missing")")"
+	loose="$(channelless "$slug")"
+	for f in "$apps_dir"/*.[Aa]pp[Ii]mage; do
+		[ -f "$f" ] || continue
+		fslug="$(slugify "$(basename "$f")")"
+		if [ "$fslug" = "$slug" ]; then
+			[ -z "$newest" ] || [ "$f" -nt "$newest" ] && newest="$f"
+		elif [ -n "$loose" ] && [ "$(channelless "$fslug")" = "$loose" ]; then
+			[ -z "$fallback" ] || [ "$f" -nt "$fallback" ] && fallback="$f"
+		fi
+	done
+	[ -n "$newest" ] || newest="$fallback"
+	[ -n "$newest" ] || die "no replacement for $missing"
+
+	key="$(jq -r --arg a "$missing" 'to_entries[] | select(.value.appimagePath == $a) | .key' "$registry" | head -1)"
+	[ -n "$key" ] || die "unregistered appimage: $missing"
+	desktop="$(jq -r --arg k "$key" '.[$k].desktopPath // empty' "$registry")"
+	[ -n "$desktop" ] && [ -f "$desktop" ] || die "desktop entry missing: $desktop"
+
+	tmp="$(mktemp)"
+	sed -E "s|^Exec=.*|Exec=\"$newest\" %U|" "$desktop" >"$tmp" && mv "$tmp" "$desktop"
+	tmp="$(mktemp)"
+	jq --arg k "$key" --arg a "$newest" '.[$k].appimagePath = $a' "$registry" >"$tmp" && mv "$tmp" "$registry"
+	update-desktop-database "$desktop_dir" 2>/dev/null || true
+	printf '%s\n' "$newest"
+}
+
 [ "${BASH_SOURCE[0]}" = "${0}" ] || return 0
 
 cmd="${1:-}"
@@ -252,5 +287,6 @@ case "$cmd" in
 	install) install_appimage "${2:-}" ;;
 	remove) remove_appimage "${2:-}" ;;
 	rename) rename_appimage "${2:-}" "${3:-}" ;;
-	*) die "usage: appimage-install.sh install|remove|rename ..." ;;
+	heal) heal_appimage "${2:-}" ;;
+	*) die "usage: appimage-install.sh install|remove|rename|heal ..." ;;
 esac

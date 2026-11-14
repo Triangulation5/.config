@@ -1152,9 +1152,9 @@ Item {
         NumberAnimation { target: pill; property: "kanjiFlash"; to: 0; duration: 320; easing.type: Easing.OutCubic }
     }
 
-    Behavior on width { NumberAnimation { duration: pill.hoverHop ? Motion.glide : Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
-    Behavior on height { NumberAnimation { duration: pill.hoverHop ? Motion.glide : Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
-    Behavior on morphRadius { NumberAnimation { duration: pill.hoverHop ? Motion.glide : Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
+    Behavior on width { NumberAnimation { duration: Flags.reduceMotion ? 0 : (pill.hoverHop ? Motion.glide : Motion.morph); easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
+    Behavior on height { NumberAnimation { duration: Flags.reduceMotion ? 0 : (pill.hoverHop ? Motion.glide : Motion.morph); easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
+    Behavior on morphRadius { NumberAnimation { duration: Flags.reduceMotion ? 0 : (pill.hoverHop ? Motion.glide : Motion.morph); easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
 
     Item {
         id: pillSurface

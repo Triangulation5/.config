@@ -85,7 +85,7 @@ Item {
      */
     property double deadline: 0
     Component.onCompleted: armDeadline()
-    function armDeadline() { deadline = notif ? (Notifs.expireAt[notif.id] || (Date.now() + 6000)) : 0; }
+    function armDeadline() { deadline = notif ? (Notifs.expireAt[notif.id] || (Date.now() + Math.max(1, Flags.notifSecs || 4) * 1000)) : 0; }
 
     Timer {
         interval: Math.max(300, root.deadline - Date.now())

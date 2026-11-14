@@ -97,6 +97,10 @@ Singleton {
     property alias lockClock: adapter.lockClock
     property alias lockBattery: adapter.lockBattery
     property alias lockLink: adapter.lockLink
+    property alias osdOff: adapter.osdOff
+    property alias osdTime: adapter.osdTime
+    property alias notifSecs: adapter.notifSecs
+    property alias notifMuted: adapter.notifMuted
     property alias weatherCity: adapter.weatherCity
     property alias desktopWidgets: adapter.desktopWidgets
     property alias desktopWidgetClockEnabled: adapter.desktopWidgetClockEnabled
@@ -693,6 +697,14 @@ Singleton {
             property int pillHoverGraceMs: 300
             /** How long a volume, brightness or track overlay stays up. */
             property int osdHoldMs: 1800
+            /** Pill flashes switched off: volume, brightness, battery, workspace, record, play (play and pause) and song. */
+            property var osdOff: []
+            /** Multiplier on how long every pill flash stays. */
+            property real osdTime: 1.0
+            /** Seconds a notification card stays in the pill; low urgency gets five eighths of it. */
+            property real notifSecs: 4
+            /** App names whose notifications skip the pill and only land in the inbox. */
+            property var notifMuted: []
             /** How long a notification popup stays, by urgency. */
             property int notifMs: 6000
             property int notifLowMs: 4000

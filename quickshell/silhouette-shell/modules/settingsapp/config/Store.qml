@@ -138,6 +138,10 @@ Singleton {
              */
             property bool dnd: false
             property bool dndCritical: true
+            property var osdOff: []
+            property real osdTime: 1.0
+            property real notifSecs: 4
+            property var notifMuted: []
             property bool keepAwake: false
             property bool time12h: true
             property bool clockSeconds: false
@@ -393,7 +397,7 @@ Singleton {
 
     /** Every mirrored flag key, in schema order. */
     readonly property var keys: [
-        "dnd", "dndCritical", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
+        "dnd", "dndCritical", "osdOff", "osdTime", "notifSecs", "notifMuted", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
         "style", "paletteMode", "colorScheme", "dynamicScheme", "dynamicContrast", "dynamicMode", "dynamicPrefer",
         "containerSaturation", "surfaceRole",
         "wallpaperDir", "uiScale", "reduceMotion",

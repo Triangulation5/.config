@@ -175,8 +175,15 @@ Item {
      */
     readonly property bool focusedHere: !Hyprland.focusedMonitor || Hyprland.focusedMonitor.name === screenName
 
+    /** Volume and brightness answer a key press, so Do not disturb keeps them. */
+    function allowed(which) {
+        if ((Flags.osdOff || []).indexOf(which) >= 0)
+            return false;
+        return !GameMode.dnd || which === "volume" || which === "brightness";
+    }
+
     function flash(which) {
-        if (!armed || suppressed)
+        if (!armed || suppressed || !allowed(which))
             return false;
         /** The mixer already renders volume, mic, brightness and vibrance live, so those flashes would only fight it; battery and the rest still flash over it. */
         if (mixerOpen && (which === "volume" || which === "mic" || which === "brightness"))
@@ -228,8 +235,8 @@ Item {
         kind = which;
         flashing = true;
         startedOnSurface = root.surfaceOpen;
-        root.flashHold = Math.max(200, Flags.osdHoldMs
-            + ((which === "battery" || which === "record" || which === "download") ? 200 : 0));
+        root.flashHold = Math.max(200, Math.round(Math.max(0.25, Flags.osdTime || 1.0) * (Flags.osdHoldMs
+            + ((which === "battery" || which === "record" || which === "download") ? 200 : 0))));
         hideTimer.restart();
         return true;
     }
@@ -324,7 +331,9 @@ Item {
 
     Connections {
         target: Players
-        function onAnnounce(player) {
+        function onAnnounce(player, why) {
+            if ((Flags.osdOff || []).indexOf(why) >= 0)
+                return;
             root.pendingSubject = player;
             root.dirty = true;
             root.tryShow();
@@ -437,7 +446,7 @@ Item {
         artist: root.subjectArtist
         playing: root.subjectPlaying
         onArtReady: if (root.kind === "track" && root.flashing) {
-            hideTimer.interval = 1300;
+            hideTimer.interval = Math.round(Math.max(0.25, Flags.osdTime || 1.0) * 1300);
             hideTimer.restart();
         }
     }

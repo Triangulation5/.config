@@ -82,6 +82,30 @@ Singleton {
         root.expandedEntries = m;
     }
 
+    function appOf(n) {
+        return (n && n.appName && n.appName.length) ? n.appName : "System";
+    }
+
+    function isMuted(app) {
+        return (Flags.notifMuted || []).indexOf(app) >= 0;
+    }
+
+    /** Apps seen this session plus every muted one, so a muted app stays switchable after its notifications are gone. */
+    readonly property var knownApps: {
+        var out = [];
+        var add = function(a) { if (a && out.indexOf(a) < 0) out.push(a); };
+        for (var i = 0; i < root.groups.length; i++) add(root.groups[i].app);
+        var m = Flags.notifMuted || [];
+        for (var j = 0; j < m.length; j++) add(m[j]);
+        return out.sort(function(a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+    }
+
+    function setMuted(app, on) {
+        var m = (Flags.notifMuted || []).filter(function(a) { return a !== app; });
+        if (on) m.push(app);
+        Flags.notifMuted = m;
+    }
+
     /** Write-through. Only called when the set actually changes. */
     function saveExpandedEntries() {
         var ids = Object.keys(root.expandedEntries);
@@ -441,13 +465,13 @@ Singleton {
             a[n.id] = Date.now();
             root.arrivalMs = a;
             var e = Object.assign({}, root.expireAt);
-            e[n.id] = Date.now() + Math.max(1000, n.urgency === NotificationUrgency.Low
-                ? Flags.notifLowMs : Flags.notifMs);
+            var ms = Math.max(1, Flags.notifSecs || 4) * 1000;
+            e[n.id] = Date.now() + (n.urgency === NotificationUrgency.Low ? ms * 0.625 : ms);
             root.expireAt = e;
             n.tracked = true;
             root.hookClosed(n);
             var critical = n.urgency === NotificationUrgency.Critical;
-            if (!GameMode.dnd || (critical && Flags.dndCritical)) {
+            if ((critical && Flags.dndCritical) || (!GameMode.dnd && !root.isMuted(root.appOf(n)))) {
                 /**
                  * A repeat of something already on screen is not a second
                  * toast. The repeat is still tracked and still folds into the

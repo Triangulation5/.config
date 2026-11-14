@@ -17,6 +17,21 @@ cap=65536
 tmp="$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/launch-guard.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 [ -n "$wd" ] && cd "$wd" 2>/dev/null || :
+
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+cmd="${1:-}"
+if [ -n "$cmd" ] && [ ! -f "$cmd" ]; then
+	case "$cmd" in
+		*.[Aa]pp[Ii]mage)
+			healed="$(bash "$scripts_dir/appimage-install.sh" heal "$cmd" 2>/dev/null || true)"
+			if [ -n "$healed" ] && [ -f "$healed" ]; then
+				shift
+				set -- "$healed" "$@"
+			fi
+			;;
+	esac
+fi
+
 SECONDS=0
 "$@" 2>&1 >/dev/null | { head -c "$cap" >"$tmp"; cat >/dev/null; }
 rc=${PIPESTATUS[0]}
