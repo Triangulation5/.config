@@ -443,7 +443,7 @@ def distro_family():
 
 
 def core_packages(checkout):
-    """    The installer's CORE list for this machine, read from its package catalog.
+    """The installer's CORE list for this machine, read from its package catalog.
 
     Parsed rather than duplicated: the installer is the one place that knows
     which package names each distro uses, and the two have to agree or the
@@ -530,22 +530,28 @@ def install_deps(checkout, ids):
 
     family = distro_family()
     if family == "gentoo":
-        result = subprocess.run(
-            ["pkexec"] + install_command(family, ids),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["pkexec"] + install_command(family, ids),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+        except OSError as error:
+            return [{"id": package, "error": str(error)} for package in ids]
         if result.returncode == 0:
             config = "/etc/portage"
             pending = glob.glob(os.path.join(config, "**", "._cfg*"), recursive=True)
             if pending:
-                merge = subprocess.run(
-                    ["pkexec", "etc-update", "--automode", "-5", config],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                )
+                try:
+                    merge = subprocess.run(
+                        ["pkexec", "etc-update", "--automode", "-5", config],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                    )
+                except OSError as error:
+                    return [{"id": package, "error": str(error)} for package in ids]
                 if merge.returncode != 0:
                     output = (merge.stdout or "").strip().splitlines()
                     message = output[-1] if output else "etc-update failed"

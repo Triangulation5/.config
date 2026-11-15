@@ -20,8 +20,10 @@ is_systemd() {
 }
 
 has_elogind() {
-    # elogind provides loginctl and its daemon creates /run/systemd/seats or elogind
-    command -v loginctl >/dev/null 2>&1 && { [ -d /run/elogind ] || [ ! -d /run/systemd/system ]; }
+    # A loginctl binary can be installed without a running logind-compatible
+    # service; only select it when elogind answers over the system bus.
+    [ ! -d /run/systemd/system ] && command -v loginctl >/dev/null 2>&1 && \
+        loginctl list-sessions --no-legend >/dev/null 2>&1
 }
 
 case "$action" in

@@ -46,7 +46,7 @@ def parse_check(output):
 def parse_emerge_check(output):
     """Extract package atoms from an emerge pretend-update listing."""
     packages = []
-    entry = re.compile(r"^\s*\[(?:ebuild|binary)\s+[A-Z ]+\]\s+(\S+)")
+    entry = re.compile(r"^\s*\[(?:ebuild|binary)\s+[^]]+\]\s+(\S+)")
     for line in output.splitlines():
         match = entry.match(line)
         if match:
