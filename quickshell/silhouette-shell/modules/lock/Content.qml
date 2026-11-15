@@ -21,6 +21,7 @@ Item {
     property real s: 1.1
     property var auth: null
     property var pw: null
+    property string avatarSource: ""
     property bool active: false
 
     property bool clockExpanded: false
@@ -116,7 +117,6 @@ Item {
     RevealLatch {
         id: promptLatch
         shown: content.promptVisible
-        delay: 100
     }
 
     /** The prompt is visible only while the field is empty, so gating on the
@@ -124,8 +124,8 @@ Item {
      * just on the first arm. Bound through the latch's shown && ready
      * contract per the component docs: ready stays true while shown is
      * false, so hiding animates out in sync with the capsule, no delay. */
-    property real armedPromptMorph: promptLatch.shown && promptLatch.ready ? 1 : 0
-    property real armedPromptFade: promptLatch.shown && promptLatch.ready ? 1 : 0
+    property real armedPromptMorph: promptLatch.revealed ? 1 : 0
+    property real armedPromptFade: promptLatch.revealed ? 1 : 0
 
     Behavior on armedPromptMorph {
         NumberAnimation {
@@ -519,7 +519,6 @@ Item {
             RevealLatch {
                 id: fadeLatch
                 shown: content.passwordArmed && input.text.length > 0
-                delay: 100
             }
 
             /**
@@ -542,7 +541,7 @@ Item {
                 anchors.left: parent.left
                 fadeWidth: 16 * content.s
                 fadeColor: ColorScheme.capsule
-                active: fadeLatch.shown && fadeLatch.ready
+                active: fadeLatch.revealed
                 opacity: content.authenticating ? 0.15 : (content.revealPassword ? 0.45 : 1)
                 Behavior on opacity { NumberAnimation { duration: 160 } }
             }
@@ -557,7 +556,7 @@ Item {
                 fadeWidth: 16 * content.s
                 fadeColor: ColorScheme.capsule
                 mirrored: true
-                active: fadeLatch.shown && fadeLatch.ready
+                active: fadeLatch.revealed
                 opacity: content.authenticating ? 0.15 : (content.revealPassword ? 0.45 : 1)
                 Behavior on opacity { NumberAnimation { duration: 160 } }
             }
@@ -700,6 +699,7 @@ Item {
 
         s: content.s
         user: content.auth ? content.auth.user : ""
+        avatarSource: content.avatarSource
 
         anchors.horizontalCenter: capsule.horizontalCenter
         anchors.bottom: capsule.top

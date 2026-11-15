@@ -231,7 +231,7 @@ Item {
                  * out of the first frame, before ScrollView has measured the
                  * page and reported a size.
                  */
-                visible: root.pageSettled && revealLatch.ready && size > 0 && size < 0.95
+                visible: revealLatch.revealed && size > 0 && size < 0.95
                 /**
                  * 0 before the page settles and while it fits; 1 once the latch
                  * opens. Leaving a page drops the bar at once instead of

@@ -19,6 +19,53 @@ ShellRoot {
 
     readonly property string currentUser: Quickshell.env("USER") || Quickshell.env("LOGNAME") || ""
 
+    readonly property var avatarCandidates: {
+        var candidates = [];
+        var home = Quickshell.env("HOME") || "";
+        if (home.length > 0) {
+            candidates.push(home + "/.face");
+            candidates.push(home + "/Pictures/.face");
+        }
+        if (root.currentUser.length > 0)
+            candidates.push("/var/lib/AccountsService/icons/" + root.currentUser);
+        return candidates;
+    }
+
+    property int avatarCandidateIndex: 0
+    property string avatarSource: ""
+
+    function probeAvatar(): void {
+        var candidates = root.avatarCandidates;
+        if (root.avatarCandidateIndex >= candidates.length) {
+            root.avatarSource = "";
+            return;
+        }
+        avatarProbe.path = candidates[root.avatarCandidateIndex];
+    }
+
+    FileView {
+        id: avatarProbe
+        printErrors: false
+        readonly property string reading: root.avatarCandidateIndex < root.avatarCandidates.length
+            ? root.avatarCandidates[root.avatarCandidateIndex]
+            : ""
+
+        onLoaded: if (String(path) === avatarProbe.reading)
+            root.avatarSource = "file://" + String(path)
+        onLoadFailed: if (String(path) === avatarProbe.reading) {
+            root.avatarCandidateIndex++;
+            Qt.callLater(root.probeAvatar);
+        }
+    }
+
+    Image {
+        source: root.avatarSource
+        sourceSize: Qt.size(512, 512)
+        cache: true
+        asynchronous: true
+        visible: false
+    }
+
     /**
      * The lock's state as a file beside its trigger, for watchdog.sh: "1" while
      * locked, "0" while not. The supervisor reads it on every tick to choose its
@@ -265,7 +312,10 @@ ShellRoot {
         }
     }
 
-    Component.onCompleted: root.checkRelock()
+    Component.onCompleted: {
+        root.checkRelock();
+        root.probeAvatar();
+    }
 
     /**
      * Fast lock trigger. Spawning a fresh `qs ipc call` client to ask for the lock
@@ -335,6 +385,7 @@ ShellRoot {
                     screenName: lockSurface.screen ? lockSurface.screen.name : ""
                     auth: pamAuth
                     pw: root.pw
+                    avatarSource: root.avatarSource
                     active: root.revealed
                 }
             }

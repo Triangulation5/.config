@@ -80,7 +80,7 @@ Item {
         shown: clock.visibleClock && !clock.still
     }
 
-    readonly property bool introReady: clock.still || introReveal.ready
+    readonly property bool introReady: clock.still || introReveal.revealed
 
     signal clockClicked()
 

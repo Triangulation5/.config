@@ -1,5 +1,6 @@
 import QtQuick
 import qs.services
+import "FaderValue.js" as FaderValue
 
 /**
  * Horizontal capture-level fader for the recorder's audio rows: a thin matte
@@ -28,12 +29,12 @@ Item {
      * emitting `moved` and `committed` so the captured level updates on each step.
      */
     function step(deltaPct) {
-        const v = Math.max(0, Math.min(1, root.value + deltaPct / 100));
+        const v = FaderValue.stepPercent(root.value, deltaPct);
         root.moved(v);
         root.committed(v);
     }
 
-    readonly property real clamped: Math.max(0, Math.min(1, value))
+    readonly property real clamped: FaderValue.clamp01(value)
 
     Rectangle {
         id: track
@@ -78,7 +79,7 @@ Item {
             preventStealing: true
             enabled: root.on
             function setFromX(mx) {
-                const v = Math.max(0, Math.min(1, (mx + 8 * root.s) / track.width));
+                const v = FaderValue.clamp01((mx + 8 * root.s) / track.width);
                 root.moved(v);
             }
             onPressed: (e) => { root.focusRequested(); setFromX(e.x); }

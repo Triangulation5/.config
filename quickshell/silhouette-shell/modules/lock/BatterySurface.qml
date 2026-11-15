@@ -30,8 +30,16 @@ Item {
      * Opening waits for the compact face to clear; closing waits for the
      * readout to clear, so the two faces are never on screen together.
      */
-    property bool panelOpen: false
-    property bool compactShown: true
+    CompactExpandState {
+        id: transition
+        expanded: battery.expanded
+        openDelay: battery.openDelayMs
+        closeDelay: battery.closeDelayMs
+        compactReturnDelay: battery.compactReturnMs
+    }
+
+    readonly property bool panelOpen: transition.panelOpen
+    readonly property bool compactShown: transition.compactShown
 
     readonly property real compactGlyphSize: 17 * s
     readonly property real expandedGlyphSize: 72 * s
@@ -89,46 +97,6 @@ Item {
     RevealLatch {
         id: infoReveal
         shown: battery.panelOpen && battery.expanded
-    }
-
-    onExpandedChanged: {
-        if (expanded) {
-            closeTimer.stop();
-            compactTimer.stop();
-            compactShown = false;
-            if (!panelOpen)
-                openTimer.restart();
-        } else {
-            openTimer.stop();
-            compactTimer.stop();
-            if (panelOpen)
-                closeTimer.restart();
-            else
-                compactShown = true;
-        }
-    }
-
-    Timer {
-        id: openTimer
-        interval: battery.openDelayMs
-        onTriggered: if (battery.expanded) battery.panelOpen = true
-    }
-
-    Timer {
-        id: closeTimer
-        interval: battery.closeDelayMs
-        onTriggered: {
-            if (!battery.expanded) {
-                battery.panelOpen = false;
-                compactTimer.restart();
-            }
-        }
-    }
-
-    Timer {
-        id: compactTimer
-        interval: battery.compactReturnMs
-        onTriggered: if (!battery.expanded && !battery.panelOpen) battery.compactShown = true
     }
 
     Behavior on scale {
@@ -256,7 +224,7 @@ Item {
 
             spacing: 4 * battery.s
 
-            opacity: battery.panelOpen && battery.expanded && infoReveal.ready ? 1 : 0
+            opacity: infoReveal.revealed ? 1 : 0
             scale: battery.expanded ? 1 : 0.9
             transformOrigin: Item.Left
 

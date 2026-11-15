@@ -382,7 +382,7 @@ PillSurface {
         width: root.editorShown ? root.editorW : 0
         clip: true
         visible: width > 1
-        opacity: (root.editorShown && editorReveal.ready) ? 1 : 0
+        opacity: editorReveal.revealed ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
         surface: root
     }

@@ -78,7 +78,7 @@ Item {
         anchors.top: parent.top
         anchors.rightMargin: 6 * s
         spacing: 9 * s
-        opacity: (panel.shown && reveal.ready) ? 1 : 0
+        opacity: reveal.revealed ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }

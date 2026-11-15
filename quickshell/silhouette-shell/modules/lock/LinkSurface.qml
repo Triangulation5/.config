@@ -32,17 +32,27 @@ Item {
     /** Open/close choreography: clear one face before the geometry moves. */
     readonly property int compactFadeMs: 140
     readonly property int openDelayMs: 160
-    readonly property int contentFadeMs: 220
+    readonly property int openMotionMs: 320
+    readonly property int contentFadeMs: 180
     readonly property int closeDelayMs: 240
-    readonly property int compactReturnMs: 300
+    readonly property int compactReturnMs: 350
 
     /**
      * The panel's geometry target, deliberately separate from `expanded`.
      * Opening waits for the compact face to clear; closing waits for the
      * expanded rows to clear, so the two faces never overlap in the capsule.
      */
-    property bool panelOpen: false
-    property bool compactShown: true
+    CompactExpandState {
+        id: transition
+        expanded: link.expanded
+        hideCompactOnExpand: false
+        openDelay: link.openDelayMs
+        closeDelay: link.closeDelayMs
+        compactReturnDelay: link.compactReturnMs
+    }
+
+    readonly property bool panelOpen: transition.panelOpen
+    readonly property bool compactShown: transition.compactShown
 
     /**
      * Redaction gate (Flags.lockPrivacy): a network name is an address the room
@@ -113,6 +123,8 @@ Item {
     RevealLatch {
         id: contentReveal
         shown: link.panelOpen && link.expanded
+        delay: link.openMotionMs
+        jitter: 0
     }
 
     /**
@@ -125,48 +137,9 @@ Item {
     Connections {
         target: contentReveal
         function onReadyChanged() {
-            if (contentReveal.ready && link.panelOpen && link.expanded)
-                link.compactShown = false;
+            if (contentReveal.revealed)
+                transition.compactShown = false;
         }
-    }
-
-    onExpandedChanged: {
-        if (expanded) {
-            closeTimer.stop();
-            compactTimer.stop();
-            if (!panelOpen)
-                openTimer.restart();
-        } else {
-            openTimer.stop();
-            compactTimer.stop();
-            if (panelOpen)
-                closeTimer.restart();
-            else
-                compactShown = true;
-        }
-    }
-
-    Timer {
-        id: openTimer
-        interval: link.openDelayMs
-        onTriggered: if (link.expanded) link.panelOpen = true
-    }
-
-    Timer {
-        id: closeTimer
-        interval: link.closeDelayMs
-        onTriggered: {
-            if (!link.expanded) {
-                link.panelOpen = false;
-                compactTimer.restart();
-            }
-        }
-    }
-
-    Timer {
-        id: compactTimer
-        interval: link.compactReturnMs
-        onTriggered: if (!link.expanded && !link.panelOpen) link.compactShown = true
     }
 
     Rectangle {
@@ -178,11 +151,11 @@ Item {
 
         width: link.panelOpen
             ? 240 * link.s
-            : compact.width + 14 * link.s
+            : compactLabel.implicitWidth + 39 * link.s
 
         height: link.panelOpen
             ? 112 * link.s
-            : compact.height + 8 * link.s
+            : Math.max(18 * link.s, compactLabel.implicitHeight) + 8 * link.s
 
         radius: BarMode.dwmStyle
             ? 0
@@ -197,21 +170,21 @@ Item {
 
         Behavior on width {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutBack
+                duration: link.openMotionMs
+                easing.type: Easing.OutCubic
             }
         }
 
         Behavior on height {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutBack
+                duration: link.openMotionMs
+                easing.type: Easing.OutCubic
             }
         }
 
         Behavior on radius {
             NumberAnimation {
-                duration: 360
+                duration: link.openMotionMs
                 easing.type: Easing.OutCubic
             }
         }
@@ -232,30 +205,24 @@ Item {
             id: compact
 
             /**
-             * The compact identity, positioned by hand rather than centred: at
-             * rest it sits in the middle of the capsule, and once the panel
-             * opens it travels to the row it speaks for. The expanded card is
-             * 112*s tall with its row column centred, so the wifi row's icon
-             * centre is at 29.5*s and Bluetooth's at 82.5*s. The glyph also
-             * grows to the row's 24*s so the identity lands exactly on the
-             * row's own icon and title — same left edge, same centre, same text
-             * inset — rather than a smaller copy a few pixels adrift.
+             * Fixed endpoints keep this row from chasing the panel's changing
+             * implicit size during the morph. The closed capsule leaves 7*s
+             * and 4*s insets; the expanded rows start at 15*s. Their icon
+             * centres are 29.5*s and 82.5*s, with a fixed 24*s glyph.
              */
             width: implicitWidth
             height: implicitHeight
 
-            x: link.panelOpen
-                ? 15 * link.s
-                : (panel.width - width) / 2
+            x: link.panelOpen ? 15 * link.s : 7 * link.s
             y: link.panelOpen
-                ? (link.identityRow === 1 ? 82.5 : 29.5) * link.s - height / 2
-                : (panel.height - height) / 2
+                ? (link.identityRow === 1 ? 82.5 : 29.5) * link.s - 12 * link.s
+                : 4 * link.s
 
             spacing: link.panelOpen ? 12 * link.s : 7 * link.s
 
             Behavior on spacing {
                 NumberAnimation {
-                    duration: link.panelOpen ? 420 : link.compactReturnMs
+                    duration: link.panelOpen ? link.openMotionMs : link.compactReturnMs
                     easing.type: Easing.OutCubic
                 }
             }
@@ -265,14 +232,14 @@ Item {
 
             Behavior on x {
                 NumberAnimation {
-                    duration: link.panelOpen ? 420 : link.compactReturnMs
+                    duration: link.panelOpen ? link.openMotionMs : link.compactReturnMs
                     easing.type: Easing.OutCubic
                 }
             }
 
             Behavior on y {
                 NumberAnimation {
-                    duration: link.panelOpen ? 420 : link.compactReturnMs
+                    duration: link.panelOpen ? link.openMotionMs : link.compactReturnMs
                     easing.type: Easing.OutCubic
                 }
             }
@@ -299,7 +266,7 @@ Item {
 
                 Behavior on width {
                     NumberAnimation {
-                        duration: link.panelOpen ? 420 : link.compactReturnMs
+                        duration: link.panelOpen ? link.openMotionMs : link.compactReturnMs
                         easing.type: Easing.OutCubic
                     }
                 }
@@ -349,6 +316,7 @@ Item {
             }
 
             Text {
+                id: compactLabel
                 anchors.verticalCenter: parent.verticalCenter
 
                 text:
@@ -376,7 +344,7 @@ Item {
 
             spacing: 6 * link.s
 
-            opacity: link.panelOpen && link.expanded && contentReveal.ready ? 1 : 0
+            opacity: contentReveal.revealed ? 1 : 0
             scale: link.expanded ? 1 : 0.82
 
             Behavior on opacity {

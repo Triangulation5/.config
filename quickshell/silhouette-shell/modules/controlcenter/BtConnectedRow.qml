@@ -236,7 +236,7 @@ Column {
         visible: con.confirming
         width: parent.width
         height: 30 * con.s
-        opacity: confirmReveal.ready ? 1 : 0
+        opacity: confirmReveal.revealed ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }

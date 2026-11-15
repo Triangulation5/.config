@@ -27,6 +27,7 @@ Item {
     property real s: 1.1
     property var auth: null
     property var pw: null
+    property string avatarSource: ""
     property string screenName: ""
 
     focus: true
@@ -152,6 +153,7 @@ Item {
         s: surface.s
         auth: surface.auth
         pw: surface.pw
+        avatarSource: surface.avatarSource
         active: surface.active
 
         enabled: !closeAnim.running

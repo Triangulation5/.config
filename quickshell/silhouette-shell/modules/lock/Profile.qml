@@ -14,10 +14,10 @@ import qs.components.icons
  *
  * The avatar resolves from the standard freedesktop user-icon locations in
  * order (XDG ~/.face, ~/Pictures/.face, then the AccountsService icon for the
- * user) so it works across distros and desktop environments; when none of them
- * exist it falls back to a person glyph. The picture is clipped to the tile's
- * circle with the same mask treatment the media cover uses, and a soft shadow
- * keeps it readable over the blurred backdrop.
+ * user). LockRoot warms it asynchronously at shell startup so the first lock
+ * frame can use the decoded image; when none of the candidates exist this
+ * falls back to a person glyph. The picture is clipped to the tile's circle
+ * with the same mask treatment the media cover uses.
  *
  * The label shows the user's real name instead of the login name: the GECOS
  * field from /etc/passwd (first comma-separated part), falling back to the
@@ -32,6 +32,7 @@ Item {
 
     property real s: 1.1
     property string user: ""
+    property string avatarSource: ""
 
     /**
      * Redaction gate (Flags.lockPrivacy): the real name off the GECOS field — and
@@ -75,46 +76,6 @@ Item {
     width: avatarSize
     height: avatarSize + 14 * s + nameText.implicitHeight
 
-    readonly property var avatarSources: {
-        var list = [];
-        if (user.length === 0)
-            return list;
-        var home = Quickshell.env("HOME") || "";
-        if (home.length > 0) {
-            list.push("file://" + home + "/.face");
-            list.push("file://" + home + "/Pictures/.face");
-        }
-        list.push("file:///var/lib/AccountsService/icons/" + user);
-        return list;
-    }
-
-    onUserChanged: avatarImg.refresh()
-
-    Component.onCompleted: avatarImg.refresh()
-
-    /**
-     * Existence probe for the avatar candidates, walked in order on the load
-     * signals. The Image is never handed a path that is not there: an Image
-     * pointed at a missing file logs a QML warning of its own ("Cannot open:
-     * ..."), and having no avatar at all is the common case, so the probe is
-     * what keeps the lock-screen log quiet. `printErrors: false` silences the
-     * probe's own read failures, which are the expected outcome here.
-     *
-     * Only the load of the candidate currently being probed is honoured (a
-     * superseded read that lands late must not hand the Image the wrong file
-     * or skip a candidate), which is what the `reading` comparison is for.
-     */
-    FileView {
-        id: avatarProbe
-        printErrors: false
-
-        /** Plain filesystem path of the candidate being read right now. */
-        readonly property string reading: avatarImg.probedUrl.replace(/^file:\/\//, "")
-
-        onLoaded: if (String(path) === reading) avatarImg.source = avatarImg.probedUrl
-        onLoadFailed: if (String(path) === reading) Qt.callLater(avatarImg.probeNext)
-    }
-
     Rectangle {
         id: tile
 
@@ -141,58 +102,12 @@ Item {
             fillMode: Image.PreserveAspectCrop
             smooth: true
             mipmap: true
-            cache: false
+            sourceSize: Qt.size(512, 512)
+            cache: true
             asynchronous: true
 
-            source: ""
+            source: profile.avatarSource
             visible: status === Image.Ready
-
-            /** Index into `avatarSources` of the candidate being probed. */
-            property int srcIndex: 0
-            /** `file://` URL of that candidate, or "" when the list ran out. */
-            property string probedUrl: ""
-
-            function refresh() {
-                srcIndex = 0;
-                probeCandidate();
-            }
-
-            /**
-             * Hand the candidate at `srcIndex` to the probe; nothing reaches the
-             * Image until the probe has actually read it. The source is left
-             * alone (rather than cleared) so a re-probe cannot flash the fallback
-             * glyph over an avatar that is still valid; when the list runs out
-             * the source is dropped for real and the glyph takes over.
-             *
-             * A candidate that is already the probe's path — the ordinary
-             * re-lock case — is re-read with reload() rather than re-assigned,
-             * because assigning the same path again is a no-op and would leave
-             * the walk with no signal to answer. The step to the next candidate
-             * is deferred through Qt.callLater: jumping straight on from inside
-             * the failure signal starts the next read before Quickshell has torn
-             * the failed one down, which it logs about as a dropped operation.
-             */
-            function probeCandidate() {
-                var list = profile.avatarSources;
-                if (srcIndex >= list.length) {
-                    probedUrl = "";
-                    source = "";
-                    return;
-                }
-                probedUrl = String(list[srcIndex]);
-                var plain = probedUrl.replace(/^file:\/\//, "");
-                if (avatarProbe.path === plain)
-                    avatarProbe.reload();
-                else
-                    avatarProbe.path = plain;
-            }
-
-            /** The probe could not read this candidate: walk to the next one,
-             *  and leave the Image empty (falling back to the glyph) at the end. */
-            function probeNext() {
-                srcIndex++;
-                probeCandidate();
-            }
 
             layer.enabled: true
             layer.effect: OpacityMask {

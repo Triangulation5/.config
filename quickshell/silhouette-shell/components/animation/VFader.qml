@@ -1,6 +1,7 @@
 import QtQuick
 import qs.services
 import qs.components.icons
+import "FaderValue.js" as FaderValue
 
 /**
  * Vertical filament fader. A thin matte thread with a rising fill and a flat
@@ -47,7 +48,7 @@ Item {
      * emitting `moved` and `committed` so live hardware updates on each step.
      */
     function step(deltaPct) {
-        const v = Math.max(0, Math.min(1, root.value + deltaPct / 100));
+        const v = FaderValue.stepPercent(root.value, deltaPct);
         root.moved(v);
         root.committed(v);
     }
@@ -72,7 +73,7 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: parent.height * Math.max(0, Math.min(1, root.value))
+                height: parent.height * FaderValue.clamp01(root.value)
                 radius: parent.radius
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: root.lit ? Theme.vermLit : Theme.vermDim }
@@ -86,7 +87,7 @@ Item {
             id: tick
             anchors.horizontalCenter: parent.horizontalCenter
             y: Math.max(0, Math.min(root.trackH - height,
-                (1 - Math.max(0, Math.min(1, root.value))) * root.trackH - height / 2))
+                (1 - FaderValue.clamp01(root.value)) * root.trackH - height / 2))
             width: 11 * root.s
             height: 2.5 * root.s
             radius: 2 * root.s
@@ -102,7 +103,7 @@ Item {
             anchors.margins: -10 * root.s
             preventStealing: true
             function setFromY(my) {
-                const v = 1 - Math.max(0, Math.min(1, (my - 10 * root.s) / root.trackH));
+                const v = 1 - FaderValue.clamp01((my - 10 * root.s) / root.trackH);
                 root.moved(v);
             }
             onPressed: (e) => setFromY(e.y)

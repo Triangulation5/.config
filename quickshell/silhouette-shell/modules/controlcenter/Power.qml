@@ -215,7 +215,7 @@ PillSurface {
         anchors.left: parent.left
         anchors.right: parent.right
         height: 22 * root.s
-        opacity: (root.open && reveal.ready) ? 1 : 0
+        opacity: reveal.revealed ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }
@@ -252,7 +252,7 @@ PillSurface {
         anchors.top: header.bottom
         anchors.topMargin: 14 * root.s
         spacing: 12 * root.s
-        opacity: (root.open && reveal.ready) ? 1 : 0
+        opacity: reveal.revealed ? 1 : 0
         Behavior on opacity {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
         }
@@ -447,7 +447,7 @@ PillSurface {
         font.pixelSize: 11 * root.s
         font.weight: Font.Medium
         font.letterSpacing: 0.4 * root.s
-        opacity: (text.length > 0 && root.open && reveal.ready) ? 1 : 0
+        opacity: (text.length > 0 && reveal.revealed) ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.fast } }
     }
 }

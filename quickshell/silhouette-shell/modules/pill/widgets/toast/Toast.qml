@@ -57,7 +57,7 @@ Item {
      */
     property bool closing: false
 
-    readonly property bool revealed: reveal.shown && reveal.ready && !closing
+    readonly property bool revealed: reveal.revealed && !closing
 
     /**
      * Fade the content out, then run `after`. The fling skips this:

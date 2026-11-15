@@ -1,6 +1,7 @@
 module qs.components.animation
 
 Cascade 1.0 Cascade.qml
+CompactExpandState 1.0 CompactExpandState.qml
 EdgeFade 1.0 EdgeFade.qml
 HeatHold 1.0 HeatHold.qml
 HFader 1.0 HFader.qml
