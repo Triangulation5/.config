@@ -380,13 +380,17 @@ stage_ollama() {
 # installed (the deployed configs use it); st is an extra choice.
 st_build_deps() {
     case "$PM" in
-        emerge) echo "x11-libs/libX11 x11-libs/libXft media-libs/fontconfig media-libs/freetype sys-libs/ncurses" ;;
-        dnf)    echo "gcc make pkgconf-pkg-config libX11-devel libXft-devel fontconfig-devel freetype-devel ncurses" ;;
-        pacman) echo "base-devel libx11 libxft fontconfig freetype2 ncurses" ;;
-        apt)    echo "build-essential pkg-config libx11-dev libxft-dev libfontconfig1-dev libfreetype-dev ncurses-bin" ;;
-        zypper) echo "gcc make pkg-config libX11-devel libXft-devel fontconfig-devel freetype2-devel ncurses-utils" ;;
-        apk)    echo "build-base pkgconf libx11-dev libxft-dev fontconfig-dev freetype-dev ncurses" ;;
-        xbps)   echo "base-devel pkg-config libX11-devel libXft-devel fontconfig-devel freetype-devel ncurses" ;;
+        emerge) echo "sys-devel/gcc dev-build/make x11-libs/libX11 x11-libs/libXft media-libs/fontconfig media-libs/harfbuzz media-libs/freetype sys-libs/ncurses" ;;
+        dnf)    echo "gcc make pkgconf-pkg-config libX11-devel libXft-devel fontconfig-devel harfbuzz-devel freetype-devel ncurses" ;;
+        pacman) echo "base-devel gcc make libx11 libxft fontconfig harfbuzz freetype2 ncurses" ;;
+        apt)    echo "build-essential gcc make pkg-config libx11-dev libxft-dev libfontconfig1-dev libharfbuzz-dev libfreetype-dev ncurses-bin" ;;
+        zypper) echo "gcc make pkg-config libX11-devel libXft-devel fontconfig-devel harfbuzz-devel freetype2-devel ncurses-utils" ;;
+        apk)    echo "build-base gcc make pkgconf libx11-dev libxft-dev fontconfig-dev harfbuzz-dev freetype-dev ncurses" ;;
+        xbps)   echo "base-devel gcc make pkg-config libX11-devel libXft-devel fontconfig-devel harfbuzz-devel freetype-devel ncurses" ;;
+        pkg)    echo "gcc gmake pkgconf libX11 libXft fontconfig harfbuzz ncurses" ;;
+        pkg_add) echo "gcc gmake pkgconf libX11 libXft fontconfig harfbuzz" ;;
+        pkgin)  echo "gcc gmake pkg-config libX11 libXft fontconfig harfbuzz ncurses" ;;
+        brew)   echo "gcc make pkg-config fontconfig harfbuzz" ;;
         *)      echo "" ;;
     esac
 }
@@ -398,28 +402,51 @@ stage_st() {
         STAGE_DETAIL="kitty selected"
         return "$ST_SKIP"
     fi
-    if [ "$DRY_RUN" = "1" ]; then
-        would_do run "git clone --depth 1 $ST_REPO_URL $ST_DIR"
-        would_do run "make -C $ST_DIR && $SUDO make -C $ST_DIR install"
-        return "$ST_OK"
-    fi
-    if ! command -v git >/dev/null 2>&1; then
-        err "git is needed to fetch st"
-        return "$ST_FAIL"
-    fi
 
     deps="$(st_build_deps)"
     if [ "$NO_DEPS" != "1" ] && [ -n "$deps" ] && [ -n "$PM" ]; then
         if [ "$PM" = "emerge" ]; then
-            local -a atoms=()
+            local -a atoms=() resolved_atoms=()
+            local atom
             read -r -a atoms <<< "$deps"
-            install_packages_gentoo "${atoms[@]}" \
-                || warn "could not install every st build dependency; the build may fail"
+            for atom in "${atoms[@]}"; do
+                if [ "$atom" = "dev-build/make" ]; then
+                    if gentoo_installed "dev-build/make" || gentoo_installed "sys-devel/make"; then
+                        continue
+                    elif ! gentoo_atom_available "dev-build/make" && gentoo_atom_available "sys-devel/make"; then
+                        resolved_atoms+=("sys-devel/make")
+                        continue
+                    fi
+                fi
+                resolved_atoms+=("$atom")
+            done
+            if [ "$DRY_RUN" = "1" ]; then
+                would_do run "$SUDO emerge --ask=n ${resolved_atoms[*]}"
+            else
+                install_packages_gentoo "${resolved_atoms[@]}" \
+                    || warn "could not install every st build dependency; the build may fail"
+            fi
         else
             # shellcheck disable=SC2086
-            progress_run "Installing st build dependencies" pm_install $deps \
-                || warn "could not install every st build dependency; the build may fail"
+            if [ "$DRY_RUN" = "1" ]; then
+                would_do run "$(pm_plan $deps)"
+            else
+                pm_install_quiet "Installing st build dependencies" $deps \
+                    || warn "could not install every st build dependency; the build may fail"
+            fi
         fi
+    fi
+
+    if [ "$DRY_RUN" = "1" ]; then
+        would_do run "git clone --depth 1 $ST_REPO_URL $ST_DIR"
+        would_do run "make -C $ST_DIR && $SUDO make -C $ST_DIR install"
+        STAGE_DETAIL="dry run (deps + build)"
+        return "$ST_OK"
+    fi
+
+    if ! command -v git >/dev/null 2>&1; then
+        err "git is needed to fetch st"
+        return "$ST_FAIL"
     fi
 
     if [ ! -e "$ST_DIR" ]; then

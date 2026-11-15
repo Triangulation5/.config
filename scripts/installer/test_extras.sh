@@ -25,4 +25,23 @@ if eva_fetch_repo; then
     exit 1
 fi
 
+# Test st build dependencies for Fedora and Gentoo
+PM=dnf
+fedora_deps="$(st_build_deps)"
+for dep in gcc make libX11-devel libXft-devel fontconfig-devel harfbuzz-devel; do
+    case " $fedora_deps " in
+        *" $dep "*) ;;
+        *) echo "st_build_deps missing $dep for Fedora" >&2; exit 1 ;;
+    esac
+done
+
+PM=emerge
+gentoo_deps="$(st_build_deps)"
+for atom in sys-devel/gcc dev-build/make x11-libs/libX11 x11-libs/libXft media-libs/fontconfig media-libs/harfbuzz; do
+    case " $gentoo_deps " in
+        *" $atom "*) ;;
+        *) echo "st_build_deps missing $atom for Gentoo" >&2; exit 1 ;;
+    esac
+done
+
 printf '%s\n' ok
