@@ -315,6 +315,13 @@ def main():
         print("Could not start gst: %s" % exc, file=sys.stderr)
         return 1
 
+    # Preferred path: the Rust framepump does the probe/align/feed loop below.
+    # The pure-Python loop stays as the fallback when no binary is available.
+    pump_bin = find_pump()
+    if pump_bin:
+        return run_pump(pump_bin, args, gst, ff_cmd, width * height * 3 // 2,
+                        stopping, screencast, session)
+
     # The raw pipe carries no timestamps, so ffmpeg has to be told how fast the
     # frames arrive. The screencast node is produced on damage (a still desktop
     # trickles frames at a couple per second, a busy one at the refresh rate)
@@ -478,6 +485,87 @@ def main():
     # A raw pipe delivers a partial final frame on EOF, so ffmpeg exits
     # non-zero even when every frame made it into the file. Judge success by
     # the output itself.
+    if os.path.exists(args.output) and output_duration(args.output) > 0:
+        return 0
+    print("Recording produced no usable output", file=sys.stderr)
+    return 1
+
+
+def find_pump():
+    """Path of the native framepump binary, or None to use the Python loop.
+
+    Set SILHOUETTE_NO_NATIVE=1 to force the Python fallback."""
+    if os.environ.get("SILHOUETTE_NO_NATIVE"):
+        return None
+    here = os.path.dirname(os.path.abspath(__file__))
+    arch = os.uname().machine
+    for cand in (os.path.join(here, "bin", "framepump-" + arch),
+                 os.path.join(here, "framepump")):
+        if os.path.isfile(cand) and os.access(cand, os.X_OK):
+            return cand
+    return None
+
+
+def run_pump(pump_bin, args, gst, ff_cmd, frame_bytes, stopping, screencast, session):
+    """Run the capture through the Rust framepump (gst stdout -> pump -> ffmpeg)."""
+    ff_err_path = args.output + ".ffmpeg.err"
+    marker_path = args.output + ".capturing"
+    pump = None
+    try:
+        pump = subprocess.Popen(
+            [pump_bin, "--frame-bytes", str(frame_bytes), "--fps", str(args.fps),
+             "--stderr-file", ff_err_path,
+             "--probe-seconds", str(RATE_PROBE_SECONDS),
+             "--max-probe-bytes", str(MAX_PROBE_BYTES),
+             "--placeholder", RATE_PLACEHOLDER, "--"] + ff_cmd,
+            stdin=gst.stdout, stdout=subprocess.PIPE)
+        gst.stdout.close()  # the pump owns the read side now
+
+        line = pump.stdout.readline().decode().strip()
+        if not line.startswith("rate "):
+            pump.wait()
+            return 1
+        try:
+            with open(marker_path, "w") as f:
+                f.write("%d\n" % os.getpid())
+        except OSError:
+            marker_path = None
+        print("capture-started", flush=True)
+        print("source %s fps, recording at %d fps (native pump)" % (line[5:], args.fps),
+              file=sys.stderr)
+
+        while pump.poll() is None and gst.poll() is None and not stopping[0]:
+            time.sleep(0.2)
+        # Stop: end gst, whose EOF tells the pump to finalise ffmpeg.
+        if gst.poll() is None:
+            gst.terminate()
+        try:
+            gst.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            gst.kill()
+            gst.wait()
+        try:
+            pump.wait(timeout=40)
+        except subprocess.TimeoutExpired:
+            pump.kill()
+            pump.wait()
+    finally:
+        if pump is not None and pump.poll() is None:
+            pump.kill()
+        try:
+            if marker_path:
+                os.unlink(marker_path)
+        except OSError:
+            pass
+        try:
+            os.unlink(ff_err_path)
+        except OSError:
+            pass
+        try:
+            screencast.CloseSession(session)
+        except dbus.exceptions.DBusException:
+            pass
+
     if os.path.exists(args.output) and output_duration(args.output) > 0:
         return 0
     print("Recording produced no usable output", file=sys.stderr)

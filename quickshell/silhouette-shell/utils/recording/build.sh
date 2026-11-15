@@ -1,0 +1,17 @@
+#!/bin/sh
+# Builds the native framepump. Optional: portal_capture.py falls back to its
+# built-in Python loop when no binary is present.
+set -e
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+ARCH="$(uname -m)"
+mkdir -p "$DIR/bin"
+
+if command -v rustc >/dev/null 2>&1; then
+    rustc -O -C opt-level=3 -C panic=abort -C strip=symbols "$DIR/framepump.rs" -o "$DIR/framepump"
+    cp "$DIR/framepump" "$DIR/bin/framepump-$ARCH"
+    echo "Built: $DIR/bin/framepump-$ARCH"
+else
+    echo "rustc not found; portal_capture.py will use its Python fallback."
+    exit 1
+fi

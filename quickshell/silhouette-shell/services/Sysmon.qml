@@ -64,8 +64,7 @@ Singleton {
     property real prevTx: 0
     property real prevNetTime: 0
 
-    readonly property string samplerBinary: Qt.resolvedUrl("../utils/sysmon/sysmon_sampler").toString().replace(/^file:\/\//, "")
-    readonly property string samplerScript: Qt.resolvedUrl("../utils/sysmon/sampler.py").toString().replace(/^file:\/\//, "")
+    readonly property string samplerRunner: Qt.resolvedUrl("../utils/sysmon/run.sh").toString().replace(/^file:\/\//, "")
 
     function handleLine(line) {
         var p = line.trim().split(/\s+/);
@@ -169,9 +168,7 @@ Singleton {
     /** One-shot hardware detection run at startup. */
     Process {
         id: detectProc
-        command: ["sh", "-c",
-            "if [ -x \"$1\" ]; then exec \"$1\" --detect-only; else exec python3 \"$2\" --detect-only; fi",
-            "_", root.samplerBinary, root.samplerScript]
+        command: [root.samplerRunner, "--detect-only"]
         stdout: SplitParser {
             onRead: (line) => {
                 root.handleLine(line);
@@ -182,9 +179,7 @@ Singleton {
     /** Persistent, long-lived metrics sampler active while surface is visible. */
     Process {
         id: samplerProc
-        command: ["sh", "-c",
-            "if [ -x \"$1\" ]; then exec \"$1\"; else exec python3 \"$2\"; fi",
-            "_", root.samplerBinary, root.samplerScript]
+        command: [root.samplerRunner]
         running: root.active
         stdout: SplitParser {
             onRead: (line) => {
