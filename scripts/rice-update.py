@@ -137,15 +137,15 @@ def is_work_tree(path):
     """
     if not os.path.isdir(path):
         return False
-    code, out = git(["-C", path, "rev-parse", "--is-inside-work-tree"])
+    code, out, _ = git(["-C", path, "rev-parse", "--is-inside-work-tree"])
     return code == 0 and out.strip() == "true"
 
 
-def clone_dir():
+def clone_dir() -> str:
     return os.path.join(data_home(), CLONE_NAME)
 
 
-def resolve_checkout():
+def resolve_checkout() -> Tuple[Optional[str], bool]:
     """The checkout to update, and whether this is a developer install.
 
     Returns (path, devmode). A devmode install is the live config being its own
@@ -162,19 +162,19 @@ def resolve_checkout():
     return None, False
 
 
-def remote_url(checkout):
+def remote_url(checkout: Optional[str]) -> str:
     """Where a fresh clone should come from: the env, then an existing clone."""
     explicit = os.environ.get("SILHOUETTE_REPO")
     if explicit:
         return explicit
     if checkout:
-        code, out = git(["-C", checkout, "remote", "get-url", "origin"])
+        code, out, _ = git(["-C", checkout, "remote", "get-url", "origin"])
         if code == 0 and out:
             return out
     return DEFAULT_REMOTE
 
 
-def ensure_checkout():
+def ensure_checkout() -> Tuple[Optional[str], Optional[str]]:
     """The checkout to work in, cloning one on demand when there is none.
 
     Returns (path, error). `check` calls this too: fetching the copy is what
@@ -207,35 +207,35 @@ def ensure_checkout():
     return destination, None
 
 
-def fetch(checkout):
+def fetch(checkout: str) -> Optional[str]:
     """Bring the remote refs up to date. Returns an error string, or None."""
-    code, out = git(["-C", checkout, "fetch", "--quiet", "origin", ref()])
+    code, out, _ = git(["-C", checkout, "fetch", "--quiet", "origin", ref()])
     if code != 0:
         return "could not reach %s" % remote_url(checkout)
     return None
 
 
-def remote_ref():
+def remote_ref() -> str:
     return "FETCH_HEAD"
 
 
-def local_sha(checkout):
-    code, out = git(["-C", checkout, "rev-parse", "--short", "HEAD"])
+def local_sha(checkout: str) -> str:
+    code, out, _ = git(["-C", checkout, "rev-parse", "--short", "HEAD"])
     return out if code == 0 else ""
 
 
-def commit_date(checkout, revision):
-    code, out = git(["-C", checkout, "log", "-1", "--format=%cs", revision])
+def commit_date(checkout: str, revision: str) -> str:
+    code, out, _ = git(["-C", checkout, "log", "-1", "--format=%cs", revision])
     return out if code == 0 else ""
 
 
-def ahead_of_upstream(checkout):
+def ahead_of_upstream(checkout: str) -> int:
     """Commits this checkout has that upstream does not.
 
     A clone with its own commits is being developed, not installed, and a
     fast-forward is not what the user wants there.
     """
-    code, out = git(["-C", checkout, "rev-list", "--count",
+    code, out, _ = git(["-C", checkout, "rev-list", "--count",
                      "%s..HEAD" % remote_ref()])
     if code != 0:
         return 0
@@ -245,8 +245,8 @@ def ahead_of_upstream(checkout):
         return 0
 
 
-def behind_count(checkout):
-    code, out = git(["-C", checkout, "rev-list", "--count",
+def behind_count(checkout: str) -> int:
+    code, out, _ = git(["-C", checkout, "rev-list", "--count",
                      "HEAD..%s" % remote_ref()])
     if code != 0:
         return 0
@@ -256,21 +256,21 @@ def behind_count(checkout):
         return 0
 
 
-def changelog(checkout):
+def changelog(checkout: str) -> List[str]:
     """Commit subjects between here and upstream, newest first."""
-    code, out = git(["-C", checkout, "log", "--no-merges", "--format=%s",
+    code, out, _ = git(["-C", checkout, "log", "--no-merges", "--format=%s",
                      "HEAD..%s" % remote_ref()])
     if code != 0:
         return []
     return [line for line in out.splitlines() if line.strip()][:CHANGELOG_LIMIT]
 
 
-def merge_base(checkout):
-    code, out = git(["-C", checkout, "merge-base", "HEAD", remote_ref()])
+def merge_base(checkout: str) -> str:
+    code, out, _ = git(["-C", checkout, "merge-base", "HEAD", remote_ref()])
     return out if code == 0 else ""
 
 
-def changed_files(checkout, from_revision, to_revision):
+def changed_files(checkout: str, from_revision: str, to_revision: Optional[str]) -> Set[str]:
     """Paths differing between two revisions, or from one to the working tree.
 
     An empty `to_revision` means the working tree, which git spells by leaving
@@ -280,13 +280,13 @@ def changed_files(checkout, from_revision, to_revision):
     arguments = ["-C", checkout, "diff", "--name-only", from_revision]
     if to_revision:
         arguments.append(to_revision)
-    code, out = git(arguments)
+    code, out, _ = git(arguments)
     if code != 0:
         return set()
     return {line.strip() for line in out.splitlines() if line.strip()}
 
 
-def conflicts(checkout):
+def conflicts(checkout: str) -> List[str]:
     """Files both sides moved: your edit and upstream's meet in one path.
 
     Computed against the merge base rather than against HEAD alone, so a file
@@ -301,19 +301,19 @@ def conflicts(checkout):
     return sorted(mine & theirs)
 
 
-def dirty_tracked(checkout):
+def dirty_tracked(checkout: str) -> Set[str]:
     """Tracked paths with local changes, staged or not.
 
     Untracked files are deliberately absent: nothing in the update path touches
     them, so they need no protecting.
     """
-    code, out = git(["-C", checkout, "diff", "--name-only", "HEAD"])
+    code, out, _ = git(["-C", checkout, "diff", "--name-only", "HEAD"])
     if code != 0:
         return set()
     return {line.strip() for line in out.splitlines() if line.strip()}
 
 
-def snapshot(checkout, paths):
+def snapshot(checkout: str, paths: Set[str]) -> Tuple[str, Optional[str]]:
     """Copy `paths` out of the tree so they can be restored after the move.
 
     Returns (directory, error). A file that vanished between the listing and the
@@ -333,7 +333,7 @@ def snapshot(checkout, paths):
     return directory, None
 
 
-def restore(checkout, directory):
+def restore(checkout: str, directory: str) -> None:
     """Put the snapshotted files back, newest content winning."""
     for folder, _dirs, files in os.walk(directory):
         for name in files:
@@ -398,7 +398,7 @@ def installed_check(packages, family):
     return present & set(packages)
 
 
-def gentoo_installed(atom):
+def gentoo_installed(atom: str) -> bool:
     """Check a category/package atom against Portage's installed-package database."""
     category, separator, package = atom.partition("/")
     if not separator or not category or not package:
@@ -417,7 +417,7 @@ def gentoo_installed(atom):
         return False
 
 
-def distro_family():
+def distro_family() -> str:
     """The install.sh family for this machine, so both agree on package names."""
     identifier = ""
     likes = ""
@@ -444,7 +444,7 @@ def distro_family():
     return "unknown"
 
 
-def core_packages(checkout):
+def core_packages(checkout: str) -> List[str]:
     """The installer's CORE list for this machine, read from its package catalog.
 
     Parsed rather than duplicated: the installer is the one place that knows
@@ -467,7 +467,7 @@ def core_packages(checkout):
     return [word for word in words if word and not word.startswith("#")]
 
 
-def missing_deps(checkout):
+def missing_deps(checkout: str) -> List[Dict[str, str]]:
     """Core packages this machine does not have yet, as {id, desc}.
 
     `desc` is filled from the optional hints the installer already carries, so
@@ -489,7 +489,7 @@ def missing_deps(checkout):
     return ordered
 
 
-def hint_for(checkout, name):
+def hint_for(checkout: str, name: str) -> str:
     """The installer's one-line description for a package, if it has one."""
     script = os.path.join(checkout, "install.sh")
     try:
@@ -501,7 +501,7 @@ def hint_for(checkout, name):
     return match.group(1).strip() if match else ""
 
 
-def install_command(family, packages):
+def install_command(family: str, packages: List[str]) -> List[str]:
     """The install invocation, as the argv to hand to pkexec."""
     if family == "fedora":
         return ["dnf", "install", "-y"] + packages
@@ -519,7 +519,7 @@ def install_command(family, packages):
     return []
 
 
-def install_deps(checkout, ids):
+def install_deps(checkout: str, ids: List[str]) -> List[Dict[str, str]]:
     """Install the packages the user left toggled on.
 
     pkexec rather than sudo: the shell already answers polkit prompts through
@@ -584,7 +584,7 @@ def install_deps(checkout, ids):
     return failures
 
 
-def deploy(checkout):
+def deploy(checkout: str) -> Optional[str]:
     """Copy the updated tree into the live config, through the installer.
 
     Reusing install.sh keeps one deploy path: it backs up what it replaces,
@@ -611,7 +611,7 @@ def deploy(checkout):
     return None
 
 
-def write_manifest(checkout, version):
+def write_manifest(checkout: str, version: str) -> None:
     """Record what landed, which is how the surface names the installed side."""
     payload = {
         "syncedSha": git(["-C", checkout, "rev-parse", "HEAD"])[1],
@@ -629,7 +629,7 @@ def write_manifest(checkout, version):
         pass
 
 
-def target_sha(checkout):
+def target_sha(checkout: str) -> str:
     """Short sha of what the update would land, not of what is here now.
 
     The surface splits this off `version` and compares it with the sha the
@@ -637,11 +637,11 @@ def target_sha(checkout):
     two look equal whenever a checkout is already at parity, and would hide the
     difference for the whole span of an update that has not been applied yet.
     """
-    code, out = git(["-C", checkout, "rev-parse", "--short", remote_ref()])
+    code, out, _ = git(["-C", checkout, "rev-parse", "--short", remote_ref()])
     return out if code == 0 else ""
 
 
-def describe(checkout):
+def describe(checkout: str) -> Dict[str, Any]:
     """The bits every reply carries: target version and how far behind."""
     target = target_sha(checkout)
     date = commit_date(checkout, remote_ref())
@@ -656,7 +656,7 @@ def describe(checkout):
     }
 
 
-def check(arguments):
+def check(arguments: argparse.Namespace) -> int:
     """Report the state of the install without changing the live config."""
     checkout, devmode = resolve_checkout()
 
@@ -687,7 +687,7 @@ def check(arguments):
     return emit(payload)
 
 
-def apply_changes(arguments):
+def apply_changes(arguments: argparse.Namespace) -> int:
     """Land upstream, re-deploy the config, and report what to restart."""
     checkout, devmode = resolve_checkout()
     if devmode:
@@ -729,7 +729,7 @@ def apply_changes(arguments):
         return fail(error)
 
     try:
-        code, _ = git(["-C", checkout, "reset", "--hard", remote_ref()])
+        code, _, __ = git(["-C", checkout, "reset", "--hard", remote_ref()])
         if code != 0:
             return fail("could not move the tree to upstream")
         restore(checkout, directory)
@@ -757,7 +757,7 @@ def apply_changes(arguments):
     return emit(payload)
 
 
-def wanted_paths(raw, conflicts_found):
+def wanted_paths(raw: Optional[str], conflicts_found: List[str]) -> List[str]:
     """The --take list, filtered to paths that exist in the repo.
 
     The surface sends back names it was given, but this is still user input
@@ -774,7 +774,7 @@ def wanted_paths(raw, conflicts_found):
     return taken
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Update the rice from its git remote.")
     parser.add_argument("action", choices=["check", "apply"],

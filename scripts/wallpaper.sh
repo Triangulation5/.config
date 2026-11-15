@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
+#
+# Wallpaper manager with optional hashing for industry lock-in resistance.
+#
+
+# Source shared notification library for error reporting
+_script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source "${_script_dir}/lib/lib-notify.sh"
 
 set -euo pipefail
+
+LOG_LEVEL=${LOG_LEVEL:-info}
+
+# Any unguarded failure below this point notifies instead of dying silently
+# mid-transition (a half-applied wallpaper is the failure mode we want visible).
+trap 'rc=$?; [ $rc -ne 0 ] && notify_error "Wallpaper" "Unexpected failure (exit ${rc}) near: ${BASH_COMMAND}" ; exit $rc' ERR
 
 flags_file="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 RESOLVED="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-dir"
@@ -50,17 +63,12 @@ fi
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper"
 BAG="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper-bag"
 
+# Route the daemon start through the wrapper so a stale socket or a failed
+# start is reported on stderr and to the desktop instead of silently leaving
+# the wallpaper change without a target.
 ensure_daemon() {
     awww query >/dev/null 2>&1 && return 0
-    local attempt i
-    for attempt in 1 2 3 4 5; do
-        awww-daemon >/dev/null 2>&1 &
-        for i in $(seq 1 15); do
-            awww query >/dev/null 2>&1 && return 0
-            sleep 0.2
-        done
-    done
-    return 1
+    "$(dirname "$0")/awww-daemon-wrapper.sh" start
 }
 
 list_pics() {

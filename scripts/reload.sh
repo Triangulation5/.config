@@ -26,9 +26,13 @@
 #       launch is still the last resort below, for the case where the supervisor
 #       cannot be started at all.
 
+# Report failures through lib-notify.sh so a Super+R that produces no shell is
+# visible instead of silent.
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/lib-notify.sh"
+
 name=silhouette-shell
 
-pkill qs
+pkill qs || notify_warn "Shell reload" "No running qs process to kill (may be fine on first boot)"
 
 # Wait for the process to actually be gone before probing anything. SIGTERM lands
 # in a few ms, but the socket can answer for a moment after, and a probe that
@@ -67,8 +71,13 @@ done
 # a second launch beside a running one is the duplicate-shell hazard, so a
 # supervisor that is merely slow gets to finish on its own cadence instead.
 if pgrep -f "watchdog.sh $name" >/dev/null 2>&1; then
-    echo "reload.sh: supervisor has not returned the shell yet; leaving it to do so" >&2
+    notify_warn "Shell reload" "Supervisor has not returned the shell yet; leaving it to do so"
     exit 0
 fi
 
-bash ~/.config/scripts/launch.sh & disown
+notify_warn "Shell reload" "No supervisor; launching the shell directly"
+if [ ! -x "$HOME/.config/scripts/launch.sh" ]; then
+    notify_error "Shell reload" "launch.sh missing or not executable; shell NOT relaunched"
+    exit 1
+fi
+bash "$HOME/.config/scripts/launch.sh" & disown

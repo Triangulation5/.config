@@ -616,11 +616,12 @@ surface reads a file or a contract that this config does not have.
   `silhouette-update.py` is the *package* one: `check` → `updates` +
   `packages`, `apply` → `results` + `rebootNeeded`, under pkexec. That is the
   only thing here that can truthfully answer "what updates are there", which is
-  why this page reads its contract and offers a check, an upgrade, a
-  security-only upgrade and a reboot hint, and nothing about conflicts or shell
-  relaunches. Pointing either page at the other script reads fields that never
-  arrive: no `behind` reads as "0 updates", so the surface would say "Up to
-  date" with a pending upgrade in front of it.
+  why this page reads its contract and offers a check and an upgrade, plus a
+  security-only option where the package manager supports one. Gentoo uses
+  Portage's local repository metadata for checks and does not expose a generic
+  security-only world update. Pointing either page at the other script reads
+  fields that never arrive: no `behind` reads as "0 updates", so the surface
+  would say "Up to date" with a pending upgrade in front of it.
 - **Animation style, not bezier handles.** The config defines a whole curve and
   leaf set per style (`animationStyle = "liquid" | "pill" | "macos"`), so the
   Motion page offers the style, the master switch and the speed — which is
@@ -731,7 +732,7 @@ weather row without matching "Pill opa-city", and "gaps in" finds `gapsIn`.
 Results keep the page's real index, so opening a hit lands on the page that holds
 it — and on the row itself: a hit opens the page, scrolls to the row and rings it.
 A view page has no row labels to find, so it carries `keywords` instead
-("resolution", "scale" for Displays; "dnf", "packages" for Updates).
+("resolution", "scale" for Displays; "dnf", "emerge", "packages" for Updates).
 
 Reset walks the open page's rows and writes each `reset` back through its source
 — flags into `flags.json`, Hyprland fields into their files. A row without a
