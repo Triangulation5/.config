@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import "../utils/rows.js" as Rows
+import "../../../utils/settings/rows.js" as Rows
 
 /**
  * Control Center: night light, the session-wide keep-awake, and the rescan gaps

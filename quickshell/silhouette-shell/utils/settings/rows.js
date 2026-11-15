@@ -1,4 +1,4 @@
-.import "../../../utils/settings/fields.js" as Fields
+.import "fields.js" as Fields
 
 /**
  * The settings app's row builders.

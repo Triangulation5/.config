@@ -104,15 +104,8 @@ services/                  qs.services — one file per config document
                              for the Keybinds page, and no writer at all
   Updates.qml                the config's own updater script, check and apply
   Backups.qml                the shell's *own* config: snapshot, list, restore, delete
-utils/lua/                 insert.js, adding a field a file does not carry yet —
-                           the only Lua helper this app owns (see "Lua helpers")
-utils/keybinds/            spacebinds.js, this app's special-workspace bind
-                           editor, and cheatsheet.js, the read-only binds parser
-                           behind the Keybinds page; every other helper is
-                           imported from the shell
-utils/rows.js              the row builders: a page states what it alone decides
-                           (editor, label, caption, unit), the builder takes the
-                           bounds from the table shared with the shell
+The utilities used across this app and the shell are unified under the root
+`utils/` tree (see `utils/keybinds/`, `utils/lua/`, and `utils/settings/`).
 pages/                     qs.pages — what is configurable
   Pages.qml                  the index: pages, search, row flattening
   Appearance.qml … Backups.qml  one singleton per page, in rail order
@@ -274,7 +267,7 @@ compositor or another surface changes the value.
 
 A row's bounds, step, default and option list are not stated on the row when the
 shell's own settings surfaces edit the same field: both read them from one table,
-`utils/settings/fields.js`, and `utils/rows.js` builds a row from it —
+`utils/settings/fields.js`, and `utils/settings/rows.js` builds a row from it —
 `deco.<field>` for a Hyprland field, `flags.<flag>` for a shell flag, and
 `input.<field>` for one of the input files. That table holds only fields both UIs
 edit; a row whose field is absent from it states its own `min`/`max`/`step`/`reset`
@@ -367,11 +360,12 @@ from `name` when it does not: current Hyprland names a numbered workspace `"1"`
 with no numeric field, and a parser that only looked for `id` silently empties the
 list.
 
-Two helpers stay here, because only this app has anything that needs them:
+The specialized helpers are unified into the shell's `utils/` tree:
 
 - `utils/keybinds/spacebinds.js` lists a binds file's special workspaces and adds
   or removes the toggle/move pair one space needs, reading the modifier variable
   off the file rather than assuming `mod` (see the parity notes).
+- `utils/keybinds/cheatsheet.js` parses live keybinds for the Keybinds sheet.
 - `utils/lua/insert.js` adds a field that is not in the file yet. The shell's
   `setField` no-ops when the field is missing, which is right for a hand-trimmed
   config but means a control that accepts a drag and changes nothing — this
@@ -380,6 +374,8 @@ Two helpers stay here, because only this app has anything that needs them:
   `input` block instead and say so in the note line. The shell's own editors treat
   a missing field as a no-op (`setField` returns `ok: false`; Deco refuses the
   write outright) rather than inserting one, so there is nothing here to share.
+- `utils/settings/rows.js` builds settings row definitions using the shared
+  `fields.js` metadata table.
 
 `keychord.js` (the shell's captured-key mapping, for the create form's key
 capture) is imported from the shell's `utils/keybinds/` too. The shell's

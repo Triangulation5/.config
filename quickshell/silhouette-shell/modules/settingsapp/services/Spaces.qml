@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.settingsapp.services
-import "../utils/keybinds/spacebinds.js" as SpaceBinds
+import "../../../utils/keybinds/spacebinds.js" as SpaceBinds
 
 /**
  * The user's special workspaces, across the two files one actually needs.

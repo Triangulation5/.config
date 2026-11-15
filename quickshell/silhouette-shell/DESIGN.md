@@ -308,12 +308,12 @@ Same list, plus:
 
 - **Ask what the surface is a state of.** Most redesign questions are actually
   "which state is this, and why does it look like another one".
-- **Do not add a second accent** to solve a hierarchy problem. That is a spacing,
-  weight or radius problem wearing a colour problem's clothes.
+- **Do not add a second accent** to solve a hierarchy problem. That is a
+  spacing, weight or radius problem wearing a colour problem's clothes.
 - **Count the motion.** If two things animate to say one thing, one of them is
   now redundant.
-- **Keep the tokens.** A redesign that hard-codes its own colours has forked the
-  design language, and the next theme change will not reach it.
+- **Keep the tokens.** A redesign that hard-codes its own colours has forked
+  the design language, and the next theme change will not reach it.
 
 ### Before you call it done
 
@@ -322,6 +322,7 @@ Same list, plus:
 - [ ] Correct with `liteMode` on
 - [ ] Every colour, duration and size comes from a token
 - [ ] One accent, or none
-- [ ] Header comment explains what the file is and any decision that is not obvious
+- [ ] Header comment explains what the file is and any decision that is not
+  obvious
 - [ ] Every comment in it is a `/** … */`
 - [ ] Anything the user can tune is a flag, and the settings app can reach it

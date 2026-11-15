@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import "../utils/rows.js" as Rows
+import "../../../utils/settings/rows.js" as Rows
 
 /**
  * Clock & Date: how the pill's clock reads, how the hover date strip settles,

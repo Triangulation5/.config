@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import "../utils/rows.js" as Rows
+import "../../../utils/settings/rows.js" as Rows
 
 /**
  * Motion: the shell's own animation budget and spectrum visualizer, plus the

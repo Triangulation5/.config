@@ -6,7 +6,7 @@ import Quickshell.Io
 import qs.modules.settingsapp.services
 import "../../../utils/lua/setInput.js" as SetInput
 import "../../../utils/settings/fields.js" as Fields
-import "../utils/lua/insert.js" as Insert
+import "../../../utils/lua/insert.js" as Insert
 
 /**
  * The pointer, keyboard and cursor settings, across the three files they live

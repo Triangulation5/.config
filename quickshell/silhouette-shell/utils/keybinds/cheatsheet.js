@@ -16,7 +16,7 @@
  * thing to keep in step. Only the two config-specific halves — which variable
  * names the modifier, and how a dispatch is named — are stated here.
  */
-.import "../../../../utils/keybinds/binds.js" as Scan
+.import "binds.js" as Scan
 .import "spacebinds.js" as Space
 
 /**

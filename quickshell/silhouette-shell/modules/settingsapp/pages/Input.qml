@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import "../utils/rows.js" as Rows
+import "../../../utils/settings/rows.js" as Rows
 import qs.modules.settingsapp.services
 
 /**
@@ -21,7 +21,7 @@ QtObject {
     readonly property string icon: "\u2328"
     readonly property string keywords: "mouse pointer sensitivity acceleration accel profile keyboard layout repeat rate delay numlock cursor theme size touchpad scrolling"
 
-    /** One row for an `input` field, its bounds read from the shared table (see utils/rows.js). */
+    /** One row for an `input` field, its bounds read from the shared table (see utils/settings/rows.js). */
     function row(field, type, label, caption, unit, extra) {
         return Rows.of("input", field, type, label, caption, unit, extra);
     }

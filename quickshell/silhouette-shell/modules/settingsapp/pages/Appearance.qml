@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import "../utils/rows.js" as Rows
+import "../../../utils/settings/rows.js" as Rows
 
 /**
  * Appearance: the palette the whole rice is tinted from, the UI font and scale,
@@ -50,7 +50,7 @@ QtObject {
     readonly property string icon: "\u25D0"
     readonly property string keywords: "theme colour color design style washi material material-you palette scheme colorscheme wallpaper font scale ui tint backdrop media aura glow shadow strength"
 
-    /** One row for a flag, its bounds read from the shared table (see utils/rows.js). */
+    /** One row for a flag, its bounds read from the shared table (see utils/settings/rows.js). */
     function row(field, type, label, caption, unit, extra) {
         return Rows.flag(field, type, label, caption, unit, extra);
     }

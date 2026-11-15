@@ -6,7 +6,7 @@ import Quickshell.Io
 import qs.modules.settingsapp.services
 import "../../../utils/lua/monitors.js" as Mon
 import "../../../utils/settings/fields.js" as Fields
-import "../utils/lua/insert.js" as Insert
+import "../../../utils/lua/insert.js" as Insert
 
 /**
  * The displays, from three sides: `hyprctl monitors -j` for what is actually

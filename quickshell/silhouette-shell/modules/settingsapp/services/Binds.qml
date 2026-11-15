@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.modules.settingsapp.services
-import "../utils/keybinds/cheatsheet.js" as Cheatsheet
+import "../../../utils/keybinds/cheatsheet.js" as Cheatsheet
 
 /**
  * `binds.lua` as reference material: every `hl.bind(...)` it holds, parsed for
