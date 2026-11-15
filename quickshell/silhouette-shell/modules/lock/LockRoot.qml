@@ -38,18 +38,18 @@ ShellRoot {
     Auth {
         id: pamAuth
         user: root.currentUser
-        onSucceeded: root.kickThen(1, () => {
-            root.revealed = false;
-            /**
-             * The collapse is the lock receding back into the pill. The minimal bar
-             * has no pill to recede into and nothing to animate, so the session goes
-             * straight back instead of 720ms later.
-             */
-            if (Flags.barEnabled)
+        onSucceeded: {
+            if (Flags.barEnabled) {
+                root.revealed = false;
                 root.finishUnlock();
-            else
+                return;
+            }
+
+            root.kickThen(1, () => {
+                root.revealed = false;
                 collapse.restart();
-        })
+            }, 80);
+        }
     }
 
     /**
@@ -67,7 +67,7 @@ ShellRoot {
 
     Timer {
         id: collapse
-        interval: Math.random() < 0.5 ? 620 : 540
+        interval: 420
         onTriggered: root.finishUnlock()
     }
 
@@ -115,7 +115,7 @@ ShellRoot {
           * dropped with the blur layers (see components/effects/GlowField.qml). */
         Cava.enabled = Flags.lockViz && !Flags.liteMode;
         if (!Flags.barEnabled)
-            root.kickThen(2, () => reveal.restart());
+            root.kickThen(2, () => reveal.restart(), 80);
         root.reportLockState(true);
     }
 
@@ -124,7 +124,8 @@ ShellRoot {
         id: renderKick
         property int left: 0
         property var after: null
-        interval: 80
+        property int tickInterval: 80
+        interval: tickInterval
         repeat: true
         onTriggered: {
             if (renderKick.left-- > 0) {
@@ -137,9 +138,10 @@ ShellRoot {
         }
     }
 
-    function kickThen(times: int, after: var): void {
+    function kickThen(times: int, after: var, tickInterval: int): void {
         renderKick.left = times;
         renderKick.after = after;
+        renderKick.tickInterval = tickInterval;
         renderKick.restart();
     }
 

@@ -298,7 +298,7 @@ Item {
         target: surface
         property: "maskP"
         to: 0
-        duration: useBezierStyle ? 700 : 500
+        duration: useBezierStyle ? 400 : 380
         easing.type: Easing.BezierSpline
         easing.bezierCurve: [0.16, 1, 0.3, 1, 1, 1]
     }

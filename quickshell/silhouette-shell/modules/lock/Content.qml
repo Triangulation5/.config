@@ -347,7 +347,7 @@ Item {
          */
         color: "transparent"
         border.width: 0
-        opacity: content.authenticating ? 0.6 : 1
+        opacity: content.authenticating ? 0.85 : 1
 
         transform: Translate { id: capsuleShift }
 
@@ -543,7 +543,7 @@ Item {
                 fadeWidth: 16 * content.s
                 fadeColor: ColorScheme.capsule
                 active: fadeLatch.shown && fadeLatch.ready
-                opacity: content.revealPassword ? 0.45 : 1
+                opacity: content.authenticating ? 0.15 : (content.revealPassword ? 0.45 : 1)
                 Behavior on opacity { NumberAnimation { duration: 160 } }
             }
 
@@ -558,7 +558,7 @@ Item {
                 fadeColor: ColorScheme.capsule
                 mirrored: true
                 active: fadeLatch.shown && fadeLatch.ready
-                opacity: content.revealPassword ? 0.45 : 1
+                opacity: content.authenticating ? 0.15 : (content.revealPassword ? 0.45 : 1)
                 Behavior on opacity { NumberAnimation { duration: 160 } }
             }
         }

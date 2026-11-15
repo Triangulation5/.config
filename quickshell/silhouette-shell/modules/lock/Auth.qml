@@ -39,6 +39,7 @@ Item {
 
     /** Retry once if fingerprint initialization immediately fails. */
     property bool retryingWithoutFingerprint: false
+    property bool fingerprintInitializationFailed: false
 
     /**
      * AOSP-style retry lockout: after lockoutThreshold consecutive failures the
@@ -75,6 +76,7 @@ Item {
         lastError = ""
         statusMessage = ""
         retryingWithoutFingerprint = false
+        fingerprintInitializationFailed = false
         failedAttempts = 0
         lockedOut = false
         lockoutRemaining = 0
@@ -158,8 +160,20 @@ Item {
         lastError = ""
         statusMessage = ""
         retryingWithoutFingerprint = false
+        fingerprintInitializationFailed = false
 
         pam.start()
+    }
+
+    function retryFingerprintInitialization(): bool {
+        if (retryingWithoutFingerprint || pendingPassword.length === 0
+                || !fingerprintInitializationFailed)
+            return false
+
+        retryingWithoutFingerprint = true
+        fingerprintInitializationFailed = false
+        pam.start()
+        return true
     }
 
     PamContext {
@@ -194,6 +208,7 @@ Item {
                 for (let i = 0; i < fingerprintErrors.length; ++i) {
                     if (message.toLowerCase().indexOf(fingerprintErrors[i].toLowerCase()) !== -1) {
                         /** Ignore fingerprint availability errors. */
+                        auth.fingerprintInitializationFailed = true
                         return
                     }
                 }
@@ -211,23 +226,18 @@ Item {
                 auth.pendingPassword = ""
                 auth.lastError = ""
                 auth.retryingWithoutFingerprint = false
+                auth.fingerprintInitializationFailed = false
                 auth.clearLockout()
                 auth.succeeded()
                 return
             }
 
-            /**
-             * Retry the PAM conversation once. This helps recover from
-             * transient fingerprint initialization failures.
-             */
-            if (!auth.retryingWithoutFingerprint && auth.pendingPassword.length > 0) {
-                auth.retryingWithoutFingerprint = true
-                pam.start()
+            if (auth.retryFingerprintInitialization())
                 return
-            }
 
             auth.pendingPassword = ""
             auth.retryingWithoutFingerprint = false
+            auth.fingerprintInitializationFailed = false
             auth.recordFailure()
             auth.failed()
         }
@@ -235,11 +245,8 @@ Item {
         onError: {
             auth.statusMessage = ""
 
-            if (!auth.retryingWithoutFingerprint && auth.pendingPassword.length > 0) {
-                auth.retryingWithoutFingerprint = true
-                pam.start()
+            if (auth.retryFingerprintInitialization())
                 return
-            }
 
             auth.pendingPassword = ""
 
@@ -247,6 +254,7 @@ Item {
                 auth.lastError = "Authentication failed."
 
             auth.retryingWithoutFingerprint = false
+            auth.fingerprintInitializationFailed = false
             auth.recordFailure()
             auth.failed()
         }
