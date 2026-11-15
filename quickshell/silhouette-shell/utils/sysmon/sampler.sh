@@ -2,6 +2,13 @@
 # POSIX shell fallback sampler for Sysmon.qml.
 # Emits hardware detection and live system vitals over stdout.
 
+if [ "$1" = "--once" ]; then
+    read -r _ a b c d e f g h _ < /proc/stat 2>/dev/null
+    echo "CPU $((a+b+c+d+e+f+g+h)) $((d+e))"
+    awk '/^MemTotal:/{mt=$2}/^MemAvailable:/{ma=$2}END{print "MEM",mt+0,ma+0}' /proc/meminfo 2>/dev/null
+    exit 0
+fi
+
 DETECT_ONLY=0
 if [ "$1" = "--detect-only" ]; then
     DETECT_ONLY=1

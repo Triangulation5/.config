@@ -35,6 +35,8 @@ Singleton {
     property real prevTotal: 0
     property real prevIdle: 0
 
+    readonly property string samplerRunner: Qt.resolvedUrl("../utils/sysmon/run.sh").toString().replace(/^file:\/\//, "")
+
     onActiveChanged: {
         if (!active)
             return;
@@ -46,15 +48,18 @@ Singleton {
 
     /** Queue one read unless a previous one is still running. */
     function sample() {
+        if (typeof Sysmon !== "undefined" && Sysmon && Sysmon.active) {
+            root.cpu = Sysmon.cpu;
+            root.memPct = Sysmon.memPct;
+            return;
+        }
         if (!proc.running)
             proc.running = true;
     }
 
     Process {
         id: proc
-        command: ["sh", "-c",
-            "read -r _ a b c d e f g h _ < /proc/stat; echo \"CPU $((a+b+c+d+e+f+g+h)) $((d+e))\"; "
-            + "awk '/^MemTotal:/{mt=$2}/^MemAvailable:/{ma=$2}END{print \"MEM\",mt,ma}' /proc/meminfo"]
+        command: [root.samplerRunner, "--once"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var lines = this.text.split("\n");

@@ -29,6 +29,7 @@ This will compile using `cargo` (or `rustc` if cargo is unavailable) and place t
 
 Updates are emitted line-delimited over `stdout`:
 * `DETECT TEMP <path>` / `DETECT GPU <vendor> [<dev> <has_vram>]`: Hardware probe (also supported standalone via `--detect-only`).
+* `--once`: Samples CPU and memory vitals a single time and exits immediately. Used by minimal status strips (e.g., `services/BarStatus.qml`) to eliminate periodic `sh` and `awk` process forks.
 * `CPU <total_jiffies> <idle_jiffies>`: Sampled every 1s.
 * `MEM <mt> <ma> <st> <sf>`: Sampled every 1s (kB).
 * `NET <rx> <tx>`: Sampled every 1s (bytes).

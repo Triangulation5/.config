@@ -304,9 +304,20 @@ fn sample_amd_gpu(dev: &Path) -> (u32, i32, u64, u64) {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let detect_only = args.iter().any(|a| a == "--detect-only");
+    let once = args.iter().any(|a| a == "--once");
 
     let stdout = io::stdout();
     let mut out = stdout.lock();
+
+    if once {
+        if let Some((total, idle)) = read_proc_stat() {
+            let _ = writeln!(out, "CPU {} {}", total, idle);
+        }
+        let (mt, ma, _, _) = read_proc_meminfo();
+        let _ = writeln!(out, "MEM {} {}", mt, ma);
+        let _ = out.flush();
+        return;
+    }
 
     let temp_path = detect_cpu_temp();
     let gpu_info = detect_gpu();

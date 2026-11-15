@@ -187,6 +187,15 @@ def sample_amd_gpu(dev):
     return busy, temp, vu, vt
 
 def main():
+    if "--once" in sys.argv:
+        c = read_proc_stat()
+        if c:
+            print(f"CPU {c[0]} {c[1]}")
+        mt, ma, _, _ = read_proc_meminfo()
+        print(f"MEM {mt} {ma}")
+        sys.stdout.flush()
+        return
+
     detect_only = "--detect-only" in sys.argv
     temp_path = detect_cpu_temp()
     gpu_info = detect_gpu()
