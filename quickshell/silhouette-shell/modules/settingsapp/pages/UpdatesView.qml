@@ -8,16 +8,16 @@ import qs.modules.settingsapp.components
  * The Updates page body: what the updater found, and the one button that installs
  * it.
  *
- * The check runs when the page opens rather than on a timer: `dnf check-update`
- * hits the network, and a settings window that calls it every few minutes in the
- * background is a settings window that owns a mirror refresh the user never asked
- * for. Opening the page *is* the ask.
+ * The check runs when the page opens rather than on a timer: package-manager
+ * checks may hit the network, and a settings window that calls them every few
+ * minutes in the background is a settings window that owns a refresh the user
+ * never asked for. Opening the page *is* the ask.
  *
  * Install is behind a confirm step because it is the only control in this app that
  * escalates through pkexec, and the only one that changes the machine rather than
  * a config file. Everything the script does is on the same contract (see the
  * Updates service), so the page offers exactly what it implements: a check, and an
- * upgrade — the whole set or the minimal one.
+ * upgrade, with a security-only mode only when the package manager supports it.
  */
 ColumnLayout {
     id: root
@@ -43,8 +43,8 @@ ColumnLayout {
 
     /** The line under it, orienting that state. "" drops the line. */
     readonly property string subline: Updates.statusKind === "error" ? Updates.errorText
-        : Updates.statusKind === "behind" ? "Installing runs the config's updater, which escalates for the upgrade itself."
-        : Updates.statusKind === "ok" ? "Nothing to install."
+        : Updates.statusKind === "behind" ? (Updates.note.length > 0 ? Updates.note : "Installing runs the package updater and asks for authorization.")
+        : Updates.statusKind === "ok" ? (Updates.note.length > 0 ? Updates.note : "Nothing to install.")
         : Updates.statusKind === "checking" ? "Asking the package manager."
         : Updates.statusKind === "applying" ? "This can take a while, and asks for your password."
         : ""
@@ -147,8 +147,10 @@ ColumnLayout {
                     spacing: 8
 
                     Repeater {
-                        model: [{ label: "All packages", minimal: false },
-                                { label: "Security & fixes", minimal: true }]
+                        model: Updates.supportsMinimal
+                            ? [{ label: "All packages", minimal: false },
+                               { label: "Security & fixes", minimal: true }]
+                            : [{ label: "All packages", minimal: false }]
 
                         delegate: Rectangle {
                             id: mode

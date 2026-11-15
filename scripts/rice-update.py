@@ -9,9 +9,9 @@ edits clash with upstream; `apply` lands upstream and re-deploys the config.
 
 Two update paths exist on purpose, and they answer different questions:
 
-  - `silhouette-update.py` (next to this file) is the *distribution*: what dnf
-    has pending and whether a reboot is wanted. The settings app's Updates page
-    drives it.
+  - `silhouette-update.py` (next to this file) is the *distribution*: what the
+    package manager has pending and whether a reboot is wanted. The settings
+    app's Updates page drives it.
   - this script is the *rice*: which commits your config is behind, and what
     landing them would touch. The pill's quick-settings Updater drives it.
 
@@ -48,6 +48,7 @@ stdout and has nowhere else to read a reason from.
 """
 
 import argparse
+import glob
 import json
 import os
 import re
@@ -70,6 +71,7 @@ CHANGELOG_LIMIT = 40
 # truth for what the shell calls out to, and duplicating them here is how the
 # two lists drift apart.
 EXTRA_CORE = ()
+PORTAGE_VDB = "/var/db/pkg"
 
 
 def emit(payload):
@@ -365,6 +367,8 @@ def installed_check(packages, family):
         query = ["pacman", "-Q"]
     elif family == "debian":
         query = ["dpkg", "-s"]
+    elif family == "gentoo":
+        return {package for package in packages if gentoo_installed(package)}
     else:
         return set(packages)
 
@@ -390,6 +394,25 @@ def installed_check(packages, family):
         elif line.startswith("Package: "):
             present.add(line.split(": ", 1)[1].strip())
     return present & set(packages)
+
+
+def gentoo_installed(atom):
+    """Check a category/package atom against Portage's installed-package database."""
+    category, separator, package = atom.partition("/")
+    if not separator or not category or not package:
+        return False
+    directory = os.path.join(PORTAGE_VDB, category)
+    prefix = package + "-"
+    try:
+        return any(
+            entry.startswith(prefix)
+            and len(entry) > len(prefix)
+            and entry[len(prefix)].isdigit()
+            and os.path.isdir(os.path.join(directory, entry))
+            for entry in os.listdir(directory)
+        )
+    except OSError:
+        return False
 
 
 def distro_family():
@@ -420,13 +443,13 @@ def distro_family():
 
 
 def core_packages(checkout):
-    """The installer's CORE list for this machine, read from install.sh.
+    """    The installer's CORE list for this machine, read from its package catalog.
 
     Parsed rather than duplicated: the installer is the one place that knows
     which package names each distro uses, and the two have to agree or the
     surface offers a name the package manager does not have.
     """
-    script = os.path.join(checkout, "install.sh")
+    script = os.path.join(checkout, "scripts", "installer", "packages.sh")
     try:
         with open(script) as handle:
             text = handle.read()
@@ -486,6 +509,11 @@ def install_command(family, packages):
         return ["apt-get", "install", "-y"] + packages
     if family == "suse":
         return ["zypper", "--non-interactive", "install"] + packages
+    if family == "gentoo":
+        return [
+            "emerge", "--ask=n", "--noreplace", "--verbose", "--keep-going",
+            "--autounmask=y", "--autounmask-write=y", "--autounmask-continue=y",
+        ] + packages
     return []
 
 
@@ -501,6 +529,32 @@ def install_deps(checkout, ids):
         return failures
 
     family = distro_family()
+    if family == "gentoo":
+        result = subprocess.run(
+            ["pkexec"] + install_command(family, ids),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if result.returncode == 0:
+            config = "/etc/portage"
+            pending = glob.glob(os.path.join(config, "**", "._cfg*"), recursive=True)
+            if pending:
+                merge = subprocess.run(
+                    ["pkexec", "etc-update", "--automode", "-5", config],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                if merge.returncode != 0:
+                    output = (merge.stdout or "").strip().splitlines()
+                    message = output[-1] if output else "etc-update failed"
+                    return [{"id": package, "error": message} for package in ids]
+            return []
+        output = (result.stdout or "").strip().splitlines()
+        message = output[-1] if output else "install failed"
+        return [{"id": package, "error": message} for package in ids]
+
     for package in ids:
         command = install_command(family, [package])
         if not command:

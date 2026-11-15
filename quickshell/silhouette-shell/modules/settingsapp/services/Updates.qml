@@ -10,10 +10,9 @@ import qs.modules.settingsapp.services
  * script, which is never touched here — it is run and its JSON is read.
  *
  * Two updaters live in scripts/. This page drives the one about the
- * distribution's packages — `check` reports how many updates dnf has, `apply`
- * (or `apply-minimal`) runs the upgrade under pkexec and reports each command
- * and whether a reboot is wanted. That is the only thing on this machine that
- * can truthfully answer "what updates are there".
+ * distribution's packages — `check` reports what the package manager has
+ * pending, `apply` runs the upgrade under pkexec and reports its result. The
+ * backend advertises whether a security-only mode exists for this distribution.
  *
  * The other, `scripts/rice-update.py`, answers a different question — which
  * commits this config is behind — and backs the shell's own Updates surface,
@@ -25,7 +24,7 @@ import qs.modules.settingsapp.services
  * reason.
  *
  * Nothing here needs a shell reload — the packages are not the shell — so the
- * page reports, and offers only what the script does: check, apply, apply-minimal.
+ * page reports, and offers only what the script supports: check and apply.
  */
 Singleton {
     id: root
@@ -37,9 +36,11 @@ Singleton {
     property int pending: 0
     property var packages: []
     property string errorText: ""
+    property string note: ""
 
     property bool checking: false
     property bool applying: false
+    property bool supportsMinimal: false
 
     /** The last apply's outcome: the script's `applied` flag and its reboot hint. */
     property bool applied: false
@@ -48,11 +49,8 @@ Singleton {
     /** Per-command results of the last apply: `{ command, success, output }`. */
     property var results: []
 
-    /** Strip version metadata from `dnf check-update`? That is `apply-minimal`. */
+    /** Whether the selected package manager supports a security-only update. */
     property bool securityOnly: false
-
-    /** Non-empty when the last run could not be read. */
-    property string note: ""
 
     readonly property bool busy: checking || applying
     readonly property bool upToDate: status === "ok" && pending === 0
@@ -113,6 +111,8 @@ Singleton {
         root.pending = data.updates || 0;
         root.packages = data.packages || [];
         root.errorText = data.error || "";
+        root.note = data.note || "";
+        root.supportsMinimal = data.supportsMinimal === true;
     }
 
     function ingestApply(text) {
