@@ -10,8 +10,11 @@
 <!--toc:end-->
 
 The modules behind `install.sh`. Both live at the top of the repo, which is
-`~/.config`: `~/.config/install.sh` and `~/.config/installer/*.sh`. `install.sh` only decides the order of the
-stages; everything else lives here.
+`~/.config`: `~/.config/install.sh` and `~/.config/installer/*.sh` (or `scripts/installer/*.sh`).
+`install.sh` serves as the universal POSIX `/bin/sh` entrypoint: it detects the host
+platform (Linux, FreeBSD, OpenBSD, NetBSD, macOS), installs required prerequisites
+(`bash` 4.4+, `git`) via the native package manager if missing, and orchestrates the
+modular stages under bash. Everything else lives here.
 
 **Goal:** deploy the dotfiles into `~/.config` so that either all of it lands
 or `~/.config` is left exactly as it was.

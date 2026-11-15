@@ -10,7 +10,7 @@ or ~/.config is put back the way it was.
 
 Usage:
   ./install.sh [options]
-  curl -fsSL <repo>/install.sh | bash -s -- [options]
+  curl -fsSL <repo>/install.sh | sh -s -- [options]
   ./install.sh --rollback [STAMP]
 
 Questions (asked on a terminal; a flag answers the question in advance):

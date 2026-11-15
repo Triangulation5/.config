@@ -25,15 +25,30 @@ detect_distro() {
         *)                        FAMILY="unknown" ;;
     esac
 
+    if [ "$FAMILY" = "unknown" ]; then
+        case "$(uname -s 2>/dev/null)" in
+            FreeBSD)   FAMILY="freebsd" ;;
+            OpenBSD)   FAMILY="openbsd" ;;
+            NetBSD)    FAMILY="netbsd" ;;
+            DragonFly) FAMILY="dragonfly" ;;
+            Darwin)    FAMILY="darwin" ;;
+        esac
+    fi
+
     case "$FAMILY" in
-        fedora) PM="dnf" ;;
-        alpine) PM="apk" ;;
-        arch)   PM="pacman" ;;
-        debian) PM="apt" ;;
-        suse)   PM="zypper" ;;
-        gentoo) PM="emerge" ;;
-        void)   PM="xbps" ;;
-        *)      PM="" ;;
+        fedora)    PM="dnf" ;;
+        alpine)    PM="apk" ;;
+        arch)      PM="pacman" ;;
+        debian)    PM="apt" ;;
+        suse)      PM="zypper" ;;
+        gentoo)    PM="emerge" ;;
+        void)      PM="xbps" ;;
+        freebsd)   PM="pkg" ;;
+        openbsd)   PM="pkg_add" ;;
+        netbsd)    PM="pkgin" ;;
+        dragonfly) PM="pkg" ;;
+        darwin)    PM="brew" ;;
+        *)         PM="" ;;
     esac
 }
 
@@ -105,6 +120,10 @@ pm_install() {
                     apt-get install -y -o Dpkg::Options::=--force-confold "$@" ;;
         zypper) "$SUDO" zypper --non-interactive install "$@" ;;
         xbps)   "$SUDO" xbps-install -Sy "$@" ;;
+        pkg)    "$SUDO" env ASSUME_ALWAYS_YES=YES pkg install -y "$@" ;;
+        pkg_add) "$SUDO" pkg_add "$@" ;;
+        pkgin)  "$SUDO" pkgin -y install "$@" ;;
+        brew)   brew install "$@" ;;
         *)      return 1 ;;
     esac
 }
@@ -119,6 +138,10 @@ pm_plan() {
         apt)    echo "$SUDO apt-get install -y $*" ;;
         zypper) echo "$SUDO zypper --non-interactive install $*" ;;
         xbps)   echo "$SUDO xbps-install -Sy $*" ;;
+        pkg)    echo "$SUDO pkg install -y $*" ;;
+        pkg_add) echo "$SUDO pkg_add $*" ;;
+        pkgin)  echo "$SUDO pkgin -y install $*" ;;
+        brew)   echo "brew install $*" ;;
         *)      echo "(no package manager detected) $*" ;;
     esac
 }

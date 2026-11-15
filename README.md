@@ -115,16 +115,22 @@ all live in Settings.
 
 > **Warning**
 > The installer has not been tested on any machine yet.
-> Read [install.sh](install.sh) before piping it into bash, and keep your own
+> Read [install.sh](install.sh) before piping it into your shell, and keep your own
 > backups.
+
+The installer has a POSIX `sh` entrypoint (`#!/bin/sh`) for universal compatibility
+across Linux and `*BSD` systems (FreeBSD, OpenBSD, NetBSD, DragonFly, macOS, etc.).
+It checks for prerequisites (`bash` 4.4+ and `git`), automatically installs them using
+the host system's package manager if missing, and seamlessly executes the modular installer.
 
 One line, straight through the pipe:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | bash
+```sh
+curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | sh
 ```
 
-What it does: detect the distro, make sure `git` and `python3` exist, take the
+What it does: detect the OS / distro, make sure prerequisites (`bash`, `git`, and `python3`) exist
+(installing missing ones with `sudo`, `doas`, or `su` via your native package manager), take the
 repo either from a clone at `~/.local/share/silhouette-install` or from
 wherever it is already sitting, install the dependencies, then copy the configs
 into `~/.config`. Anything it replaces goes to
@@ -136,8 +142,8 @@ and you have agreed to it.
 
 Skip the confirmation and choose what you want:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | bash -s -- --quickstart
+```sh
+curl -fsSL https://raw.githubusercontent.com/Triangulation5/.config/main/install.sh | sh -s -- --quickstart
 ```
 ```txt
 --quickstart      core defaults, no questions
@@ -158,12 +164,14 @@ quickshell`. On Arch: `quickshell` or `quickshell-git`. The installer checks
 and tells you what is missing rather than guessing. Then start a Hyprland
 session, from a display manager or a TTY.
 
-The installer also knows the package names for Alpine and Void. Two gaps are
+The installer also knows the package managers and names for Alpine, Void, and `*BSD`
+variants (FreeBSD via `pkg`, OpenBSD via `pkg_add`, NetBSD via `pkgin`). On minimal
+installs without `bash` or `git`, the POSIX entrypoint detects the package manager
+and installs the necessary bootstrap prerequisites automatically. Two gaps are
 reported rather than guessed at: Void does not carry Hyprland in its official
 repositories (the installer points at the `hyprland-void` repo), and Alpine's
 `cava` and `cliphist` live in `edge/testing` while `quickshell` has to be built
-from source. Both distros need `bash`; a minimal install may not have it yet
-(`apk add bash`, or `xbps-install -S bash`).
+from source.
 
 On Gentoo the installer never emerges anything unasked. It checks
 `/var/db/pkg` for what is already installed and prints one `emerge --ask`
@@ -172,7 +180,8 @@ command for the rest, using full atoms. Hyprland is no longer in `::gentoo`
 `cliphist` and `yazi` come from GURU, so the installer names any overlay
 that is not enabled yet and the `~arch` keywords those packages usually need.
 It does not ask for sudo or doas unless you take its offer to run the emerge.
-A stage3 has no git, so `emerge --ask dev-vcs/git` first or pass `--source`.
+If `dev-vcs/git` or `app-shells/bash` is missing on a minimal Gentoo stage3, the
+entrypoint prompts to emerge it as a prerequisite.
 Silhouette has first-class OpenRC support alongside systemd: power menus, idle
 inhibition, user daemons (`hypridle`, `hyprsunset`, `mpd`), and audio autostart
 adapt automatically between systemd and OpenRC/elogind. On OpenRC, the installer

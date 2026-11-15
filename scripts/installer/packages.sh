@@ -73,6 +73,16 @@ CORE_unknown=(hyprland quickshell kitty jq curl python3 brightnessctl ddcutil ca
     wireplumber xdg-utils ffmpeg imagemagick xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
+# shellcheck disable=SC2034
+CORE_freebsd=("${CORE_unknown[@]}")
+# shellcheck disable=SC2034
+CORE_openbsd=("${CORE_unknown[@]}")
+# shellcheck disable=SC2034
+CORE_netbsd=("${CORE_unknown[@]}")
+# shellcheck disable=SC2034
+CORE_dragonfly=("${CORE_unknown[@]}")
+# shellcheck disable=SC2034
+CORE_darwin=("${CORE_unknown[@]}")
 
 # --full: the daily apps on top of the core (mpd is core now), plus yazi's helpers so the file
 # manager previews instead of erroring on every file type.
@@ -115,6 +125,16 @@ FULL_artix=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler p7zip f
 # shellcheck disable=SC2034
 FULL_unknown=(nautilus firefox yazi ncmpcpp btop ffmpegthumbnailer poppler p7zip fd
     ripgrep fzf zoxide bat chafa)
+# shellcheck disable=SC2034
+FULL_freebsd=("${FULL_unknown[@]}")
+# shellcheck disable=SC2034
+FULL_openbsd=("${FULL_unknown[@]}")
+# shellcheck disable=SC2034
+FULL_netbsd=("${FULL_unknown[@]}")
+# shellcheck disable=SC2034
+FULL_dragonfly=("${FULL_unknown[@]}")
+# shellcheck disable=SC2034
+FULL_darwin=("${FULL_unknown[@]}")
 
 
 # COPR projects enabled before the package step (Fedora only; dnf copr enable).

@@ -32,6 +32,10 @@ stage_bootstrap_tools() {
                     || return "$ST_FAIL" ;;
         zypper) priv_progress "Installing ${missing[*]}" zypper --non-interactive install "${missing[@]}" || return "$ST_FAIL" ;;
         xbps)   priv_progress "Installing ${missing[*]}" xbps-install -Sy "${missing[@]}" || return "$ST_FAIL" ;;
+        pkg)    priv_progress "Installing ${missing[*]}" env ASSUME_ALWAYS_YES=YES pkg install -y "${missing[@]}" || return "$ST_FAIL" ;;
+        pkg_add) priv_progress "Installing ${missing[*]}" pkg_add "${missing[@]}" || return "$ST_FAIL" ;;
+        pkgin)  priv_progress "Installing ${missing[*]}" pkgin -y install "${missing[@]}" || return "$ST_FAIL" ;;
+        brew)   brew install "${missing[@]}" || return "$ST_FAIL" ;;
         emerge)
             # Portage needs python, so python3 missing here means a broken
             # eselect python target rather than a missing package.
