@@ -90,8 +90,8 @@ stage_report_init() {
 
     [ "$init" = "OpenRC" ] || return "$ST_OK"
 
-    # service:runlevel. elogind provides the seat, logind API and loginctl
-    # that Hyprland, the lockscreen and the polkit agent expect.
+    # service:runlevel. The shell's suspend locking, power actions and idle
+    # inhibition use logind; seatd alone does not provide that API.
     for pair in elogind:boot dbus:default NetworkManager:default bluetooth:default; do
         svc="${pair%%:*}"
         level="${pair##*:}"
@@ -99,9 +99,9 @@ stage_report_init() {
         compgen -G "/etc/runlevels/*/$svc" >/dev/null && continue
         todo+=("$SUDO rc-update add $svc $level")
     done
-    if [ ! -e /etc/init.d/elogind ] && [ ! -e /etc/init.d/seatd ]; then
+    if [ ! -e /etc/init.d/elogind ]; then
         printf '\n'
-        warn "neither elogind nor seatd is installed; Hyprland needs one for seat access"
+        warn "elogind is not installed; Gentoo shell power, suspend-lock and idle-inhibition features need its logind API"
         note "$SUDO emerge --ask sys-auth/elogind  (and USE=elogind globally)"
         rc="$ST_WARN"
     fi

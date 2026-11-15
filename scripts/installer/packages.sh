@@ -42,7 +42,8 @@ CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
     media-sound/cava media-sound/playerctl app-misc/cliphist
     gui-apps/wl-clipboard x11-libs/libnotify gui-apps/slurp
     net-misc/networkmanager app-editors/neovim net-wireless/bluez sys-power/upower
-    media-video/wireplumber x11-misc/xdg-utils media-video/ffmpeg
+    sys-apps/dbus sys-auth/elogind media-video/wireplumber
+    x11-misc/xdg-utils media-video/ffmpeg
     media-gfx/imagemagick dev-python/dbus-python gui-libs/xdg-desktop-portal
     gui-libs/xdg-desktop-portal-gtk gui-apps/xdg-desktop-portal-hyprland
     app-misc/tmux www-client/w3m app-misc/fastfetch sys-apps/flatpak
