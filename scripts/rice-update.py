@@ -57,6 +57,8 @@ import subprocess
 import sys
 import tempfile
 import time
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 HOME = os.path.expanduser("~")
 DEFAULT_REMOTE = "https://github.com/Triangulation5/.config.git"
