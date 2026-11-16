@@ -101,6 +101,9 @@ hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
 
+-- A lid-open event must wake DPMS even when hypridle is not running.
+hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/scripts/wake-display.sh"), { locked = true })
+
 -- Requires playerctl and quickshell config
 hl.bind("ALT + RIGHT", hl.dsp.global("quickshell:mediaNext"),   { locked = true })
 hl.bind("ALT + LEFT",  hl.dsp.global("quickshell:mediaPrev"),   { locked = true })

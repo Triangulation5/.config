@@ -27,94 +27,68 @@ extern "C" {
 }
 
 struct GpuInfo {
-    vendor: String,
+    vendor: &'static str,
     device_path: Option<PathBuf>,
     has_vram: bool,
+}
+
+/// Priority of a temperature label across all hwmon devices. Lower is better.
+/// Tdie (AMD CPU die) preferred, then Intel package, then AMD Tctl.
+#[inline]
+fn label_priority(label: &str) -> Option<u8> {
+    match label {
+        "Tdie" => Some(0),
+        "Package id 0" => Some(1),
+        "Tctl" => Some(2),
+        _ => None,
+    }
 }
 
 fn detect_cpu_temp() -> Option<PathBuf> {
     let hwmon_dir = Path::new("/sys/class/hwmon");
     let entries = fs::read_dir(hwmon_dir).ok()?;
 
-    let mut hwmon_dirs = Vec::new();
-    for entry in entries.flatten() {
-        if entry.file_type().map(|t| t.is_dir() || t.is_symlink()).unwrap_or(false) {
-            hwmon_dirs.push(entry.path());
-        }
-    }
+    let hwmon_dirs: Vec<PathBuf> = entries
+        .flatten()
+        .filter(|e| e.file_type().map(|t| t.is_dir() || t.is_symlink()).unwrap_or(false))
+        .map(|e| e.path())
+        .collect();
 
-    // Pass 1: Tdie
+    // Single pass over all devices: keep the best-priority labeled input found.
+    // Falls back to any temp1_input as before.
+    let mut best: Option<(u8, PathBuf)> = None;
+    let mut fallback: Option<PathBuf> = None;
     for h in &hwmon_dirs {
         if let Ok(files) = fs::read_dir(h) {
             for f in files.flatten() {
                 let name = f.file_name();
                 let name_str = name.to_string_lossy();
-                if name_str.starts_with("temp") && name_str.ends_with("_label") {
-                    if let Ok(label) = fs::read_to_string(f.path()) {
-                        if label.trim() == "Tdie" {
-                            let input_name = name_str.replace("_label", "_input");
-                            let input_path = h.join(input_name);
-                            if input_path.exists() {
-                                return Some(input_path);
+                if !(name_str.starts_with("temp") && name_str.ends_with("_label")) {
+                    continue;
+                }
+                if let Ok(label) = fs::read_to_string(f.path()) {
+                    if let Some(prio) = label_priority(label.trim()) {
+                        let input_name = name_str.replace("_label", "_input");
+                        let input_path = h.join(input_name);
+                        if input_path.exists() && best.as_ref().map_or(true, |(p, _)| prio < *p) {
+                            best = Some((prio, input_path));
+                            if prio == 0 {
+                                return best.map(|(_, p)| p);
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    // Pass 2: Package id 0
-    for h in &hwmon_dirs {
-        if let Ok(files) = fs::read_dir(h) {
-            for f in files.flatten() {
-                let name = f.file_name();
-                let name_str = name.to_string_lossy();
-                if name_str.starts_with("temp") && name_str.ends_with("_label") {
-                    if let Ok(label) = fs::read_to_string(f.path()) {
-                        if label.trim() == "Package id 0" {
-                            let input_name = name_str.replace("_label", "_input");
-                            let input_path = h.join(input_name);
-                            if input_path.exists() {
-                                return Some(input_path);
-                            }
-                        }
-                    }
-                }
+        if fallback.is_none() {
+            let input_path = h.join("temp1_input");
+            if input_path.exists() {
+                fallback = Some(input_path);
             }
         }
     }
 
-    // Pass 3: Tctl
-    for h in &hwmon_dirs {
-        if let Ok(files) = fs::read_dir(h) {
-            for f in files.flatten() {
-                let name = f.file_name();
-                let name_str = name.to_string_lossy();
-                if name_str.starts_with("temp") && name_str.ends_with("_label") {
-                    if let Ok(label) = fs::read_to_string(f.path()) {
-                        if label.trim() == "Tctl" {
-                            let input_name = name_str.replace("_label", "_input");
-                            let input_path = h.join(input_name);
-                            if input_path.exists() {
-                                return Some(input_path);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Pass 4: temp1_input
-    for h in &hwmon_dirs {
-        let input_path = h.join("temp1_input");
-        if input_path.exists() {
-            return Some(input_path);
-        }
-    }
-
-    None
+    best.map(|(_, p)| p).or(fallback)
 }
 
 fn detect_gpu() -> GpuInfo {
@@ -128,7 +102,7 @@ fn detect_gpu() -> GpuInfo {
     if let Ok(status) = nv_check {
         if status.success() {
             return GpuInfo {
-                vendor: "nvidia".to_string(),
+                vendor: "nvidia",
                 device_path: None,
                 has_vram: true,
             };
@@ -148,7 +122,7 @@ fn detect_gpu() -> GpuInfo {
                     if vendor.trim() == "0x1002" && dev_path.join("gpu_busy_percent").exists() {
                         let has_vram = dev_path.join("mem_info_vram_total").exists();
                         return GpuInfo {
-                            vendor: "amd".to_string(),
+                            vendor: "amd",
                             device_path: Some(dev_path),
                             has_vram,
                         };
@@ -159,7 +133,7 @@ fn detect_gpu() -> GpuInfo {
     }
 
     GpuInfo {
-        vendor: "none".to_string(),
+        vendor: "none",
         device_path: None,
         has_vram: false,
     }
@@ -170,21 +144,20 @@ fn read_proc_stat() -> Option<(u64, u64)> {
     let reader = BufReader::new(file);
     for line in reader.lines().flatten() {
         if line.starts_with("cpu ") {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() >= 9 {
-                let user: u64 = parts[1].parse().unwrap_or(0);
-                let nice: u64 = parts[2].parse().unwrap_or(0);
-                let system: u64 = parts[3].parse().unwrap_or(0);
-                let idle: u64 = parts[4].parse().unwrap_or(0);
-                let iowait: u64 = parts[5].parse().unwrap_or(0);
-                let irq: u64 = parts[6].parse().unwrap_or(0);
-                let softirq: u64 = parts[7].parse().unwrap_or(0);
-                let steal: u64 = parts[8].parse().unwrap_or(0);
+            let mut it = line.split_whitespace();
+            let _ = it.next(); // "cpu"
+            let user = it.next()?.parse::<u64>().unwrap_or(0);
+            let nice = it.next()?.parse::<u64>().unwrap_or(0);
+            let system = it.next()?.parse::<u64>().unwrap_or(0);
+            let idle = it.next()?.parse::<u64>().unwrap_or(0);
+            let iowait = it.next()?.parse::<u64>().unwrap_or(0);
+            let irq = it.next()?.parse::<u64>().unwrap_or(0);
+            let softirq = it.next()?.parse::<u64>().unwrap_or(0);
+            let steal = it.next()?.parse::<u64>().unwrap_or(0);
 
-                let total = user + nice + system + idle + iowait + irq + softirq + steal;
-                let idle_total = idle + iowait;
-                return Some((total, idle_total));
-            }
+            let total = user + nice + system + idle + iowait + irq + softirq + steal;
+            let idle_total = idle + iowait;
+            return Some((total, idle_total));
         }
     }
     None
@@ -234,17 +207,20 @@ fn read_proc_net() -> (u64, u64) {
         if i < 2 {
             continue;
         }
-        let clean = line.replace(':', " ");
-        let parts: Vec<&str> = clean.split_whitespace().collect();
-        if parts.is_empty() || parts[0] == "lo" {
+        // Split without allocating a Vec: interface token carries the colon.
+        let mut it = line.split_whitespace();
+        let dev = match it.next() {
+            Some(d) => d.trim_end_matches(':'),
+            None => continue,
+        };
+        if dev == "lo" {
             continue;
         }
-        if parts.len() >= 10 {
-            let rx: u64 = parts[1].parse().unwrap_or(0);
-            let tx: u64 = parts[9].parse().unwrap_or(0);
-            rx_total += rx;
-            tx_total += tx;
-        }
+        let rx: u64 = it.next().and_then(|s| s.parse().ok()).unwrap_or(0);
+        // After rx bytes, the next 7 fields are rx counters, then tx bytes.
+        let tx: u64 = it.nth(7).and_then(|s| s.parse().ok()).unwrap_or(0);
+        rx_total += rx;
+        tx_total += tx;
     }
     (rx_total, tx_total)
 }

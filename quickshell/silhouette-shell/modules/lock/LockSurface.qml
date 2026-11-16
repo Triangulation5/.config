@@ -72,8 +72,8 @@ Item {
         closeAnim.restart()
 
     function wake(): void {
-        if (openAnim.running)
-            openAnim.complete();
+        openAnim.stop();
+        surface.maskP = 1;
         content.ensureFocus();
     }
 

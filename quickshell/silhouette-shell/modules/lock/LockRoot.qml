@@ -81,6 +81,18 @@ ShellRoot {
 
     /** Drives the pill-to-lock reveal. Kept off while the surface first mounts so the mask starts as the pill, then flipped on to grow it open; flipped back to collapse it before the session actually unlocks. */
     property bool revealed: false
+    /** Resume can arrive before the lock surface's Loader has finished creating it. */
+    property bool wakePending: false
+
+    function wakeLockSurface(): void {
+        if (!sessionLock.locked)
+            return;
+        root.wakePending = true;
+        if (surfaceLoader.item) {
+            surfaceLoader.item.wake();
+            root.wakePending = false;
+        }
+    }
 
     Auth {
         id: pamAuth
@@ -106,6 +118,7 @@ ShellRoot {
      */
     function finishUnlock(): void {
         sessionLock.locked = false;
+        root.wakePending = false;
         Cava.enabled = false;
         root.pw.text = "";
         root.clearGrabs();
@@ -145,6 +158,7 @@ ShellRoot {
          */
         if (sessionLock.locked && !collapse.running)
             return;
+        root.wakePending = false;
         collapse.stop();
         renderKick.stop();
         renderKick.after = null;
@@ -371,8 +385,7 @@ ShellRoot {
             root.revealed = true;
         }
         function onResumed() {
-            if (sessionLock.locked && surfaceLoader.item)
-                surfaceLoader.item.wake();
+            root.wakeLockSurface();
         }
     }
 
@@ -398,6 +411,8 @@ ShellRoot {
                     avatarSource: root.avatarSource
                     active: root.revealed
                 }
+                onLoaded: if (root.wakePending && sessionLock.locked)
+                    root.wakeLockSurface();
             }
         }
     }
