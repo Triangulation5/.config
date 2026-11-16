@@ -25,6 +25,7 @@ LinkDrillIn {
 
     title: "BLUETOOTH"
     scanInterval: Flags.btScanMs
+    headerRightInset: headerControls.implicitWidth
 
     readonly property var adapter: (typeof Bluetooth !== "undefined" && Bluetooth) ? Bluetooth.defaultAdapter : null
 
@@ -226,6 +227,7 @@ LinkDrillIn {
     }
 
     Row {
+        id: headerControls
         anchors.right: root.headerBar.right
         anchors.verticalCenter: root.headerBar.verticalCenter
         spacing: 10 * root.s

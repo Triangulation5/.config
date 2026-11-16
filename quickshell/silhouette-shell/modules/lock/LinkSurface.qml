@@ -114,12 +114,7 @@ Item {
         }
     }
 
-    /**
-     * Content reveal latch: the rows stay hidden for the shared latch delay
-     * after the panel starts expanding, so their text doesn't pop in while the
-     * capsule is still growing. On close the latch drops immediately, letting
-     * the rows fade completely before the panel starts shrinking.
-     */
+    /** The expanded rows wait until the capsule has settled. */
     RevealLatch {
         id: contentReveal
         shown: link.panelOpen && link.expanded
@@ -128,11 +123,8 @@ Item {
     }
 
     /**
-     * The compact identity stays up through the geometry change so it can travel
-     * into the row it belongs to; it hands over exactly when the expanded rows
-     * latch in. Hiding it on the click (the old behaviour) cleared the label
-     * before the capsule had moved at all, which is what made the open read as a
-     * fade rather than a morph.
+     * The compact glyph stays visible through the panel morph; its label subtly
+     * shrinks and fades as the panel opens, before the expanded rows appear.
      */
     Connections {
         target: contentReveal
@@ -332,6 +324,23 @@ Item {
                 font.pixelSize: 12 * link.s
                 font.weight: 600
                 font.letterSpacing: 1.2 * link.s
+
+                opacity: link.panelOpen ? 0 : 1
+                scale: link.panelOpen ? 0.9 : 1
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 180
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 220
+                        easing.type: Easing.OutCubic
+                    }
+                }
             }
         }
 

@@ -59,12 +59,23 @@ Item {
         surface.maskP = 1
 
     readonly property bool overlayReady: deskOverlay.status === Image.Ready
-    readonly property bool shouldOpen: active && overlayReady
+    readonly property bool overlayResolved: overlayReady || deskOverlay.status === Image.Error
+    readonly property bool shouldOpen: active && overlayResolved
     property bool useBezierStyle: Math.random() < 0.25
-    onShouldOpenChanged: if (shouldOpen && !surface.instant)
-        openAnim.restart()
+    onShouldOpenChanged: if (shouldOpen && !surface.instant) {
+        if (overlayReady)
+            openAnim.restart()
+        else
+            surface.maskP = 1
+    }
     onActiveChanged: if (!active && !surface.instant)
         closeAnim.restart()
+
+    function wake(): void {
+        if (openAnim.running)
+            openAnim.complete();
+        content.ensureFocus();
+    }
 
     readonly property string shotSource: {
         if (surface.screenName.length === 0)
@@ -87,8 +98,8 @@ Item {
 
     /**
      * The blurred backdrop. In the pill's lock it is the whole build cost, so it
-     * loads a beat after the surface mounts: the cheap sharp overlay and the
-     * clock are up first, and the hole only reveals it once the pill has grown.
+     * loads a beat after the surface mounts. The sharp screenshot overlay is
+     * resolved separately so its reveal never starts partway through decoding.
      *
      * The minimal bar has no overlay to carry that first frame, so there it is
      * built synchronously, out of the mirror. An asynchronous load in that mode
@@ -163,8 +174,8 @@ Item {
     /**
      * The frozen desktop grab, sharp and opaque, punched with a pill-shaped hole.
      * As the hole grows the lock wipes open; outside the hole you keep seeing your
-     * own desktop, never black. Loaded synchronously so it is ready the frame the
-     * lock mounts and the reveal never opens onto a blank.
+     * own desktop, never black. Resolve it synchronously before starting the
+     * reveal; if the capture is missing, show the lock without the overlay.
      */
     Image {
         id: deskOverlay
@@ -272,7 +283,7 @@ Item {
     MultiEffect {
         anchors.fill: parent
         /** The mask pass is the wipe; the minimal bar has nothing to run it for. */
-        visible: !surface.instant
+        visible: !surface.instant && surface.overlayReady
         source: deskOverlay
         maskEnabled: true
         maskInverted: true

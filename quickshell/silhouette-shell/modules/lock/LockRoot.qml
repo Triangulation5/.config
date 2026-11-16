@@ -162,7 +162,7 @@ ShellRoot {
           * dropped with the blur layers (see components/effects/GlowField.qml). */
         Cava.enabled = Flags.lockViz && !Flags.liteMode;
         if (!Flags.barEnabled)
-            root.kickThen(2, () => reveal.restart(), 80);
+            root.kickThen(1, () => reveal.restart(), 40);
         root.reportLockState(true);
     }
 
@@ -363,7 +363,17 @@ ShellRoot {
     Connections {
         target: SuspendWatch
         function onLockRequested() { root.doLock(); }
-        function onSuspending() { root.doLock(); }
+        function onSuspending() {
+            root.doLock();
+            renderKick.stop();
+            renderKick.after = null;
+            reveal.stop();
+            root.revealed = true;
+        }
+        function onResumed() {
+            if (sessionLock.locked && surfaceLoader.item)
+                surfaceLoader.item.wake();
+        }
     }
 
     WlSessionLock {

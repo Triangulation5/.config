@@ -28,6 +28,7 @@ LinkDrillIn {
 
     title: "WIFI"
     scanInterval: Flags.wifiScanMs
+    headerRightInset: headerControls.implicitWidth
     caption: !wifiOn ? "Off"
         : (activeNet ? (activeNet.name || "Connected") : "Not connected")
     captionColor: root.activeNet ? Theme.vermLit : Theme.faint
@@ -440,6 +441,7 @@ LinkDrillIn {
     }
 
     Row {
+        id: headerControls
         anchors.right: root.headerBar.right
         anchors.verticalCenter: root.headerBar.verticalCenter
         spacing: 12 * root.s

@@ -40,6 +40,7 @@ Item {
     property string title: ""
     property string caption: ""
     property color captionColor: Theme.faint
+    property real headerRightInset: 0
 
     /** Scan state + auto-stop timer; the interval is set per panel from the
      *  `wifiScanMs` / `btScanMs` flags (10s / 25s shipped). */
@@ -64,6 +65,7 @@ Item {
         title: root.title
         caption: root.caption
         captionColor: root.captionColor
+        rightInset: root.headerRightInset
         onBack: root.back()
     }
 

@@ -28,6 +28,7 @@ SettingsSurface {
 
     readonly property string confPath: Quickshell.env("HOME") + "/.config/hypr/hypridle.conf"
     readonly property string lockScript: Quickshell.env("HOME") + "/.config/scripts/lock.sh"
+    readonly property string wakeScript: Quickshell.env("HOME") + "/.config/scripts/wake-display.sh"
     readonly property string powerScript: Quickshell.env("HOME") + "/.config/scripts/power.sh"
     readonly property string serviceScript: Quickshell.env("HOME") + "/.config/scripts/user-service.sh"
 
@@ -61,7 +62,7 @@ SettingsSurface {
         var out = "general {\n"
             + "    lock_cmd = " + root.lockScript + "\n"
             + "    before_sleep_cmd = loginctl lock-session\n"
-            + "    after_sleep_cmd = hyprctl dispatch dpms on\n"
+            + "    after_sleep_cmd = " + root.wakeScript + "\n"
             + "}\n";
 
         if (Flags.idleLockMin > 0)
@@ -74,7 +75,7 @@ SettingsSurface {
             out += "\nlistener {\n"
                 + "    timeout = " + (Flags.idleScreenOffMin * 60) + "\n"
                 + "    on-timeout = hyprctl dispatch dpms off\n"
-                + "    on-resume = hyprctl dispatch dpms on\n"
+                + "    on-resume = " + root.wakeScript + "\n"
                 + "}\n";
 
         if (Flags.idleSuspendMin > 0)

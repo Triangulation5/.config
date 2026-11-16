@@ -18,6 +18,7 @@ Item {
     property string title: ""
     property string caption: ""
     property color captionColor: Theme.faint
+    property real rightInset: 0
 
     signal back()
 
@@ -28,11 +29,15 @@ Item {
     height: visible ? 24 * root.s : 0
 
     Row {
+        id: leftHeader
         anchors.left: parent.left
+        anchors.right: rightSlot.left
+        anchors.rightMargin: root.rightInset + 8 * root.s
         anchors.verticalCenter: parent.verticalCenter
         spacing: 8 * root.s
 
         Item {
+            id: backSlot
             anchors.verticalCenter: parent.verticalCenter
             width: 17 * root.s
             height: 17 * root.s
@@ -49,6 +54,7 @@ Item {
         }
 
         Text {
+            id: titleText
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
             textFormat: Text.PlainText
@@ -64,10 +70,13 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.caption.length > 0
             text: "· " + root.caption
+            textFormat: Text.PlainText
             color: root.captionColor
             font.family: Theme.font
             font.pixelSize: 9.5 * root.s
             font.weight: Font.Medium
+            width: Math.max(0, leftHeader.width - backSlot.width
+                - titleText.implicitWidth - leftHeader.spacing * 2)
             elide: Text.ElideRight
         }
     }
