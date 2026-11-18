@@ -1,5 +1,0 @@
-/home/josh/.config/scripts/wallpaper-rs/target/debug/deps/cfg_if-136b3a14f481dc0f.d: /home/josh/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cfg-if-1.0.5/src/lib.rs
-
-/home/josh/.config/scripts/wallpaper-rs/target/debug/deps/libcfg_if-136b3a14f481dc0f.rmeta: /home/josh/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cfg-if-1.0.5/src/lib.rs
-
-/home/josh/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cfg-if-1.0.5/src/lib.rs:
