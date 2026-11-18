@@ -1,5 +1,35 @@
 #!/usr/bin/env bash
 
+# Prefer the optimized Rust implementation. It is enabled only while Rust is
+# installed and the settings flag has not disabled it; every other case reaches
+# the Bash implementation below.
+rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/wallpaper-rs"
+rust_enabled=true
+rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
+if [ -r "$rust_flags" ] &&
+   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$rust_flags"; then
+    rust_enabled=false
+fi
+if [ "${WALLPAPER_FORCE_SHELL:-0}" != 1 ] &&
+   [ "$rust_enabled" = true ] &&
+   command -v rustc >/dev/null 2>&1 &&
+   [ -x "$rust_bin" ]; then
+    case "${1:-}" in
+        search)
+            if "$rust_bin" search "${2:-}" "${3:-all}"; then exit 0; fi
+            ;;
+        whsearch)
+            if "$rust_bin" whsearch "${2:-}" "${3:-1}" "${4:-}"; then exit 0; fi
+            ;;
+        thumbget)
+            if "$rust_bin" thumbget "${2:-}"; then exit 0; fi
+            ;;
+        download)
+            if "$rust_bin" download "${2:-}"; then exit 0; fi
+            ;;
+    esac
+fi
+
 # vim: foldmethod=marker foldlevelstart=0
 
 UA="Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/126.0"

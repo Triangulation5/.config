@@ -9,6 +9,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 export XDG_STATE_HOME="$tmp/state"
 export HOME="$tmp/home"
+export WALLPAPER_FORCE_SHELL=1
 mkdir -p "$HOME"
 
 # Load only function definitions; the script's command dispatcher is not part

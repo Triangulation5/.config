@@ -9,61 +9,69 @@
 # shellcheck disable=SC2034
 
 # Core packages: what the session and the shell actually call out to, plus the
-# terminal tools (tmux, w3m, fastfetch) and media/app tools (mpd, mpv, flatpak). Names are
-# per distro family because they genuinely differ (libnotify vs libnotify-bin,
-# python3-dbus vs python-dbus).
+# terminal tools (tmux, w3m, fastfetch) and media/app tools (mpd, mpv, flatpak).
+# Hyprland tools and D-Bus/Polkit utilities are included only for Linux families
+# that run this shell; names vary (for example Debian splits dbus-bin and
+# polkitd, while Alpine/OpenRC needs the elogind and OpenRC packages).
 # shellcheck disable=SC2034 # selected through the CORE_${FAMILY} nameref
-CORE_fedora=(hyprland-git quickshell kitty jq curl python3 brightnessctl ddcutil cava
-    playerctl cliphist wl-clipboard libnotify slurp NetworkManager neovim bluez upower
+CORE_fedora=(hyprland-git quickshell hypridle hyprsunset grim kitty jq curl python3
+    brightnessctl ddcutil cava playerctl cliphist wl-clipboard libnotify slurp
+    NetworkManager neovim bluez upower polkit dbus-tools glib2
     wireplumber xdg-utils ffmpeg ImageMagick python3-dbus xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # shellcheck disable=SC2034
-CORE_arch=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
+CORE_arch=(hyprland hypridle hyprsunset grim kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick python-dbus xdg-desktop-portal
+    wireplumber xdg-utils ffmpeg imagemagick python-dbus polkit dbus glib2 xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # shellcheck disable=SC2034
-CORE_debian=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
+CORE_debian=(hyprland hypridle hyprsunset grim kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-bin slurp network-manager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick python3-dbus xdg-desktop-portal
+    wireplumber xdg-utils ffmpeg imagemagick python3-dbus polkitd dbus-bin libglib2.0-bin
+    xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # shellcheck disable=SC2034
-CORE_suse=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
+CORE_suse=(hyprland hypridle hyprsunset grim kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify-tools slurp NetworkManager neovim bluez upower
-    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python xdg-desktop-portal
+    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus-python polkit dbus-1 dbus-1-tools
+    glib2-tools xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # shellcheck disable=SC2034
-CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell x11-terms/kitty app-misc/jq
+CORE_gentoo=(gui-wm/hyprland gui-apps/quickshell gui-apps/hypridle gui-apps/hyprsunset
+    gui-apps/grim x11-terms/kitty app-misc/jq
     net-misc/curl dev-lang/python app-misc/brightnessctl app-misc/ddcutil
     media-sound/cava media-sound/playerctl app-misc/cliphist
     gui-apps/wl-clipboard x11-libs/libnotify gui-apps/slurp
     net-misc/networkmanager app-editors/neovim net-wireless/bluez sys-power/upower
-    sys-apps/dbus sys-auth/elogind media-video/wireplumber
+    sys-apps/dbus sys-auth/polkit dev-util/glib-utils sys-auth/elogind media-video/wireplumber
     x11-misc/xdg-utils media-video/ffmpeg
     media-gfx/imagemagick dev-python/dbus-python gui-libs/xdg-desktop-portal
     gui-libs/xdg-desktop-portal-gtk gui-apps/xdg-desktop-portal-hyprland
     app-misc/tmux www-client/w3m app-misc/fastfetch sys-apps/flatpak
     media-sound/mpd media-sound/mpc media-video/mpv)
 # shellcheck disable=SC2034
-CORE_alpine=(hyprland kitty jq curl python3 brightnessctl ddcutil cava playerctl
+CORE_alpine=(hyprland hypridle hyprsunset grim kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick py3-dbus xdg-desktop-portal
+    wireplumber xdg-utils ffmpeg imagemagick py3-dbus polkit-elogind polkit-openrc
+    dbus dbus-openrc glib
+    xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # shellcheck disable=SC2034
-CORE_void=(kitty jq curl python3 brightnessctl ddcutil cava playerctl
+CORE_void=(hypridle hyprsunset grim kitty jq curl python3 brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp NetworkManager neovim bluez upower
-    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus quickshell xdg-desktop-portal
+    wireplumber xdg-utils ffmpeg ImageMagick python3-dbus quickshell polkit-elogind dbus glib
+    xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # shellcheck disable=SC2034
-CORE_artix=(hyprland kitty jq curl python brightnessctl ddcutil cava playerctl
+CORE_artix=(hyprland hypridle hyprsunset grim kitty jq curl python brightnessctl ddcutil cava playerctl
     cliphist wl-clipboard libnotify slurp networkmanager neovim bluez upower
-    wireplumber xdg-utils ffmpeg imagemagick python-dbus xdg-desktop-portal
+    wireplumber xdg-utils ffmpeg imagemagick python-dbus polkit dbus glib2 xdg-desktop-portal
     xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     tmux w3m fastfetch flatpak mpd mpc mpv)
 # Nothing to guess from. The generic names are listed so the report is concrete

@@ -1,7 +1,39 @@
 #!/usr/bin/env bash
 #
 # Wallpaper manager with optional hashing for industry lock-in resistance.
-#
+
+# Rust is the default fast path in Silhouette, but only if Rust is installed
+# and this preference is enabled. A runtime failure deliberately continues into
+# the Bash implementation so the shell never depends on the Rust binary.
+rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/wallpaper-rs"
+rust_enabled=true
+rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
+if [ -r "$rust_flags" ] &&
+   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$rust_flags"; then
+    rust_enabled=false
+fi
+if [ "${WALLPAPER_FORCE_SHELL:-0}" != 1 ] &&
+   [ "$rust_enabled" = true ] &&
+   command -v rustc >/dev/null 2>&1 &&
+   [ -x "$rust_bin" ]; then
+    case "${1:-}" in
+        resolve)
+            if "$rust_bin" resolve; then exit 0; fi
+            ;;
+        init)
+            if "$rust_bin" init; then exit 0; fi
+            ;;
+        set)
+            if "$rust_bin" set "${2:-}"; then exit 0; fi
+            ;;
+        "")
+            if "$rust_bin" init; then exit 0; fi
+            ;;
+        *)
+            if "$rust_bin" init; then exit 0; fi
+            ;;
+    esac
+fi
 
 # Source shared notification library for error reporting
 _script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)

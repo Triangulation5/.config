@@ -6,12 +6,20 @@
 # the ones in packages.sh, and anything on this list that is still missing has a
 # reason.
 stage_report_tools() {
-    local -a missing=()
+    local -a missing=() tools=(
+        Hyprland hyprctl qs kitty cava playerctl cliphist wl-copy notify-send jq curl
+        brightnessctl nmcli bluetoothctl upower wpctl python3 slurp tmux w3m fastfetch
+        flatpak mpd mpc mpv
+    )
     local b
 
-    for b in Hyprland hyprctl qs kitty cava playerctl cliphist wl-copy \
-             notify-send jq curl brightnessctl nmcli bluetoothctl upower \
-             wpctl python3 slurp tmux w3m fastfetch flatpak mpd mpc mpv; do
+    case "$FAMILY" in
+        fedora|arch|debian|suse|gentoo|alpine|void|artix)
+            tools+=(hypridle hyprsunset grim pkcheck dbus-monitor gdbus)
+            ;;
+    esac
+
+    for b in "${tools[@]}"; do
         command -v "$b" >/dev/null 2>&1 || missing+=("$b")
     done
     if [ "${#missing[@]}" -eq 0 ]; then
@@ -33,11 +41,39 @@ stage_report_tools() {
             *)      note "quickshell is not in most distro repos, see https://quickshell.org/docs/ for your options" ;;
         esac
     fi
+    if has_item pkcheck "${missing[@]}"; then
+        printf '\n'
+        case "$FAMILY" in
+            debian) note "Polkit authentication: install polkitd (Debian's daemon package)." ;;
+            alpine) note "Polkit authentication: install polkit-elogind and polkit-openrc (pkcheck is in polkit-common)." ;;
+            void) note "Polkit authentication: install polkit-elogind for elogind session tracking." ;;
+            gentoo) note "Polkit authentication: install $SUDO emerge --ask sys-auth/polkit." ;;
+            fedora|arch|suse|artix) note "Polkit authentication: install the polkit package." ;;
+        esac
+    fi
+    if has_item dbus-monitor "${missing[@]}" || has_item gdbus "${missing[@]}"; then
+        printf '\n'
+        case "$FAMILY" in
+            fedora) note "Logind monitoring tools: install dbus-tools and glib2." ;;
+            arch|artix) note "Logind monitoring tools: install dbus and glib2." ;;
+            debian) note "Logind monitoring tools: install dbus-bin and libglib2.0-bin." ;;
+            suse) note "Logind monitoring tools: install dbus-1-tools and glib2-tools." ;;
+            gentoo) note "Logind monitoring tools: install sys-apps/dbus and dev-util/glib-utils." ;;
+            alpine) note "Logind monitoring tools: install dbus and glib." ;;
+            void) note "Logind monitoring tools: install dbus and glib." ;;
+        esac
+    fi
     # Void packages the whole desktop except the compositor itself.
     if has_item Hyprland "${missing[@]}" && [ "$FAMILY" = "void" ]; then
         printf '\n'
         note "Hyprland: not in Void's official repositories. The community repo is"
-        note "  https://github.com/Makrennel/hyprland-void (xbps-src templates and binaries)"
+        note "  https://github.com/Makrennel/hyprland-void"
+    fi
+    if [ "$FAMILY" = "void" ] &&
+       { has_item hypridle "${missing[@]}" || has_item hyprsunset "${missing[@]}"; }; then
+        printf '\n'
+        note "hypridle and hyprsunset are not in Void's official repositories; the community repo has xbps-src templates:"
+        note "  https://github.com/Makrennel/hyprland-void"
     fi
     # Gentoo dropped Hyprland from the main tree; the old ::gentoo ebuild is
     # gone, not just masked, so `emerge hyprland` alone finds nothing.
@@ -52,12 +88,24 @@ stage_report_tools() {
         local -a alpine_testing=()
         has_item cava "${missing[@]}" && alpine_testing+=(cava)
         has_item cliphist "${missing[@]}" && alpine_testing+=(cliphist)
+        has_item hypridle "${missing[@]}" && alpine_testing+=(hypridle)
+        has_item hyprsunset "${missing[@]}" && alpine_testing+=(hyprsunset)
         if [ "${#alpine_testing[@]}" -gt 0 ]; then
             printf '\n'
             note "Alpine: ${alpine_testing[*]} are in edge/testing, not the stable repos."
             note "  https://dl-cdn.alpinelinux.org/alpine/edge/testing"
             note "Enable testing or build from source if you want those features."
         fi
+    fi
+    if [ "$FAMILY" = "debian" ] &&
+       { has_item hypridle "${missing[@]}" || has_item hyprsunset "${missing[@]}"; }; then
+        printf '\n'
+        note "Debian stable may need trixie-backports for hypridle and hyprsunset; the installer does not enable backports."
+    fi
+    if [ "$FAMILY" = "fedora" ] &&
+       { has_item hypridle "${missing[@]}" || has_item hyprsunset "${missing[@]}"; }; then
+        printf '\n'
+        note "hypridle and hyprsunset are not available in every Fedora release or configured repo; install them from a repo that supports your release."
     fi
     note "A missing tool degrades the one feature that uses it, not the session."
     STAGE_DETAIL="${#missing[@]} tools missing"
