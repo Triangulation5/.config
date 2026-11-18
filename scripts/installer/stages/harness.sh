@@ -44,7 +44,6 @@ optional_packages=(
 
 extensions=(
     "btw"
-    "continue"
 )
 
 # Output
@@ -247,6 +246,43 @@ remove_npm_rpiv_ask_user_question() {
     fi
 }
 
+remove_standalone_continue_extension() {
+    if [[ -f "$EXT_DIR/continue.ts" ]]; then
+        info "Removing standalone continue.ts in favor of the Pi Harmony bundled extension..."
+        rm -f "$EXT_DIR/continue.ts"
+    fi
+}
+
+ensure_tmux_compatibility() {
+    local tmux_conf="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
+    local tmux_link="$HOME/.tmux.conf"
+
+    if [[ -f "$tmux_conf" ]]; then
+        if ! grep -q "terminal-features.*extkeys" "$tmux_conf"; then
+            info "Ensuring tmux compatibility for Pi extensions in $tmux_conf..."
+            cat >> "$tmux_conf" <<'EOF'
+
+# Terminal features & compatibility for Pi and extensions
+set -as terminal-features ",*:RGB"
+set -as terminal-features ",*:extkeys"
+set -as terminal-features ",*:passthrough"
+set -as terminal-features ",*:focus"
+set -as terminal-features ",*:clipboard"
+set -as terminal-features ",*:mouse"
+set -s extended-keys on
+set -g extended-keys-format csi-u
+set -g mouse on
+set -s focus-events on
+set -g allow-passthrough on
+set -s set-clipboard on
+EOF
+        fi
+        if [[ ! -e "$tmux_link" ]]; then
+            ln -sf "$tmux_conf" "$tmux_link"
+        fi
+    fi
+}
+
 # Package installation
 
 install_packages() {
@@ -257,6 +293,8 @@ install_packages() {
     ensure_custom_pi_harmony
     remove_npm_pi_claude_code_ui
     remove_npm_rpiv_ask_user_question
+    remove_standalone_continue_extension
+    ensure_tmux_compatibility
 
     if [[ -t 0 ]]; then
         for package in "${optional_packages[@]}"; do
@@ -291,6 +329,8 @@ update_packages() {
     ensure_custom_pi_harmony
     remove_npm_pi_claude_code_ui
     remove_npm_rpiv_ask_user_question
+    remove_standalone_continue_extension
+    ensure_tmux_compatibility
     pi update --extensions
     info "Reinstalling Pi Harmony from $PI_HARMONY_PKG..."
     pi install "$PI_HARMONY_PKG"
@@ -433,6 +473,11 @@ check_installation() {
     else
         ui_status fail "Pi executable" "not found"
         failed=1
+    fi
+
+    local tmux_conf="${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
+    if [[ -f "$tmux_conf" ]] && grep -q "terminal-features.*extkeys" "$tmux_conf"; then
+        ui_status ok "Tmux extended keys"
     fi
 
     for extension in "${extensions[@]}"; do
