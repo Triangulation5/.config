@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use std::ffi::OsString;
 
 #[derive(Parser)]
-#[command(name = "wallpaper-rs")]
+#[command(name = "silhouette-tools")]
 pub(crate) struct Cli {
     #[command(subcommand)]
     pub(crate) command: Commands,

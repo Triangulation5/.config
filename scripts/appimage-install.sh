@@ -1,7 +1,7 @@
 #!/bin/sh
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-rust_bin="$script_dir/bin/wallpaper-rs"
+rust_bin="$script_dir/bin/silhouette-tools"
 rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 rust_enabled=true
 if [ -r "$rust_flags" ] &&

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-project="$here/wallpaper-rs"
+project="$here/rust-tools"
 flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 
 if [ -r "$flags" ] &&
@@ -19,4 +19,4 @@ fi
 
 cargo build --release --manifest-path "$project/Cargo.toml"
 mkdir -p "$here/bin"
-install -m 0755 "$project/target/release/wallpaper-rs" "$here/bin/wallpaper-rs"
+install -m 0755 "$project/target/release/silhouette-tools" "$here/bin/silhouette-tools"

@@ -3,7 +3,7 @@
 # Prefer the optimized Rust implementation. It is enabled only while Rust is
 # installed and the settings flag has not disabled it; every other case reaches
 # the Bash implementation below.
-rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/wallpaper-rs"
+rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/silhouette-tools"
 rust_enabled=true
 rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 if [ -r "$rust_flags" ] &&

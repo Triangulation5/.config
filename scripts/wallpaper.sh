@@ -5,7 +5,7 @@
 # Rust is the default fast path in Silhouette, but only if Rust is installed
 # and this preference is enabled. A runtime failure deliberately continues into
 # the Bash implementation so the shell never depends on the Rust binary.
-rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/wallpaper-rs"
+rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/silhouette-tools"
 rust_enabled=true
 rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 if [ -r "$rust_flags" ] &&
