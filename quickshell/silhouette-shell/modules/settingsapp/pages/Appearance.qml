@@ -66,64 +66,52 @@ QtObject {
          */
         { card: "Design language", rows: [
             row("style", "segmented", "Design style",
-                "Washi is the shell's paper-flat identity; Material is Google's Material 3 / Material You surface treatment. Applies shell-wide, independent of the palette", "")
+                "Washi: flat identity. Material: Material 3. Applies shell-wide.", "")
         ]},
         { card: "Palette", rows: [
             row("colorScheme", "segmented", "Colorscheme",
-                "Which static palette the shell paints from — the vague.nvim port, or the original black-bodied one. Static mode, and the body Accented puts wallpaper accents on", ""),
-            row("paletteMode", "segmented", "Mode", "Static washi, full wallpaper colours, wallpaper accents on the static theme, or pick a hue", ""),
+                "Select static palette: vague.nvim or shell original. Used in Static and Accented modes.", ""),
+            row("paletteMode", "segmented", "Mode", "Static, wallpaper-based colors, or custom hue.", ""),
             row("manualHue", "slider", "Hue", "", "\u00B0"),
             row("manualSat", "slider", "Saturation", "", "%", { displayScale: 100 }),
-            row("manualDark", "toggle", "Dark accent", "Dark instead of light accent tones in manual mode", "")
+            row("manualDark", "toggle", "Dark accent", "Use dark accent tones in manual mode.", "")
         ]},
-        /**
-         * Dynamic is the Material You path: these are generation options, not
-         * palette tokens, so they only mean anything while Mode above is
-         * Dynamic. The card stays visible on the other modes and the captions
-         * say so, matching how the Colorscheme row above describes its own
-         * static-only reach rather than disappearing.
-         */
         { card: "Material You \u00B7 Dynamic", rows: [
             row("dynamicScheme", "select", "Scheme",
-                "Auto picks a Material 3 variant from the wallpaper's colourfulness; tonal spot is Google's default, vibrant and expressive push chroma, neutral and monochrome drain it. Dynamic and Accented modes", ""),
+                "Auto: wallpaper-based variant. Other options: Material 3 variants.", ""),
             row("dynamicMode", "segmented", "Appearance",
-                "Auto reads light or dark from the wallpaper; Light and Dark force one. Dynamic mode only — Accented always keeps the dark-scheme accent for the static dark theme", ""),
+                "Force Light/Dark mode. Auto matches wallpaper.", ""),
             row("dynamicContrast", "slider", "Contrast",
-                "Material's -100% to 100% contrast level. Positive separates text and surfaces further; Dynamic and Accented modes",
+                "Adjust accent contrast (-100% to 100%).",
                 "%", { displayScale: 100 }),
             row("dynamicPrefer", "select", "Wallpaper accent",
-                "Which colour matugen takes when the wallpaper offers several: the most saturated, the lightest, the darkest, or the highest value. Dynamic and Accented modes", ""),
+                "Accent source: saturated, light, dark, or value.", ""),
             row("surfaceRole", "select", "Surface role",
-                "Which Material 3 role the shell's base surface sits on. Default is the neutral elevation ramp; a container role tints the window and its text is rebuilt from that role's own ink. Dynamic mode only — Accented keeps the static surfaces", ""),
+                "Base surface elevation ramp. Container roles tint the window.", ""),
             row("containerSaturation", "slider", "Container saturation",
-                "Chroma on the surface and accent containers: flat grey at 0%, the vague-tuned default at 100%, Material's own tint at 200%. Dynamic and Accented modes",
+                "Surface and accent container chroma (0%–200%).",
                 "%", { displayScale: 100 })
         ]},
         { card: "Typography & scale", rows: [
-            row("uiFont", "text", "UI font", "Font family for every surface", "", { placeholder: "Inter" }),
+            row("uiFont", "text", "UI font", "Shell surface font family.", "", { placeholder: "Inter" }),
             row("uiScale", "slider", "UI scale", "", "%", { displayScale: 100 })
         ]},
         { card: "Media backdrop", rows: [
             row("mediaStyle", "segmented", "Now-playing backdrop",
-                "Blurred album-art bleed, the warm wash, or fully transparent", "")
+                "Art blur, warm wash, or transparent.", "")
         ]},
-        /**
-         * The aura card is the one group here that answers to another row: the
-         * backdrop above has to be something other than None for any of these
-         * to do anything, and its own capture says so.
-         */
         { card: "Ambient aura", rows: [
             { key: "auraOn", type: "toggle", label: "Ambient aura",
-              caption: "Cover colour bleeds around the rest pill. Off by default", reset: false },
+              caption: "Cover color bleed around the pill.", reset: false },
             { key: "auraStrength", type: "slider", label: "Aura strength", min: 0, max: 2, step: 0.05,
-              caption: "Scales the backdrop mode's own strength — full on Bleed, a whisper on Wash",
+              caption: "Adjust intensity of blur/wash effect.",
               displayScale: 100, unit: "%", reset: 1.0 },
             { key: "auraShadow", type: "toggle", label: "Aura shadow",
-              caption: "Darkens the pill's shadow with the cover's dominant colour", reset: true }
+              caption: "Tint pill shadow with cover color.", reset: true }
         ]},
         { card: "Wallpaper", rows: [
             { key: "wallpaperDir", type: "text", label: "Folder", placeholder: "~/Pictures",
-              caption: "Folder the picker reads and downloads land in. A leading ~ is expanded. Empty auto-detects ~/Pictures, then ~/Pictures/rice-wallpapers or ~/Pictures/Wallpapers",
+              caption: "Wallpaper directory. Defaults to ~/Pictures.",
               reset: "" }
         ]}
     ]
