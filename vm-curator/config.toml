@@ -1,4 +1,4 @@
-vm_library_path = "/home/josh/Projects/vm-space/"
+vm_library_path = "/home/josh/Projects/vm_space/"
 metadata_path = "/home/josh/.config/vm-curator/metadata"
 ascii_art_path = "/home/josh/.config/vm-curator/ascii"
 snapshot_prefix = "snapshot"
