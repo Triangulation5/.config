@@ -35,6 +35,7 @@ Exit codes: 0 = recording finished and the output file is valid,
 """
 
 import argparse
+import json
 import os
 import select
 import signal
@@ -497,6 +498,15 @@ def find_pump():
     Set SILHOUETTE_NO_NATIVE=1 to force the Python fallback."""
     if os.environ.get("SILHOUETTE_NO_NATIVE"):
         return None
+    state_home = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
+    flags_path = os.path.join(state_home, "silhouette", "flags.json")
+    try:
+        with open(flags_path, "r", encoding="utf-8") as flags_file:
+            flags = json.load(flags_file)
+        if flags.get("useRustTools") is False or flags.get("rustWallpapers") is False:
+            return None
+    except (OSError, json.JSONDecodeError):
+        pass
     here = os.path.dirname(os.path.abspath(__file__))
     arch = os.uname().machine
     for cand in (os.path.join(here, "bin", "framepump-" + arch),

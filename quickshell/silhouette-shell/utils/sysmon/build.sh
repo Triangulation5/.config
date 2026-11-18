@@ -5,6 +5,13 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 ARCH="$(uname -m)"
 OUT_BIN="$DIR/bin/sysmon_sampler-$ARCH"
 ROOT_BIN="$DIR/sysmon_sampler"
+FLAGS="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
+
+if [ -r "$FLAGS" ] &&
+   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$FLAGS"; then
+    echo "Rust tools are disabled; skipping Sysmon Rust build."
+    exit 0
+fi
 
 mkdir -p "$DIR/bin"
 

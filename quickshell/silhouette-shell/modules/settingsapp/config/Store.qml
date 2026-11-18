@@ -161,6 +161,7 @@ Singleton {
             /** M3 role used as the shell's base surface. See services/Flags.qml. */
             property string surfaceRole: "default"
             property string wallpaperDir: ""
+            property bool useRustTools: true
             property real uiScale: 1.1
             property bool reduceMotion: false
             property int manualHue: 0
@@ -400,7 +401,7 @@ Singleton {
         "dnd", "dndCritical", "osdOff", "osdTime", "notifSecs", "notifMuted", "keepAwake", "time12h", "clockSeconds", "showGlyphs",
         "style", "paletteMode", "colorScheme", "dynamicScheme", "dynamicContrast", "dynamicMode", "dynamicPrefer",
         "containerSaturation", "surfaceRole",
-        "wallpaperDir", "uiScale", "reduceMotion",
+        "wallpaperDir", "useRustTools", "uiScale", "reduceMotion",
         "manualHue", "manualDark", "manualSat", "uiFont",
         "pillOpacity", "pillBlur", "topGap", "appGap",
         "notchStyle", "notchFlare", "autoHide", "vimKeys",

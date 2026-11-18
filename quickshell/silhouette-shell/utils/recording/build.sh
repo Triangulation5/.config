@@ -5,6 +5,13 @@ set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 ARCH="$(uname -m)"
+FLAGS="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
+
+if [ -r "$FLAGS" ] &&
+   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$FLAGS"; then
+    echo "Rust tools are disabled; skipping framepump Rust build."
+    exit 0
+fi
 mkdir -p "$DIR/bin"
 
 if command -v rustc >/dev/null 2>&1; then

@@ -59,6 +59,7 @@ Singleton {
     property alias containerSaturation: adapter.containerSaturation
     property alias surfaceRole: adapter.surfaceRole
     property alias wallpaperDir: adapter.wallpaperDir
+    property alias useRustTools: adapter.useRustTools
     property alias uiScale: adapter.uiScale
     property alias reduceMotion: adapter.reduceMotion
     property alias manualHue: adapter.manualHue
@@ -418,6 +419,8 @@ Singleton {
              * state so an in-app update never clobbers a custom folder.
              */
             property string wallpaperDir: ""
+            /** Use Silhouette's optimized Rust tools when Rust is installed. */
+            property bool useRustTools: true
             property real uiScale: 1.1
             property bool reduceMotion: false
             property int manualHue: 0
