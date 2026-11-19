@@ -22,6 +22,10 @@ oldest-first. Inside, the members are fixed names — `silhouette-shell/`,
 from, so an archive restores into whatever those paths are on the machine
 reading it.
 
+When Rust tools are enabled, this Python entrypoint hands the operation to the
+modular `silhouette-tools backup` command. The implementation below remains the
+fallback; set `SILHOUETTE_FORCE_PYTHON=1` to choose it explicitly.
+
 Contract: one JSON object on stdout per run, the shape `scripts/silhouette-update.py`
 already answers with (`status`, and `error` when it is not "ok").
 
@@ -45,7 +49,9 @@ import argparse
 import datetime
 import json
 import os
+from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -125,6 +131,8 @@ def state_files(state):
 def keep(info):
     """tarfile filter: drop the caches, keep everything else."""
     name = os.path.basename(info.name)
+    if info.issym() or info.islnk():
+        return None
     if info.isdir() and name in SKIP_DIRS:
         return None
     if name.endswith(SKIP_SUFFIXES):
@@ -246,7 +254,10 @@ def copy_over(source, target):
         for name in files:
             if name.endswith(SKIP_SUFFIXES):
                 continue
-            shutil.copy2(os.path.join(folder, name), os.path.join(into, name))
+            source_path = os.path.join(folder, name)
+            if os.path.islink(source_path):
+                continue
+            shutil.copy2(source_path, os.path.join(into, name))
             written.append(os.path.relpath(os.path.join(into, name), target))
     return written
 
@@ -321,6 +332,9 @@ def main():
     parser.add_argument("--dir", default=base["dir"], help="where archives live")
     args = parser.parse_args()
 
+    result = run_rust(args)
+    if result is not None:
+        return emit(result)
     if args.action == "create":
         return create(args)
     if args.action == "list":
@@ -334,6 +348,99 @@ def main():
     if args.action == "restore":
         return restore(args, archive, args.name)
     return remove(args, archive, args.name)
+
+
+def rust_enabled():
+    if os.environ.get("SILHOUETTE_FORCE_PYTHON") == "1":
+        return False
+    state_home = Path(os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local", "state")))
+    flags = state_home / "silhouette" / "flags.json"
+    try:
+        settings = json.loads(flags.read_text())
+    except (OSError, ValueError):
+        settings = {}
+    if not isinstance(settings, dict):
+        settings = {}
+    return (
+        settings.get("useRustTools") is not False
+        and settings.get("rustWallpapers") is not False
+    )
+
+
+def valid_rust_result(action, value):
+    if not isinstance(value, dict) or not isinstance(value.get("status"), str):
+        return False
+    if value["status"] not in {"ok", "error"}:
+        return False
+    if value["status"] == "error":
+        return isinstance(value.get("error"), str) and bool(value["error"])
+    if action == "list":
+        backups = value.get("backups")
+        return (
+            isinstance(backups, list)
+            and all(
+                isinstance(item, dict)
+                and isinstance(item.get("name"), str)
+                and isinstance(item.get("path"), str)
+                and type(item.get("bytes")) is int
+                and type(item.get("created")) is int
+                for item in backups
+            )
+        )
+    if action == "create":
+        return (
+            isinstance(value.get("name"), str)
+            and isinstance(value.get("path"), str)
+            and type(value.get("bytes")) is int
+            and type(value.get("files")) is int
+            and type(value.get("created")) is int
+        )
+    if action == "restore":
+        return (
+            isinstance(value.get("name"), str)
+            and type(value.get("files")) is int
+            and isinstance(value.get("flags"), bool)
+        )
+    return action == "remove" and isinstance(value.get("name"), str)
+
+
+def run_rust(args):
+    if not rust_enabled():
+        return None
+    rust_bin = (
+        Path(__file__).resolve().parents[3] / "scripts" / "bin" / "silhouette-tools"
+    )
+    if not rust_bin.is_file() or not os.access(rust_bin, os.X_OK):
+        return None
+    try:
+        result = subprocess.run(
+            [str(rust_bin), "backup", *sys.argv[1:]],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except OSError as problem:
+        print(
+            "backup.py: cannot start Rust backup tool: %s; using Python fallback" % problem,
+            file=sys.stderr,
+        )
+        return None
+    try:
+        value = json.loads(result.stdout)
+    except (TypeError, ValueError):
+        value = None
+    if valid_rust_result(args.action, value):
+        if result.stderr.strip():
+            print(result.stderr.rstrip(), file=sys.stderr)
+        return value
+    if result.stderr.strip():
+        print(result.stderr.rstrip(), file=sys.stderr)
+    print(
+        "backup.py: Rust backup tool returned invalid output; using Python fallback",
+        file=sys.stderr,
+    )
+    return None
 
 
 if __name__ == "__main__":

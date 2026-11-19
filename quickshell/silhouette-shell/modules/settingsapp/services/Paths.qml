@@ -59,7 +59,8 @@ QtObject {
     readonly property string spaces: modules + "/spaces.lua"
 
     /** The config's own scripts. */
-    readonly property string scripts: hypr + "/scripts"
+    readonly property string scripts: (Quickshell.env("XDG_CONFIG_HOME")
+        || (Quickshell.env("HOME") + "/.config")) + "/scripts"
     /**
      * The updater the Updates page runs. It takes one argument — `check`,
      * `apply` or `apply-minimal` — and prints one JSON object; what it updates is

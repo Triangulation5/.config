@@ -18,6 +18,10 @@ around.
 matugen's base16 JSON still generates the terminal palette, kept dark: the
 terminals are always-dark consumers even when the shell is in Material light
 mode. The pill JSON owns surfaces, accents and contrast-matched text.
+
+When Rust tools are enabled, this script dispatches to the Rust
+`silhouette-tools wallcolors` command; this Python implementation remains the
+fallback.
 """
 
 import colorsys
@@ -1031,6 +1035,9 @@ def main():
     Generate all colour consumers from either a wallpaper or a manual hue.
     """
 
+    if run_rust():
+        return 0
+
     if len(sys.argv) < 2:
         return 1
 
@@ -1175,6 +1182,62 @@ def main():
     write_atomic(CACHE / "kitty-colors", "\n".join(kitty) + "\n")
 
     return 0
+
+
+def rust_enabled():
+    if os.environ.get("SILHOUETTE_FORCE_PYTHON") == "1":
+        return False
+    state_home = Path(
+        os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")
+    )
+    try:
+        settings = json.loads((state_home / "silhouette" / "flags.json").read_text())
+    except (OSError, ValueError):
+        settings = {}
+    if not isinstance(settings, dict):
+        settings = {}
+    return settings.get("useRustTools") is not False and settings.get("rustWallpapers") is not False
+
+
+def run_rust():
+    if not rust_enabled():
+        return False
+    rust_bin = Path(__file__).resolve().parent / "bin" / "silhouette-tools"
+    if not rust_bin.is_file() or not os.access(rust_bin, os.X_OK):
+        return False
+    arguments = [str(rust_bin), "wallcolors"]
+    if any(argument in {"--help", "-h"} for argument in sys.argv[1:]):
+        arguments.append("--help")
+    else:
+        arguments.extend(["--", *sys.argv[1:]])
+    try:
+        result = subprocess.run(
+            arguments,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except OSError as problem:
+        print(
+            f"wallcolors: cannot start Rust renderer: {problem}; using Python fallback",
+            file=sys.stderr,
+        )
+        return False
+    if result.returncode == 0:
+        if any(argument in {"--help", "-h"} for argument in sys.argv[1:]):
+            sys.stdout.write(result.stdout)
+            sys.stderr.write(result.stderr)
+            return True
+        if not result.stdout.strip():
+            return True
+    if result.stderr.strip():
+        print(result.stderr.rstrip(), file=sys.stderr)
+    print(
+        "wallcolors: Rust renderer failed or returned unexpected output; using Python fallback",
+        file=sys.stderr,
+    )
+    return False
 
 
 if __name__ == "__main__":

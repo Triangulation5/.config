@@ -53,3 +53,12 @@ emacs/
 
 # Local OpenCode service secret
 opencode/service.json
+
+# Rust build artifacts and local Cargo caches
+**/target/
+**/.cargo/registry/
+**/.cargo/git/
+**/.cargo/.package-cache
+**/.cargo/.global-cache
+*.rs.bk
+/scripts/bin/silhouette-tools

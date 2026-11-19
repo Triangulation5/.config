@@ -19,6 +19,9 @@ image = { version = "0.25", default-features = false, features = ["bmp", "jpeg",
 regex = "1"
 url = "2"
 urlencoding = "2"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+flate2 = "1"
+tar = "0.4"
 
 [profile.release]
 opt-level = 3

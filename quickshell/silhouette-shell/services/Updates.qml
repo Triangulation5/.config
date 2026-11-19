@@ -23,7 +23,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string engine: Quickshell.env("HOME") + "/.config/scripts/rice-update.py"
+    readonly property string engine: (Quickshell.env("XDG_CONFIG_HOME")
+        || (Quickshell.env("HOME") + "/.config")) + "/scripts/rice-update.py"
 
     property string status: ""
     property string version: ""

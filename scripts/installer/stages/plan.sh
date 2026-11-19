@@ -230,6 +230,11 @@ stage_plan() {
     note "source     $SRC_DIR"
     note "configs    ${#CONFIG_ENTRIES[@]} entries into $CONFIG_DIR, merged in: nothing is deleted"
     note "packages   $pkgline"
+    note "runtime    Python 3 is included with core packages; helper scripts and"
+    note "           Python fallback backends require it, even when Rust tools are enabled."
+    if [ "$NO_DEPS" = "1" ]; then
+        note "           --no-deps skips package installation, so ensure python3 is already available."
+    fi
     note "monitors   $monline"
     note "shell      $shellline"
     note "terminal   $termline"

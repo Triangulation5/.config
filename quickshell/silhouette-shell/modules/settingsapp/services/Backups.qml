@@ -14,10 +14,9 @@ import qs.modules.settingsapp.services
  * The work is a script (`utils/backup.py`, named by Paths) rather than QML: a
  * tree copy, a directory read and an extraction are all things QML has no
  * primitive for, and the command line that did them inline would be a parser of
- * its own. It is also the shape this app already drives — the Updates page runs
- * `silhouette-update.py` and reads one JSON object back — so the two pages are the
- * same kind of thing: a script that owns the hard part, and a service that reads
- * its `status` and keeps the result.
+ * its own. The entrypoint selects the modular Rust command when enabled and
+ * keeps the Python implementation as a fallback. It returns one JSON object,
+ * like the Updates page, for this service to read and keep.
  *
  * A restore writes files the running shell already watches, so the QML
  * hot-reloads and `flags.json` is re-read as the write lands (see Store). That

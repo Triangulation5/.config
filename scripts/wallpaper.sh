@@ -14,7 +14,6 @@ if [ -r "$rust_flags" ] &&
 fi
 if [ "${WALLPAPER_FORCE_SHELL:-0}" != 1 ] &&
    [ "$rust_enabled" = true ] &&
-   command -v rustc >/dev/null 2>&1 &&
    [ -x "$rust_bin" ]; then
     case "${1:-}" in
         resolve)

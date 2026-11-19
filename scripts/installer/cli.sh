@@ -50,7 +50,8 @@ Run control:
                       Ollama needs --with-ollama, Sioyek is installed
                       unless --no-sioyek, and your shell is kept unless you pass --shell.
       --quickstart    same as --yes
-      --no-deps       skip the package step, only deploy the configs
+      --no-deps       skip packages, including Python 3 needed by helper scripts
+                      and Python fallback backends; only deploy the configs
       --dry-run       walk the whole flow and change nothing
 
 Source:

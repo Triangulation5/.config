@@ -89,17 +89,17 @@ def fail(message, status="error"):
 
 
 def git(args, cwd=None, check=False):
-    """Run git, returning (code, stdout). Never raises on a git failure."""
+    """Run git, returning (code, stdout, stderr); optionally raise on failure."""
     result = subprocess.run(
         ["git"] + args,
         cwd=cwd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
         text=True,
     )
     if check and result.returncode != 0:
         raise GitError("git %s failed" % " ".join(args))
-    return result.returncode, result.stdout.strip()
+    return result.returncode, result.stdout.strip(), result.stderr.strip()
 
 
 class GitError(Exception):

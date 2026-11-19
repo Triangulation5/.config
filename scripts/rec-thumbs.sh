@@ -11,10 +11,11 @@ fi
 
 if [ "${SILHOUETTE_FORCE_SHELL:-0}" != 1 ] &&
    [ "$rust_enabled" = true ] &&
-   command -v rustc >/dev/null 2>&1 &&
    [ -x "$rust_bin" ] &&
    "$rust_bin" rec-thumbs --help >/dev/null 2>&1; then
-    exec "$rust_bin" rec-thumbs "${1:-}"
+    if "$rust_bin" rec-thumbs "${1:-}"; then
+        exit 0
+    fi
 fi
 
 exec "$script_dir/rec-thumbs-fallback.sh" "$@"

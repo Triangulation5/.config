@@ -1,16 +1,15 @@
 #!/bin/sh
 # Watch for clipboard changes and auto-start cliphist storage.
 
-# Use more specific pgrep patterns to avoid matching related process chains
-# --list-all shows command path explicitly, --list-known restricts to known processes
-# (portable approach across systems)
-
-pgrep -f '^wl-paste --type (text|image) --watch cliphist --list-known' >/dev/null 2>&1 || {
-    wl-paste --type text --watch cliphist >/dev/null 2>&1 &
+start_watcher() {
+    selection_type=$1
+    pattern="^wl-paste --type $selection_type --watch cliphist store$"
+    if ! pgrep -f -- "$pattern" >/dev/null 2>&1; then
+        wl-paste --type "$selection_type" --watch cliphist store >/dev/null 2>&1 &
+    fi
 }
 
-pgrep -f '^wl-paste --type (text|image) --watch cliphist --list-known' >/dev/null 2>&1 || {
-    wl-paste --type image --watch cliphist >/dev/null 2>&1 &
-}
+start_watcher text
+start_watcher image
 
 exit 0

@@ -12,20 +12,42 @@ if [ -r "$rust_flags" ] &&
 fi
 if [ "${WALLPAPER_FORCE_SHELL:-0}" != 1 ] &&
    [ "$rust_enabled" = true ] &&
-   command -v rustc >/dev/null 2>&1 &&
    [ -x "$rust_bin" ]; then
     case "${1:-}" in
         search)
-            if "$rust_bin" search "${2:-}" "${3:-all}"; then exit 0; fi
+            rust_output=$("$rust_bin" search "${2:-}" "${3:-all}" 2>/dev/null)
+            rust_status=$?
+            if [ "$rust_status" -eq 0 ] &&
+               printf '%s\n' "$rust_output" | jq -e 'type == "array"' >/dev/null 2>&1; then
+                printf '%s\n' "$rust_output"
+                exit 0
+            fi
             ;;
         whsearch)
-            if "$rust_bin" whsearch "${2:-}" "${3:-1}" "${4:-}"; then exit 0; fi
+            rust_output=$("$rust_bin" whsearch "${2:-}" "${3:-1}" "${4:-}" 2>/dev/null)
+            rust_status=$?
+            if [ "$rust_status" -eq 0 ] &&
+                printf '%s\n' "$rust_output" |
+                jq -e 'type == "array" or (type == "object" and (.wallhaven? | type == "string"))' >/dev/null 2>&1; then
+                printf '%s\n' "$rust_output"
+                exit 0
+            fi
             ;;
         thumbget)
-            if "$rust_bin" thumbget "${2:-}"; then exit 0; fi
+            rust_output=$("$rust_bin" thumbget "${2:-}" 2>/dev/null)
+            rust_status=$?
+            if [ "$rust_status" -eq 0 ] && [ -s "$rust_output" ]; then
+                printf '%s\n' "$rust_output"
+                exit 0
+            fi
             ;;
         download)
-            if "$rust_bin" download "${2:-}"; then exit 0; fi
+            rust_output=$("$rust_bin" download "${2:-}" 2>/dev/null)
+            rust_status=$?
+            if [ "$rust_status" -eq 0 ] && [ -s "$rust_output" ]; then
+                printf '%s\n' "$rust_output"
+                exit 0
+            fi
             ;;
     esac
 fi

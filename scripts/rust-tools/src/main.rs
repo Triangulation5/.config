@@ -1,13 +1,16 @@
 mod apps;
+mod backup;
 mod cli;
 mod config;
 mod model;
 mod search;
 mod thumbnails;
+mod updates;
+mod wallcolors;
 mod wallpaper;
 
 use clap::Parser;
-use cli::{Cli, Commands};
+use cli::{BackupAction, Cli, Commands, PackageUpdateOperation};
 use std::{
     io::{self, Write},
     path::Path,
@@ -59,6 +62,37 @@ fn main() {
                 },
                 |_| true,
             ),
+        Commands::PackageUpdates { operation } => {
+            let operation = match operation {
+                PackageUpdateOperation::Check => "check",
+                PackageUpdateOperation::Apply => "apply",
+                PackageUpdateOperation::ApplyMinimal => "apply-minimal",
+            };
+            serde_json::to_writer(io::stdout(), &updates::run(operation)).is_ok()
+                && io::stdout().write_all(b"\n").is_ok()
+        }
+        Commands::Backup {
+            action,
+            name,
+            shell,
+            state,
+            dir,
+        } => {
+            let action = match action {
+                BackupAction::Create => "create",
+                BackupAction::List => "list",
+                BackupAction::Restore => "restore",
+                BackupAction::Remove => "remove",
+            };
+            backup::run(
+                action,
+                name.as_deref(),
+                shell.as_deref(),
+                state.as_deref(),
+                dir.as_deref(),
+            )
+        }
+        Commands::Wallcolors { args } => wallcolors::run(&args),
         Commands::Search { query, kind } => {
             let entries = search::search(&query.unwrap_or_default(), &kind);
             let _ = serde_json::to_writer(io::stdout(), &entries);

@@ -181,7 +181,9 @@ pub(super) fn apply_wallpaper(path: &Path) -> bool {
             "90",
         ]);
     }
-    let _ = command.status();
+    if !command.status().is_ok_and(|status| status.success()) {
+        return false;
+    }
     if atomic_write(
         &state_dir().join("silhouette-wallpaper"),
         &format!("{}\n", path.display()),

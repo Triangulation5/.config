@@ -62,7 +62,7 @@ class GentooSupportTests(unittest.TestCase):
         )
         with (
             mock.patch.object(package_update, "distro_family", return_value="gentoo"),
-            mock.patch.object(package_update, "run", return_value=(0, output)),
+            mock.patch.object(package_update, "run_command", return_value=(0, output)),
         ):
             result = package_update.check()
         self.assertFalse(result["supportsMinimal"])
@@ -71,11 +71,11 @@ class GentooSupportTests(unittest.TestCase):
     def test_gentoo_apply_uses_world_update(self):
         with (
             mock.patch.object(package_update, "distro_family", return_value="gentoo"),
-            mock.patch.object(package_update, "run", return_value=(0, "")) as run,
+            mock.patch.object(package_update, "run_command", return_value=(0, "")) as run,
         ):
             result = package_update.apply()
         self.assertTrue(result["applied"])
-        self.assertIn("@world", run.call_args.args[0])
+        self.assertIn("@world", run.call_args.args[0].args)
 
 
 if __name__ == "__main__":

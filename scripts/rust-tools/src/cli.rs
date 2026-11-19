@@ -1,5 +1,5 @@
-use clap::{Parser, Subcommand};
-use std::ffi::OsString;
+use clap::{Parser, Subcommand, ValueEnum};
+use std::{ffi::OsString, path::PathBuf};
 
 #[derive(Parser)]
 #[command(name = "silhouette-tools")]
@@ -30,6 +30,26 @@ pub(crate) enum Commands {
         #[arg(num_args = 0.., trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
+    #[command(name = "package-updates")]
+    PackageUpdates {
+        #[arg(value_enum)]
+        operation: PackageUpdateOperation,
+    },
+    Backup {
+        #[arg(value_enum)]
+        action: BackupAction,
+        name: Option<String>,
+        #[arg(long)]
+        shell: Option<PathBuf>,
+        #[arg(long)]
+        state: Option<PathBuf>,
+        #[arg(long)]
+        dir: Option<PathBuf>,
+    },
+    Wallcolors {
+        #[arg(num_args = 0.., trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<OsString>,
+    },
     Search {
         query: Option<String>,
         #[arg(default_value = "all")]
@@ -53,4 +73,20 @@ pub(crate) enum Commands {
     Set {
         path: String,
     },
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+pub(crate) enum PackageUpdateOperation {
+    Check,
+    Apply,
+    #[value(name = "apply-minimal")]
+    ApplyMinimal,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+pub(crate) enum BackupAction {
+    Create,
+    List,
+    Restore,
+    Remove,
 }
