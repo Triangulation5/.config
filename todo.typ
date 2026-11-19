@@ -2,5 +2,3 @@
   (and saving more than just ~/.config).
 
 - Save wireguard, and vpn configurations before switching over.
-
-- Bloated hints/tooltips inside silhoutte shell settings application.
