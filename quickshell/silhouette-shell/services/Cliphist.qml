@@ -211,7 +211,6 @@ Singleton {
             var failed = exitCode !== undefined && exitCode !== 0;
             if (failed) {
                 console.warn("cliphist list failed with exit code " + exitCode + ", retrying once");
-                root.pending = false;
                 if (root.listFailures < 1) {
                     root.listFailures++;
                     listRetry.restart();

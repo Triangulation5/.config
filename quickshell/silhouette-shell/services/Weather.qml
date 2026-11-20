@@ -73,6 +73,7 @@ Singleton {
      * free of a weather round-trip it may never be asked to show.
      */
     property bool needed: false
+    property string geoRequestedCity: ""
 
     /** First weather demand arms the network path: coordinates if we lack them, else a forecast. */
     onNeededChanged: {
@@ -243,7 +244,7 @@ Singleton {
                 root.city = c.city || "";
                 root.lat = c.lat;
                 root.lon = c.lon;
-                root.located = true;
+                root.located = !Flags.weatherCity || Flags.weatherCity.trim().length === 0;
             }
         } catch (e) {}
 
@@ -351,15 +352,26 @@ Singleton {
     function locate() {
         if (!root.needed || locProc.running || geoProc.running || root.locIdx >= 0)
             return;
-        if (Flags.weatherCity && Flags.weatherCity.trim().length > 0)
+        if (Flags.weatherCity && Flags.weatherCity.trim().length > 0) {
+            root.geoRequestedCity = Flags.weatherCity.trim();
             geoProc.running = true;
-        else
+        } else {
             root.tryNextLoc();
+        }
     }
 
     Connections {
         target: Flags
-        function onWeatherCityChanged() { root.locate(); }
+        function onWeatherCityChanged() {
+            locProc.running = false;
+            geoProc.running = false;
+            root.locIdx = -1;
+            root.located = false;
+            root.lat = 0;
+            root.lon = 0;
+            root.geoRequestedCity = String(Flags.weatherCity || "").trim();
+            root.locate();
+        }
     }
 
     /** One shared process for the whole geolocator walk; command is set per hop. */
@@ -370,6 +382,8 @@ Singleton {
                 var g = (root.locIdx >= 0 && root.locIdx < root.geolocators.length)
                     ? root.geolocators[root.locIdx] : null;
                 if (!g)
+                    return;
+                if (String(Flags.weatherCity || "").trim().length > 0)
                     return;
                 var hit = null;
                 try {
@@ -391,6 +405,9 @@ Singleton {
             "--data-urlencode", "count=1"]
         stdout: StdioCollector {
             onStreamFinished: {
+                var currentCity = String(Flags.weatherCity || "").trim();
+                if (currentCity !== root.geoRequestedCity)
+                    return;
                 try {
                     var d = JSON.parse(this.text);
                     var r = d.results && d.results[0];
