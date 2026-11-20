@@ -75,6 +75,27 @@ MAX_PROBE_BYTES = 64 * 1024 * 1024
 RATE_PLACEHOLDER = "--rate-placeholder--"
 
 
+def stop_process(process):
+    """Terminate a child process if needed and always reap it."""
+    if process.poll() is None:
+        try:
+            process.terminate()
+        except ProcessLookupError:
+            pass
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
+def close_session(screencast, session):
+    try:
+        screencast.CloseSession(session)
+    except dbus.exceptions.DBusException:
+        pass
+
+
 def write_all(stream, data):
     """Write every byte of `data`, coping with short writes."""
     view = memoryview(data)
@@ -343,6 +364,9 @@ def main():
     probe_elapsed = max(0.001, time.time() - probe_start)
     if len(buffered) < frame_bytes:
         print("Screen share produced no frames in %.1fs" % probe_elapsed, file=sys.stderr)
+        stop_process(gst)
+        gst.stdout.close()
+        close_session(screencast, session)
         return 1
     src_rate = min(max(len(buffered) / frame_bytes / probe_elapsed, 0.5), 240.0)
     rate_str = ("%.3f" % src_rate).rstrip("0").rstrip(".")
@@ -355,9 +379,22 @@ def main():
     # gst's errors inherit stderr so the shell's failure notification can
     # surface them; ffmpeg's go to a file read on early failure.
     ff_err_path = args.output + ".ffmpeg.err"
-    ff_err = open(ff_err_path, "w")
-    ffmpeg = subprocess.Popen(ff_cmd, stdin=subprocess.PIPE,
-                              stdout=subprocess.DEVNULL, stderr=ff_err)
+    ff_err = None
+    try:
+        ff_err = open(ff_err_path, "w")
+        ffmpeg = subprocess.Popen(ff_cmd, stdin=subprocess.PIPE,
+                                  stdout=subprocess.DEVNULL, stderr=ff_err)
+    except OSError:
+        if ff_err is not None:
+            ff_err.close()
+            try:
+                os.unlink(ff_err_path)
+            except OSError:
+                pass
+        stop_process(gst)
+        gst.stdout.close()
+        close_session(screencast, session)
+        raise
 
     # ffmpeg's rawvideo demuxer aborts the whole file the moment it is handed a
     # packet that is not exactly one frame ("Invalid buffer size"), and gst
@@ -371,8 +408,6 @@ def main():
         if whole:
             write_all(ffmpeg.stdin, pending[:whole])
             del pending[:whole]
-
-    feed(buffered)
 
     # The shell watches for this sentinel: a run that is still on the share
     # picker has not produced it yet, and must not be shown as recording. It
@@ -426,6 +461,7 @@ def main():
             ffmpeg.wait()
 
     try:
+        feed(buffered)
         while True:
             if stopping[0]:
                 break
@@ -461,6 +497,8 @@ def main():
                 print("ffmpeg failed early (exit %d)" % ffmpeg.returncode, file=sys.stderr)
         ff_err.close()
     finally:
+        drain_ffmpeg()
+        stop_process(gst)
         try:
             gst.stdout.close()
         except (NameError, OSError, ValueError):
@@ -478,10 +516,7 @@ def main():
             os.unlink(ff_err_path)
         except (OSError, NameError):
             pass
-        try:
-            screencast.CloseSession(session)
-        except dbus.exceptions.DBusException:
-            pass
+        close_session(screencast, session)
 
     # A raw pipe delivers a partial final frame on EOF, so ffmpeg exits
     # non-zero even when every frame made it into the file. Judge success by
@@ -533,7 +568,12 @@ def run_pump(pump_bin, args, gst, ff_cmd, frame_bytes, stopping, screencast, ses
 
         line = pump.stdout.readline().decode().strip()
         if not line.startswith("rate "):
-            pump.wait()
+            stop_process(gst)
+            try:
+                pump.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                pump.kill()
+                pump.wait()
             return 1
         try:
             with open(marker_path, "w") as f:
@@ -560,8 +600,11 @@ def run_pump(pump_bin, args, gst, ff_cmd, frame_bytes, stopping, screencast, ses
             pump.kill()
             pump.wait()
     finally:
+        stop_process(gst)
         if pump is not None and pump.poll() is None:
             pump.kill()
+        if pump is not None:
+            pump.wait()
         try:
             if marker_path:
                 os.unlink(marker_path)
@@ -571,10 +614,7 @@ def run_pump(pump_bin, args, gst, ff_cmd, frame_bytes, stopping, screencast, ses
             os.unlink(ff_err_path)
         except OSError:
             pass
-        try:
-            screencast.CloseSession(session)
-        except dbus.exceptions.DBusException:
-            pass
+        close_session(screencast, session)
 
     if os.path.exists(args.output) and output_duration(args.output) > 0:
         return 0
