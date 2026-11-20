@@ -74,6 +74,7 @@ Singleton {
      * hyprctl while nothing changed, so the periodic tick costs one compare.
      */
     property string lastPushed: ""
+    property string pendingKey: ""
 
     /**
      * Pushes the resolved state to the live daemon at once. A scrub tick that
@@ -87,7 +88,7 @@ Singleton {
         var key = want.join(" ");
         if (key === root.lastPushed)
             return;
-        root.lastPushed = key;
+        root.pendingKey = key;
         ipc.command = want;
         ipc.running = true;
     }
@@ -148,15 +149,25 @@ Singleton {
     Process {
         id: ipc
         command: []
-        onExited: {
+        onExited: function(exitCode) {
+            var attempted = root.pendingKey;
+            root.pendingKey = "";
+            if (exitCode === 0)
+                root.lastPushed = attempted;
+
             var want = root.desiredCmd();
             var key = want.join(" ");
-            if (key !== root.lastPushed) {
-                root.lastPushed = key;
-                ipc.command = want;
-                ipc.running = true;
-            }
+            if (key !== attempted)
+                root.pushLive();
+            else if (exitCode !== 0)
+                ipcRetry.restart();
         }
+    }
+
+    Timer {
+        id: ipcRetry
+        interval: 3000
+        onTriggered: root.pushLive()
     }
 
     /** Debounced conf write, then a re-arm restart when a scheduled change asked for one. */
