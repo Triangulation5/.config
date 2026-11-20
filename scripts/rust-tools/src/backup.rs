@@ -7,6 +7,7 @@ use std::{
     io::{self, Write},
     os::unix::fs::PermissionsExt,
     path::{Component, Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
 use tar::{Archive, Builder, EntryType, Header};
@@ -18,6 +19,7 @@ const WALLPAPER_MEMBER: &str = "silhouette-wallpaper";
 const LEGACY_WALLPAPER_MEMBER: &str = "ricelin-wallpaper";
 const PREFIX: &str = "silhouette-";
 const SUFFIX: &str = ".tar.gz";
+static BACKUP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 struct Paths {
     shell: PathBuf,
@@ -130,6 +132,11 @@ fn run_action(action: &str, name: Option<&str>, paths: &Paths) -> Result<Value, 
 }
 
 fn create(paths: &Paths) -> Result<Value, String> {
+    let timestamp = Local::now().format("%Y-%m-%dT%H-%M-%S").to_string();
+    create_at(paths, &timestamp)
+}
+
+fn create_at(paths: &Paths, timestamp: &str) -> Result<Value, String> {
     let shell_metadata = match fs::symlink_metadata(&paths.shell) {
         Ok(metadata) => metadata,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
@@ -143,16 +150,40 @@ fn create(paths: &Paths) -> Result<Value, String> {
         return Err(format!("{} is not a directory", paths.shell.display()));
     }
 
-    let name = format!(
-        "{PREFIX}{}{SUFFIX}",
-        Local::now().format("%Y-%m-%dT%H-%M-%S")
-    );
-    let archive_path = paths.dir.join(&name);
-    let partial_path = PathBuf::from(format!("{}.part", archive_path.display()));
     fs::create_dir_all(&paths.dir)
-        .map_err(|error| format!("Could not write {}: {error}", archive_path.display()))?;
+        .map_err(|error| format!("Could not write {}: {error}", paths.dir.display()))?;
 
-    let written = write_archive(&partial_path, paths).map_err(|error| {
+    let (name, archive_path, partial_path, partial_file) = loop {
+        let sequence = BACKUP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+        let name = format!(
+            "{PREFIX}{timestamp}-{}-{sequence}{SUFFIX}",
+            std::process::id()
+        );
+        let archive_path = paths.dir.join(&name);
+        let partial_path = PathBuf::from(format!("{}.part", archive_path.display()));
+        match OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&partial_path)
+        {
+            Ok(file) if archive_path.exists() => {
+                drop(file);
+                fs::remove_file(&partial_path).map_err(|error| {
+                    format!("Could not clear {}: {error}", partial_path.display())
+                })?;
+            }
+            Ok(file) => break (name, archive_path, partial_path, file),
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                return Err(format!(
+                    "Could not write {}: {error}",
+                    archive_path.display()
+                ));
+            }
+        }
+    };
+
+    let written = write_archive(partial_file, paths).map_err(|error| {
         let _ = fs::remove_file(&partial_path);
         format!("Could not write {}: {error}", archive_path.display())
     })?;
@@ -172,13 +203,7 @@ fn create(paths: &Paths) -> Result<Value, String> {
     }))
 }
 
-fn write_archive(path: &Path, paths: &Paths) -> Result<usize, String> {
-    let file = OpenOptions::new()
-        .create(true)
-        .truncate(true)
-        .write(true)
-        .open(path)
-        .map_err(|error| error.to_string())?;
+fn write_archive(file: File, paths: &Paths) -> Result<usize, String> {
     let encoder = GzEncoder::new(file, Compression::default());
     let mut archive = Builder::new(encoder);
     let mut files = 0;
@@ -649,6 +674,28 @@ mod tests {
             .as_array()
             .unwrap()
             .is_empty());
+    }
+
+    #[test]
+    fn backups_with_the_same_timestamp_get_distinct_names() {
+        let temp = TestDirectory::new();
+        let paths = paths(&temp.0);
+        fs::create_dir_all(&paths.shell).unwrap();
+        fs::write(paths.shell.join("app.qml"), "original").unwrap();
+
+        let first = create_at(&paths, "2026-11-20T17-33-04").unwrap();
+        fs::write(paths.shell.join("app.qml"), "updated").unwrap();
+        let second = create_at(&paths, "2026-11-20T17-33-04").unwrap();
+
+        let first_name = first["name"].as_str().unwrap();
+        let second_name = second["name"].as_str().unwrap();
+        assert_ne!(first_name, second_name);
+        assert_eq!(
+            list(&paths).unwrap()["backups"].as_array().unwrap().len(),
+            2
+        );
+        assert!(fs::metadata(paths.dir.join(first_name)).unwrap().len() > 0);
+        assert!(fs::metadata(paths.dir.join(second_name)).unwrap().len() > 0);
     }
 
     #[test]

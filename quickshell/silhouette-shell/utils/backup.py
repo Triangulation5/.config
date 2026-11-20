@@ -15,9 +15,8 @@ It is deliberately *not* a backup of the Hyprland config the shell is built
 around: those files live in `~/.config/hypr`, this script is not their owner, and
 the settings app already writes each of them through its own service.
 
-Archives land in `~/.local/state/silhouette/backups/`, one timestamped tarball each,
-named `silhouette-YYYY-MM-DDTHH-MM-SS.tar.gz` so the directory sorts
-oldest-first. Inside, the members are fixed names — `silhouette-shell/`,
+Archives land in `~/.local/state/silhouette/backups/`, one uniquely named,
+timestamped tarball each. Inside, the members are fixed names — `silhouette-shell/`,
 `flags.json`, `events.json`, `silhouette-wallpaper` — and not the paths they came
 from, so an archive restores into whatever those paths are on the machine
 reading it.
@@ -47,6 +46,7 @@ Env knobs, each also a flag so an audit can run against a scratch tree:
 
 import argparse
 import datetime
+import itertools
 import json
 import os
 from pathlib import Path
@@ -73,6 +73,7 @@ STATE_MEMBERS = (FLAG_MEMBER, EVENT_MEMBER, WALLPAPER_MEMBER, LEGACY_WALLPAPER_M
 
 PREFIX = "silhouette-"
 SUFFIX = ".tar.gz"
+BACKUP_SEQUENCE = itertools.count()
 
 # Left out of both directions: byte-code caches are regenerated on the next run,
 # keyed to the interpreter that wrote them, and would only make the archive look
@@ -147,23 +148,47 @@ def create(args):
     if not os.path.isdir(shell):
         return error("%s is not a directory" % shell)
 
-    name = PREFIX + datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S") + SUFFIX
-    path = os.path.join(args.dir, name)
-    partial = path + ".part"
-
+    path = args.dir
+    partial = None
+    owns_partial = False
     try:
         os.makedirs(args.dir, exist_ok=True)
-        with tarfile.open(partial, "w:gz") as tar:
-            tar.add(shell, arcname=SHELL_MEMBER, filter=keep)
-            for member, source in state_files(state):
-                if os.path.isfile(source):
-                    tar.add(source, arcname=member)
-            files = sum(1 for entry in tar.getmembers() if entry.isfile())
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+        while True:
+            name = "%s%s-%s-%s%s" % (
+                PREFIX,
+                timestamp,
+                os.getpid(),
+                next(BACKUP_SEQUENCE),
+                SUFFIX,
+            )
+            path = os.path.join(args.dir, name)
+            partial = path + ".part"
+            try:
+                partial_file = open(partial, "xb")
+            except FileExistsError:
+                continue
+            owns_partial = True
+            if os.path.exists(path):
+                partial_file.close()
+                os.unlink(partial)
+                owns_partial = False
+                continue
+            break
+        with partial_file:
+            with tarfile.open(fileobj=partial_file, mode="w:gz") as tar:
+                tar.add(shell, arcname=SHELL_MEMBER, filter=keep)
+                for member, source in state_files(state):
+                    if os.path.isfile(source):
+                        tar.add(source, arcname=member)
+                files = sum(1 for entry in tar.getmembers() if entry.isfile())
         # The archive only becomes visible under its final name once it is whole:
         # a run interrupted half-way leaves nothing for the page to list.
         os.replace(partial, path)
-    except OSError as problem:
-        discard(partial)
+        owns_partial = False
+    except (OSError, tarfile.TarError) as problem:
+        if owns_partial:
+            discard(partial)
         return error("Could not write %s: %s" % (path, problem))
 
     return emit(

@@ -557,10 +557,12 @@ and the state the shell keeps beside the flags — `flags.json`, the calendar's
 config the rest of the app writes: those files belong to the compositor, and the
 pages that edit them already own them.
 
-One archive per backup, `silhouette-YYYY-MM-DDTHH-MM-SS.tar.gz` under
-`~/.local/state/silhouette/backups/`. The work is a script — `utils/backup.py`, in
-the shell tree because that tree is what it copies — with a Rust backend when Rust
-tools are enabled and the Python implementation as a fallback. It answers the way
+One uniquely named, timestamped archive per backup under
+`~/.local/state/silhouette/backups/`; the process id and sequence number keep
+same-second and concurrent backups from sharing paths. The work is a script —
+`utils/backup.py`, in the shell tree because that tree is what it copies — with a
+Rust backend when Rust tools are enabled and the Python implementation as a
+fallback. It answers the way
 `silhouette-update.py` does: one JSON object per run, `create` / `list` / `restore` /
 `remove`, with `status` and, on a refusal, `error`. `Backups.qml` runs it and reads
 that and nothing else. Every path is overrideable (`SILHOUETTE_SHELL_DIR`,
