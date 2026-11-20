@@ -51,7 +51,7 @@ Singleton {
 
     Process {
         id: memProc
-        command: ["sh", "-c", "read -r _ r _ < /proc/\"$1\"/statm 2>/dev/null; echo $((r*4/1024))", "_", String(Quickshell.processId)]
+        command: ["sh", "-c", "page=$(getconf PAGESIZE 2>/dev/null || echo 4096); read -r _ r _ < /proc/\"$1\"/statm 2>/dev/null || exit 0; echo $((r*page/1024/1024))", "_", String(Quickshell.processId)]
         stdout: StdioCollector {
             onStreamFinished: {
                 var mb = parseInt(this.text.trim(), 10);
@@ -59,7 +59,11 @@ Singleton {
                     return;
                 root.shellRssMb = mb;
 
-                if (mb >= root.softCapMb) {
+                if (mb >= root.hardCapMb) {
+                    root.unloadClosed();
+                    if (typeof gc === "function")
+                        gc();
+                } else if (mb >= root.softCapMb) {
                     root.unloadClosed();
                     if (typeof gc === "function")
                         gc();
