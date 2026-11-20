@@ -27,6 +27,7 @@ function splitArgs(inner) {
     for (var i = 0; i < inner.length; i++) {
         var c = inner[i];
         if (inStr) {
+            if (c === "\\") { i++; continue; }
             if (c === '"') inStr = false;
             continue;
         }
@@ -122,6 +123,7 @@ function parseLine(raw, lineIndex, modValue) {
     for (var i = startInner - 1; i < raw.length; i++) {
         var c = raw[i];
         if (inStr) {
+            if (c === "\\") { i++; continue; }
             if (c === '"') inStr = false;
             continue;
         }
@@ -188,6 +190,7 @@ function rebind(luaText, lineIndex, newCombo) {
     for (var i = startInner; i < raw.length; i++) {
         var c = raw[i];
         if (inStr) {
+            if (c === "\\") { i++; continue; }
             if (c === '"') inStr = false;
             continue;
         }
@@ -256,6 +259,7 @@ function closeParenIndex(raw, open) {
     for (var i = open + "hl.bind(".length - 1; i < raw.length; i++) {
         var c = raw[i];
         if (inStr) {
+            if (c === "\\") { i++; continue; }
             if (c === '"') inStr = false;
             continue;
         }
@@ -282,6 +286,7 @@ function argStart(raw, innerStart, nth) {
     for (var i = innerStart; i < raw.length; i++) {
         var c = raw[i];
         if (inStr) {
+            if (c === "\\") { i++; continue; }
             if (c === '"') inStr = false;
             continue;
         }
@@ -397,6 +402,7 @@ function balanceOk(s) {
     for (var i = 0; i < s.length; i++) {
         var c = s[i];
         if (inStr) {
+            if (c === "\\") { i++; continue; }
             if (c === '"') inStr = false;
             continue;
         }
