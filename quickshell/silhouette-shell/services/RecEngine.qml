@@ -129,20 +129,24 @@ Item {
         stderr: StdioCollector { id: recErr }
         onStarted: {
             root.host.ffCaptureStarted = false;
-            if (root.host.backend !== "ffmpeg")
-                root.host.recording = true;
+            root.host.gsrConfirmed = false;
+            root.host.gsrAliveTicks = 0;
+            if (root.host.backend === "ffmpeg")
+                root.host.recording = false;
             root.host.fallbackRetried = false;
         }
         onExited: function(exitCode) {
-            var wasLive = root.host.recording;
+            var gsrConfirmed = root.host.gsrConfirmed;
             root.host.recording = false;
+            root.host.gsrConfirmed = false;
+            root.host.gsrAliveTicks = 0;
             if (exitCode !== 0) {
                 /**
                  * gsr died before it ever reached the recording state: that's
                  * a start failure, so retry once through the ffmpeg fallback
                  * instead of dropping the recording.
                  */
-                if (!wasLive && root.host.backend === "gsr" && !root.host.fallbackRetried && root.host.lastToken.length > 0) {
+                if (!gsrConfirmed && root.host.backend === "gsr" && !root.host.fallbackRetried && root.host.lastToken.length > 0) {
                     root.host.fallbackRetried = true;
                     root.host.useFallback("gpu-screen-recorder failed to start — recording with ffmpeg via the PipeWire portal");
                     root.host.start(root.host.lastToken);
@@ -298,6 +302,11 @@ Item {
                 var running = this.text.trim().length > 0;
                 if (running && root.host.backend === "ffmpeg" && !root.host.ffCaptureStarted)
                     return;
+                if (running && root.host.backend === "gsr") {
+                    root.host.gsrAliveTicks += 1;
+                    if (root.host.gsrAliveTicks >= 2)
+                        root.host.gsrConfirmed = true;
+                }
                 if (running !== root.host.recording) {
                     root.host.recording = running;
                     if (!running)
@@ -309,7 +318,7 @@ Item {
 
     Timer {
         interval: 1000
-        running: root.host.recording || root.host.recorderOpen
+        running: root.host.recording || root.host.recorderOpen || recProc.running
         repeat: true
         onTriggered: if (!pollProc.running) pollProc.running = true
     }

@@ -108,6 +108,14 @@ Singleton {
      */
     property bool ffCaptureStarted: false
 
+    /**
+     * Set only after the external-process poll has seen gsr running. This is
+     * different from `recording`, which used to be set at process start and
+     * therefore made an immediate launch failure look like a live recording.
+     */
+    property bool gsrConfirmed: false
+    property int gsrAliveTicks: 0
+
     /** Sentinel the capture script drops beside the clip once frames flow. */
     readonly property string ffMarkerPath: currentFile + ".capturing"
 
