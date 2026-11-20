@@ -34,6 +34,7 @@ Singleton {
     property real bytesTotal: 0
     property string fileName: ""
     property real speed: 0
+    property string statTarget: ""
 
     readonly property string sizeText: root.human(root.bytesTotal)
     readonly property string speedText: root.human(root.speed) + "/s"
@@ -141,14 +142,25 @@ Singleton {
             root.active = false;
             root._watch.target = "";
             root._watch.last = 0;
+            root.bytesLoaded = 0;
+            root.bytesTotal = 0;
+            root.progress = 0;
+            root.speed = 0;
+            root.fileName = "";
             return;
         }
         var target = best.target;
         var path = typeof target === "object" && target ? target.path : target;
         var part = typeof target === "object" && target ? target.partFilePath : "";
-        root._watch.target = part || path || "";
-        root._watch.last = 0;
-        root._watch.time = 0;
+        var targetPath = part || path || "";
+        if (root._watch.target !== targetPath) {
+            root._watch.last = 0;
+            root._watch.time = 0;
+            root.bytesLoaded = 0;
+            root.progress = 0;
+            root.speed = 0;
+        }
+        root._watch.target = targetPath;
         root.bytesTotal = best.totalBytes || 0;
         root.fileName = String(path || "").replace(/\\/g, "/").split("/").pop();
         root.active = true;
@@ -160,14 +172,22 @@ Singleton {
         interval: 1000
         repeat: true
         running: root.active
-        onTriggered: statProc.running = true
+        onTriggered: {
+            if (statProc.running)
+                return;
+            statProc.targetPath = root._watch.target;
+            statProc.running = true;
+        }
     }
 
     Process {
         id: statProc
-        command: ["sh", "-c", "stat -c %s \"$1\" 2>/dev/null || echo 0", "_", root._watch.target]
+        property string targetPath: ""
+        command: ["sh", "-c", "stat -c %s \"$1\" 2>/dev/null || echo 0", "_", targetPath]
         stdout: StdioCollector {
             function onStreamFinished() {
+                if (!root.active || statProc.targetPath !== root._watch.target)
+                    return;
                 var b = parseInt(this.text.trim(), 10);
                 if (isNaN(b) || b < 0)
                     b = 0;
