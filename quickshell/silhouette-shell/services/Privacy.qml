@@ -336,6 +336,7 @@ Singleton {
              * to retry, so a probe that recovers does not need the shell.
              */
             probe.running = false;
+            root.raw = "";
             root.apply(null);
         }
     }

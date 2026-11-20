@@ -56,5 +56,13 @@ Singleton {
                     root.resumed();
             }
         }
+        onExited: sleepRespawn.restart()
+    }
+
+    /** Respawn if dbus-monitor disappears; sleep/lock events must not become permanently blind. */
+    Timer {
+        id: sleepRespawn
+        interval: 2000
+        onTriggered: if (!sleepMon.running) sleepMon.running = true
     }
 }

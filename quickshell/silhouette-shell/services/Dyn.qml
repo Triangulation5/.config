@@ -72,6 +72,10 @@ Singleton {
 
     function runGeneration() {
         if (Flags.paletteMode === "manual") {
+            if (regen.running) {
+                root.regenPending = true;
+                return;
+            }
             if (manualRegen.running) {
                 root.regenPending = true;
                 return;
@@ -84,6 +88,10 @@ Singleton {
         }
         if (!root.generatedLive)
             return;
+        if (manualRegen.running) {
+            root.regenPending = true;
+            return;
+        }
         if (regen.running) {
             root.regenPending = true;
             return;
