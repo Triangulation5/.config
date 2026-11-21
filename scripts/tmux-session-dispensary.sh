@@ -23,29 +23,76 @@ else
         exit 1
     }
 
-    selected=$(
+    fzf_status=0
+    fzf_output=$(
         fd --type d --max-depth 1 . "${DIRS[@]}" 2>/dev/null |
             sort -u |
             fzf \
+                --print-query \
                 --height=100% \
                 --layout=reverse \
                 --info=hidden \
                 --prompt='tmux session > ' \
                 --scheme=path
-    ) || exit 0
+    ) || fzf_status=$?
+
+    case "$fzf_status" in
+        0)
+            mapfile -t fzf_lines <<< "$fzf_output"
+            selected="${fzf_lines[1]:-}"
+            ;;
+        1)
+            mapfile -t fzf_lines <<< "$fzf_output"
+            selected="${fzf_lines[0]:-}"
+            ;;
+        130)
+            exit 0
+            ;;
+        *)
+            exit "$fzf_status"
+            ;;
+    esac
 fi
 
 # Exit if the picker was cancelled or no directory was selected.
 [[ -n "$selected" ]] || exit 0
 
+# Safely expand $VAR and ${VAR} references without eval.
+expand_env_vars() {
+    local input=$1
+    local result=""
+    local var_name
+
+    while [[ "$input" =~ ^([^$]*)(\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*))(.*)$ ]]; do
+        result+="${BASH_REMATCH[1]}"
+        var_name="${BASH_REMATCH[3]:-${BASH_REMATCH[4]}}"
+        if [[ -v "$var_name" ]]; then
+            result+="${!var_name}"
+        else
+            result+="${BASH_REMATCH[2]}"
+        fi
+        input="${BASH_REMATCH[5]}"
+    done
+
+    printf '%s%s\n' "$result" "$input"
+}
+
+selected=$(expand_env_vars "$selected")
+
 # Expand a leading ~ and normalize to an absolute path.
-if [[ "$selected" == "~" ]]; then
-    selected=$HOME
-elif [[ "$selected" == "~/"* ]]; then
-    selected="$HOME/${selected#~/}"
-elif [[ "$selected" != /* ]]; then
-    selected="$PWD/$selected"
-fi
+case "$selected" in
+    "~")
+        selected=$HOME
+        ;;
+    "~/"*)
+        selected="$HOME/${selected#"~/"}"
+        ;;
+    /*)
+        ;;
+    *)
+        selected="$PWD/$selected"
+        ;;
+esac
 
 # Ensure the selected path is a directory.
 if [[ ! -d "$selected" ]]; then
@@ -63,7 +110,8 @@ selected_name=$(
     printf '%s' "$selected" |
         sed "s|^$HOME|~|" |
         tr '/.:' '___' |
-        tr -cd '[:alnum:]_-'
+        tr -cd '[:alnum:]_-' |
+        tr -s '_'
 )
 
 # Ensure the session name is not empty.
