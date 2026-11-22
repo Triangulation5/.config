@@ -19,6 +19,31 @@ Singleton {
     readonly property string base: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/silhouette-polkit"
     readonly property string respFile: base + "/response"
     readonly property string agentScript: Qt.resolvedUrl("../utils/polkit/agent.py").toString().replace(/^file:\/\//, "")
+    readonly property string configDir: Qt.resolvedUrl("..").toString().replace(/^file:\/\//, "").replace(/\/$/, "")
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+
+    /**
+     * Latched true if `silhouette-tools polkit-agent` fails immediately on
+     * startup (e.g. binary not built yet), so we seamlessly fall back to
+     * `utils/polkit/agent.py`. Cleared when `Flags.useRustTools` is toggled on.
+     */
+    property bool rustUnavailable: false
+    property real agentStartedAt: 0
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    onUseRustChanged: {
+        restartTimer.stop();
+        agentProc.running = false;
+        Qt.callLater(function() { agentProc.running = true; });
+    }
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
 
     /** True while a prompt is live and the pill should show the auth face. */
     property bool pending: false
@@ -59,12 +84,23 @@ Singleton {
      */
     Process {
         id: agentProc
-        command: ["python3", root.agentScript]
+        command: root.useRust
+            ? [root.rustBin, "polkit-agent", "--config", root.configDir]
+            : ["python3", root.agentScript]
         running: true
+        onRunningChanged: {
+            if (running)
+                root.agentStartedAt = Date.now();
+        }
         onExited: function(exitCode) {
             /** Exit 0 = "another agent already owns the session" — don't fight it. */
-            if (exitCode !== 0)
-                restartTimer.restart();
+            if (exitCode === 0)
+                return;
+            if (root.useRust && (Date.now() - root.agentStartedAt) < 1000) {
+                root.rustUnavailable = true;
+                return;
+            }
+            restartTimer.restart();
         }
     }
 
