@@ -21,7 +21,7 @@ import QtQuick
 QtObject {
     readonly property string name: "System"
     readonly property string icon: "\u2B21"
-    readonly property string keywords: "recording recorder capture gpu-screen-recorder quality ffmpeg crf replay fps audio volume loud boost battery power charge low warn peripheral system monitor sysmon speed test network throughput privacy indicator dot microphone mic input capture audio-in loopback screen share camera webcam video playback audio-out speaker output sink recording master toggle switch on off poll rust native optimization"
+    readonly property string keywords: "recording recorder capture gpu-screen-recorder quality ffmpeg crf replay fps audio volume loud boost battery power charge low warn packs bat0 bat1 breakdown peripheral system monitor sysmon speed test network throughput privacy indicator dot microphone mic input capture audio-in loopback screen share camera webcam video playback audio-out speaker output sink recording master toggle switch on off poll rust native optimization"
 
     readonly property var groups: [
         { card: "Native tools", rows: [
@@ -34,7 +34,9 @@ QtObject {
               min: 5, max: 50, step: 5, unit: "%",
               caption: "Warn at or below this charge.", reset: 20 },
             { key: "periphLowNotify", type: "toggle", label: "Low peripheral warning",
-              caption: "Notify for non-charging peripherals.", reset: true }
+              caption: "Notify for non-charging peripherals.", reset: true },
+            { key: "battShowPacks", type: "toggle", label: "Per-battery breakdown",
+              caption: "Show individual BAT0/BAT1 rows in the battery card.", reset: false }
         ]},
         { card: "Audio", rows: [
             { key: "maxVolume", type: "slider", label: "Max volume",

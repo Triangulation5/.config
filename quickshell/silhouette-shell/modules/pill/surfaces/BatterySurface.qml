@@ -152,11 +152,12 @@ PillSurface {
              * from the aggregate alone.
              */
             Repeater {
-                model: Battery.packInfo
+                model: Flags.battShowPacks && Battery.packInfo.length > 1
+                    ? Battery.packInfo
+                    : []
 
                 StatRow {
                     required property var modelData
-                    visible: Battery.packInfo.length > 1
                     label: modelData.name
                     value: modelData.value
                     warm: Battery.charging || Battery.pending
