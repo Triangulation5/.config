@@ -1,30 +1,22 @@
 # Project TODO
 
-## Create Android One UI/Google Pixel like opening animation for screen turnon.
+## Rewrite High-Impact Shell Backends in Rust (`silhouette-tools`)
 
-Implement a screen wake-up animation for the shell.
+Gate all new Rust subcommands behind `Flags.useRustTools` and keep the existing
+shell/Python scripts as fallbacks.
 
-When the display wakes from suspension, capture or reuse a screenshot of the
-screen before it was suspended. Then reveal the screen using a circular **grow
-transition**, starting from the bottom-center edge and expanding until the
-entire screen is visible.
+1. ~~**PipeWire Privacy Monitor (`services/Privacy.qml`)**~~ *(Done — `silhouette-tools privacy-watch` with `wpctl status` fallback)*
 
-The effect should resemble `awww`'s image grow transition:
+2. ~~**Polkit Authentication Agent (`utils/polkit/agent.py` + `services/Polkit.qml`)**~~ *(Done — `silhouette-tools polkit-agent` with `agent.py` fallback)*
 
-```bash
-awww img "$pic" \
-    --transition-type grow \
-    --transition-pos bottom \
-    --transition-fps 60 \
-    --transition-step 90
-```
+3. ~~**Shell Supervisor / Watchdog (`scripts/watchdog.sh`)**~~ *(Done — modular `silhouette-tools watchdog` with `watchdog-fallback.sh` fallback)*
 
-Requirements:
-- Capture the screen before suspension, if technically feasible.
-- Display the captured image during wake-up.
-- Animate a circular reveal originating from the bottom-center.
-- Expand smoothly until the entire screen is revealed.
-- Aim for 60 FPS.
-- Integrate the animation cleanly into the existing shell and suspension/wake
-  lifecycle. This should only be for the user when they select "Sleep" option
-  from the power menu then this should happen. It should be quick.
+4. **Bluetooth / Peripheral & Device Watcher (`services/Peripherals.qml`, `services/Devices.qml`)**
+   - Replace periodic CLI polling (`bluetoothctl`, `nmcli`, `upower`, `pactl`)
+     with a single event-driven `zbus` watcher subscribed to BlueZ,
+     NetworkManager, and UPower D-Bus signals.
+
+5. **Launcher Fuzzy Matcher (`utils/launcher/fuzzy.js`, `utils/launcher/emojis.js`)**
+   - Optional speed boost for large app/emoji/file lists: a persistent
+     stdin/stdout `silhouette-tools` matcher using `nucleo-matcher` for
+     sub-millisecond keystroke scoring.
