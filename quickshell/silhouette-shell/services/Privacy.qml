@@ -274,6 +274,43 @@ Singleton {
 
     /** -- the probe -------------------------------------------------------- */
 
+    /** Path to the compiled Rust helper binary. */
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+
+    /**
+     * Latched true if `silhouette-tools privacy-watch` fails before delivering
+     * its first snapshot (e.g. binary not built yet), so we seamlessly drop
+     * back to the `wpctl status` polling probe. Cleared whenever the user
+     * toggles `Flags.useRustTools` back on.
+     */
+    property bool rustUnavailable: false
+
+    /** True once the Rust watcher has emitted at least one valid snapshot. */
+    property bool rustConnected: false
+
+    /** Active mode: event-driven Rust watcher when enabled and available. */
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    onUseRustChanged: {
+        if (root.useRust) {
+            watch.stop();
+            probe.running = false;
+            root.raw = "";
+        } else {
+            rustRespawn.stop();
+            rustWatcher.running = false;
+            root.rustConnected = false;
+        }
+    }
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
     /** True once a probe has completed and parsed into something usable. */
     property bool probeOk: false
 
@@ -281,26 +318,88 @@ Singleton {
     property bool probed: false
 
     /**
-     * Cadence in ms.
+     * Cadence in ms (used only by the `wpctl status` fallback).
      *
-     * This was 10 s with a 5 s floor, on the reasoning that a capture is rare
-     * and each tick is a process spawn. That reasoning was right about the cost
-     * and wrong about the feeling: a capture that takes up to ten seconds to
-     * appear is not an indicator, it is a post-mortem. Measured on this machine,
-     * one `wpctl status` averages 12.9 ms, so a one-second cadence is about 1.3%
-     * of a core and buys instant detection — an easy trade, and the one the
-     * owner asked for.
-     *
-     * The floor stays, at 500 ms, so a hand-edited flags.json cannot turn this
-     * into a spin loop.
+     * The floor stays at 500 ms so a hand-edited flags.json cannot turn the
+     * fallback into a spin loop.
      */
     readonly property int interval: Math.max(500, Flags.privacyPollMs)
 
-    /** A hung `wpctl` must not hold the indicator hostage forever. */
+    /** A hung probe must not hold the indicator hostage forever. */
     readonly property int timeoutMs: 6000
 
     /** The last body `wpctl` printed, held between the collector and onExited. */
     property string raw: ""
+
+    /**
+     * Event-driven PipeWire watcher in Rust (`silhouette-tools privacy-watch`).
+     * Connects once to PipeWire and emits a compact JSON snapshot only when
+     * active audio/camera streams change, eliminating the 1 s `wpctl` fork.
+     */
+    Process {
+        id: rustWatcher
+        command: [root.rustBin, "privacy-watch"]
+        running: root.needsProbe && root.useRust
+
+        stdout: SplitParser {
+            onRead: function (line) {
+                if (!line || line.trim().length === 0)
+                    return;
+                try {
+                    var snap = JSON.parse(line);
+                    if (snap && snap.audioIn && snap.camera && snap.audioOut) {
+                        watch.stop();
+                        root.rustConnected = true;
+                        root.probed = true;
+                        root.audioInUsers = {
+                            apps: snap.audioIn.apps || [],
+                            devices: snap.audioIn.devices || []
+                        };
+                        root.cameraUsers = {
+                            apps: snap.camera.apps || [],
+                            devices: snap.camera.devices || []
+                        };
+                        root.audioOutUsers = {
+                            apps: snap.audioOut.apps || [],
+                            devices: snap.audioOut.devices || []
+                        };
+                        root.probeOk = true;
+                    }
+                } catch (e) {
+                    root.apply(null);
+                }
+            }
+        }
+
+        onRunningChanged: {
+            if (running && !root.rustConnected)
+                watch.restart();
+        }
+
+        onExited: function (exitCode, exitStatus) {
+            watch.stop();
+            if (!root.needsProbe || !root.useRust)
+                return;
+            if (!root.rustConnected) {
+                /** Binary missing or incompatible — fall back to `wpctl status`. */
+                root.rustUnavailable = true;
+                return;
+            }
+            /** PipeWire stream dropped after being live: fail visible and retry. */
+            root.rustConnected = false;
+            root.apply(null);
+            rustRespawn.restart();
+        }
+    }
+
+    Timer {
+        id: rustRespawn
+        interval: 2000
+        onTriggered: {
+            if (root.needsProbe && root.useRust && !rustWatcher.running)
+                rustWatcher.running = true;
+        }
+    }
 
     Process {
         id: probe
@@ -335,6 +434,16 @@ Singleton {
              * a probe that did start and hung, and leaves the next cadence free
              * to retry, so a probe that recovers does not need the shell.
              */
+            if (root.useRust) {
+                rustWatcher.running = false;
+                if (!root.rustConnected) {
+                    root.rustUnavailable = true;
+                    return;
+                }
+                root.apply(null);
+                rustRespawn.restart();
+                return;
+            }
             probe.running = false;
             root.raw = "";
             root.apply(null);
@@ -345,10 +454,10 @@ Singleton {
         id: cadence
         interval: root.interval
         repeat: true
-        running: true
+        running: root.needsProbe && !root.useRust
         triggeredOnStart: true
         onTriggered: {
-            if (probe.running || !root.needsProbe)
+            if (probe.running || !root.needsProbe || root.useRust)
                 return;
             root.raw = "";
             probe.running = true;
