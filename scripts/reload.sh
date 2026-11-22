@@ -45,14 +45,16 @@ while [ "$i" -lt 50 ] && pgrep -x qs >/dev/null 2>&1; do
     i=$((i + 1))
 done
 
-if pgrep -f "watchdog.sh $name" >/dev/null 2>&1; then
+watchdog_pat="(watchdog(-fallback)?\.sh|silhouette-tools watchdog) $name"
+
+if pgrep -f "$watchdog_pat" >/dev/null 2>&1; then
     # Wake the supervisor out of its liveness sleep so it re-checks now. Without
     # this, Super+R could sit on a dead bar for however much of the current tick
     # was left. The signal is safe to send at any point in the watchdog's
     # loop because it installs a no-op USR1 handler before it does anything else;
     # a poke that lands during its launch wait only shortens that wait, and one
     # that lands during the sleep makes the next check happen immediately.
-    pkill -USR1 -f "watchdog.sh $name" >/dev/null 2>&1
+    pkill -USR1 -f "$watchdog_pat" >/dev/null 2>&1
 else
     # Start one. Detached, because it outlives this script by design, and quiet:
     # the flock inside it decides whether this instance is the supervisor or just
@@ -70,7 +72,7 @@ done
 # Nothing came back. Launch directly only when there is genuinely no supervisor:
 # a second launch beside a running one is the duplicate-shell hazard, so a
 # supervisor that is merely slow gets to finish on its own cadence instead.
-if pgrep -f "watchdog.sh $name" >/dev/null 2>&1; then
+if pgrep -f "$watchdog_pat" >/dev/null 2>&1; then
     notify_warn "Shell reload" "Supervisor has not returned the shell yet; leaving it to do so"
     exit 0
 fi

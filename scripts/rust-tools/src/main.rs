@@ -3,11 +3,14 @@ mod backup;
 mod cli;
 mod config;
 mod model;
+mod polkit;
+mod privacy;
 mod search;
 mod thumbnails;
 mod updates;
 mod wallcolors;
 mod wallpaper;
+mod watchdog;
 
 use clap::Parser;
 use cli::{BackupAction, Cli, Commands, PackageUpdateOperation};
@@ -71,6 +74,15 @@ fn main() {
             serde_json::to_writer(io::stdout(), &updates::run(operation)).is_ok()
                 && io::stdout().write_all(b"\n").is_ok()
         }
+        Commands::PrivacyWatch => privacy::watch().map_or_else(
+            |error| {
+                eprintln!("privacy-watch: {error}");
+                false
+            },
+            |_| true,
+        ),
+        Commands::PolkitAgent { config } => polkit::run(config.as_deref()),
+        Commands::Watchdog { name, scripts_dir } => watchdog::run(&name, scripts_dir.as_deref()),
         Commands::Backup {
             action,
             name,

@@ -35,6 +35,18 @@ pub(crate) enum Commands {
         #[arg(value_enum)]
         operation: PackageUpdateOperation,
     },
+    #[command(name = "privacy-watch")]
+    PrivacyWatch,
+    #[command(name = "polkit-agent")]
+    PolkitAgent {
+        #[arg(long)]
+        config: Option<PathBuf>,
+    },
+    Watchdog {
+        name: String,
+        #[arg(long)]
+        scripts_dir: Option<PathBuf>,
+    },
     Backup {
         #[arg(value_enum)]
         action: BackupAction,
