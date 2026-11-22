@@ -34,6 +34,7 @@ singleton Style           1.0 Style.qml
 singleton Surfaces        1.0 Surfaces.qml
 singleton SuspendWatch    1.0 SuspendWatch.qml
 singleton Sysmon          1.0 Sysmon.qml
+singleton WakeAnimation   1.0 WakeAnimation.qml
 singleton Theme           1.0 Theme.qml
 singleton Updates         1.0 Updates.qml
 singleton Walls           1.0 Walls.qml

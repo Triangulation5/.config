@@ -86,6 +86,8 @@ Singleton {
     property alias idleLockMin: adapter.idleLockMin
     property alias idleScreenOffMin: adapter.idleScreenOffMin
     property alias idleSuspendMin: adapter.idleSuspendMin
+    property alias lockOnSuspend: adapter.lockOnSuspend
+    property alias wakeAnimation: adapter.wakeAnimation
     property alias lockPrivacy: adapter.lockPrivacy
     property alias lockDotsMode: adapter.lockDotsMode
     property alias lockFailAction: adapter.lockFailAction
@@ -290,6 +292,7 @@ Singleton {
      * settings app cannot reach is not a setting. /
      */
     property alias battLowPct: adapter.battLowPct
+    property alias battShowPacks: adapter.battShowPacks
     property alias periphLowNotify: adapter.periphLowNotify
     property alias maxVolume: adapter.maxVolume
     property alias wifiScanMs: adapter.wifiScanMs
@@ -454,6 +457,10 @@ Singleton {
             property int idleLockMin: 3
             property int idleScreenOffMin: 0
             property int idleSuspendMin: 0
+            /** Lock the screen when suspending / sleeping the system. */
+            property bool lockOnSuspend: false
+            /** Play circular grow reveal when waking from Power Menu -> Sleep. */
+            property bool wakeAnimation: true
             /**
              * Redact the lock screen until the session is authenticated: the
              * now-playing text and art, the wifi network name and the account's
@@ -741,6 +748,8 @@ Singleton {
              * it falls to it.
              */
             property int battLowPct: 20
+            /** Show individual BAT0/BAT1 rows in the battery surface on multi-pack laptops. */
+            property bool battShowPacks: false
             /** Notify once when a peripheral falls to `battLowPct` and is not charging. */
             property bool periphLowNotify: true
             /**

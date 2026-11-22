@@ -21,7 +21,7 @@ import QtQuick
 QtObject {
     readonly property string name: "Lock Screen"
     readonly property string icon: "\u25A1"
-    readonly property string keywords: "lock idle dim dpms suspend timeout password avatar backdrop blur darken saturation vignette grain bead animation screen privacy private hide redact media music ssid wifi network name failed failure attempt attempts tries escalate escalation logout log out sign out shutdown shut down poweroff power off reboot restart lockout player glow visualizer cava content card clock battery network glance"
+    readonly property string keywords: "lock idle dim dpms sleep suspend wake reveal timeout password avatar backdrop blur darken saturation vignette grain bead animation screen privacy private hide redact media music ssid wifi network name failed failure attempt attempts tries escalate escalation logout log out sign out shutdown shut down poweroff power off reboot restart lockout player glow visualizer cava content card clock battery network glance"
 
     readonly property var groups: [
         { card: "Idle", rows: [
@@ -30,7 +30,11 @@ QtObject {
             { key: "idleScreenOffMin", type: "slider", label: "Screen off", min: 0, max: 15, step: 1, unit: "min",
               caption: "Blank screen after idle. 0 disables.", reset: 0 },
             { key: "idleSuspendMin", type: "slider", label: "Suspend", min: 0, max: 60, step: 1, unit: "min",
-              caption: "Suspend system after idle. 0 disables.", reset: 0 }
+              caption: "Suspend system after idle. 0 disables.", reset: 0 },
+            { key: "lockOnSuspend", type: "toggle", label: "Lock on sleep",
+              caption: "Lock the screen when suspending the system.", reset: false },
+            { key: "wakeAnimation", type: "toggle", label: "Wake animation",
+              caption: "Play circular reveal when waking from sleep.", reset: true }
         ]},
         { card: "Privacy", rows: [
             { key: "lockPrivacy", type: "toggle", label: "Hide private info",

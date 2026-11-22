@@ -14,6 +14,41 @@ set -u
 
 action="${1:-}"
 
+# Screen wake-up animation support: capture the framebuffer before suspension so
+# the shell can replay it behind the circular grow reveal on resume (see
+# services/WakeAnimation.qml). Every capture this shell wants to survive a wake
+# is taken here, on the way in, and a failed capture is not fatal — the marker
+# still gets written and the shell falls back to a plain fade-in on the way back.
+if [ "$action" = "suspend" ]; then
+    flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
+    wake_enabled="$(jq -r 'if .wakeAnimation == null then true else .wakeAnimation end' "$flags" 2>/dev/null || echo true)"
+    if [ "$wake_enabled" = "true" ]; then
+        (
+            umask 077
+            wake_runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
+            wake_marker="$wake_runtime_dir/silhouette-wake-active"
+            monitors="$(hyprctl monitors -j 2>/dev/null | jq -r '.[].name' 2>/dev/null || true)"
+            wake_pids=()
+            if [ -n "$monitors" ]; then
+                for out in $monitors; do
+                    [ -n "$out" ] || continue
+                    rm -f "$wake_runtime_dir/silhouette-wake-$out.png"
+                    grim -o "$out" "$wake_runtime_dir/silhouette-wake-$out.png" 2>/dev/null &
+                    wake_pids+=("$!")
+                done
+                for pid in "${wake_pids[@]}"; do
+                    wait "$pid" 2>/dev/null || true
+                done
+            fi
+            printf '1\n' > "$wake_marker"
+        )
+        # Give Quickshell + Hyprland a moment to composite the solid black pre-wake
+        # cover onto the scanout buffer before the kernel freezes userspace, so the
+        # monitor does not flash the desktop when it powers back on.
+        sleep 0.15
+    fi
+fi
+
 # Check for active init / session managers
 is_systemd() {
     [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -119,6 +120,7 @@ ShellRoot {
     function finishUnlock(): void {
         sessionLock.locked = false;
         root.wakePending = false;
+        WakeAnimation.disarm();
         Cava.enabled = false;
         root.pw.text = "";
         root.clearGrabs();
@@ -376,8 +378,25 @@ ShellRoot {
      */
     Connections {
         target: SuspendWatch
-        function onLockRequested() { root.doLock(); }
+        function onLockRequested() {
+            if (!Flags.lockOnSuspend) {
+                WakeAnimation.prepareForSleep();
+                return;
+            }
+            if (WakeAnimation.prepareForSleep()) {
+                root.doLock();
+                renderKick.stop();
+                renderKick.after = null;
+                reveal.stop();
+                root.revealed = true;
+                return;
+            }
+            root.doLock();
+        }
         function onSuspending() {
+            WakeAnimation.prepareForSleep();
+            if (!Flags.lockOnSuspend)
+                return;
             root.doLock();
             renderKick.stop();
             renderKick.after = null;
@@ -385,7 +404,109 @@ ShellRoot {
             root.revealed = true;
         }
         function onResumed() {
-            root.wakeLockSurface();
+            if (WakeAnimation.onResumed()) {
+                if (sessionLock.locked) {
+                    /** WlSessionLockSurface needs a single renderer kick on Hyprland#16105. */
+                    root.kickThen(1, () => WakeAnimation.startReveal(), 60);
+                } else {
+                    /** Normal layer-shell overlay needs no force_renderer_reload; just a brief DPMS settle. */
+                    wakeRevealDelay.restart();
+                }
+            } else {
+                root.wakeLockSurface();
+            }
+        }
+    }
+
+    Timer {
+        id: wakeRevealDelay
+        interval: 80
+        onTriggered: WakeAnimation.startReveal()
+    }
+
+    /**
+     * Unlocked wake-up reveal overlay: when `Flags.lockOnSuspend` is off,
+     * `WlSessionLock` is not active on resume, so this overlay plays the same
+     * bottom-center circular grow reveal directly onto the live desktop.
+     */
+    Variants {
+        model: (!sessionLock.locked && (WakeAnimation.primed || WakeAnimation.playing))
+            ? Quickshell.screens
+            : []
+
+        PanelWindow {
+            id: wakeWin
+            required property var modelData
+            screen: modelData
+            color: "transparent"
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.namespace: "silhouette-wake"
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            property real wakeP: WakeAnimation.primed ? 0 : 1
+
+            Connections {
+                target: WakeAnimation
+                function onRevealStarted() {
+                    wakeWin.wakeP = 0;
+                    unlockedWakeAnim.restart();
+                }
+            }
+
+            Shape {
+                id: unlockedWakeCover
+                anchors.fill: parent
+
+                readonly property real originX: width / 2
+                readonly property real originY: height
+                readonly property real maxRadius: Math.hypot(width / 2, height) / 0.72
+                readonly property real currentRadius: Math.max(1, wakeWin.wakeP * maxRadius)
+                readonly property real innerAlpha: Math.max(0, 1 - wakeWin.wakeP / 0.06)
+
+                ShapePath {
+                    strokeWidth: 0
+                    strokeColor: "transparent"
+                    fillGradient: RadialGradient {
+                        centerX: unlockedWakeCover.originX
+                        centerY: unlockedWakeCover.originY
+                        focalX: unlockedWakeCover.originX
+                        focalY: unlockedWakeCover.originY
+                        centerRadius: unlockedWakeCover.currentRadius
+
+                        GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, unlockedWakeCover.innerAlpha) }
+                        GradientStop { position: 0.72; color: Qt.rgba(0, 0, 0, unlockedWakeCover.innerAlpha) }
+                        GradientStop { position: 0.90; color: Qt.rgba(0, 0, 0, Math.max(0.78, unlockedWakeCover.innerAlpha)) }
+                        GradientStop { position: 1.0; color: "#ff000000" }
+                    }
+
+                    startX: 0
+                    startY: 0
+                    PathLine { x: unlockedWakeCover.width; y: 0 }
+                    PathLine { x: unlockedWakeCover.width; y: unlockedWakeCover.height }
+                    PathLine { x: 0; y: unlockedWakeCover.height }
+                    PathLine { x: 0; y: 0 }
+                }
+            }
+
+            NumberAnimation {
+                id: unlockedWakeAnim
+                target: wakeWin
+                property: "wakeP"
+                from: 0
+                to: 1
+                duration: 460
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1]
+                onFinished: WakeAnimation.disarm()
+            }
         }
     }
 

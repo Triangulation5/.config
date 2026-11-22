@@ -188,6 +188,8 @@ Singleton {
             property int idleLockMin: 3
             property int idleScreenOffMin: 0
             property int idleSuspendMin: 0
+            property bool lockOnSuspend: false
+            property bool wakeAnimation: true
             property bool lockPrivacy: false
             property string lockDotsMode: "gpixel"
             property string lockFailAction: "logout"
@@ -343,6 +345,7 @@ Singleton {
             property bool notifSound: false
             property bool liteMode: false
             property int battLowPct: 20
+            property bool battShowPacks: false
             property bool periphLowNotify: true
             property int maxVolume: 100
             property int wifiScanMs: 10000
@@ -407,7 +410,7 @@ Singleton {
         "notchStyle", "notchFlare", "autoHide", "vimKeys",
         "recordCountdown", "recordDir", "recordFps", "recordQuality",
         "recordCursor", "recordMic", "recordDesktop", "recordNotify", "recordClearedBefore",
-        "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockPrivacy", "lockDotsMode",
+        "idleLockMin", "idleScreenOffMin", "idleSuspendMin", "lockOnSuspend", "wakeAnimation", "lockPrivacy", "lockDotsMode",
         "lockFailAction", "lockFailLimit",
         "lockoutThreshold", "lockoutSeconds", "lockoutMax", "lockMedia", "lockViz",
         "lockClock", "lockBattery", "lockLink",
@@ -437,7 +440,7 @@ Singleton {
         "cornerNotchRadius", "cornerNormalRadius", "cornerGameRadius", "motionSpeed",
         "pillCleanupSec", "pillGameUnloadMs", "pillGameSweepSec", "pillHoverGraceMs", "osdHoldMs", "notifMs", "notifLowMs",
         "notifHistoryMax", "notifPopupMax", "notifDedupe", "notifSound", "liteMode",
-        "battLowPct", "periphLowNotify", "maxVolume", "wifiScanMs", "btScanMs",
+        "battLowPct", "battShowPacks", "periphLowNotify", "maxVolume", "wifiScanMs", "btScanMs",
         "calendarIdleReturnMs", "weatherRetryMs", "weatherRefreshMs", "recHistoryMax",
         "sysmonAutoTest",
         "lockPillW", "lockPillH", "lockAvatarSize", "lockBeadMs", "lockBlurSpread",

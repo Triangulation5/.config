@@ -61,7 +61,7 @@ SettingsSurface {
     function buildConf() {
         var out = "general {\n"
             + "    lock_cmd = " + root.lockScript + "\n"
-            + "    before_sleep_cmd = loginctl lock-session\n"
+            + (Flags.lockOnSuspend ? "    before_sleep_cmd = loginctl lock-session\n" : "")
             + "    after_sleep_cmd = " + root.wakeScript + "\n"
             + "}\n";
 

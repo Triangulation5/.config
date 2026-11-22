@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell
 import qs.services
 import qs.modules.lock
@@ -35,6 +36,8 @@ Item {
     Keys.onPressed: (event) => {
         if (openAnim.running)
             openAnim.complete();
+        if (wakeAnim.running)
+            wakeAnim.complete();
     }
 
     /**
@@ -47,6 +50,13 @@ Item {
     property real maskP: 0
 
     /**
+     * Circular grow reveal progress for Power Menu -> Sleep wake-up:
+     * 0 = solid black cover, 1 = fully revealed from bottom-center.
+     */
+    property real wakeP: WakeAnimation.primed ? 0 : 1
+    readonly property bool wakeCoverVisible: WakeAnimation.primed || WakeAnimation.playing || wakeAnim.running
+
+    /**
      * The minimal bar's lock: no pill, no hole, nothing to wipe. The mask is put
      * at 1 as this surface is built, so the lock is there and interactive from
      * its first frame, and both morphs are skipped — a wipe with no pill to wipe
@@ -55,14 +65,37 @@ Item {
      */
     readonly property bool instant: Flags.barEnabled
 
-    Component.onCompleted: if (surface.instant)
-        surface.maskP = 1
+    Component.onCompleted: {
+        if (surface.instant || WakeAnimation.active)
+            surface.maskP = 1;
+        if (WakeAnimation.primed)
+            surface.wakeP = 0;
+    }
+
+    Connections {
+        target: WakeAnimation
+        function onPrimedChanged() {
+            if (WakeAnimation.primed) {
+                openAnim.stop();
+                wakeAnim.stop();
+                surface.maskP = 1;
+                surface.wakeP = 0;
+            }
+        }
+        function onRevealStarted() {
+            openAnim.stop();
+            surface.maskP = 1;
+            surface.wakeP = 0;
+            wakeAnim.restart();
+            content.ensureFocus();
+        }
+    }
 
     readonly property bool overlayReady: deskOverlay.status === Image.Ready
     readonly property bool overlayResolved: overlayReady || deskOverlay.status === Image.Error
     readonly property bool shouldOpen: active && overlayResolved
     property bool useBezierStyle: Math.random() < 0.25
-    onShouldOpenChanged: if (shouldOpen && !surface.instant) {
+    onShouldOpenChanged: if (shouldOpen && !surface.instant && !WakeAnimation.active) {
         if (overlayReady)
             openAnim.restart()
         else
@@ -78,6 +111,9 @@ Item {
     }
 
     readonly property string shotSource: {
+        var wakeShot = WakeAnimation.shotUrlFor(surface.screenName);
+        if (wakeShot.length > 0)
+            return wakeShot;
         if (surface.screenName.length === 0)
             return "";
         var dir = Quickshell.env("XDG_RUNTIME_DIR") || "/tmp";
@@ -129,7 +165,7 @@ Item {
              * lock can come up at once — so the backdrop is the wallpaper instead,
              * out of the mirror, with no capture needed to name it.
              */
-            source: surface.instant
+            source: (surface.instant && !WakeAnimation.active)
                 ? (surface.backdrop.length > 0 ? "file://" + surface.backdrop : "")
                 : surface.shotSource
             /** Synchronous in the minimal bar, where this is the frame the lock is
@@ -282,14 +318,70 @@ Item {
 
     MultiEffect {
         anchors.fill: parent
-        /** The mask pass is the wipe; the minimal bar has nothing to run it for. */
-        visible: !surface.instant && surface.overlayReady
+        /** The mask pass is the wipe; the minimal bar and wake reveal have no pill wipe to run. */
+        visible: !surface.instant && !WakeAnimation.active && surface.overlayReady
         source: deskOverlay
         maskEnabled: true
         maskInverted: true
         maskSource: maskItem
         maskThresholdMin: 0.5
         maskSpreadAtMin: 1.0
+    }
+
+    /**
+     * Android One UI / Google Pixel style circular grow reveal from the
+     * bottom-center edge on resume from Power Menu -> Sleep. Draws a single
+     * GPU-accelerated RadialGradient mask (transparent inside -> soft feathered
+     * edge -> opaque black outside) so it stays locked at 60 FPS with zero FBO
+     * overhead.
+     */
+    Shape {
+        id: wakeCover
+        anchors.fill: parent
+        visible: surface.wakeCoverVisible
+        z: 100
+
+        readonly property real originX: width / 2
+        readonly property real originY: height
+        readonly property real maxRadius: Math.hypot(width / 2, height) / 0.72
+        readonly property real currentRadius: Math.max(1, surface.wakeP * maxRadius)
+        readonly property real innerAlpha: Math.max(0, 1 - surface.wakeP / 0.06)
+
+        ShapePath {
+            strokeWidth: 0
+            strokeColor: "transparent"
+            fillGradient: RadialGradient {
+                centerX: wakeCover.originX
+                centerY: wakeCover.originY
+                focalX: wakeCover.originX
+                focalY: wakeCover.originY
+                centerRadius: wakeCover.currentRadius
+
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, wakeCover.innerAlpha) }
+                GradientStop { position: 0.72; color: Qt.rgba(0, 0, 0, wakeCover.innerAlpha) }
+                GradientStop { position: 0.90; color: Qt.rgba(0, 0, 0, Math.max(0.78, wakeCover.innerAlpha)) }
+                GradientStop { position: 1.0; color: "#ff000000" }
+            }
+
+            startX: 0
+            startY: 0
+            PathLine { x: wakeCover.width; y: 0 }
+            PathLine { x: wakeCover.width; y: wakeCover.height }
+            PathLine { x: 0; y: wakeCover.height }
+            PathLine { x: 0; y: 0 }
+        }
+    }
+
+    NumberAnimation {
+        id: wakeAnim
+        target: surface
+        property: "wakeP"
+        from: 0
+        to: 1
+        duration: 460
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: [0.22, 1, 0.36, 1, 1, 1]
+        onFinished: WakeAnimation.finish()
     }
 
     /**
