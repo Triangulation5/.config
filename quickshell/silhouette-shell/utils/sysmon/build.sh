@@ -18,14 +18,14 @@ mkdir -p "$DIR/bin"
 if command -v cargo >/dev/null 2>&1; then
     echo "Building Sysmon sampler with Cargo (release)..."
     cargo build --release --manifest-path "$DIR/Cargo.toml"
-    cp "$DIR/target/release/sysmon_sampler" "$OUT_BIN"
-    cp "$DIR/target/release/sysmon_sampler" "$ROOT_BIN"
+    cp "$DIR/target/release/sysmon_sampler" "$OUT_BIN.tmp" && mv -f "$OUT_BIN.tmp" "$OUT_BIN"
+    cp "$DIR/target/release/sysmon_sampler" "$ROOT_BIN.tmp" && mv -f "$ROOT_BIN.tmp" "$ROOT_BIN"
     echo "Built: $OUT_BIN and $ROOT_BIN"
     exit 0
 elif command -v rustc >/dev/null 2>&1; then
     echo "Building Sysmon sampler with rustc directly..."
-    rustc -O -C opt-level=3 "$DIR/main.rs" -o "$ROOT_BIN"
-    cp "$ROOT_BIN" "$OUT_BIN"
+    rustc -O -C opt-level=3 "$DIR/main.rs" -o "$ROOT_BIN.tmp" && mv -f "$ROOT_BIN.tmp" "$ROOT_BIN"
+    cp "$ROOT_BIN" "$OUT_BIN.tmp" && mv -f "$OUT_BIN.tmp" "$OUT_BIN"
     echo "Built: $OUT_BIN and $ROOT_BIN"
     exit 0
 else

@@ -2,16 +2,51 @@
 # POSIX shell fallback sampler for Sysmon.qml.
 # Emits hardware detection and live system vitals over stdout.
 
-if [ "$1" = "--once" ]; then
+ONCE=0
+VITALS_ONLY=0
+DETECT_ONLY=0
+WATCH_PID=""
+INTERVAL_MS=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --once) ONCE=1; shift ;;
+        --vitals-only) VITALS_ONLY=1; shift ;;
+        --detect-only) DETECT_ONLY=1; shift ;;
+        --watch-pid) WATCH_PID="$2"; shift 2 ;;
+        --interval) INTERVAL_MS="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
+if [ "$ONCE" -eq 1 ]; then
     read -r _ a b c d e f g h _ < /proc/stat 2>/dev/null
     echo "CPU $((a+b+c+d+e+f+g+h)) $((d+e))"
     awk '/^MemTotal:/{mt=$2}/^MemAvailable:/{ma=$2}END{print "MEM",mt+0,ma+0}' /proc/meminfo 2>/dev/null
     exit 0
 fi
 
-DETECT_ONLY=0
-if [ "$1" = "--detect-only" ]; then
-    DETECT_ONLY=1
+if [ -n "$WATCH_PID" ]; then
+    page=$(getconf PAGESIZE 2>/dev/null || echo 4096)
+    sec=$(( (${INTERVAL_MS:-8000} + 500) / 1000 ))
+    [ "$sec" -lt 1 ] && sec=1
+    while [ -r "/proc/$WATCH_PID/statm" ]; do
+        read -r _ r _ < "/proc/$WATCH_PID/statm" 2>/dev/null || break
+        echo "RSS $((r * page / 1024 / 1024))"
+        sleep "$sec"
+    done
+    exit 0
+fi
+
+if [ "$VITALS_ONLY" -eq 1 ]; then
+    sec=$(( (${INTERVAL_MS:-2000} + 500) / 1000 ))
+    [ "$sec" -lt 1 ] && sec=1
+    while true; do
+        read -r _ a b c d e f g h _ < /proc/stat 2>/dev/null
+        echo "CPU $((a+b+c+d+e+f+g+h)) $((d+e))"
+        awk '/^MemTotal:/{mt=$2}/^MemAvailable:/{ma=$2}END{print "MEM",mt+0,ma+0}' /proc/meminfo 2>/dev/null
+        sleep "$sec"
+    done
 fi
 
 detect_temp() {

@@ -44,53 +44,63 @@ Singleton {
     /** True when memory exceeds the soft pressure cap */
     readonly property bool underPressure: shellRssMb >= softCapMb
 
-    function checkMemory() {
-        if (!memProc.running)
-            memProc.running = true;
-    }
+    readonly property string samplerRunner: Qt.resolvedUrl("../utils/sysmon/run.sh").toString().replace(/^file:\/\//, "")
 
-    Process {
-        id: memProc
-        command: ["sh", "-c", "page=$(getconf PAGESIZE 2>/dev/null || echo 4096); read -r _ r _ < /proc/\"$1\"/statm 2>/dev/null || exit 0; echo $((r*page/1024/1024))", "_", String(Quickshell.processId)]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var mb = parseInt(this.text.trim(), 10);
-                if (isNaN(mb) || mb <= 0)
-                    return;
-                root.shellRssMb = mb;
+    function applyRss(mb) {
+        if (isNaN(mb) || mb <= 0)
+            return;
+        root.shellRssMb = mb;
 
-                if (mb >= root.hardCapMb) {
-                    root.unloadClosed();
-                    if (typeof gc === "function")
-                        gc();
-                } else if (mb >= root.softCapMb) {
-                    root.unloadClosed();
-                    if (typeof gc === "function")
-                        gc();
-                }
-            }
+        if (mb >= root.hardCapMb) {
+            root.unloadClosed();
+            if (typeof gc === "function")
+                gc();
+        } else if (mb >= root.softCapMb) {
+            root.unloadClosed();
+            if (typeof gc === "function")
+                gc();
         }
     }
 
-    /** Seconds of continuous idle before an idle sweep runs */
-    property int idleSeconds: 0
+    /**
+     * Persistent RSS watcher: replaces the old 8s `sh` + `getconf` fork loop
+     * with a single long-lived sysmon_sampler `--watch-pid` process.
+     */
+    Process {
+        id: memProc
+        command: [root.samplerRunner, "--watch-pid", String(Quickshell.processId), "--interval", "8000"]
+        running: Quickshell.processId > 0
+        stdout: SplitParser {
+            onRead: (line) => {
+                var p = line.trim().split(/\s+/);
+                if (p[0] === "RSS")
+                    root.applyRss(parseInt(p[1], 10));
+            }
+        }
+        onExited: memRespawn.restart()
+    }
 
     Timer {
-        id: memTimer
-        interval: 8000
+        id: memRespawn
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            if (Quickshell.processId > 0 && !memProc.running)
+                memProc.running = true;
+        }
+    }
+
+    /** Run an idle garbage collection pass every 32 seconds to stay around 150-180MB */
+    Timer {
+        id: idleSweepTimer
+        interval: 32000
         repeat: true
         running: true
         triggeredOnStart: false
         onTriggered: {
-            root.checkMemory();
-            root.idleSeconds += 8;
-            /** Run an idle garbage collection pass every 32 seconds to stay around 150-180MB */
-            if (root.idleSeconds >= 32) {
-                root.idleSeconds = 0;
-                root.unloadClosed();
-                if (typeof gc === "function")
-                    gc();
-            }
+            root.unloadClosed();
+            if (typeof gc === "function")
+                gc();
         }
     }
 }

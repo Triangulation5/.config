@@ -186,6 +186,25 @@ def sample_amd_gpu(dev):
 
     return busy, temp, vu, vt
 
+def read_pid_rss_mb(pid, page_size):
+    try:
+        with open(f"/proc/{pid}/statm", "r") as f:
+            parts = f.read().split()
+            if len(parts) >= 2:
+                return (int(parts[1]) * page_size) // (1024 * 1024)
+    except (OSError, ValueError):
+        return None
+    return None
+
+def parse_int_flag(flag, default):
+    try:
+        idx = sys.argv.index(flag)
+        if idx + 1 < len(sys.argv):
+            return int(sys.argv[idx + 1])
+    except (ValueError, IndexError):
+        pass
+    return default
+
 def main():
     if "--once" in sys.argv:
         c = read_proc_stat()
@@ -194,6 +213,35 @@ def main():
         mt, ma, _, _ = read_proc_meminfo()
         print(f"MEM {mt} {ma}")
         sys.stdout.flush()
+        return
+
+    watch_pid = parse_int_flag("--watch-pid", None)
+    if watch_pid is not None:
+        interval_s = max(500, parse_int_flag("--interval", 8000)) / 1000.0
+        page_size = os.sysconf("SC_PAGE_SIZE") if hasattr(os, "sysconf") else 4096
+        try:
+            while True:
+                mb = read_pid_rss_mb(watch_pid, page_size)
+                if mb is None:
+                    break
+                print(f"RSS {mb}", flush=True)
+                time.sleep(interval_s)
+        except (BrokenPipeError, KeyboardInterrupt):
+            pass
+        return
+
+    if "--vitals-only" in sys.argv:
+        interval_s = max(200, parse_int_flag("--interval", 2000)) / 1000.0
+        try:
+            while True:
+                c = read_proc_stat()
+                if c:
+                    print(f"CPU {c[0]} {c[1]}")
+                mt, ma, _, _ = read_proc_meminfo()
+                print(f"MEM {mt} {ma}", flush=True)
+                time.sleep(interval_s)
+        except (BrokenPipeError, KeyboardInterrupt):
+            pass
         return
 
     detect_only = "--detect-only" in sys.argv
