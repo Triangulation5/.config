@@ -119,8 +119,28 @@ Singleton {
         onLoadFailed: root.lockWallpaper = ""
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    function startThumbPipeline() {
+        if (root.useRust) {
+            rustWallsProc.running = true;
+            return;
+        }
+        thumbProc.running = true;
+    }
+
     function refresh() {
-        if (resolveProc.running || thumbProc.running || listProc.running || stateProc.running) {
+        if (resolveProc.running || rustWallsProc.running || thumbProc.running || listProc.running || stateProc.running) {
             pending = true;
             return;
         }
@@ -131,7 +151,7 @@ Singleton {
          * folder skips it entirely and swaps straight away.
          */
         if (Flags.wallpaperDir.length > 0) {
-            thumbProc.running = true;
+            root.startThumbPipeline();
             return;
         }
         resolveProc.command = ["bash", root.setScript, "resolve"];
@@ -140,7 +160,43 @@ Singleton {
 
     Process {
         id: resolveProc
-        onExited: thumbProc.running = true
+        onExited: root.startThumbPipeline()
+    }
+
+    /**
+     * Single-pass parallel Rust thumbnailer + directory indexer + state reader,
+     * replacing the 3-stage sh -> find|sort -> cat pipeline.
+     */
+    Process {
+        id: rustWallsProc
+        command: [root.watcherRunner, "thumbs-walls", root.wpDir, root.thumbDir, root.stateFile]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustWallsProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                rustWallsProc.body = "";
+                root.rustUnavailable = true;
+                thumbProc.running = true;
+                return;
+            }
+            if (exitCode === 0 && rustWallsProc.body.trim().length > 0) {
+                try {
+                    var parsed = JSON.parse(rustWallsProc.body);
+                    if (parsed && Array.isArray(parsed.entries)) {
+                        root.entries = parsed.entries;
+                        root.current = parsed.current || "";
+                    }
+                } catch (e) {
+                }
+            }
+            rustWallsProc.body = "";
+            if (root.pending) {
+                root.pending = false;
+                Qt.callLater(root.refresh);
+            }
+        }
     }
 
     /**

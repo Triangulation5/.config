@@ -348,13 +348,27 @@ Singleton {
         locProc.running = true;
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
     /** Resolve coordinates: geocode the manual city override, else walk the IP chain. */
     function locate() {
-        if (!root.needed || locProc.running || geoProc.running || root.locIdx >= 0)
+        if (!root.needed || rustLocProc.running || locProc.running || geoProc.running || root.locIdx >= 0)
             return;
         if (Flags.weatherCity && Flags.weatherCity.trim().length > 0) {
             root.geoRequestedCity = Flags.weatherCity.trim();
             geoProc.running = true;
+        } else if (root.useRust) {
+            rustLocProc.running = true;
         } else {
             root.tryNextLoc();
         }
@@ -363,6 +377,7 @@ Singleton {
     Connections {
         target: Flags
         function onWeatherCityChanged() {
+            rustLocProc.running = false;
             locProc.running = false;
             geoProc.running = false;
             root.locIdx = -1;
@@ -371,6 +386,40 @@ Singleton {
             root.lon = 0;
             root.geoRequestedCity = String(Flags.weatherCity || "").trim();
             root.locate();
+        }
+    }
+
+    /** Single-process libcurl geolocator walk (replaces up to 5 sequential curl spawns). */
+    Process {
+        id: rustLocProc
+        command: [root.watcherRunner, "net-geolocate"]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustLocProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                rustLocProc.body = "";
+                root.rustUnavailable = true;
+                root.tryNextLoc();
+                return;
+            }
+            if (String(Flags.weatherCity || "").trim().length > 0) {
+                rustLocProc.body = "";
+                return;
+            }
+            try {
+                var msg = JSON.parse(rustLocProc.body);
+                var d = msg && msg.body ? msg.body : null;
+                if (d) {
+                    var lat = typeof d.lat === "number" ? d.lat : d.latitude;
+                    var lon = typeof d.lon === "number" ? d.lon : d.longitude;
+                    if (typeof lat === "number" && typeof lon === "number")
+                        root.applyLoc(d.city || "", lat, lon);
+                }
+            } catch (e) {
+            }
+            rustLocProc.body = "";
         }
     }
 
@@ -399,10 +448,18 @@ Singleton {
 
     Process {
         id: geoProc
-        command: ["curl", "-s", "--max-time", "8", "-G",
-            "https://geocoding-api.open-meteo.com/v1/search",
-            "--data-urlencode", "name=" + (Flags.weatherCity || ""),
-            "--data-urlencode", "count=1"]
+        command: root.useRust
+            ? [root.watcherRunner, "net-fetch", "--geocode", Flags.weatherCity || ""]
+            : ["curl", "-s", "--max-time", "8", "-G",
+                "https://geocoding-api.open-meteo.com/v1/search",
+                "--data-urlencode", "name=" + (Flags.weatherCity || ""),
+                "--data-urlencode", "count=1"]
+        onExited: function(exitCode) {
+            if (exitCode === 127 && root.useRust) {
+                root.rustUnavailable = true;
+                geoProc.running = true;
+            }
+        }
         stdout: StdioCollector {
             onStreamFinished: {
                 var currentCity = String(Flags.weatherCity || "").trim();
@@ -418,14 +475,23 @@ Singleton {
         }
     }
 
+    readonly property string forecastUrl: "https://api.open-meteo.com/v1/forecast?latitude=" + root.lat
+        + "&longitude=" + root.lon
+        + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
+        + "&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=24"
+        + "&daily=weather_code,temperature_2m_max,relative_humidity_2m_mean,sunrise,sunset&forecast_days=5&timezone=auto"
+
     Process {
         id: wxProc
-        command: ["curl", "-s", "--max-time", "10",
-            "https://api.open-meteo.com/v1/forecast?latitude=" + root.lat
-            + "&longitude=" + root.lon
-            + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
-            + "&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=24"
-            + "&daily=weather_code,temperature_2m_max,relative_humidity_2m_mean,sunrise,sunset&forecast_days=5&timezone=auto"]
+        command: root.useRust
+            ? [root.watcherRunner, "net-fetch", root.forecastUrl]
+            : ["curl", "-s", "--max-time", "10", root.forecastUrl]
+        onExited: function(exitCode) {
+            if (exitCode === 127 && root.useRust) {
+                root.rustUnavailable = true;
+                wxProc.running = true;
+            }
+        }
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

@@ -106,10 +106,17 @@ Singleton {
         onTriggered: root.runGeneration()
     }
 
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+    readonly property bool useRustWallcolors: Flags.useRustTools
+
     Process {
         id: regen
-        command: ["sh", "-c",
-            "f=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper\"; pic=$(cat \"$f\" 2>/dev/null); [ -f \"$pic\" ] && python3 \"$HOME/.config/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true"]
+        command: root.useRustWallcolors
+            ? ["sh", "-c",
+                "f=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper\"; pic=$(cat \"$f\" 2>/dev/null); if [ -f \"$pic\" ]; then if [ -x \"$1\" ]; then \"$1\" wallcolors -- \"$pic\" >/dev/null 2>&1 || python3 \"$HOME/.config/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; else python3 \"$HOME/.config/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; fi; fi; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
+                "_", root.rustBin]
+            : ["sh", "-c",
+                "f=\"${XDG_STATE_HOME:-$HOME/.local/state}/silhouette-wallpaper\"; pic=$(cat \"$f\" 2>/dev/null); [ -f \"$pic\" ] && python3 \"$HOME/.config/scripts/wallcolors.py\" \"$pic\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true"]
 
         onRunningChanged: {
             if (!running && root.regenPending) {
@@ -122,9 +129,13 @@ Singleton {
     /** Manual mode: rebuild from the chosen hue instead of the wallpaper. */
     Process {
         id: manualRegen
-        command: ["sh", "-c",
-            "python3 \"$HOME/.config/scripts/wallcolors.py\" --hue \"$1\" \"$2\" \"$3\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
-            "sh", root.hueArg, root.modeArg, root.satArg]
+        command: root.useRustWallcolors
+            ? ["sh", "-c",
+                "if [ -x \"$1\" ]; then \"$1\" wallcolors -- --hue \"$2\" \"$3\" \"$4\" >/dev/null 2>&1 || python3 \"$HOME/.config/scripts/wallcolors.py\" --hue \"$2\" \"$3\" \"$4\" >/dev/null 2>&1; else python3 \"$HOME/.config/scripts/wallcolors.py\" --hue \"$2\" \"$3\" \"$4\" >/dev/null 2>&1; fi; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
+                "_", root.rustBin, root.hueArg, root.modeArg, root.satArg]
+            : ["sh", "-c",
+                "python3 \"$HOME/.config/scripts/wallcolors.py\" --hue \"$1\" \"$2\" \"$3\" >/dev/null 2>&1; hyprctl reload >/dev/null 2>&1; kitty @ load-config >/dev/null 2>&1 || true",
+                "sh", root.hueArg, root.modeArg, root.satArg]
 
         onRunningChanged: {
             if (!running && root.regenPending) {

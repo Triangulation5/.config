@@ -119,12 +119,17 @@ PillSurface {
      * managed. The watchdog is stopped here too — otherwise it would fire its
      * own timeout on top of an error that already ended the run.
      */
+    readonly property string watcherRunner: Qt.resolvedUrl("../../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustSpeedUnavailable: false
+    readonly property bool useRustSpeed: Flags.useRustTools && !root.rustSpeedUnavailable
+
     function speedFail(msg) {
         root.speedError = msg;
         root.speedRunning = false;
         root.speedPhase = "";
         root.speedDone = false;
         speedTimeout.stop();
+        rustSpeedProc.running = false;
         speedPingProc.running = false;
         speedDlProc.running = false;
         speedUlProc.running = false;
@@ -141,7 +146,10 @@ PillSurface {
         root.speedDown = 0;
         root.speedUp = 0;
         speedTimeout.start();
-        speedPingProc.running = true;
+        if (root.useRustSpeed)
+            rustSpeedProc.running = true;
+        else
+            speedPingProc.running = true;
     }
 
     /** Cancel without a reason: used by the trigger and by the close hook. */
@@ -149,9 +157,50 @@ PillSurface {
         root.speedRunning = false;
         root.speedPhase = "";
         speedTimeout.stop();
+        rustSpeedProc.running = false;
         speedPingProc.running = false;
         speedDlProc.running = false;
         speedUlProc.running = false;
+    }
+
+    /**
+     * Native libcurl speedtest: single process, zero-copy in-memory 25MB upload
+     * filler, monotonic timing, and live phase streaming over stdout.
+     */
+    Process {
+        id: rustSpeedProc
+        command: [root.watcherRunner, "net-speedtest", root.speedPingUrl, root.speedDownUrl, root.speedUpUrl]
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!root.speedRunning)
+                    return;
+                var p = line.trim().split(/\s+/);
+                if (p[0] === "PING") {
+                    root.speedPing = Math.round(parseFloat(p[1]) || 0);
+                    root.speedPhase = "download";
+                } else if (p[0] === "DOWN") {
+                    root.speedDown = Math.round((parseFloat(p[1]) || 0) * 10) / 10;
+                    root.speedPhase = "upload";
+                } else if (p[0] === "UP") {
+                    root.speedUp = Math.round((parseFloat(p[1]) || 0) * 10) / 10;
+                } else if (p[0] === "DONE") {
+                    root.speedPhase = "done";
+                    root.speedRunning = false;
+                    root.speedDone = true;
+                    speedTimeout.stop();
+                } else if (p[0] === "ERR") {
+                    var where = p[1] || "ping";
+                    var err = root.phaseError(p[2] || "__FAIL__", where);
+                    root.speedFail(err.length > 0 ? err : "Speed test failed");
+                }
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127 && root.speedRunning) {
+                root.rustSpeedUnavailable = true;
+                speedPingProc.running = true;
+            }
+        }
     }
 
     /**

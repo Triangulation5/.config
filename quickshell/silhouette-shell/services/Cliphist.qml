@@ -40,10 +40,25 @@ Singleton {
 
     readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/cliphist-thumbs/"
     readonly property string thumbScript: Quickshell.env("HOME") + "/.config/scripts/cliphist-thumbs.sh"
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
 
     function refresh() {
-        if (thumbProc.running || listProc.running || delProc.running || delQueue.length) {
+        if (rustClipProc.running || thumbProc.running || listProc.running || delProc.running || delQueue.length) {
             pending = true;
+            return;
+        }
+        if (root.useRust) {
+            rustClipProc.running = true;
             return;
         }
         thumbProc.running = true;
@@ -52,6 +67,10 @@ Singleton {
     function copy(entry) {
         if (!/^\d+$/.test(String(entry.id)))
             return;
+        if (root.useRust) {
+            Quickshell.execDetached([root.watcherRunner, "clip-copy", String(entry.id)]);
+            return;
+        }
         Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | cliphist decode | wl-copy", "_", String(entry.id)]);
     }
 
@@ -88,7 +107,9 @@ Singleton {
         if (delProc.running || !delQueue.length)
             return;
         var id = delQueue.shift();
-        delProc.command = ["sh", "-c", "printf '%s' \"$1\" | cliphist delete", "_", id];
+        delProc.command = root.useRust
+            ? [root.watcherRunner, "clip-delete", id]
+            : ["sh", "-c", "printf '%s' \"$1\" | cliphist delete", "_", id];
         delProc.running = true;
     }
 
@@ -128,6 +149,51 @@ Singleton {
         id: wipeProc
         command: ["cliphist", "wipe"]
         onExited: root.refresh()
+    }
+
+    Process {
+        id: rustClipProc
+        command: [root.watcherRunner, "thumbs-cliphist", root.thumbDir]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustClipProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                rustClipProc.body = "";
+                root.rustUnavailable = true;
+                thumbProc.running = true;
+                return;
+            }
+            var failed = exitCode !== undefined && exitCode !== 0;
+            if (failed) {
+                rustClipProc.body = "";
+                if (root.listFailures < 1) {
+                    root.listFailures++;
+                    listRetry.restart();
+                } else {
+                    root.listFailures = 0;
+                    if (!root.loaded)
+                        root.applyList("");
+                }
+                return;
+            }
+            root.listFailures = 0;
+            try {
+                var parsed = JSON.parse(rustClipProc.body);
+                if (Array.isArray(parsed)) {
+                    root.entries = parsed;
+                    root.entriesUpdated();
+                    root.loaded = true;
+                }
+            } catch (e) {
+            }
+            rustClipProc.body = "";
+            if (root.pending) {
+                root.pending = false;
+                Qt.callLater(root.refresh);
+            }
+        }
     }
 
     Process {

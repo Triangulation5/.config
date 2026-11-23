@@ -462,7 +462,7 @@ LinkDrillIn {
     Timer {
         id: secRefresh
         interval: 1200
-        onTriggered: if (root.active) secProc.running = true
+        onTriggered: if (root.active) root.refresh()
     }
 
     /**

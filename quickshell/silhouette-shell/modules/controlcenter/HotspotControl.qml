@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.services
 
 /**
  * State and control for the shared hotspot in the wifi drill-in: the live
@@ -58,8 +59,16 @@ Item {
         }
     }
 
-    /** Re-reads the AP's active state and stored name/password from nmcli. */
+    readonly property string watcherRunner: Qt.resolvedUrl("../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !ctl.rustUnavailable
+
+    /** Re-reads the AP's active state and stored name/password. */
     function refresh() {
+        if (ctl.useRust) {
+            rustStateProc.running = true;
+            return;
+        }
         stateProc.running = true;
         readProc.running = true;
     }
@@ -137,6 +146,38 @@ Item {
         onExited: {
             ctl.busy = false;
             ctl.refresh();
+        }
+    }
+
+    Process {
+        id: rustStateProc
+        command: [ctl.watcherRunner, "hotspot-state", ctl.con]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustStateProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                rustStateProc.body = "";
+                ctl.rustUnavailable = true;
+                stateProc.running = true;
+                readProc.running = true;
+                return;
+            }
+            if (exitCode === 0 && rustStateProc.body.trim().length > 0) {
+                try {
+                    var parsed = JSON.parse(rustStateProc.body);
+                    if (parsed) {
+                        ctl.active = !!parsed.active;
+                        if (parsed.name && parsed.name.length)
+                            ctl.name = parsed.name;
+                        if (parsed.pw && parsed.pw.length)
+                            ctl.pw = parsed.pw;
+                    }
+                } catch (e) {
+                }
+            }
+            rustStateProc.body = "";
         }
     }
 

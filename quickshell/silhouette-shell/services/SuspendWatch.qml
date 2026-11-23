@@ -39,13 +39,50 @@ Singleton {
     signal suspending()
     signal lockRequested()
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    Process {
+        id: rustMon
+        command: [root.watcherRunner, "logind-watch"]
+        running: root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                var s = line.trim();
+                if (s === "LOCK")
+                    root.lockRequested();
+                else if (s === "SUSPEND")
+                    root.suspending();
+                else if (s === "RESUME")
+                    root.resumed();
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                root.rustUnavailable = true;
+                return;
+            }
+            if (root.useRust)
+                sleepRespawn.restart();
+        }
+    }
+
     Process {
         id: sleepMon
         command: ["dbus-monitor", "--system",
             "type='signal',interface='org.freedesktop.login1.Session',member='Lock'",
             "type='signal',path='/org/freedesktop/login1',"
             + "interface='org.freedesktop.login1.Manager',member='PrepareForSleep'"]
-        running: true
+        running: !root.useRust
         stdout: SplitParser {
             onRead: (line) => {
                 if (line.indexOf("member=Lock") >= 0)
@@ -56,13 +93,20 @@ Singleton {
                     root.resumed();
             }
         }
-        onExited: sleepRespawn.restart()
+        onExited: if (!root.useRust) sleepRespawn.restart()
     }
 
-    /** Respawn if dbus-monitor disappears; sleep/lock events must not become permanently blind. */
+    /** Respawn if the monitor disappears; sleep/lock events must not become permanently blind. */
     Timer {
         id: sleepRespawn
         interval: 2000
-        onTriggered: if (!sleepMon.running) sleepMon.running = true
+        onTriggered: {
+            if (root.useRust) {
+                if (!rustMon.running)
+                    rustMon.running = true;
+            } else if (!sleepMon.running) {
+                sleepMon.running = true;
+            }
+        }
     }
 }
