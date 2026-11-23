@@ -196,13 +196,98 @@ Singleton {
 
     /** Ask for a read, coalescing onto the one already running. */
     function refresh() {
-        if (!root.active)
+        if (!root.active || root.useRust)
             return;
         if (root.reading) {
             root.pending = true;
             return;
         }
         root.start();
+    }
+
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    function applySnapshot(list, opt) {
+        var usable = false;
+        if (list && list.length > 0) {
+            var map = {};
+            for (var i = 0; i < list.length; i++) {
+                var w = list[i];
+                if (!w || w.name === undefined)
+                    continue;
+                map[String(w.name)] = {
+                    layout: w.tiledLayout ? String(w.tiledLayout) : "",
+                    windows: w.windows ? w.windows : 0
+                };
+            }
+            if (Object.keys(map).length > 0) {
+                root.byName = map;
+                usable = true;
+            }
+        }
+        if (opt && opt.str && String(opt.str).length > 0) {
+            root.fallback = String(opt.str);
+            usable = true;
+        }
+        if (root.fallback.length > 0) {
+            root.lastLayout = root.fallback;
+        } else {
+            for (var k in root.byName) {
+                if (root.byName[k].layout.length > 0) {
+                    root.lastLayout = root.byName[k].layout;
+                    break;
+                }
+            }
+        }
+        return usable;
+    }
+
+    Process {
+        id: rustProc
+        command: [root.watcherRunner, "hypr-barlayout", "--interval", String(root.intervalMs)]
+        running: root.active && root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!line || line.trim().length === 0)
+                    return;
+                try {
+                    var msg = JSON.parse(line);
+                    if (msg)
+                        root.applySnapshot(msg.workspaces, msg.layout);
+                } catch (e) {
+                }
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                root.rustUnavailable = true;
+                if (root.active)
+                    root.refresh();
+                return;
+            }
+            if (root.active && root.useRust)
+                rustRespawn.restart();
+        }
+    }
+
+    Timer {
+        id: rustRespawn
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (root.active && root.useRust && !rustProc.running)
+                rustProc.running = true;
+        }
     }
 
     /**
@@ -228,11 +313,6 @@ Singleton {
         /** Two documents, one spawn: the workspaces, a marker line, the global layout. */
         command: ["sh", "-c",
             "hyprctl -j workspaces; printf '\\n@@\\n'; hyprctl -j getoption general:layout"]
-        /**
-         * A read is over the moment its output has been handled, whether or not
-         * that output was any use. Clearing it here rather than only on a good
-         * parse is what keeps a bad read from becoming a stuck one.
-         */
         onExited: {
             root.reading = false;
             root.stuckTicks = 0;
@@ -242,68 +322,21 @@ Singleton {
                 root.reading = false;
                 root.stuckTicks = 0;
 
-                /** Nothing usable came back: keep what we know and come back fast. */
-                var usable = false;
-
                 var parts = this.text.split("\n@@\n");
-
                 var list = null;
                 try {
                     list = JSON.parse(parts[0]);
                 } catch (e) {
                     list = null;
                 }
-                /**
-                 * A list with something in it, not merely a list: `[]` is truthy
-                 * and used to blank every workspace on screen, which is how the
-                 * symbol disappeared on a reload that answered with an empty
-                 * body rather than with no body at all.
-                 */
-                if (list && list.length > 0) {
-                    var map = {};
-                    for (var i = 0; i < list.length; i++) {
-                        var w = list[i];
-                        if (!w || w.name === undefined)
-                            continue;
-                        map[String(w.name)] = {
-                            layout: w.tiledLayout ? String(w.tiledLayout) : "",
-                            windows: w.windows ? w.windows : 0
-                        };
-                    }
-                    if (Object.keys(map).length > 0) {
-                        root.byName = map;
-                        usable = true;
-                    }
-                }
-
+                var opt = null;
                 try {
-                    var opt = JSON.parse(parts[1] || "");
-                    /** Only a layout that names one; anything else keeps the old. */
-                    if (opt && opt.str && String(opt.str).length > 0) {
-                        root.fallback = String(opt.str);
-                        usable = true;
-                    }
+                    opt = JSON.parse(parts[1] || "");
                 } catch (e2) {
+                    opt = null;
                 }
 
-                /**
-                 * The floor, from either half. Recorded only from a real reading,
-                 * so `layoutOf` always has something to answer with once the first
-                 * read has landed — a workspace missing from the list, or one
-                 * reported without a layout, reads as the last layout seen rather
-                 * than as nothing at all.
-                 */
-                if (root.fallback.length > 0)
-                    root.lastLayout = root.fallback;
-                else {
-                    for (var k in root.byName) {
-                        if (root.byName[k].layout.length > 0) {
-                            root.lastLayout = root.byName[k].layout;
-                            break;
-                        }
-                    }
-                }
-
+                var usable = root.applySnapshot(list, opt);
                 if (!usable)
                     retry.restart();
 
@@ -313,38 +346,17 @@ Singleton {
         }
     }
 
-    /**
-     * A read that answered with nothing usable is usually a compositor that is
-     * busy rather than one that has nothing to say, so try again well before the
-     * next poll tick.
-     */
     Timer {
         id: retry
         interval: 300
         repeat: false
-        onTriggered: if (root.active) root.refresh()
+        onTriggered: if (root.active && !root.useRust) root.refresh()
     }
 
-    /**
-     * The wedge guard, and the reason a lost read can no longer be fatal.
-     *
-     * Two cases, and both of them are cases where nothing else would ever act
-     * again:
-     *
-     *   - Nothing is in flight and something was asked for. A read was queued
-     *     against a process that then ended without answering — a failed start, or
-     *     a kill that was the thing that finished it — so the completion that was
-     *     supposed to drain the queue never came. Start it now.
-     *   - Something has been in flight for too long. Nothing here times out on its
-     *     own: a `hyprctl` blocked on a busy compositor never returns, and a read
-     *     asked for while the engine is still assembling the config cannot start
-     *     until the reload settles. Either way `stuckTicks` reaching the limit
-     *     means nothing else is going to, so start a new read.
-     */
     Timer {
         interval: 500
         repeat: true
-        running: root.active
+        running: root.active && !root.useRust
         onTriggered: {
             if (!root.reading) {
                 root.stuckTicks = 0;
@@ -360,7 +372,7 @@ Singleton {
 
     Connections {
         target: Hyprland
-        enabled: root.active
+        enabled: root.active && !root.useRust
         function onRawEvent(event) {
             if (root.refreshEvents[event.name])
                 root.refresh();
@@ -369,7 +381,7 @@ Singleton {
 
     Timer {
         interval: root.intervalMs
-        running: root.active
+        running: root.active && !root.useRust
         repeat: true
         onTriggered: root.refresh()
     }

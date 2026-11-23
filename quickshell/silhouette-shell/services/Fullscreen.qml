@@ -119,10 +119,90 @@ Singleton {
         root.byMonitor = out;
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+    property bool fallbackArmed: false
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    function applyMonitors(mons) {
+        if (!mons)
+            return;
+        var map = {};
+        for (var i = 0; i < mons.length; i++) {
+            var o = mons[i];
+            var aw = o.activeWorkspace;
+            if (aw && aw.name)
+                map[o.name] = aw.name;
+        }
+        root.activeByMonitor = map;
+        root.rebuild();
+    }
+
+    function applyWorkspaces(list) {
+        if (!list)
+            return;
+        var fs = {};
+        for (var i = 0; i < list.length; i++)
+            fs[list[i].name] = !!list[i].hasfullscreen;
+        root.fullscreenWorkspaces = fs;
+        root.rebuild();
+    }
+
+    Process {
+        id: rustProc
+        command: [root.watcherRunner, "hypr-fullscreen"]
+        running: root.fallbackArmed && !root.useToplevels && root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!line || line.trim().length === 0)
+                    return;
+                try {
+                    var msg = JSON.parse(line);
+                    if (msg) {
+                        root.applyMonitors(msg.monitors);
+                        root.applyWorkspaces(msg.workspaces);
+                    }
+                } catch (e) {
+                }
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                root.rustUnavailable = true;
+                if (!root.useToplevels)
+                    root.run();
+                return;
+            }
+            if (root.fallbackArmed && !root.useToplevels && root.useRust)
+                rustRespawn.restart();
+        }
+    }
+
+    Timer {
+        id: rustRespawn
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (root.fallbackArmed && !root.useToplevels && root.useRust && !rustProc.running)
+                rustProc.running = true;
+        }
+    }
+
     /** Coalesce a burst of events into one read of both sources. */
     function request() {
         /** The protocol has the state live; spawning hyprctl would be pure cost. */
         if (root.useToplevels)
+            return;
+        root.fallbackArmed = true;
+        if (root.useRust)
             return;
         root.dirty = true;
         debounce.restart();
@@ -130,6 +210,9 @@ Singleton {
 
     function run() {
         if (root.useToplevels)
+            return;
+        root.fallbackArmed = true;
+        if (root.useRust)
             return;
         if (monProc.running || wsProc.running) {
             debounce.restart();
@@ -157,17 +240,7 @@ Singleton {
                 } catch (e) {
                     mons = null;
                 }
-                if (mons) {
-                    var map = {};
-                    for (var i = 0; i < mons.length; i++) {
-                        var o = mons[i];
-                        var aw = o.activeWorkspace;
-                        if (aw && aw.name)
-                            map[o.name] = aw.name;
-                    }
-                    root.activeByMonitor = map;
-                    root.rebuild();
-                }
+                root.applyMonitors(mons);
                 if (root.dirty && !wsProc.running)
                     debounce.restart();
             }
@@ -185,13 +258,7 @@ Singleton {
                 } catch (e) {
                     list = null;
                 }
-                if (list) {
-                    var fs = {};
-                    for (var i = 0; i < list.length; i++)
-                        fs[list[i].name] = !!list[i].hasfullscreen;
-                    root.fullscreenWorkspaces = fs;
-                    root.rebuild();
-                }
+                root.applyWorkspaces(list);
                 if (root.dirty && !monProc.running)
                     debounce.restart();
             }
@@ -200,6 +267,7 @@ Singleton {
 
     Connections {
         target: Hyprland
+        enabled: !root.useToplevels && !root.useRust
         /** Only the events that can flip a monitor's fullscreen state. */
         function onRawEvent(event) {
             switch (event.name) {

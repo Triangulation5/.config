@@ -72,7 +72,97 @@ Singleton {
         return mons.length === 1 ? mons[0].name : "";
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    function applyRules(rules) {
+        if (!rules)
+            return;
+        var map = {};
+        for (var i = 0; i < rules.length; i++) {
+            var ws = parseInt(rules[i].workspaceString);
+            if (!(ws >= 1))
+                continue;
+            var mon = rules[i].monitor || root.fallbackMonitor();
+            if (!mon)
+                continue;
+            if (!map[mon])
+                map[mon] = [];
+            map[mon].push(ws);
+        }
+        root.ruledByMonitor = map;
+    }
+
+    function applyLive(list) {
+        if (!list)
+            return;
+        var map = {};
+        for (var i = 0; i < list.length; i++) {
+            /** Only numbered workspaces: special/named ones are not dots. */
+            var ws = parseInt(list[i].name);
+            if (!(ws >= 1))
+                continue;
+            var mon = list[i].monitor;
+            if (!mon)
+                continue;
+            if (!map[mon])
+                map[mon] = [];
+            map[mon].push(ws);
+        }
+        root.liveByMonitor = map;
+    }
+
+    Process {
+        id: rustProc
+        command: [root.watcherRunner, "hypr-workspacerules"]
+        running: root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!line || line.trim().length === 0)
+                    return;
+                try {
+                    var msg = JSON.parse(line);
+                    if (msg) {
+                        root.applyRules(msg.rules);
+                        root.applyLive(msg.workspaces);
+                    }
+                } catch (e) {
+                }
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                root.rustUnavailable = true;
+                root.refresh();
+                return;
+            }
+            if (root.useRust)
+                rustRespawn.restart();
+        }
+    }
+
+    Timer {
+        id: rustRespawn
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (root.useRust && !rustProc.running)
+                rustProc.running = true;
+        }
+    }
+
     function refresh() {
+        if (root.useRust)
+            return;
         if (!rulesProc.running)
             rulesProc.running = true;
         else
@@ -94,21 +184,7 @@ Singleton {
                 } catch (e) {
                     rules = null;
                 }
-                if (rules) {
-                    var map = {};
-                    for (var i = 0; i < rules.length; i++) {
-                        var ws = parseInt(rules[i].workspaceString);
-                        if (!(ws >= 1))
-                            continue;
-                        var mon = rules[i].monitor || root.fallbackMonitor();
-                        if (!mon)
-                            continue;
-                        if (!map[mon])
-                            map[mon] = [];
-                        map[mon].push(ws);
-                    }
-                    root.ruledByMonitor = map;
-                }
+                root.applyRules(rules);
                 if (root.rulesPending) {
                     root.rulesPending = false;
                     rulesProc.running = true;
@@ -128,22 +204,7 @@ Singleton {
                 } catch (e) {
                     list = null;
                 }
-                if (list) {
-                    var map = {};
-                    for (var i = 0; i < list.length; i++) {
-                        /** Only numbered workspaces: special/named ones are not dots. */
-                        var ws = parseInt(list[i].name);
-                        if (!(ws >= 1))
-                            continue;
-                        var mon = list[i].monitor;
-                        if (!mon)
-                            continue;
-                        if (!map[mon])
-                            map[mon] = [];
-                        map[mon].push(ws);
-                    }
-                    root.liveByMonitor = map;
-                }
+                root.applyLive(list);
                 if (root.livePending) {
                     root.livePending = false;
                     liveProc.running = true;
@@ -154,6 +215,7 @@ Singleton {
 
     Connections {
         target: Hyprland
+        enabled: !root.useRust
         /**
          * Only the events that change which workspaces exist or which monitor
          * they sit on. A plain switch between existing workspaces changes
@@ -174,5 +236,5 @@ Singleton {
         }
     }
 
-    Component.onCompleted: refresh()
+    Component.onCompleted: if (!root.useRust) refresh()
 }

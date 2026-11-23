@@ -58,10 +58,62 @@ Singleton {
     property bool probeSettled: false
     property int probeIntervalMs: 4000
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    function applyProbePath(p) {
+        if (p.length === 0) {
+            root.active = false;
+            root._watch.path = "";
+            root.probeSettled = false;
+            return;
+        }
+        root.probeIntervalMs = 4000;
+        root.probeSettled = true;
+        if (p !== root._watch.path) {
+            root._watch.path = p;
+            watcher.path = p;
+            watcher.reload();
+        }
+    }
+
     function probeProfiles() {
+        if (root.useRust) {
+            if (!rustProbeProc.running)
+                rustProbeProc.running = true;
+            return;
+        }
         if (probeProc.running)
             return;
         probeProc.running = true;
+    }
+
+    Process {
+        id: rustProbeProc
+        command: [root.watcherRunner, "downloads-probe"]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustProbeProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                rustProbeProc.body = "";
+                root.rustUnavailable = true;
+                probeProc.running = true;
+                return;
+            }
+            root.applyProbePath(rustProbeProc.body.trim());
+            rustProbeProc.body = "";
+        }
     }
 
     /**
@@ -79,19 +131,7 @@ Singleton {
             function onStreamFinished() {
                 var line = this.text.trim();
                 var p = line.length > 0 ? line.replace(/^\S+\s+/, "") : "";
-                if (p.length === 0) {
-                    root.active = false;
-                    root._watch.path = "";
-                    root.probeSettled = false;
-                    return;
-                }
-                root.probeIntervalMs = 4000;
-                root.probeSettled = true;
-                if (p !== root._watch.path) {
-                    root._watch.path = p;
-                    watcher.path = p;
-                    watcher.reload();
-                }
+                root.applyProbePath(p);
             }
         }
     }
@@ -161,17 +201,39 @@ Singleton {
             root.speed = 0;
         }
         root._watch.target = targetPath;
+        root.statTarget = targetPath;
         root.bytesTotal = best.totalBytes || 0;
         root.fileName = String(path || "").replace(/\\/g, "/").split("/").pop();
         root.active = true;
     }
 
-    /** 1s tick while a download is live: stat the growing file for size/speed. */
+    /** Persistent native stat watcher while a download is live (zero 1s forks). */
+    Process {
+        id: rustStatProc
+        command: [root.watcherRunner, "stat-watch", root.statTarget, "--interval", "1000"]
+        running: root.active && root.statTarget.length > 0 && root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!root.active)
+                    return;
+                var b = parseInt(line.trim(), 10);
+                if (isNaN(b) || b < 0)
+                    b = 0;
+                root.applyBytes(b);
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127)
+                root.rustUnavailable = true;
+        }
+    }
+
+    /** Fallback 1s tick while a download is live: stat the growing file for size/speed. */
     Timer {
         id: statTimer
         interval: 1000
         repeat: true
-        running: root.active
+        running: root.active && !root.useRust
         onTriggered: {
             if (statProc.running)
                 return;

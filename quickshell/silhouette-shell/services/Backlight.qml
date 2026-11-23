@@ -18,21 +18,50 @@ Singleton {
 
     signal changed()
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    function applyPctLine(line) {
+        var pct = parseInt(line.trim(), 10);
+        if (isNaN(pct))
+            return;
+        var seen = root.lastPct >= 0;
+        root.present = true;
+        root.brightness = Math.max(0, Math.min(100, pct)) / 100.0;
+        root.lastPct = pct;
+        if (seen)
+            root.changed();
+    }
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
     Process {
-        command: ["sh", "-c", "dev=$(ls /sys/class/backlight 2>/dev/null | head -n1); [ -n \"$dev\" ] || exit 0; max=$(cat /sys/class/backlight/$dev/max_brightness); last=\"\"; while true; do val=$(cat /sys/class/backlight/$dev/brightness); if [ \"$val\" != \"$last\" ]; then echo \"$(( val * 100 / max ))\"; last=\"$val\"; fi; sleep 1; done"]
-        running: true
+        id: rustProc
+        command: [root.watcherRunner, "backlight-watch"]
+        running: root.useRust
         stdout: SplitParser {
-            onRead: (line) => {
-                var pct = parseInt(line.trim(), 10);
-                if (isNaN(pct))
-                    return;
-                var seen = root.lastPct >= 0;
-                root.present = true;
-                root.brightness = Math.max(0, Math.min(100, pct)) / 100.0;
-                root.lastPct = pct;
-                if (seen)
-                    root.changed();
-            }
+            onRead: (line) => root.applyPctLine(line)
+        }
+        onExited: function(exitCode) {
+            /** Exit 0 means no backlight device exists on this machine; non-zero falls back to sh. */
+            if (exitCode !== undefined && exitCode !== 0)
+                root.rustUnavailable = true;
+        }
+    }
+
+    Process {
+        id: shProc
+        command: ["sh", "-c", "dev=$(ls /sys/class/backlight 2>/dev/null | head -n1); [ -n \"$dev\" ] || exit 0; max=$(cat /sys/class/backlight/$dev/max_brightness); last=\"\"; while true; do val=$(cat /sys/class/backlight/$dev/brightness); if [ \"$val\" != \"$last\" ]; then echo \"$(( val * 100 / max ))\"; last=\"$val\"; fi; sleep 1; done"]
+        running: !root.useRust
+        stdout: SplitParser {
+            onRead: (line) => root.applyPctLine(line)
         }
     }
 }

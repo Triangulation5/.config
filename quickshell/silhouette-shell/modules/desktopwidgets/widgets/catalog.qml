@@ -543,10 +543,31 @@ Item {
         }
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustWatcherUnavailable: false
+    readonly property bool useRustWatcher: Flags.useRustTools && !root.rustWatcherUnavailable
+
+    Process {
+        id: rustClaudeProc
+        command: [root.watcherRunner, "proc-watch", "--mode", "claude", "--interval", "5000"]
+        running: root.widgetId === "claudeCode" && root.useRustWatcher
+        stdout: SplitParser {
+            onRead: (line) => {
+                var p = line.trim().split(/\s+/);
+                if (p[0] === "COUNT")
+                    root.claudeProcessCount = parseInt(p[1], 10) || 0;
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127)
+                root.rustWatcherUnavailable = true;
+        }
+    }
+
     Timer {
         interval: 5000
         repeat: true
-        running: root.widgetId === "claudeCode"
+        running: root.widgetId === "claudeCode" && !root.useRustWatcher
         triggeredOnStart: true
         onTriggered: root.refreshClaudeStatus()
     }
