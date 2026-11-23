@@ -67,9 +67,16 @@ Singleton {
             "_", root.stateFile, String(Math.round(pct))]);
     }
 
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
     function detect() {
         ddcDetect.running = true;
-        blDetect.running = true;
+        if (root.useRust)
+            rustBlDetect.running = true;
+        else
+            blDetect.running = true;
     }
 
     function setBrightness(bus, pct) {
@@ -119,6 +126,34 @@ Singleton {
                 }
                 root.ddcMonitors = mons;
             }
+        }
+    }
+
+    Process {
+        id: rustBlDetect
+        command: [root.rustBin, "device-ctl", "backlight"]
+        running: false
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustBlDetect.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 0 && rustBlDetect.body.trim().length > 0) {
+                try {
+                    var parsed = JSON.parse(rustBlDetect.body);
+                    if (parsed && typeof parsed.present === "boolean") {
+                        root.backlightPresent = parsed.present;
+                        if (parsed.present && typeof parsed.pct === "number")
+                            root.backlightPct = Math.max(1, Math.min(100, parsed.pct));
+                        rustBlDetect.body = "";
+                        return;
+                    }
+                } catch (e) {
+                }
+            }
+            rustBlDetect.body = "";
+            root.rustUnavailable = true;
+            blDetect.running = true;
         }
     }
 

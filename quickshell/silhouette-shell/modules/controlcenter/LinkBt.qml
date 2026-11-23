@@ -114,14 +114,18 @@ LinkDrillIn {
             d.forget();
     }
 
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+
     function pairDevice(d) {
         if (!d || !d.address || pairProc.running)
             return;
         pairingAddress = d.address;
         failedAddress = "";
-        pairProc.command = ["sh", "-c",
-            'timeout 30 bluetoothctl pair "$1" && bluetoothctl trust "$1" && timeout 30 bluetoothctl connect "$1"',
-            "sh", d.address];
+        pairProc.command = Flags.useRustTools
+            ? [root.rustBin, "device-ctl", "bt-pair", d.address]
+            : ["sh", "-c",
+                'timeout 30 bluetoothctl pair "$1" && bluetoothctl trust "$1" && timeout 30 bluetoothctl connect "$1"',
+                "sh", d.address];
         pairProc.running = true;
     }
 

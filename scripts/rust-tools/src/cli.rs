@@ -47,6 +47,13 @@ pub(crate) enum Commands {
         #[arg(long)]
         scripts_dir: Option<PathBuf>,
     },
+    #[command(name = "launcher-match")]
+    LauncherMatch,
+    #[command(name = "device-ctl")]
+    DeviceCtl {
+        operation: String,
+        arg: Option<String>,
+    },
     Backup {
         #[arg(value_enum)]
         action: BackupAction,

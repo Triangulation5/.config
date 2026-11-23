@@ -2,6 +2,8 @@ mod apps;
 mod backup;
 mod cli;
 mod config;
+mod devices;
+mod launcher;
 mod model;
 mod polkit;
 mod privacy;
@@ -83,6 +85,8 @@ fn main() {
         ),
         Commands::PolkitAgent { config } => polkit::run(config.as_deref()),
         Commands::Watchdog { name, scripts_dir } => watchdog::run(&name, scripts_dir.as_deref()),
+        Commands::LauncherMatch => launcher::run(),
+        Commands::DeviceCtl { operation, arg } => devices::run(&operation, arg.as_deref()),
         Commands::Backup {
             action,
             name,

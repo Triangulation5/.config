@@ -79,12 +79,20 @@ LinkDrillIn {
 
     implicitHeight: hsBlock.y + hsBlock.height
 
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
     function isSecured(ssid) {
         var sec = securityMap[ssid];
         return sec !== undefined && sec !== "" && sec !== "--";
     }
 
     function refresh() {
+        if (root.useRust) {
+            rustWifiProc.running = true;
+            return;
+        }
         secProc.running = true;
         profProc.running = true;
     }
@@ -320,8 +328,37 @@ LinkDrillIn {
     }
 
     Process {
+        id: rustWifiProc
+        command: [root.rustBin, "device-ctl", "wifi-state"]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustWifiProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 0 && rustWifiProc.body.trim().length > 0) {
+                try {
+                    var parsed = JSON.parse(rustWifiProc.body);
+                    if (parsed && parsed.securityMap && parsed.knownProfiles) {
+                        root.securityMap = parsed.securityMap;
+                        root.knownProfiles = parsed.knownProfiles;
+                        rustWifiProc.body = "";
+                        return;
+                    }
+                } catch (e) {
+                }
+            }
+            rustWifiProc.body = "";
+            root.rustUnavailable = true;
+            secProc.running = true;
+            profProc.running = true;
+        }
+    }
+
+    Process {
         id: rescanProc
-        command: ["nmcli", "dev", "wifi", "rescan"]
+        command: root.useRust
+            ? [root.rustBin, "device-ctl", "wifi-rescan"]
+            : ["nmcli", "dev", "wifi", "rescan"]
     }
 
     Process {
