@@ -34,6 +34,7 @@ Singleton {
     property var cachedEntries: []
     property var cachedUsage: ({})
     property string cachedQuery: ""
+    property bool procReady: false
     property bool indexSent: false
 
     Connections {
@@ -54,6 +55,8 @@ Singleton {
             proc.running = true;
             return;
         }
+        if (!root.procReady)
+            return;
         sendIndexAndQuery();
     }
 
@@ -65,6 +68,8 @@ Singleton {
             proc.running = true;
             return;
         }
+        if (!root.procReady)
+            return;
         if (!root.indexSent) {
             sendIndexAndQuery();
             return;
@@ -78,11 +83,17 @@ Singleton {
         var payload = new Array(list.length);
         for (var i = 0; i < list.length; i++) {
             var e = list[i];
+            var rawKw = e && e.keywords ? e.keywords : null;
+            var kwList = [];
+            if (rawKw && rawKw.length) {
+                for (var k = 0; k < rawKw.length; k++)
+                    kwList.push(String(rawKw[k]));
+            }
             payload[i] = {
                 id: e && e.id ? String(e.id) : "",
                 name: e && e.name ? String(e.name) : "",
                 genericName: e && e.genericName ? String(e.genericName) : "",
-                keywords: e && e.keywords ? e.keywords : []
+                keywords: kwList
             };
         }
         proc.write(JSON.stringify({ cmd: "index", entries: payload }) + "\n");
@@ -116,10 +127,19 @@ Singleton {
         running: root.active && root.useRust
 
         onStarted: {
+            root.procReady = true;
             root.indexSent = false;
             root.hasResult = false;
             if (root.cachedEntries.length > 0)
                 root.sendIndexAndQuery();
+        }
+
+        onRunningChanged: {
+            if (!running) {
+                root.procReady = false;
+                root.indexSent = false;
+                root.hasResult = false;
+            }
         }
 
         stdout: SplitParser {
@@ -141,6 +161,7 @@ Singleton {
         }
 
         onExited: function (exitCode) {
+            root.procReady = false;
             root.indexSent = false;
             root.hasResult = false;
             if (root.active && root.useRust && exitCode !== 0)

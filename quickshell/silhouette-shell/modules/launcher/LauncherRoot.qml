@@ -61,6 +61,8 @@ ShellRoot {
     }
 
     onShownChanged: {
+        if (!root.shown)
+            root.query = "";
         LauncherMatch.active = root.shown || BarLauncher.open;
         if (root.shown)
             LauncherMatch.sync(allEntries, query, usage);
