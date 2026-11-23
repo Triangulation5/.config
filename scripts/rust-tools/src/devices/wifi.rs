@@ -126,7 +126,11 @@ pub(crate) fn query_state() -> Result<WifiState, String> {
             let rsn = get_prop(&conn, ap.as_str(), NM_AP_IFACE, "RsnFlags")
                 .and_then(|v| u32::try_from(&v).ok())
                 .unwrap_or(0);
-            security_map.insert(ssid, format_security(flags, wpa, rsn));
+            let sec = format_security(flags, wpa, rsn);
+            let entry = security_map.entry(ssid).or_default();
+            if entry.is_empty() || sec.len() > entry.len() {
+                *entry = sec;
+            }
         }
     }
 
@@ -196,4 +200,18 @@ pub(crate) fn request_rescan() -> Result<(), String> {
         );
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn formats_ap_security_flags() {
+        assert_eq!(format_security(0, 0, 0), "");
+        assert_eq!(format_security(0x1, 0, 0), "WEP");
+        assert_eq!(format_security(0x1, 0, 0x100), "WPA2");
+        assert_eq!(format_security(0x1, 0, 0x400), "WPA3");
+        assert_eq!(format_security(0x1, 0x100, 0x100), "WPA1 WPA2");
+    }
 }

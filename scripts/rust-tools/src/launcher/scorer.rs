@@ -198,3 +198,32 @@ fn subsequence_unicode(needle: &str, hay: &str) -> Option<i32> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ranks_by_usage_tier_and_subsequence() {
+        let mut matcher = Matcher::new();
+        matcher.set_entries(vec![
+            IndexedEntry::new("firefox".into(), "Firefox", Some("Web Browser"), &["web".into()], 0),
+            IndexedEntry::new("kitty".into(), "Kitty", Some("Terminal"), &["shell".into()], 0),
+            IndexedEntry::new("files".into(), "Files", Some("File Manager"), &["folder".into()], 0),
+        ]);
+        matcher.set_usage(HashMap::from([("kitty".into(), 5), ("firefox".into(), 2)]));
+
+        let mut out = Vec::new();
+        matcher.rank("", &mut out);
+        assert_eq!(out, vec![1, 0, 2]);
+
+        matcher.rank("fi", &mut out);
+        assert_eq!(out, vec![0, 2]);
+
+        matcher.rank("ff", &mut out);
+        assert_eq!(out, vec![0]);
+
+        matcher.rank("shell", &mut out);
+        assert_eq!(out, vec![1]);
+    }
+}

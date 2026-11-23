@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     env, fs,
     io::{BufRead, BufReader, Write},
+    os::unix::process::CommandExt,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{
@@ -25,6 +26,12 @@ const AUTHORITY_IFACE: &str = "org.freedesktop.PolicyKit1.Authority";
 const HELPER_PATH: &str = "/usr/lib/polkit-1/polkit-agent-helper-1";
 const POLL_MS: u64 = 50;
 const IDLE_TIMEOUT_SECS: u64 = 5 * 60;
+const PR_SET_PDEATHSIG: i32 = 1;
+const SIGTERM: i32 = 15;
+
+extern "C" {
+    fn prctl(option: i32, arg2: usize, arg3: usize, arg4: usize, arg5: usize) -> i32;
+}
 
 #[derive(DBusError, Debug)]
 #[zbus(prefix = "org.freedesktop.PolicyKit1.Error")]
@@ -104,12 +111,21 @@ impl PolkitAgent {
             user.clone(),
         ]);
 
-        let mut child = match Command::new(HELPER_PATH)
+        let mut helper_cmd = Command::new(HELPER_PATH);
+        helper_cmd
             .arg(&user)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
+            .stderr(Stdio::null());
+        // SAFETY: `prctl(PR_SET_PDEATHSIG, SIGTERM)` is async-signal-safe and ensures
+        // the helper is terminated if the polkit agent dies unexpectedly.
+        unsafe {
+            helper_cmd.pre_exec(|| {
+                prctl(PR_SET_PDEATHSIG, SIGTERM as usize, 0, 0, 0);
+                Ok(())
+            });
+        }
+        let mut child = match helper_cmd.spawn()
         {
             Ok(child) => child,
             Err(error) => {

@@ -3,8 +3,16 @@ use serde_json::{Deserializer, Value};
 use std::{
     collections::{BTreeSet, HashMap},
     io::{self, BufReader, Write},
+    os::unix::process::CommandExt,
     process::{Command, Stdio},
 };
+
+const PR_SET_PDEATHSIG: i32 = 1;
+const SIGTERM: i32 = 15;
+
+extern "C" {
+    fn prctl(option: i32, arg2: usize, arg3: usize, arg4: usize, arg5: usize) -> i32;
+}
 
 #[derive(Default, PartialEq, Eq, Serialize)]
 struct SourceUsers {
@@ -193,11 +201,20 @@ fn apply_batch(
 }
 
 pub(crate) fn watch() -> Result<(), String> {
-    let mut child = Command::new("pw-dump")
-        .args(["--monitor", "--no-colors"])
+    let mut cmd = Command::new("pw-dump");
+    cmd.args(["--monitor", "--no-colors"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::null());
+    // SAFETY: `prctl(PR_SET_PDEATHSIG, SIGTERM)` is async-signal-safe and ensures
+    // `pw-dump` is automatically terminated if `silhouette-tools` exits or is killed.
+    unsafe {
+        cmd.pre_exec(|| {
+            prctl(PR_SET_PDEATHSIG, SIGTERM as usize, 0, 0, 0);
+            Ok(())
+        });
+    }
+    let mut child = cmd
         .spawn()
         .map_err(|error| format!("failed to spawn pw-dump: {error}"))?;
 
@@ -235,4 +252,39 @@ pub(crate) fn watch() -> Result<(), String> {
     let _ = child.kill();
     let _ = child.wait();
     Err("pw-dump stream ended".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn cleans_app_and_device_names() {
+        assert_eq!(clean_app("/usr/bin/pw-record"), "pw-record");
+        assert_eq!(clean_app("Firefox (123)"), "Firefox");
+        assert_eq!(clean_app("cava on core"), "cava");
+        assert_eq!(clean_app("alsa_input.pci-0000"), "");
+        assert_eq!(clean_device("Built-in Audio  [active]"), "Built-in Audio");
+    }
+
+    #[test]
+    fn tracks_stream_addition_and_removal() {
+        let mut nodes = HashMap::new();
+        let mut links = HashMap::new();
+        let batch = vec![
+            json!({"id": 10, "type": "PipeWire:Interface:Node", "info": {"props": {"media.class": "Audio/Source", "node.description": "Built-in Mic"}}}),
+            json!({"id": 20, "type": "PipeWire:Interface:Node", "info": {"props": {"media.class": "Stream/Input/Audio", "application.name": "OBS"}}}),
+            json!({"id": 30, "type": "PipeWire:Interface:Link", "info": {"output-node-id": 10, "input-node-id": 20}}),
+        ];
+        apply_batch(batch, &mut nodes, &mut links);
+        let snap = build_snapshot(&nodes, &links);
+        assert_eq!(snap.audio_in.apps, vec!["OBS"]);
+        assert_eq!(snap.audio_in.devices, vec!["Built-in Mic"]);
+        assert!(snap.camera.apps.is_empty());
+
+        apply_batch(vec![json!({"id": 20, "info": null})], &mut nodes, &mut links);
+        let after = build_snapshot(&nodes, &links);
+        assert!(after.audio_in.apps.is_empty());
+    }
 }
