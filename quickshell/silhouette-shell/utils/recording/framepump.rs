@@ -14,6 +14,8 @@
 //! stdout: one line `rate <float>` once ffmpeg is running.
 //! Exit:   0 = clean finish, 1 = no frames / bad args / ffmpeg crashed.
 
+mod portal;
+
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::os::raw::{c_int, c_short, c_ulong};
@@ -44,7 +46,7 @@ const POLLIN: c_short = 1;
 const CHUNK: usize = 1 << 18;
 const NO_FRAME_LIMIT: Duration = Duration::from_secs(30);
 
-fn wait_readable(fd: c_int, ms: i32) -> bool {
+pub(crate) fn wait_readable(fd: c_int, ms: i32) -> bool {
     let mut p = PollFd { fd, events: POLLIN, revents: 0 };
     // POLLHUP/POLLERR also return > 0, and the following read reports EOF.
     unsafe { poll(&mut p, 1, ms) > 0 }
@@ -111,6 +113,10 @@ fn wait_child(child: &mut Child, limit: Duration) {
 }
 
 fn main() {
+    let raw_args: Vec<String> = std::env::args().skip(1).collect();
+    if raw_args.first().map(|s| s.as_str()) == Some("--portal") {
+        portal::run_portal(&raw_args[1..]);
+    }
     let o = parse();
     // Stop is signalled by gst's EOF; a stray SIGINT/SIGTERM must not kill the
     // pump before ffmpeg is wrapped up. ffmpeg gets default handlers back.

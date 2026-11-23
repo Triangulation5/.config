@@ -52,7 +52,9 @@ Item {
      */
     Process {
         id: windowProc
-        command: ["sh", "-c", "hyprctl clients -j | jq -r '.[] | \"\\(.at[0]),\\(.at[1]) \\(.size[0])x\\(.size[1])\"' | slurp -f \"%wx%h+%x+%y\""]
+        command: root.useRust
+            ? [root.watcherRunner, "hypr-slurp"]
+            : ["sh", "-c", "hyprctl clients -j | jq -r '.[] | \"\\(.at[0]),\\(.at[1]) \\(.size[0])x\\(.size[1])\"' | slurp -f \"%wx%h+%x+%y\""]
         stdout: StdioCollector {
             onStreamFinished: {
                 var geom = this.text.trim();
@@ -63,6 +65,11 @@ Item {
             }
         }
         onExited: function(exitCode) {
+            if (exitCode === 127 && root.useRust) {
+                root.rustUnavailable = true;
+                windowProc.running = true;
+                return;
+            }
             if (exitCode !== 0)
                 root.host.targetAborted();
         }
@@ -222,6 +229,55 @@ Item {
             root.host.currentFile.substring(root.host.currentFile.lastIndexOf("/") + 1)]
     }
 
+    function refreshRecent() {
+        if (rustThumbProc.running || thumbProc.running || listProc.running)
+            return;
+        if (root.useRust) {
+            rustThumbProc.running = true;
+            return;
+        }
+        thumbProc.running = true;
+    }
+
+    Process {
+        id: rustThumbProc
+        command: [root.watcherRunner, "thumbs-rec", root.host.outDir, root.host.thumbDir,
+            String(Math.max(1, Flags.recHistoryMax)), String(Flags.recordClearedBefore)]
+        property string body: ""
+        stdout: StdioCollector {
+            onStreamFinished: rustThumbProc.body = this.text
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127) {
+                rustThumbProc.body = "";
+                root.rustUnavailable = true;
+                thumbProc.running = true;
+                return;
+            }
+            if (exitCode === 0 && rustThumbProc.body.trim().length > 0) {
+                try {
+                    var parsed = JSON.parse(rustThumbProc.body);
+                    if (Array.isArray(parsed)) {
+                        var out = [];
+                        for (var i = 0; i < parsed.length; i++) {
+                            var r = parsed[i];
+                            out.push({
+                                path: r.path,
+                                name: r.name,
+                                mtime: r.mtime,
+                                sizeLabel: root.host.humanSize(r.bytes),
+                                thumb: r.thumb
+                            });
+                        }
+                        root.host.recent = out;
+                    }
+                } catch (e) {
+                }
+            }
+            rustThumbProc.body = "";
+        }
+    }
+
     Process {
         id: thumbProc
         command: ["sh", root.host.thumbScript, root.host.outDir]
@@ -259,13 +315,58 @@ Item {
         }
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustUnavailable: false
+    readonly property bool useRust: Flags.useRustTools && !root.rustUnavailable
+
+    Connections {
+        target: Flags
+        function onUseRustToolsChanged() {
+            if (Flags.useRustTools)
+                root.rustUnavailable = false;
+        }
+    }
+
+    function applyPollState(running) {
+        if (running && root.host.backend === "ffmpeg" && !root.host.ffCaptureStarted)
+            return;
+        if (running && root.host.backend === "gsr") {
+            root.host.gsrAliveTicks += 1;
+            if (root.host.gsrAliveTicks >= 2)
+                root.host.gsrConfirmed = true;
+        }
+        if (running !== root.host.recording) {
+            root.host.recording = running;
+            if (!running)
+                Qt.callLater(root.host.refreshRecent);
+        }
+    }
+
     /**
-     * The portal capture script drops a `<output>.capturing` sentinel next to
-     * the clip once gst and ffmpeg are really running. Until then it is still
-     * sitting on the share picker, and the shell must not call a running python
-     * process a live recording. A sentinel file is used rather than the
-     * script's stdout because StdioCollector only delivers text when the stream
-     * ends — which for a recorder is after the stop.
+     * Native inotify waiter for the `<output>.capturing` sentinel: eliminates
+     * the 300ms `sh -c "test -f"` polling loop while waiting on the share picker.
+     */
+    Process {
+        id: rustMarkerProc
+        command: [root.watcherRunner, "file-wait", root.host.ffMarkerPath]
+        running: root.host && root.host.backend === "ffmpeg" && recProc.running
+            && !root.host.ffCaptureStarted && root.host.ffMarkerPath.length > 0 && root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (line.trim().length === 0)
+                    return;
+                root.host.ffCaptureStarted = true;
+                root.host.recording = true;
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127)
+                root.rustUnavailable = true;
+        }
+    }
+
+    /**
+     * Fallback sentinel check when Rust watchers are unavailable.
      */
     Process {
         id: markerProc
@@ -282,43 +383,46 @@ Item {
 
     Timer {
         interval: 300
-        running: root.host.backend === "ffmpeg" && recProc.running && !root.host.ffCaptureStarted
+        running: root.host.backend === "ffmpeg" && recProc.running && !root.host.ffCaptureStarted && !root.useRust
         repeat: true
         onTriggered: if (!markerProc.running) markerProc.running = true
     }
 
     /**
-     * Poll the real recorder process so the flag tracks gsr started or stopped
-     * from anywhere, not just this surface. The ffmpeg fallback only counts as
-     * recording once its sentinel showed up, so a script sitting on the share
-     * picker never flips the UI on. On a save the recent list re-reads so the
-     * new file appears.
+     * Native persistent `/proc` scanner: replaces the 1s `pgrep -f` fork loop
+     * while recording or while the recorder surface is open.
+     */
+    Process {
+        id: rustPollProc
+        command: [root.watcherRunner, "proc-watch", "--mode", "rec", "--interval", "1000"]
+        running: root.host && (root.host.recording || root.host.recorderOpen || recProc.running) && root.useRust
+        stdout: SplitParser {
+            onRead: (line) => {
+                var p = line.trim().split(/\s+/);
+                if (p[0] === "COUNT")
+                    root.applyPollState((parseInt(p[1], 10) || 0) > 0);
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127)
+                root.rustUnavailable = true;
+        }
+    }
+
+    /**
+     * Fallback recorder process poll when Rust watchers are unavailable.
      */
     Process {
         id: pollProc
-        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder|portal_capture.py"]
+        command: ["pgrep", "-f", "(^|/)gpu-screen-recorder|portal_capture\\.py|framepump.*--portal"]
         stdout: StdioCollector {
-            onStreamFinished: {
-                var running = this.text.trim().length > 0;
-                if (running && root.host.backend === "ffmpeg" && !root.host.ffCaptureStarted)
-                    return;
-                if (running && root.host.backend === "gsr") {
-                    root.host.gsrAliveTicks += 1;
-                    if (root.host.gsrAliveTicks >= 2)
-                        root.host.gsrConfirmed = true;
-                }
-                if (running !== root.host.recording) {
-                    root.host.recording = running;
-                    if (!running)
-                        Qt.callLater(root.host.refreshRecent);
-                }
-            }
+            onStreamFinished: root.applyPollState(this.text.trim().length > 0)
         }
     }
 
     Timer {
         interval: 1000
-        running: root.host.recording || root.host.recorderOpen || recProc.running
+        running: (root.host.recording || root.host.recorderOpen || recProc.running) && !root.useRust
         repeat: true
         onTriggered: if (!pollProc.running) pollProc.running = true
     }

@@ -330,8 +330,8 @@ Singleton {
      * the user — no root, no pkexec — and stop() signals the script directly.
      */
     function buildFfmpegArgs(file) {
-        var script = Qt.resolvedUrl("../utils/recording/portal_capture.py").toString().replace(/^file:\/\//, "");
-        var args = ["python3", script,
+        var runner = Qt.resolvedUrl("../utils/recording/run.sh").toString().replace(/^file:\/\//, "");
+        var args = [runner,
                     "--output", file,
                     "--fps", String(fps),
                     "--crf", String(qualityCrf()),
@@ -402,9 +402,7 @@ Singleton {
      * a thumb run already in flight is left to finish rather than stacked.
      */
     function refreshRecent() {
-        if (recEngine.thumbProc.running)
-            return;
-        recEngine.thumbProc.running = true;
+        recEngine.refreshRecent();
     }
 
     /**
