@@ -52,7 +52,22 @@ ShellRoot {
     }
 
     readonly property int totalCount: allEntries.length
-    readonly property var results: root.shown ? Fuzzy.rank(allEntries, query, usage) : []
+    readonly property var results: {
+        if (!root.shown)
+            return [];
+        void LauncherMatch.lastSeq;
+        var rust = LauncherMatch.resolve(allEntries);
+        return rust !== null ? rust : Fuzzy.rank(allEntries, query, usage);
+    }
+
+    onShownChanged: {
+        LauncherMatch.active = root.shown || BarLauncher.open;
+        if (root.shown)
+            LauncherMatch.sync(allEntries, query, usage);
+    }
+    onAllEntriesChanged: if (root.shown) LauncherMatch.sync(allEntries, query, usage)
+    onUsageChanged: if (root.shown) LauncherMatch.sync(allEntries, query, usage)
+    onQueryChanged: if (root.shown) LauncherMatch.sendQuery(query)
 
     function run(entry) {
         if (entry) {

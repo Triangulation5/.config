@@ -52,7 +52,17 @@ Singleton {
     }
 
     readonly property int total: allEntries.length
-    readonly property var results: root.open ? Fuzzy.rank(allEntries, query, usage) : []
+    readonly property var results: {
+        if (!root.open)
+            return [];
+        void LauncherMatch.lastSeq;
+        var rust = LauncherMatch.resolve(allEntries);
+        return rust !== null ? rust : Fuzzy.rank(allEntries, query, usage);
+    }
+
+    onAllEntriesChanged: if (root.open) LauncherMatch.sync(allEntries, query, usage)
+    onUsageChanged: if (root.open) LauncherMatch.sync(allEntries, query, usage)
+    onQueryChanged: if (root.open) LauncherMatch.sendQuery(query)
 
     readonly property string guardScript: Quickshell.env("HOME") + "/.config/scripts/launch-guard.sh"
 
@@ -162,7 +172,10 @@ Singleton {
 
     /** Take the latest usage counts each time it opens. */
     onOpenChanged: {
-        if (root.open)
+        LauncherMatch.active = root.open;
+        if (root.open) {
             usageStore.reload();
+            LauncherMatch.sync(allEntries, query, usage);
+        }
     }
 }
