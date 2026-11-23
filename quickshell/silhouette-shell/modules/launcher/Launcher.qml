@@ -75,7 +75,7 @@ PillSurface {
     function copyResult() {
         if (!root.calcActive)
             return;
-        Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", root.calc.display]);
+        Quickshell.execDetached(["wl-copy", "--", root.calc.display]);
         root.calcCopied = true;
     }
 
@@ -141,10 +141,80 @@ PillSurface {
     readonly property bool emojiActive: query.length > 1 && query[0] === ':' && !root.windowActive
     readonly property string emojiQuery: emojiActive ? query.slice(1).trim() : ""
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    readonly property string emojiDbPath: Qt.resolvedUrl("../../utils/launcher/emojis.js").toString().replace(/^file:\/\//, "")
+    property bool rustEmojiUnavailable: false
+    readonly property bool useRustEmoji: Flags.useRustTools && !root.rustEmojiUnavailable
+    property var rustEmojiIndices: []
+    property int rustEmojiSeq: 0
+    property int rustEmojiPendingSeq: 0
+    property bool rustEmojiReady: false
+    property bool rustEmojiHasResult: false
+
+    onEmojiQueryChanged: {
+        if (root.emojiActive && root.useRustEmoji && root.rustEmojiReady) {
+            root.rustEmojiPendingSeq += 1;
+            emojiMatchProc.write(root.rustEmojiPendingSeq + "\t" + root.emojiQuery + "\n");
+        }
+    }
+
+    Process {
+        id: emojiMatchProc
+        command: [root.watcherRunner, "emoji-match", root.emojiDbPath]
+        stdinEnabled: true
+        running: root.emojiActive && root.useRustEmoji
+        onStarted: {
+            root.rustEmojiReady = true;
+            root.rustEmojiHasResult = false;
+            root.rustEmojiPendingSeq += 1;
+            emojiMatchProc.write(root.rustEmojiPendingSeq + "\t" + root.emojiQuery + "\n");
+        }
+        onRunningChanged: {
+            if (!running) {
+                root.rustEmojiReady = false;
+                root.rustEmojiHasResult = false;
+            }
+        }
+        stdout: SplitParser {
+            onRead: (line) => {
+                if (!line || line.trim().length === 0)
+                    return;
+                try {
+                    var msg = JSON.parse(line);
+                    if (msg && typeof msg.seq === "number" && Array.isArray(msg.indices)) {
+                        if (msg.seq >= root.rustEmojiSeq) {
+                            root.rustEmojiSeq = msg.seq;
+                            root.rustEmojiIndices = msg.indices;
+                            root.rustEmojiHasResult = true;
+                        }
+                    }
+                } catch (e) {
+                }
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127)
+                root.rustEmojiUnavailable = true;
+        }
+    }
+
     readonly property var emojiResults: {
         var q = root.emojiQuery.toLowerCase();
         if (q.length === 0)
             return EmojiData.Emojis;
+        if (root.useRustEmoji && root.rustEmojiHasResult) {
+            var idxs = root.rustEmojiIndices;
+            var mapped = new Array(idxs.length);
+            var n = 0;
+            for (var r = 0; r < idxs.length; r++) {
+                var idx = idxs[r];
+                if (idx >= 0 && idx < EmojiData.Emojis.length)
+                    mapped[n++] = EmojiData.Emojis[idx];
+            }
+            if (n !== mapped.length)
+                mapped.length = n;
+            return mapped;
+        }
         var out = [];
         for (var i = 0; i < EmojiData.Emojis.length; i++) {
             if (EmojiData.Emojis[i].n.indexOf(q) !== -1)
@@ -180,25 +250,36 @@ PillSurface {
         return filtered;
     }
 
+    /** Cached lowercase desktop-id -> icon path map so window rows resolve in O(1). */
+    readonly property var windowIconMap: {
+        var apps = DesktopEntries.applications.values;
+        var map = {};
+        for (var i = 0; i < apps.length; i++) {
+            var a = apps[i];
+            if (!a || !a.id || !a.icon)
+                continue;
+            var id = a.id.toLowerCase();
+            var icon = Quickshell.iconPath(a.icon, true);
+            if (!icon)
+                continue;
+            map[id] = icon;
+            if (id.endsWith(".desktop"))
+                map[id.slice(0, -8)] = icon;
+        }
+        return map;
+    }
+
     function iconForWindow(cls) {
         if (!cls || !cls.length)
             return "";
-        var apps = DesktopEntries.applications.values;
-        for (var i = 0; i < apps.length; i++) {
-            var a = apps[i];
-            if (!a || !a.id)
-                continue;
-            var id = a.id.toLowerCase();
-            if (id === cls.toLowerCase() + ".desktop" || id.indexOf(cls.toLowerCase() + ".desktop") === 0)
-                return a.icon ? Quickshell.iconPath(a.icon, true) : "";
-        }
-        return "";
+        var key = cls.toLowerCase();
+        return root.windowIconMap[key] || root.windowIconMap[key + ".desktop"] || "";
     }
 
     function copyEmoji() {
         if (!root.emojiActive || root.emojiResults.length === 0 || selectedIndex < 0 || selectedIndex >= root.emojiResults.length)
             return;
-        Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | wl-copy", "_", root.emojiResults[selectedIndex].e]);
+        Quickshell.execDetached(["wl-copy", "--", root.emojiResults[selectedIndex].e]);
         root.emojiCopied = true;
         root.finish();
     }

@@ -205,11 +205,23 @@ PillSurface {
         onTriggered: Notifs.markAllSeen()
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustIpUnavailable: false
+    readonly property bool useRustIp: Flags.useRustTools && !root.rustIpUnavailable
+
     Process {
         id: ipProc
-        command: ["sh", "-c", "ip -4 -o addr show scope global up | awk '{for(i=1;i<=NF;i++) if($i==\"inet\"){print $(i+1); exit}}' | cut -d/ -f1"]
+        command: root.useRustIp
+            ? [root.watcherRunner, "net-local-ip"]
+            : ["sh", "-c", "ip -4 -o addr show scope global up | awk '{for(i=1;i<=NF;i++) if($i==\"inet\"){print $(i+1); exit}}' | cut -d/ -f1"]
         running: false
         stdout: StdioCollector { onStreamFinished: root.ethIp = this.text.trim() }
+        onExited: function(exitCode) {
+            if (exitCode === 127 && root.useRustIp) {
+                root.rustIpUnavailable = true;
+                ipProc.running = true;
+            }
+        }
     }
 
     Timer {

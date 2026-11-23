@@ -61,7 +61,13 @@ Singleton {
         Quickshell.execDetached(["nvibrant", String(raw), "0", String(raw)]);
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+
     function saveVibrance(pct) {
+        if (Flags.useRustTools) {
+            Quickshell.execDetached([root.watcherRunner, "write-file", root.stateFile, String(Math.round(pct))]);
+            return;
+        }
         Quickshell.execDetached(["sh", "-c",
             'mkdir -p "$(dirname "$1")" && printf "%s\n" "$2" > "$1"',
             "_", root.stateFile, String(Math.round(pct))]);

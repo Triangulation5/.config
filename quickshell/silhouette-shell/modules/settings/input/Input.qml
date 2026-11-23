@@ -268,13 +268,25 @@ SettingsSurface {
         command: ["hyprctl", "setcursor", theme, String(size)]
     }
 
+    readonly property string watcherRunner: Qt.resolvedUrl("../../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
+    property bool rustThemesUnavailable: false
+    readonly property bool useRustThemes: Flags.useRustTools && !root.rustThemesUnavailable
+
     Process {
         id: themeProc
-        command: ["sh", "-c", "{ printf '%s\\n' \"$HOME/.icons\" \"$HOME/.local/share/icons\" /usr/share/icons; printf '%s' \"${XDG_DATA_DIRS:-/usr/local/share:/usr/share}\" | tr ':' '\\n' | sed 's#/*$#/icons#'; } | sort -u | while IFS= read -r d; do [ -d \"$d\" ] || continue; for t in \"$d\"/*/; do [ -d \"$t/cursors\" ] && basename \"$t\"; done; done | sort -u"]
+        command: root.useRustThemes
+            ? [root.watcherRunner, "cursor-themes"]
+            : ["sh", "-c", "{ printf '%s\\n' \"$HOME/.icons\" \"$HOME/.local/share/icons\" /usr/share/icons; printf '%s' \"${XDG_DATA_DIRS:-/usr/local/share:/usr/share}\" | tr ':' '\\n' | sed 's#/*$#/icons#'; } | sort -u | while IFS= read -r d; do [ -d \"$d\" ] || continue; for t in \"$d\"/*/; do [ -d \"$t/cursors\" ] && basename \"$t\"; done; done | sort -u"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var lines = this.text.split("\n").filter(function (l) { return l.trim().length > 0; });
                 root.cursorThemes = lines;
+            }
+        }
+        onExited: function(exitCode) {
+            if (exitCode === 127 && root.useRustThemes) {
+                root.rustThemesUnavailable = true;
+                themeProc.running = true;
             }
         }
     }
