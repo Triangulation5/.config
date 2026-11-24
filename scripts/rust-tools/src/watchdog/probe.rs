@@ -55,7 +55,7 @@ pub(crate) fn resolve_instance(runtime: &Path) -> Option<u32> {
     }
 
     // Newest sockets first, matching `ls -1t`.
-    sockets.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+    sockets.sort_unstable_by_key(|s| std::cmp::Reverse(s.0));
 
     for (_, sock) in sockets {
         if UnixStream::connect(&sock).is_err() {

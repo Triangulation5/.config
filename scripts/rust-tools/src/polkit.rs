@@ -281,8 +281,8 @@ impl PolkitAgent {
             resp_file: self.resp_file.clone(),
             active: Arc::clone(&self.active),
         };
-        let state: Arc<Mutex<(Option<Result<(), PolkitError>>, Option<std::task::Waker>)>> =
-            Arc::new(Mutex::new((None, None)));
+        type ConvState = (Option<Result<(), PolkitError>>, Option<std::task::Waker>);
+        let state: Arc<Mutex<ConvState>> = Arc::new(Mutex::new((None, None)));
         let tx_state = Arc::clone(&state);
         thread::spawn(move || {
             let res = agent.run_conversation(action_id, message, cookie, identities);

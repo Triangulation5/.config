@@ -85,7 +85,7 @@ pub(crate) fn run(name: &str, scripts_dir: Option<&Path>) -> bool {
         let poked = POKED.swap(false, Ordering::SeqCst);
         let alive = shell_pid.is_some_and(probe::is_pid_alive);
 
-        if !poked && tick_count % span != 0 && alive {
+        if !poked && !tick_count.is_multiple_of(span) && alive {
             // Fast path: process is alive, zero forks.
         } else if locked && !alive {
             // Dead while locked: skip full IPC probe to minimize exposed window.

@@ -1,6 +1,7 @@
 mod appimage;
 mod archive;
 mod desktop;
+mod extract;
 mod files;
 mod icons;
 mod registry;

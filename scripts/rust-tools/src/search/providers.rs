@@ -317,12 +317,13 @@ fn search_ddg(query: &str, kind: &str) -> Vec<Entry> {
     };
     let mut entries = Vec::new();
     if let Some(results) = value.get("results").and_then(|v| v.as_array()) {
+        let gif_re = (kind == "still").then(|| Regex::new(r"(?i)\.gif(\?|$)").unwrap());
         for item in results {
             let image = item.get("image").and_then(|v| v.as_str()).unwrap_or("");
             if image.is_empty() {
                 continue;
             }
-            if kind == "still" && Regex::new(r"(?i)\.gif(\?|$)").unwrap().is_match(image) {
+            if gif_re.as_ref().is_some_and(|re| re.is_match(image)) {
                 continue;
             }
             entries.push(Entry {
@@ -369,6 +370,10 @@ fn search_moewalls(query: &str) -> Vec<Entry> {
             break;
         }
     }
+    let preview_re =
+        Regex::new(r#"<source src="(/wp-content/uploads/preview/[^"]+)""#).unwrap();
+    let token_re = Regex::new(r#"id="moe-download"[^>]*data-url="([^"]+)""#).unwrap();
+    let thumb_re = Regex::new(r#"poster="([^"]+)""#).unwrap();
     let mut entries = Vec::new();
     for post in posts {
         let Ok(html) = http
@@ -379,10 +384,6 @@ fn search_moewalls(query: &str) -> Vec<Entry> {
         else {
             continue;
         };
-        let preview_re =
-            Regex::new(r#"<source src="(/wp-content/uploads/preview/[^"]+)""#).unwrap();
-        let token_re = Regex::new(r#"id="moe-download"[^>]*data-url="([^"]+)""#).unwrap();
-        let thumb_re = Regex::new(r#"poster="([^"]+)""#).unwrap();
         let preview = preview_re
             .captures(&html)
             .and_then(|c| c.get(1))

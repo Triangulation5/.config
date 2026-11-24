@@ -67,7 +67,7 @@ fn decode_cliphist_entry(id: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>
         .into());
     }
     if !child.wait()?.success() {
-        return Err(io::Error::new(io::ErrorKind::Other, "cliphist decode failed").into());
+        return Err(io::Error::other("cliphist decode failed").into());
     }
     Ok(bytes)
 }
@@ -103,7 +103,7 @@ fn cliphist_list() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         .into());
     }
     if !child.wait()?.success() {
-        return Err(io::Error::new(io::ErrorKind::Other, "cliphist list failed").into());
+        return Err(io::Error::other("cliphist list failed").into());
     }
     Ok(bytes)
 }

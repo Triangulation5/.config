@@ -29,6 +29,7 @@ pub(super) fn wh_gate(nowait: bool) -> bool {
     let lock_path = base.join("wh-window.lock");
     let lock = match OpenOptions::new()
         .create(true)
+        .truncate(false)
         .read(true)
         .write(true)
         .open(lock_path)
@@ -70,7 +71,7 @@ pub(super) fn wh_gate(nowait: bool) -> bool {
             .as_nanos();
         let mut timestamps = Vec::new();
         if let Ok(file) = File::open(&window) {
-            for line in BufReader::new(file).lines().flatten() {
+            for line in BufReader::new(file).lines().map_while(Result::ok) {
                 if let Ok(timestamp) = line.parse::<u128>() {
                     if timestamp + 60_000_000_000 > now_ns {
                         timestamps.push(timestamp);
@@ -124,11 +125,9 @@ pub(crate) fn whsearch(query: &str, page: u32, want: &str) -> serde_json::Value 
         "hot" | "" => {}
         _ => {}
     }
-    if want == "hot" || want.is_empty() {
-        if query.is_empty() {
-            sort = "toplist";
-            extra = "topRange=1M&";
-        }
+    if (want == "hot" || want.is_empty()) && query.is_empty() {
+        sort = "toplist";
+        extra = "topRange=1M&";
     }
     let mapped = wh_fetch(query, page, sort, extra);
     if mapped.as_array().is_some_and(|v| v.is_empty())

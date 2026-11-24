@@ -149,29 +149,41 @@ fn is_boundary_byte(b: u8) -> bool {
 }
 
 fn subsequence_ascii(needle: &[u8], hay: &[u8]) -> Option<i32> {
-    if needle.len() > hay.len() {
+    let n_len = needle.len();
+    let h_len = hay.len();
+    if n_len == 0 {
+        return Some(0);
+    }
+    if n_len > h_len {
         return None;
     }
     let mut j = 0usize;
     let mut bonus = 0i32;
     let mut last_match: Option<usize> = None;
 
-    for (i, &b) in hay.iter().enumerate() {
-        if b == needle[j] {
-            if i == 0 || is_boundary_byte(hay[i - 1]) {
-                bonus += 6;
-            }
-            if let Some(prev) = last_match {
-                if i == prev + 1 {
-                    bonus += 5;
-                } else {
-                    bonus -= (i - prev - 1).min(8) as i32;
+    // SAFETY: `i < h_len` and `j < n_len` (since we return immediately once `j == n_len`),
+    // and `i > 0` before `i - 1` is read.
+    unsafe {
+        let mut target = *needle.get_unchecked(0);
+        for i in 0..h_len {
+            let b = *hay.get_unchecked(i);
+            if b == target {
+                if i == 0 || is_boundary_byte(*hay.get_unchecked(i - 1)) {
+                    bonus += 6;
                 }
-            }
-            last_match = Some(i);
-            j += 1;
-            if j == needle.len() {
-                return Some(bonus);
+                if let Some(prev) = last_match {
+                    if i == prev + 1 {
+                        bonus += 5;
+                    } else {
+                        bonus -= (i - prev - 1).min(8) as i32;
+                    }
+                }
+                last_match = Some(i);
+                j += 1;
+                if j == n_len {
+                    return Some(bonus);
+                }
+                target = *needle.get_unchecked(j);
             }
         }
     }

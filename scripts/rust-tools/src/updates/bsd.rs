@@ -39,7 +39,6 @@ pub(super) fn parse_pkg_check(output: &str) -> Result<Vec<String>, String> {
                 return name
                     .split_once(':')
                     .map_or(name, |(name, _)| name)
-                    .trim()
                     .split_whitespace()
                     .last()
                     .map(str::to_owned);
