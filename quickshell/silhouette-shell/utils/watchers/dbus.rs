@@ -99,7 +99,7 @@ unsafe fn load_sym<T>(lib: *mut c_void, name: &[u8]) -> Option<T> {
 /// Exits 127 if libdbus-1 is unavailable so QML falls back to `dbus-monitor`.
 pub fn cmd_logind_watch() {
     unsafe {
-        let lib = dlopen(b"libdbus-1.so.3\0".as_ptr() as *const c_char, RTLD_LAZY);
+        let lib = dlopen(c"libdbus-1.so.3".as_ptr(), RTLD_LAZY);
         if lib.is_null() {
             std::process::exit(127);
         }

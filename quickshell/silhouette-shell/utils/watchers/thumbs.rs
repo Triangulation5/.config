@@ -1,5 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
-use std::env;
+use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -8,7 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::UNIX_EPOCH;
 
-fn json_escape(s: &str) -> String {
+pub(crate) fn json_escape(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 2);
     out.push('"');
     for ch in s.chars() {
@@ -37,19 +36,53 @@ fn worker_count(task_len: usize) -> usize {
 }
 
 fn find_magick_bin() -> Option<&'static str> {
-    for bin in ["magick", "convert"] {
-        if Command::new(bin)
+    ["magick", "convert"].into_iter().find(|&bin| {
+        Command::new(bin)
             .arg("-version")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()
             .map(|s| s.success())
             .unwrap_or(false)
-        {
-            return Some(bin);
+    })
+}
+
+fn prune_stale_thumbs(thumb_dir: &Path, ext: &str, expected: &HashSet<String>) {
+    if let Ok(entries) = fs::read_dir(thumb_dir) {
+        for entry in entries.flatten() {
+            let fname = entry.file_name().to_string_lossy().into_owned();
+            if fname.ends_with(ext) && !expected.contains(&fname) {
+                let _ = fs::remove_file(entry.path());
+            }
         }
     }
-    None
+}
+
+fn ensure_trailing_slash(s: &str) -> String {
+    if s.ends_with('/') {
+        s.to_string()
+    } else {
+        format!("{}/", s)
+    }
+}
+
+fn run_parallel_jobs<T: Sync, F: Fn(&T) + Sync>(jobs: &[T], work: F) {
+    if jobs.is_empty() {
+        return;
+    }
+    let next_idx = AtomicUsize::new(0);
+    let n_workers = worker_count(jobs.len());
+    thread::scope(|s| {
+        for _ in 0..n_workers {
+            s.spawn(|| loop {
+                let idx = next_idx.fetch_add(1, Ordering::Relaxed);
+                if idx >= jobs.len() {
+                    break;
+                }
+                work(&jobs[idx]);
+            });
+        }
+    });
 }
 
 fn walk_wallpapers(dir: &Path, out: &mut Vec<(f64, PathBuf, String)>) {
@@ -91,7 +124,6 @@ pub fn cmd_thumbs_walls(args: &[String]) {
     let wp_dir = Path::new(&args[0]);
     let thumb_dir = Path::new(&args[1]);
     let state_file = Path::new(&args[2]);
-
     let _ = fs::create_dir_all(thumb_dir);
 
     let mut files: Vec<(f64, PathBuf, String)> = Vec::new();
@@ -100,7 +132,6 @@ pub fn cmd_thumbs_walls(args: &[String]) {
     }
     files.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
-    // Build expected thumbnail filenames & collect missing jobs
     let mut expected: HashSet<String> = HashSet::with_capacity(files.len());
     let mut jobs: Vec<(PathBuf, PathBuf)> = Vec::new();
     for (src_mtime, src_path, name) in &files {
@@ -122,59 +153,32 @@ pub fn cmd_thumbs_walls(args: &[String]) {
         }
     }
 
-    // Prune stale thumbnails in-process
-    if let Ok(entries) = fs::read_dir(thumb_dir) {
-        for entry in entries.flatten() {
-            let fname = entry.file_name().to_string_lossy().into_owned();
-            if fname.ends_with(".png") && !expected.contains(&fname) {
-                let _ = fs::remove_file(entry.path());
-            }
-        }
-    }
+    prune_stale_thumbs(thumb_dir, ".png", &expected);
 
-    // Generate missing 512px thumbnails in parallel
-    if !jobs.is_empty() {
-        if let Some(magick) = find_magick_bin() {
-            let next_idx = AtomicUsize::new(0);
-            let n_workers = worker_count(jobs.len());
-            thread::scope(|s| {
-                for _ in 0..n_workers {
-                    s.spawn(|| loop {
-                        let idx = next_idx.fetch_add(1, Ordering::Relaxed);
-                        if idx >= jobs.len() {
-                            break;
-                        }
-                        let (src, dst) = &jobs[idx];
-                        let tmp = dst.with_extension("png.tmp");
-                        let ok = Command::new(magick)
-                            .arg(src)
-                            .args(["-thumbnail", "512x512>", "-strip"])
-                            .arg(format!("png:{}", tmp.display()))
-                            .stdout(Stdio::null())
-                            .stderr(Stdio::null())
-                            .status()
-                            .map(|st| st.success())
-                            .unwrap_or(false);
-                        if ok {
-                            let _ = fs::rename(&tmp, dst);
-                        } else {
-                            let _ = fs::remove_file(&tmp);
-                        }
-                    });
-                }
-            });
-        }
+    if let Some(magick) = find_magick_bin() {
+        run_parallel_jobs(&jobs, |(src, dst)| {
+            let tmp = dst.with_extension("png.tmp");
+            let ok = Command::new(magick)
+                .arg(src)
+                .args(["-thumbnail", "512x512>", "-strip"])
+                .arg(format!("png:{}", tmp.display()))
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|st| st.success())
+                .unwrap_or(false);
+            if ok {
+                let _ = fs::rename(&tmp, dst);
+            } else {
+                let _ = fs::remove_file(&tmp);
+            }
+        });
     }
 
     let current = fs::read_to_string(state_file)
         .map(|s| s.trim().to_string())
         .unwrap_or_default();
-
-    let thumb_prefix = if args[1].ends_with('/') {
-        args[1].clone()
-    } else {
-        format!("{}/", args[1])
-    };
+    let thumb_prefix = ensure_trailing_slash(&args[1]);
 
     let stdout = io::stdout();
     let mut out = stdout.lock();
@@ -210,12 +214,9 @@ fn parse_binary_meta(preview: &str) -> Option<(String, String)> {
         .strip_prefix("[[ binary data ")?
         .strip_suffix(" ]]")?;
     let tokens: Vec<&str> = inner.split_whitespace().collect();
-    let is_img = tokens.iter().any(|t| {
-        matches!(
-            *t,
-            "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp"
-        )
-    });
+    let is_img = tokens
+        .iter()
+        .any(|t| matches!(*t, "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp"));
     if !is_img {
         return None;
     }
@@ -292,66 +293,36 @@ pub fn cmd_thumbs_cliphist(args: &[String]) {
         }
     }
 
-    // Prune stale cliphist thumbnails
-    if let Ok(dir_entries) = fs::read_dir(thumb_dir) {
-        for entry in dir_entries.flatten() {
-            let fname = entry.file_name().to_string_lossy().into_owned();
-            if fname.ends_with(".png") && !expected.contains(&fname) {
-                let _ = fs::remove_file(entry.path());
-            }
-        }
-    }
+    prune_stale_thumbs(thumb_dir, ".png", &expected);
 
-    // Generate missing image thumbnails in parallel
-    if !jobs.is_empty() {
-        if let Some(magick) = find_magick_bin() {
-            let next_idx = AtomicUsize::new(0);
-            let n_workers = worker_count(jobs.len());
-            thread::scope(|s| {
-                for _ in 0..n_workers {
-                    s.spawn(|| loop {
-                        let idx = next_idx.fetch_add(1, Ordering::Relaxed);
-                        if idx >= jobs.len() {
-                            break;
+    if let Some(magick) = find_magick_bin() {
+        run_parallel_jobs(&jobs, |(id, dst)| {
+            if let Ok(dec) = Command::new("cliphist").args(["decode", id]).output() {
+                if dec.status.success() && !dec.stdout.is_empty() {
+                    let tmp = dst.with_extension("png.tmp");
+                    if let Ok(mut child) = Command::new(magick)
+                        .args(["-", "-thumbnail", "320x240>", "-strip"])
+                        .arg(format!("png:{}", tmp.display()))
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::null())
+                        .stderr(Stdio::null())
+                        .spawn()
+                    {
+                        if let Some(mut stdin) = child.stdin.take() {
+                            let _ = stdin.write_all(&dec.stdout);
                         }
-                        let (id, dst) = &jobs[idx];
-                        let decoded = Command::new("cliphist")
-                            .args(["decode", id])
-                            .output();
-                        if let Ok(dec) = decoded {
-                            if dec.status.success() && !dec.stdout.is_empty() {
-                                let tmp = dst.with_extension("png.tmp");
-                                if let Ok(mut child) = Command::new(magick)
-                                    .args(["-", "-thumbnail", "320x240>", "-strip"])
-                                    .arg(format!("png:{}", tmp.display()))
-                                    .stdin(Stdio::piped())
-                                    .stdout(Stdio::null())
-                                    .stderr(Stdio::null())
-                                    .spawn()
-                                {
-                                    if let Some(mut stdin) = child.stdin.take() {
-                                        let _ = stdin.write_all(&dec.stdout);
-                                    }
-                                    if child.wait().map(|st| st.success()).unwrap_or(false) {
-                                        let _ = fs::rename(&tmp, dst);
-                                    } else {
-                                        let _ = fs::remove_file(&tmp);
-                                    }
-                                }
-                            }
+                        if child.wait().map(|st| st.success()).unwrap_or(false) {
+                            let _ = fs::rename(&tmp, dst);
+                        } else {
+                            let _ = fs::remove_file(&tmp);
                         }
-                    });
+                    }
                 }
-            });
-        }
+            }
+        });
     }
 
-    let thumb_prefix = if args[0].ends_with('/') {
-        args[0].clone()
-    } else {
-        format!("{}/", args[0])
-    };
-
+    let thumb_prefix = ensure_trailing_slash(&args[0]);
     let stdout = io::stdout();
     let mut out = stdout.lock();
     let _ = write!(out, "[");
@@ -389,17 +360,12 @@ pub fn cmd_thumbs_rec(args: &[String]) {
     let thumb_dir = Path::new(&args[1]);
     let max_count: usize = args[2].parse().unwrap_or(12).max(1);
     let cleared_before: f64 = args[3].parse().unwrap_or(0.0);
-
     let _ = fs::create_dir_all(thumb_dir);
 
     let mut clips: Vec<(f64, u64, PathBuf, String)> = Vec::new();
     if let Ok(entries) = fs::read_dir(out_dir) {
         for entry in entries.flatten() {
-            let ft = match entry.file_type() {
-                Ok(t) => t,
-                Err(_) => continue,
-            };
-            if !ft.is_file() {
+            if !entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
                 continue;
             }
             let name = entry.file_name().to_string_lossy().into_owned();
@@ -413,10 +379,9 @@ pub fn cmd_thumbs_rec(args: &[String]) {
                     .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
                     .map(|d| d.as_secs_f64())
                     .unwrap_or(0.0);
-                if mtime <= cleared_before {
-                    continue;
+                if mtime > cleared_before {
+                    clips.push((mtime, meta.len(), entry.path(), name));
                 }
-                clips.push((mtime, meta.len(), entry.path(), name));
             }
         }
     }
@@ -435,70 +400,34 @@ pub fn cmd_thumbs_rec(args: &[String]) {
         }
     }
 
-    // Prune stale recording thumbnails
-    if let Ok(entries) = fs::read_dir(thumb_dir) {
-        for entry in entries.flatten() {
-            let fname = entry.file_name().to_string_lossy().into_owned();
-            if fname.ends_with(".jpg") && !expected.contains(&fname) {
-                let _ = fs::remove_file(entry.path());
+    prune_stale_thumbs(thumb_dir, ".jpg", &expected);
+
+    run_parallel_jobs(&jobs, |(src, dst)| {
+        let tmp = dst.with_extension("jpg.tmp");
+        let run_ff = |seek: bool| -> bool {
+            let mut cmd = Command::new("ffmpeg");
+            cmd.args(["-y", "-loglevel", "error"]);
+            if seek {
+                cmd.args(["-ss", "00:00:00.5"]);
             }
+            cmd.arg("-i")
+                .arg(src)
+                .args(["-frames:v", "1", "-vf", "scale=480:-1", "-f", "image2"])
+                .arg(&tmp)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|st| st.success() && tmp.exists())
+                .unwrap_or(false)
+        };
+        if run_ff(true) || run_ff(false) {
+            let _ = fs::rename(&tmp, dst);
+        } else {
+            let _ = fs::remove_file(&tmp);
         }
-    }
+    });
 
-    // Extract missing video thumbnails in parallel via ffmpeg
-    if !jobs.is_empty() {
-        let next_idx = AtomicUsize::new(0);
-        let n_workers = worker_count(jobs.len());
-        thread::scope(|s| {
-            for _ in 0..n_workers {
-                s.spawn(|| loop {
-                    let idx = next_idx.fetch_add(1, Ordering::Relaxed);
-                    if idx >= jobs.len() {
-                        break;
-                    }
-                    let (src, dst) = &jobs[idx];
-                    let tmp = dst.with_extension("jpg.tmp");
-                    let ok = Command::new("ffmpeg")
-                        .args(["-y", "-loglevel", "error", "-ss", "00:00:00.5", "-i"])
-                        .arg(src)
-                        .args(["-frames:v", "1", "-vf", "scale=480:-1", "-f", "image2"])
-                        .arg(&tmp)
-                        .stdout(Stdio::null())
-                        .stderr(Stdio::null())
-                        .status()
-                        .map(|st| st.success() && tmp.exists())
-                        .unwrap_or(false);
-                    if ok {
-                        let _ = fs::rename(&tmp, dst);
-                    } else {
-                        // Retry at frame 0 for ultra-short clips
-                        let ok0 = Command::new("ffmpeg")
-                            .args(["-y", "-loglevel", "error", "-i"])
-                            .arg(src)
-                            .args(["-frames:v", "1", "-vf", "scale=480:-1", "-f", "image2"])
-                            .arg(&tmp)
-                            .stdout(Stdio::null())
-                            .stderr(Stdio::null())
-                            .status()
-                            .map(|st| st.success() && tmp.exists())
-                            .unwrap_or(false);
-                        if ok0 {
-                            let _ = fs::rename(&tmp, dst);
-                        } else {
-                            let _ = fs::remove_file(&tmp);
-                        }
-                    }
-                });
-            }
-        });
-    }
-
-    let thumb_prefix = if args[1].ends_with('/') {
-        args[1].clone()
-    } else {
-        format!("{}/", args[1])
-    };
-
+    let thumb_prefix = ensure_trailing_slash(&args[1]);
     let stdout = io::stdout();
     let mut out = stdout.lock();
     let _ = write!(out, "[");
@@ -520,169 +449,6 @@ pub fn cmd_thumbs_rec(args: &[String]) {
     }
     let _ = writeln!(out, "]");
     let _ = out.flush();
-}
-
-/// Consolidated hotspot state reader (replaces sh+grep+nmcli + second nmcli).
-/// Usage: hotspot-state <connection_name>
-pub fn cmd_hotspot_state(args: &[String]) {
-    let con = match args.first() {
-        Some(c) if !c.is_empty() => c.as_str(),
-        _ => std::process::exit(2),
-    };
-
-    let active = Command::new("nmcli")
-        .args(["-t", "-f", "NAME", "connection", "show", "--active"])
-        .output()
-        .map(|o| {
-            o.status.success()
-                && String::from_utf8_lossy(&o.stdout)
-                    .lines()
-                    .any(|line| line.trim() == con)
-        })
-        .unwrap_or(false);
-
-    let mut name = String::new();
-    let mut pw = String::new();
-    if let Ok(o) = Command::new("nmcli")
-        .args([
-            "-t",
-            "-s",
-            "-g",
-            "802-11-wireless.ssid,802-11-wireless-security.psk",
-            "connection",
-            "show",
-            con,
-        ])
-        .output()
-    {
-        if o.status.success() {
-            let txt = String::from_utf8_lossy(&o.stdout);
-            let mut lines = txt.lines();
-            if let Some(l1) = lines.next() {
-                name = l1.to_string();
-            }
-            if let Some(l2) = lines.next() {
-                pw = l2.to_string();
-            }
-        }
-    }
-
-    println!(
-        "{{\"active\":{},\"name\":{},\"pw\":{}}}",
-        if active { "true" } else { "false" },
-        json_escape(&name),
-        json_escape(&pw)
-    );
-}
-
-/// Lists installed X cursor themes across standard icon directories (sorted, deduped).
-pub fn cmd_cursor_themes() {
-    let mut dirs: BTreeSet<PathBuf> = BTreeSet::new();
-    if let Ok(home) = env::var("HOME") {
-        if !home.is_empty() {
-            let h = PathBuf::from(&home);
-            dirs.insert(h.join(".icons"));
-            dirs.insert(h.join(".local/share/icons"));
-        }
-    }
-    dirs.insert(PathBuf::from("/usr/share/icons"));
-    let xdg = env::var("XDG_DATA_DIRS")
-        .ok()
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "/usr/local/share:/usr/share".to_string());
-    for part in xdg.split(':') {
-        let trimmed = part.trim_end_matches('/');
-        if !trimmed.is_empty() {
-            dirs.insert(PathBuf::from(format!("{}/icons", trimmed)));
-        }
-    }
-
-    let mut themes: BTreeSet<String> = BTreeSet::new();
-    for d in dirs {
-        let entries = match fs::read_dir(&d) {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        for entry in entries.flatten() {
-            let p = entry.path();
-            if p.join("cursors").is_dir() {
-                if let Some(name) = entry.file_name().to_str() {
-                    if !name.is_empty() {
-                        themes.insert(name.to_string());
-                    }
-                }
-            }
-        }
-    }
-
-    let stdout = io::stdout();
-    let mut out = stdout.lock();
-    for t in themes {
-        let _ = writeln!(out, "{}", t);
-    }
-    let _ = out.flush();
-}
-
-/// Decodes a cliphist entry by numeric id and copies it to the Wayland clipboard without `sh`.
-pub fn cmd_clip_copy(args: &[String]) {
-    let id = match args.first() {
-        Some(s) if !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()) => s,
-        _ => std::process::exit(2),
-    };
-    let dec = match Command::new("cliphist").args(["decode", id]).output() {
-        Ok(o) if o.status.success() => o.stdout,
-        _ => std::process::exit(1),
-    };
-    if let Ok(mut child) = Command::new("wl-copy")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-    {
-        if let Some(mut stdin) = child.stdin.take() {
-            let _ = stdin.write_all(&dec);
-        }
-        let _ = child.wait();
-    }
-}
-
-/// Deletes a cliphist entry by numeric id without `sh`.
-pub fn cmd_clip_delete(args: &[String]) {
-    let id = match args.first() {
-        Some(s) if !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()) => s,
-        _ => std::process::exit(2),
-    };
-    if let Ok(mut child) = Command::new("cliphist")
-        .arg("delete")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-    {
-        if let Some(mut stdin) = child.stdin.take() {
-            let _ = stdin.write_all(id.as_bytes());
-        }
-        let _ = child.wait();
-    }
-}
-
-/// Atomically writes `<content>\n` to `<path>`, creating parent directories as needed.
-pub fn cmd_write_file(args: &[String]) {
-    if args.len() < 2 {
-        std::process::exit(2);
-    }
-    let path = Path::new(&args[0]);
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    let tmp = path.with_extension(format!("tmp.{}", std::process::id()));
-    let content = format!("{}\n", args[1]);
-    if fs::write(&tmp, content).is_ok() {
-        let _ = fs::rename(&tmp, path);
-    } else {
-        let _ = fs::remove_file(&tmp);
-        std::process::exit(1);
-    }
 }
 
 #[cfg(test)]
