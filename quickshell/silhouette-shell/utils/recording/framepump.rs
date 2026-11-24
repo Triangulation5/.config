@@ -15,7 +15,10 @@
 //! Exit:   0 = clean finish, 1 = no frames / bad args / ffmpeg crashed.
 
 mod portal;
+mod portal_dbus;
+mod portal_session;
 
+use std::fmt::Write as FmtWrite;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::os::raw::{c_int, c_short, c_ulong};
@@ -38,18 +41,96 @@ extern "C" {
     fn signal(sig: c_int, handler: usize) -> usize;
 }
 
-const SIGINT: c_int = 2;
-const SIGTERM: c_int = 15;
-const SIG_DFL: usize = 0;
+pub(crate) const SIGINT: c_int = 2;
+pub(crate) const SIGTERM: c_int = 15;
+pub(crate) const SIG_DFL: usize = 0;
 const SIG_IGN: usize = 1;
 const POLLIN: c_short = 1;
-const CHUNK: usize = 1 << 18;
-const NO_FRAME_LIMIT: Duration = Duration::from_secs(30);
+pub(crate) const CHUNK: usize = 1 << 18;
+pub(crate) const NO_FRAME_LIMIT: Duration = Duration::from_secs(30);
 
-pub(crate) fn wait_readable(fd: c_int, ms: i32) -> bool {
-    let mut p = PollFd { fd, events: POLLIN, revents: 0 };
-    // POLLHUP/POLLERR also return > 0, and the following read reports EOF.
-    unsafe { poll(&mut p, 1, ms) > 0 }
+/// Reusable single-fd poller that avoids recreating `PollFd` on every iteration.
+pub(crate) struct FdPoller {
+    pfd: PollFd,
+}
+
+impl FdPoller {
+    pub(crate) fn new(fd: c_int) -> Self {
+        Self {
+            pfd: PollFd {
+                fd,
+                events: POLLIN,
+                revents: 0,
+            },
+        }
+    }
+
+    pub(crate) fn wait_readable(&mut self, ms: i32) -> bool {
+        self.pfd.revents = 0;
+        // POLLHUP/POLLERR also return > 0, and the following read reports EOF.
+        unsafe { poll(&mut self.pfd, 1, ms) > 0 }
+    }
+}
+
+/// Read-indexed frame queue that avoids `Vec::drain` memmoves on every write
+/// while keeping memory bounded via amortized compaction.
+pub(crate) struct FrameQueue {
+    buf: Vec<u8>,
+    offset: usize,
+}
+
+impl FrameQueue {
+    pub(crate) fn from_vec(buf: Vec<u8>) -> Self {
+        Self { buf, offset: 0 }
+    }
+
+    pub(crate) fn extend_from_slice(&mut self, data: &[u8]) {
+        self.buf.extend_from_slice(data);
+    }
+
+    /// Writes all currently buffered whole frames to `writer`.
+    /// Returns `false` if writing failed.
+    pub(crate) fn write_whole_frames<W: Write>(
+        &mut self,
+        frame_bytes: usize,
+        writer: &mut W,
+    ) -> bool {
+        let avail = self.buf.len() - self.offset;
+        let whole = avail - (avail % frame_bytes);
+        if whole == 0 {
+            return true;
+        }
+        if writer
+            .write_all(&self.buf[self.offset..self.offset + whole])
+            .is_err()
+        {
+            return false;
+        }
+        self.offset += whole;
+        if self.offset == self.buf.len() {
+            self.buf.clear();
+            self.offset = 0;
+        } else if self.offset >= CHUNK {
+            let rem = self.buf.len() - self.offset;
+            self.buf.copy_within(self.offset.., 0);
+            self.buf.truncate(rem);
+            self.offset = 0;
+        }
+        true
+    }
+}
+
+/// Formats a frame rate with up to 3 decimal places using a pre-allocated buffer.
+pub(crate) fn format_rate(rate: f64) -> String {
+    let mut s = String::with_capacity(16);
+    let _ = write!(s, "{:.3}", rate);
+    while s.ends_with('0') {
+        s.pop();
+    }
+    if s.ends_with('.') {
+        s.pop();
+    }
+    s
 }
 
 fn fail(msg: &str) -> ! {
@@ -118,14 +199,14 @@ fn main() {
         portal::run_portal(&raw_args[1..]);
     }
     let o = parse();
-    // Stop is signalled by gst's EOF; a stray SIGINT/SIGTERM must not kill the
-    // pump before ffmpeg is wrapped up. ffmpeg gets default handlers back.
+
     unsafe {
         signal(SIGINT, SIG_IGN);
         signal(SIGTERM, SIG_IGN);
     }
 
     let mut input = unsafe { File::from_raw_fd(0) };
+    let mut poller = FdPoller::new(0);
     let mut buf = vec![0u8; CHUNK];
     let mut head: Vec<u8> = Vec::new();
 
@@ -140,7 +221,7 @@ fn main() {
         if !have_frame && el >= NO_FRAME_LIMIT {
             break;
         }
-        if !wait_readable(0, 200) {
+        if !poller.wait_readable(200) {
             continue;
         }
         match input.read(&mut buf) {
@@ -158,13 +239,7 @@ fn main() {
         fail(&format!("Screen share produced no frames in {:.1}s", elapsed));
     }
     let rate = (head.len() as f64 / o.frame_bytes as f64 / elapsed).clamp(0.5, 240.0);
-    let mut rate_str = format!("{:.3}", rate);
-    while rate_str.ends_with('0') {
-        rate_str.pop();
-    }
-    if rate_str.ends_with('.') {
-        rate_str.pop();
-    }
+    let rate_str = format_rate(rate);
 
     let mut args: Vec<String> = o
         .cmd
@@ -206,29 +281,31 @@ fn main() {
     println!("rate {}", rate);
     let _ = std::io::stdout().flush();
 
-    // Align to whole frames and feed ffmpeg.
-    let mut pending: Vec<u8> = head;
+    // Align to whole frames and feed ffmpeg using a read-indexed queue.
+    let mut queue = FrameQueue::from_vec(head);
     let mut ff_died = false;
+
     loop {
-        let whole = pending.len() - pending.len() % o.frame_bytes;
-        if whole > 0 {
-            let ok = ff_in.as_mut().map_or(false, |w| w.write_all(&pending[..whole]).is_ok());
-            if !ok {
-                ff_died = true;
-                break;
-            }
-            pending.drain(..whole);
+        let ok = ff_in
+            .as_mut()
+            .is_some_and(|w| queue.write_whole_frames(o.frame_bytes, w));
+        if !ok {
+            ff_died = true;
+            break;
         }
+
         if let Ok(Some(_)) = ff.try_wait() {
             ff_died = true;
             break;
         }
-        if !wait_readable(0, 200) {
+
+        if !poller.wait_readable(200) {
             continue;
         }
+
         match input.read(&mut buf) {
             Ok(0) => break,
-            Ok(n) => pending.extend_from_slice(&buf[..n]),
+            Ok(n) => queue.extend_from_slice(&buf[..n]),
             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
             Err(_) => break,
         }
