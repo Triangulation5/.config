@@ -312,6 +312,30 @@ class TestWatchers(unittest.TestCase):
             )
             self.assertEqual(dst.read_text(), "75\n")
 
+    def test_unknown_subcommand_exits_2(self):
+        res = subprocess.run(
+            [self.RUNNER, "definitely-not-a-subcommand"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        self.assertEqual(res.returncode, 2)
+
+    def test_net_local_ip_format(self):
+        res = subprocess.run(
+            [self.RUNNER, "net-local-ip"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+        out = res.stdout.strip()
+        if out:
+            parts = out.split(".")
+            self.assertEqual(len(parts), 4, f"invalid IPv4: {out}")
+            for p in parts:
+                self.assertTrue(0 <= int(p) <= 255)
+
 
 class TestFramepump(unittest.TestCase):
     def test_cli_validation(self):
@@ -320,6 +344,53 @@ class TestFramepump(unittest.TestCase):
         self.assertEqual(r1.returncode, 1)
         r2 = subprocess.run([bin_path, "--portal"], capture_output=True, text=True, timeout=5)
         self.assertEqual(r2.returncode, 2)
+
+    def test_frame_alignment_and_rate_probe(self):
+        """Feed 5.5 synthetic frames to framepump; verify exactly 5 whole frames reach consumer."""
+        bin_path = str(REC_DIR / "framepump")
+        frame_bytes = 1024
+        payload = b"A" * (frame_bytes * 5 + 333)
+        with tempfile.TemporaryDirectory() as td:
+            out_file = Path(td) / "captured.raw"
+            err_file = Path(td) / "ff.err"
+            # Use a lightweight /bin/sh consumer (sub-ms startup) that ignores SIGINT
+            # while draining stdin to EOF, matching ffmpeg's trailer-flush behavior.
+            proc = subprocess.Popen(
+                [
+                    bin_path,
+                    "--frame-bytes",
+                    str(frame_bytes),
+                    "--fps",
+                    "300",
+                    "--probe-seconds",
+                    "0.05",
+                    "--stderr-file",
+                    str(err_file),
+                    "--",
+                    "sh",
+                    "-c",
+                    'trap "" INT; cat > "$2"',
+                    "--",
+                    "--rate-placeholder--",
+                    str(out_file),
+                ],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            assert proc.stdin is not None and proc.stdout is not None
+            proc.stdin.write(payload)
+            proc.stdin.flush()
+            # Wait for framepump to finish probing, spawn the consumer, and print `rate <float>`
+            rate_line = proc.stdout.readline().decode(errors="replace").strip()
+            time.sleep(0.05)
+            proc.stdin.close()
+            _, stderr_b = proc.communicate(timeout=10)
+            self.assertEqual(proc.returncode, 0, f"stderr: {stderr_b.decode(errors='replace')}")
+            self.assertTrue(rate_line.startswith("rate "), f"unexpected stdout: {rate_line}")
+            rate_val = float(rate_line.split()[1])
+            self.assertGreaterEqual(rate_val, 0.5)
+            self.assertEqual(len(out_file.read_bytes()), frame_bytes * 5)
 
 
 if __name__ == "__main__":
