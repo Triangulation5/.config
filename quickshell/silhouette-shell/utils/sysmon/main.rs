@@ -584,3 +584,40 @@ fn main() {
         thread::sleep(Duration::from_secs(1));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn temp_label_priorities() {
+        assert_eq!(label_priority("Tdie"), Some(0));
+        assert_eq!(label_priority("Package id 0"), Some(1));
+        assert_eq!(label_priority("Tctl"), Some(2));
+        assert_eq!(label_priority("Composite"), None);
+    }
+
+    #[test]
+    fn proc_readers_return_sane_values() {
+        let (total, idle) = read_proc_stat().expect("proc/stat readable");
+        assert!(total > 0 && total >= idle);
+
+        let (mt, ma, _st, _sf) = read_proc_meminfo();
+        assert!(mt > 0 && ma <= mt);
+
+        let disk = read_disk_pct();
+        assert!(disk <= 100);
+
+        let up = read_uptime();
+        assert!(up > 0);
+    }
+
+    #[test]
+    fn pid_rss_self_and_missing() {
+        let ps = page_size_bytes();
+        assert!(ps >= 4096 && ps.is_power_of_two());
+        let self_rss = read_pid_rss_mb(std::process::id(), ps);
+        assert!(self_rss.is_some());
+        assert_eq!(read_pid_rss_mb(u32::MAX, ps), None);
+    }
+}

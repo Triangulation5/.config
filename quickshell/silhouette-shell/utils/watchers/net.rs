@@ -523,3 +523,23 @@ pub fn cmd_net_fetch(args: &[String]) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn url_encode_escapes_spaces_and_symbols() {
+        assert_eq!(url_encode("New York"), "New%20York");
+        assert_eq!(url_encode("a-b_c.d~1"), "a-b_c.d~1");
+        assert_eq!(url_encode("a&b=c"), "a%26b%3Dc");
+    }
+
+    #[test]
+    fn status_err_maps_http_codes() {
+        assert_eq!(status_err(200), None);
+        assert_eq!(status_err(204), None);
+        assert_eq!(status_err(429), Some("__RATE__"));
+        assert_eq!(status_err(503), Some("__HTTP__"));
+    }
+}

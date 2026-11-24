@@ -788,3 +788,41 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compact_json_strips_newlines() {
+        assert_eq!(compact_json_line("{\n  \"a\": 1\r\n}\n"), "{   \"a\": 1  }");
+        assert_eq!(compact_json_line("   \n\t "), "null");
+    }
+
+    #[test]
+    fn parse_pair_i64_extracts_coords() {
+        let obj = r#"{"at": [120, -40], "size": [1920, 1080]}"#;
+        assert_eq!(parse_pair_i64(obj, "\"at\""), Some((120, -40)));
+        assert_eq!(parse_pair_i64(obj, "\"size\""), Some((1920, 1080)));
+        assert_eq!(parse_pair_i64(obj, "\"missing\""), None);
+    }
+
+    #[test]
+    fn rec_cmdline_matcher_covers_all_backends() {
+        assert!(matches_rec_cmdline("/usr/bin/gpu-screen-recorder\0-w\0screen"));
+        assert!(matches_rec_cmdline("gpu-screen-recorder\0-f\060"));
+        assert!(matches_rec_cmdline("python3\0/home/u/portal_capture.py\0--output\0a.mp4"));
+        assert!(matches_rec_cmdline("/path/framepump-x86_64\0--portal\0--output\0a.mp4"));
+        assert!(!matches_rec_cmdline("/path/framepump-x86_64\0--frame-bytes\0100"));
+        assert!(!matches_rec_cmdline("ffmpeg\0-i\0foo.mp4"));
+    }
+
+    #[test]
+    fn claude_cmdline_matcher_avoids_false_positives() {
+        assert!(matches_claude_cmdline("node\0/usr/local/bin/claude\0--help"));
+        assert!(matches_claude_cmdline("/opt/bin/claude-code\0"));
+        assert!(matches_claude_cmdline("CLAUDE\0"));
+        assert!(!matches_claude_cmdline("vim\0claudette.txt"));
+        assert!(!matches_claude_cmdline("bash\0-c\0echo hello"));
+    }
+}

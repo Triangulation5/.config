@@ -684,3 +684,28 @@ pub fn cmd_write_file(args: &[String]) {
         std::process::exit(1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn json_escape_handles_specials() {
+        assert_eq!(json_escape("a\"b\\c\nd\te"), "\"a\\\"b\\\\c\\nd\\te\"");
+        assert_eq!(json_escape("\x07"), "\"\\u0007\"");
+    }
+
+    #[test]
+    fn binary_meta_parses_images_and_rejects_text() {
+        assert_eq!(
+            parse_binary_meta("[[ binary data 245 KiB png 1920x1080 ]]"),
+            Some(("png 1920×1080".to_string(), "245 KiB".to_string()))
+        );
+        assert_eq!(
+            parse_binary_meta("[[ binary data 12 KiB webp 640x480 ]]"),
+            Some(("webp 640×480".to_string(), "12 KiB".to_string()))
+        );
+        assert_eq!(parse_binary_meta("[[ binary data 4 KiB pdf ]]"), None);
+        assert_eq!(parse_binary_meta("plain text entry"), None);
+    }
+}
