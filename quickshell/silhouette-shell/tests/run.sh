@@ -11,6 +11,14 @@ set -eu
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$DIR/.." && pwd)"
+CONFIG_ROOT="$(cd "$ROOT/../.." && pwd)"
+CARGO_BIN="${CARGO_HOME:-${HOME:-}/.cargo}/bin"
+if [ -d "$CARGO_BIN" ]; then
+    case ":${PATH:-}:" in
+        *":$CARGO_BIN:"*) ;;
+        *) PATH="$CARGO_BIN${PATH:+:$PATH}"; export PATH ;;
+    esac
+fi
 TMPDIR_RUN="$(mktemp -d "${TMPDIR:-/tmp}/silhouette-tests.XXXXXX")"
 trap 'rm -rf "$TMPDIR_RUN"' EXIT
 
@@ -67,12 +75,14 @@ launch() {
 
 run_rust_tests() {
     cargo test --manifest-path "$ROOT/utils/sysmon/Cargo.toml" &&
-    cargo test --manifest-path "$ROOT/utils/watchers/Cargo.toml"
+    cargo test --manifest-path "$ROOT/utils/watchers/Cargo.toml" &&
+    cargo test --manifest-path "$CONFIG_ROOT/scripts/rust-tools/Cargo.toml"
 }
 
 run_clippy() {
     cargo clippy --release --all-targets --manifest-path "$ROOT/utils/sysmon/Cargo.toml" -- -D warnings &&
-    cargo clippy --release --all-targets --manifest-path "$ROOT/utils/watchers/Cargo.toml" -- -D warnings
+    cargo clippy --release --all-targets --manifest-path "$ROOT/utils/watchers/Cargo.toml" -- -D warnings &&
+    cargo clippy --release --all-targets --manifest-path "$CONFIG_ROOT/scripts/rust-tools/Cargo.toml" -- -D warnings
 }
 
 run_js_tests() {

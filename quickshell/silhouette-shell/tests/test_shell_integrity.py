@@ -143,12 +143,17 @@ class TestShellIntegrity(unittest.TestCase):
 
     def test_rust_files_under_500_lines(self):
         oversized = []
-        for rs in sorted((ROOT / "utils").rglob("*.rs")):
-            if "target" in rs.parts:
-                continue
-            lines = len(rs.read_text(encoding="utf-8").splitlines())
-            if lines > 500:
-                oversized.append(f"{rs.relative_to(ROOT)}: {lines} lines")
+        rust_roots = [
+            ROOT / "utils",
+            ROOT.parent.parent / "scripts" / "rust-tools" / "src",
+        ]
+        for rust_root in rust_roots:
+            for rs in sorted(rust_root.rglob("*.rs")):
+                if "target" in rs.parts:
+                    continue
+                lines = len(rs.read_text(encoding="utf-8").splitlines())
+                if lines > 500:
+                    oversized.append(f"{rs}: {lines} lines")
         self.assertEqual(oversized, [], f"Rust files over 500 lines:\n" + "\n".join(oversized))
 
 
