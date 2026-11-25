@@ -59,7 +59,12 @@ Singleton {
     property alias containerSaturation: adapter.containerSaturation
     property alias surfaceRole: adapter.surfaceRole
     property alias wallpaperDir: adapter.wallpaperDir
-    property alias useRustTools: adapter.useRustTools
+    /** True when the session explicitly forced non-Rust fallback mode (e.g. no Rust toolchain). */
+    readonly property bool rustDisabledByEnv: Quickshell.env("SILHOUETTE_NO_NATIVE") === "1"
+        || Quickshell.env("SILHOUETTE_FORCE_SHELL") === "1"
+        || Quickshell.env("SILHOUETTE_FORCE_PYTHON") === "1"
+    /** Effective Rust preference: on when enabled in settings and not disabled by session env. */
+    readonly property bool useRustTools: adapter.useRustTools && !root.rustDisabledByEnv
     property alias uiScale: adapter.uiScale
     property alias reduceMotion: adapter.reduceMotion
     property alias manualHue: adapter.manualHue
@@ -805,6 +810,23 @@ Singleton {
             property real lockBlurVignette: 0.14
             /** Film grain mixed into the backdrop, as a 0-1 amplitude (0 = clean). */
             property real lockBlurGrain: 0.012
+        }
+    }
+
+    /**
+     * Touched by `scripts/build-rust-tools.sh` once a background build finishes,
+     * so services that fell back while `silhouette-tools` was compiling re-arm
+     * their Rust fast paths without waiting for a shell restart.
+     */
+    FileView {
+        id: rustReadyFile
+        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/silhouette-rust-ready"
+        watchChanges: true
+        printErrors: false
+        onLoadFailed: setText("0")
+        onFileChanged: {
+            if (root.useRustTools)
+                root.useRustToolsChanged();
         }
     }
 }

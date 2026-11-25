@@ -7,8 +7,17 @@ OUT_BIN="$DIR/bin/sysmon_sampler-$ARCH"
 ROOT_BIN="$DIR/sysmon_sampler"
 FLAGS="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
 
-if [ -r "$FLAGS" ] &&
-   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$FLAGS"; then
+CARGO_BIN="${CARGO_HOME:-${HOME:-}/.cargo}/bin"
+if [ -n "${HOME:-}${CARGO_HOME:-}" ] && [ -d "$CARGO_BIN" ]; then
+    case ":${PATH:-}:" in
+        *":$CARGO_BIN:"*) ;;
+        *) PATH="$CARGO_BIN${PATH:+:$PATH}"; export PATH ;;
+    esac
+fi
+
+if [ "${SILHOUETTE_NO_NATIVE:-0}" = "1" ] ||
+   [ "${SILHOUETTE_FORCE_SHELL:-0}" = "1" ] ||
+   { [ -r "$FLAGS" ] && grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$FLAGS"; }; then
     echo "Rust tools are disabled; skipping Sysmon Rust build."
     exit 0
 fi

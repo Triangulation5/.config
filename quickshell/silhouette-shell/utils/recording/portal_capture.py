@@ -527,11 +527,27 @@ def main():
     return 1
 
 
+def _has_rust_toolchain():
+    import shutil as _shutil
+
+    cargo_home = os.environ.get("CARGO_HOME") or os.path.join(os.path.expanduser("~"), ".cargo")
+    cargo_bin = os.path.join(cargo_home, "bin")
+    search_path = os.environ.get("PATH", "")
+    if os.path.isdir(cargo_bin):
+        search_path = f"{cargo_bin}{os.pathsep}{search_path}" if search_path else cargo_bin
+    return _shutil.which("cargo", path=search_path) is not None or _shutil.which("rustc", path=search_path) is not None
+
+
 def find_pump():
     """Path of the native framepump binary, or None to use the Python loop.
 
     Set SILHOUETTE_NO_NATIVE=1 to force the Python fallback."""
-    if os.environ.get("SILHOUETTE_NO_NATIVE"):
+    if (
+        os.environ.get("SILHOUETTE_NO_NATIVE")
+        or os.environ.get("SILHOUETTE_FORCE_PYTHON") == "1"
+        or os.environ.get("SILHOUETTE_FORCE_SHELL") == "1"
+        or not _has_rust_toolchain()
+    ):
         return None
     state_home = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
     flags_path = os.path.join(state_home, "silhouette", "flags.json")
