@@ -1,7 +1,11 @@
-use crate::config::{flags, is_image, resolve_dir, script_dir, state_dir};
+use crate::{
+    config::{flags, is_image, resolve_dir, state_dir},
+    hypr_ipc, lock_ops, session, wallcolors,
+};
 use fs2::FileExt;
 use rand::seq::SliceRandom;
 use std::{
+    ffi::OsString,
     fs,
     fs::OpenOptions,
     io,
@@ -66,6 +70,7 @@ fn pop_bag(dir: &Path) -> Option<PathBuf> {
     let state = state_dir().join("silhouette-wallpaper");
     let lock = OpenOptions::new()
         .create(true)
+        .truncate(false)
         .read(true)
         .write(true)
         .open(bag.with_extension("lock"))
@@ -120,10 +125,7 @@ fn ensure_daemon() -> bool {
     {
         return true;
     }
-    Command::new(script_dir().join("awww-daemon-wrapper.sh"))
-        .arg("start")
-        .status()
-        .is_ok_and(|s| s.success())
+    session::awww_daemon("start")
 }
 
 pub(super) fn apply_wallpaper(path: &Path) -> bool {
@@ -198,12 +200,7 @@ pub(super) fn apply_wallpaper(path: &Path) -> bool {
         .get("paletteMode")
         .and_then(|v| v.as_str())
         .unwrap_or("static");
-    let mut palette_command = Command::new("python3");
-    palette_command
-        .arg(script_dir().join("wallcolors.py"))
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-    if palette == "manual" {
+    let wc_args: Vec<OsString> = if palette == "manual" {
         let hue = flags
             .get("manualHue")
             .and_then(|v| v.as_i64())
@@ -212,28 +209,22 @@ pub(super) fn apply_wallpaper(path: &Path) -> bool {
             .get("manualDark")
             .and_then(|v| v.as_bool())
             .unwrap_or(true);
-        palette_command.args([
-            "--hue",
-            &hue.to_string(),
-            if dark { "dark" } else { "light" },
-        ]);
+        vec![
+            OsString::from("--hue"),
+            OsString::from(hue.to_string()),
+            OsString::from(if dark { "dark" } else { "light" }),
+        ]
     } else {
-        palette_command.arg(path);
-    }
-    let _ = palette_command.status();
-    let _ = Command::new("hyprctl")
-        .arg("reload")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
+        vec![path.as_os_str().to_os_string()]
+    };
+    let _ = wallcolors::run(&wc_args);
+    let _ = hypr_ipc::reload();
     let _ = Command::new("kitty")
         .args(["@", "load-config"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
-    let _ = Command::new("bash")
-        .arg(script_dir().join("lock-wallpaper.sh"))
-        .status();
+    let _ = lock_ops::lock_wallpaper(None);
     true
 }
 

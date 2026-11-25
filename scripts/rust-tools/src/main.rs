@@ -3,16 +3,25 @@ mod backup;
 mod cli;
 mod config;
 mod devices;
+mod display;
+mod hypr_ipc;
+mod launch_guard;
 mod launcher;
+mod lock_ops;
 mod model;
+mod notes;
 mod polkit;
+mod power_ctl;
 mod privacy;
+mod proc_util;
 mod search;
+mod session;
 mod thumbnails;
 mod updates;
 mod wallcolors;
 mod wallpaper;
 mod watchdog;
+mod wm_actions;
 
 use clap::Parser;
 use cli::{BackupAction, Cli, Commands, PackageUpdateOperation};
@@ -132,6 +141,51 @@ fn main() {
         Commands::Resolve => wallpaper::resolve(),
         Commands::Init => wallpaper::init(),
         Commands::Set { path } => wallpaper::apply_wallpaper(Path::new(&path)),
+        Commands::OpenSurface { surface, arg } => {
+            wm_actions::open_surface(&surface, arg.as_deref())
+        }
+        Commands::QuickRecord => wm_actions::quick_record(),
+        Commands::MinimizeToggle => wm_actions::minimize_toggle(),
+        Commands::SpecialToggle { name } => {
+            wm_actions::special_toggle(name.as_deref().unwrap_or(""))
+        }
+        Commands::Gamemode { mode } => wm_actions::gamemode(&mode),
+        Commands::WakeDisplay => wm_actions::wake_display(),
+        Commands::KittyOpacity => wm_actions::kitty_opacity(),
+        Commands::DisplayApply {
+            verb,
+            out,
+            mode,
+            position,
+            scale,
+        } => display::run(
+            &verb,
+            &out,
+            mode.as_deref(),
+            position.as_deref(),
+            scale.as_deref(),
+        ),
+        Commands::DisplayRollbackWait {
+            pending,
+            old,
+            token,
+        } => display::rollback_wait(&pending, &old, &token),
+        Commands::LockWallpaper { pic } => lock_ops::lock_wallpaper(pic.as_deref()),
+        Commands::Lock => lock_ops::lock_screen(),
+        Commands::LaunchGuard {
+            name,
+            icon,
+            workdir,
+            argv,
+        } => launch_guard::run(&name, &icon, &workdir, &argv),
+        Commands::NoteInbox { timestamp } => notes::run(timestamp),
+        Commands::SessionStart => session::session_start(),
+        Commands::AwwwDaemon { action } => session::awww_daemon(&action),
+        Commands::CliphistWatch => session::cliphist_watch(),
+        Commands::UserService { cmd, service } => session::user_service(&cmd, &service),
+        Commands::Inhibit { argv } => power_ctl::inhibit(&argv),
+        Commands::Power { action } => power_ctl::power(&action),
+        Commands::MigrateState => power_ctl::migrate_state(),
     };
     if !ok {
         std::process::exit(1);
