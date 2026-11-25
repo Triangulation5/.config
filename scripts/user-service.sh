@@ -17,6 +17,16 @@ set -u
 cmd="${1:-}"
 service="${2:-}"
 
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    source "$scripts_dir/lib/lib-rust.sh"
+    rust_bin="$scripts_dir/bin/silhouette-tools"
+    if rust_tools_usable && [ -n "$cmd" ] && [ -n "$service" ] && [ -x "$rust_bin" ] && "$rust_bin" user-service --help >/dev/null 2>&1; then
+        exec "$rust_bin" user-service "$cmd" "$service"
+    fi
+fi
+
 is_systemd_user_active() {
     [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1 && \
         systemctl --user is-active --quiet "$1" 2>/dev/null

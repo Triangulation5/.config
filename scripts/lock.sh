@@ -10,6 +10,14 @@
 umask 077
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ -r "${script_dir}/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    source "${script_dir}/lib/lib-rust.sh"
+    rust_bin="${script_dir}/bin/silhouette-tools"
+    if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" lock --help >/dev/null 2>&1; then
+        exec "$rust_bin" lock
+    fi
+fi
 source "${script_dir}/lib/lib-notify.sh"
 
 dir="${XDG_RUNTIME_DIR:-/tmp}"

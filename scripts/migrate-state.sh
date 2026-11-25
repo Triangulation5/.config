@@ -27,6 +27,16 @@
 # Env: XDG_STATE_HOME, XDG_CACHE_HOME, XDG_DATA_HOME, or their defaults.
 set -u
 
+scripts_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    . "$scripts_dir/lib/lib-rust.sh"
+    rust_bin="$scripts_dir/bin/silhouette-tools"
+    if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" migrate-state --help >/dev/null 2>&1; then
+        exec "$rust_bin" migrate-state
+    fi
+fi
+
 state="${XDG_STATE_HOME:-$HOME/.local/state}"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}"
 data="${XDG_DATA_HOME:-$HOME/.local/share}"

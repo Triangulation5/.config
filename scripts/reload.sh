@@ -28,7 +28,9 @@
 
 # Report failures through lib-notify.sh so a Super+R that produces no shell is
 # visible instead of silent.
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/lib-notify.sh"
+scripts_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$scripts_dir/lib/lib-notify.sh"
+source "$scripts_dir/lib/lib-rust.sh"
 
 name=silhouette-shell
 
@@ -59,7 +61,13 @@ else
     # Start one. Detached, because it outlives this script by design, and quiet:
     # the flock inside it decides whether this instance is the supervisor or just
     # a no-op that exits.
-    bash ~/.config/scripts/watchdog.sh "$name" >/dev/null 2>&1 & disown
+    if rust_tools_usable; then
+        [ -x "$scripts_dir/build-rust-tools.sh" ] && "$scripts_dir/build-rust-tools.sh" --ensure >/dev/null 2>&1 &
+        bash "$scripts_dir/watchdog.sh" "$name" >/dev/null 2>&1 & disown
+    else
+        SILHOUETTE_NO_NATIVE=1 SILHOUETTE_FORCE_SHELL=1 SILHOUETTE_FORCE_PYTHON=1 \
+            sh "$scripts_dir/watchdog-fallback.sh" "$name" >/dev/null 2>&1 & disown
+    fi
 fi
 
 # One wait for both cases: whichever supervisor is in charge brings the shell

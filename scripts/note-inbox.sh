@@ -43,6 +43,16 @@ case "${1:-}" in
     *)               usage >&2; exit 1 ;;
 esac
 
+scripts_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    source "$scripts_dir/lib/lib-rust.sh"
+    rust_bin="$scripts_dir/bin/silhouette-tools"
+    if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" note-inbox --help >/dev/null 2>&1; then
+        exec "$rust_bin" note-inbox "$@"
+    fi
+fi
+
 mkdir -p "$NOTES_DIR"
 
 if (( STAMPED )); then

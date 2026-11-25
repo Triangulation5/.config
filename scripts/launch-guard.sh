@@ -10,6 +10,16 @@
 # for hours under chatty apps. So this script lives as long as the app does.
 #
 # Usage: launch-guard.sh <name> <icon> <workdir> <cmd> [args...]
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+if [ "$#" -ge 4 ] && [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+	# shellcheck source=lib/lib-rust.sh
+	source "$scripts_dir/lib/lib-rust.sh"
+	rust_bin="$scripts_dir/bin/silhouette-tools"
+	if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" launch-guard --help >/dev/null 2>&1; then
+		exec "$rust_bin" launch-guard "$@"
+	fi
+fi
+
 name="$1" icon="$2" wd="$3"
 shift 3
 window=5
@@ -18,7 +28,6 @@ tmp="$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/launch-guard.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 [ -n "$wd" ] && cd "$wd" 2>/dev/null || :
 
-scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 cmd="${1:-}"
 if [ -n "$cmd" ] && [ ! -f "$cmd" ]; then
 	case "$cmd" in

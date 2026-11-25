@@ -396,8 +396,22 @@ def apply(minimal=False):
     }
 
 
+def has_rust_toolchain():
+    cargo_bin = Path(os.environ.get("CARGO_HOME", Path.home() / ".cargo")) / "bin"
+    search_path = os.environ.get("PATH", "")
+    if cargo_bin.is_dir():
+        search_path = f"{cargo_bin}{os.pathsep}{search_path}" if search_path else str(cargo_bin)
+    return shutil.which("cargo", path=search_path) is not None or shutil.which("rustc", path=search_path) is not None
+
+
 def rust_enabled():
-    if os.environ.get("SILHOUETTE_FORCE_PYTHON") == "1":
+    if (
+        os.environ.get("SILHOUETTE_FORCE_PYTHON") == "1"
+        or os.environ.get("SILHOUETTE_FORCE_SHELL") == "1"
+        or os.environ.get("SILHOUETTE_NO_NATIVE") == "1"
+    ):
+        return False
+    if not has_rust_toolchain():
         return False
     state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
     flags = state_home / "silhouette" / "flags.json"

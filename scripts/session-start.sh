@@ -14,6 +14,24 @@ scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 # session log. Nothing here aborts the session: a missing idle manager is
 # annoying, not fatal.
 source "${scripts_dir}/lib/lib-notify.sh"
+source "${scripts_dir}/lib/lib-rust.sh"
+
+# 0. Adapt to Rust toolchain availability: expose ~/.cargo/bin and ensure
+# native binaries are compiled in the background when Rust is installed, or
+# select the Bash/Python fallbacks cleanly when it is not.
+if has_rust_toolchain; then
+    if rust_pref_enabled; then
+        [ -x "$scripts_dir/build-rust-tools.sh" ] && "$scripts_dir/build-rust-tools.sh" --ensure >/dev/null 2>&1 &
+        rust_bin="$scripts_dir/bin/silhouette-tools"
+        if [ -x "$rust_bin" ] && "$rust_bin" session-start --help >/dev/null 2>&1; then
+            exec "$rust_bin" session-start
+        fi
+    fi
+else
+    export SILHOUETTE_NO_NATIVE=1
+    export SILHOUETTE_FORCE_SHELL=1
+    export SILHOUETTE_FORCE_PYTHON=1
+fi
 
 # 1. Update D-Bus and systemd session activation environment
 if [ -d /run/systemd/system ] && command -v dbus-update-activation-environment >/dev/null 2>&1; then

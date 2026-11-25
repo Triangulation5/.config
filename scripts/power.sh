@@ -14,6 +14,16 @@ set -u
 
 action="${1:-}"
 
+scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+if [ -n "$action" ] && [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    source "$scripts_dir/lib/lib-rust.sh"
+    rust_bin="$scripts_dir/bin/silhouette-tools"
+    if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" power --help >/dev/null 2>&1; then
+        exec "$rust_bin" power "$action"
+    fi
+fi
+
 # Screen wake-up animation support: capture the framebuffer before suspension so
 # the shell can replay it behind the circular grow reveal on resume (see
 # services/WakeAnimation.qml). Every capture this shell wants to survive a wake

@@ -2,6 +2,16 @@
 
 set -euo pipefail
 
+scripts_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    source "$scripts_dir/lib/lib-rust.sh"
+    rust_bin="$scripts_dir/bin/silhouette-tools"
+    if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" lock-wallpaper --help >/dev/null 2>&1; then
+        exec "$rust_bin" lock-wallpaper "$@"
+    fi
+fi
+
 # Put the wallpaper where the minimal bar's lock can read it as its backdrop.
 #
 # The pill's lock opens onto a grab of the desktop: lock.sh screenshots every

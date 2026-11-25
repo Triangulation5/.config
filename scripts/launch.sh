@@ -38,8 +38,27 @@ fi
 # a waste: the session that follows the rename is the one that needs it. Failure
 # is not fatal - the shell comes up with defaults instead of old settings.
 scripts_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+# shellcheck source=lib/lib-rust.sh
+. "$scripts_dir/lib/lib-rust.sh"
+
 if [ -f "$scripts_dir/migrate-state.sh" ]; then
     sh "$scripts_dir/migrate-state.sh" || true
+fi
+
+# Prime the ready marker before Quickshell mounts `Flags.qml` so `FileView`
+# watches an existing inode, then either kick off any missing Rust builds in the
+# background or export fallback flags when no Rust toolchain is installed.
+rust_ready="${XDG_RUNTIME_DIR:-/tmp}/silhouette-rust-ready"
+[ -e "$rust_ready" ] || printf '0\n' > "$rust_ready" 2>/dev/null || true
+
+if has_rust_toolchain; then
+    if rust_pref_enabled && [ -x "$scripts_dir/build-rust-tools.sh" ] && [ ! -x "$scripts_dir/bin/silhouette-tools" ]; then
+        "$scripts_dir/build-rust-tools.sh" --ensure >/dev/null 2>&1 &
+    fi
+else
+    export SILHOUETTE_NO_NATIVE=1
+    export SILHOUETTE_FORCE_SHELL=1
+    export SILHOUETTE_FORCE_PYTHON=1
 fi
 
 # `qs` first, not `quickshell`: pkill/pgrep patterns elsewhere (reload.sh's

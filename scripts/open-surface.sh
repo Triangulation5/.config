@@ -16,6 +16,16 @@
 #
 #     open-surface.sh dwmBar          -> toggle the minimal bar
 
+scripts_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+	# shellcheck source=lib/lib-rust.sh
+	. "$scripts_dir/lib/lib-rust.sh"
+	rust_bin="$scripts_dir/bin/silhouette-tools"
+	if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" open-surface --help >/dev/null 2>&1; then
+		exec "$rust_bin" open-surface "$@"
+	fi
+fi
+
 if [ "$1" = "dwmBar" ]; then
 	exec qs -c silhouette-shell ipc call bar "${2:-toggle}"
 fi

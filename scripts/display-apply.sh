@@ -1,3 +1,19 @@
+#!/bin/sh
+
+scripts_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+case "${1:-}" in
+apply|keep|revert)
+    if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+        # shellcheck source=lib/lib-rust.sh
+        . "$scripts_dir/lib/lib-rust.sh"
+        rust_bin="$scripts_dir/bin/silhouette-tools"
+        if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" display-apply --help >/dev/null 2>&1; then
+            exec "$rust_bin" display-apply "$@"
+        fi
+    fi
+    ;;
+esac
+
 verb=$1
 out=$2
 

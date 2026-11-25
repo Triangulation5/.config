@@ -1,15 +1,11 @@
 #!/bin/sh
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck source=lib/lib-rust.sh
+. "$script_dir/lib/lib-rust.sh"
 rust_bin="$script_dir/bin/silhouette-tools"
-rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
-rust_enabled=true
-if [ -r "$rust_flags" ] &&
-   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$rust_flags"; then
-    rust_enabled=false
-fi
 if [ "${WALLPAPER_FORCE_SHELL:-0}" != 1 ] &&
-   [ "$rust_enabled" = true ] &&
+   rust_tools_usable &&
    [ -x "$rust_bin" ] &&
    "$rust_bin" cliphist-thumbs; then
     exit 0

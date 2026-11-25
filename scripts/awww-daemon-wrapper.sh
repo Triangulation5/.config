@@ -17,6 +17,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-status}" in
+    start|restart|stop|status)
+        if [ -r "${SCRIPT_DIR}/lib/lib-rust.sh" ]; then
+            # shellcheck source=lib/lib-rust.sh
+            source "${SCRIPT_DIR}/lib/lib-rust.sh"
+            rust_bin="${SCRIPT_DIR}/bin/silhouette-tools"
+            if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" awww-daemon --help >/dev/null 2>&1; then
+                exec "$rust_bin" awww-daemon "${1:-status}"
+            fi
+        fi
+        ;;
+esac
 source "${SCRIPT_DIR}/lib/lib-notify.sh"
 
 DAEMON_CMD="${DAEMON_CMD:-awww-daemon}"

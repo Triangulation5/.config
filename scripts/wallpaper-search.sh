@@ -3,15 +3,15 @@
 # Prefer the optimized Rust implementation. It is enabled only while Rust is
 # installed and the settings flag has not disabled it; every other case reaches
 # the Bash implementation below.
-rust_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin/silhouette-tools"
-rust_enabled=true
-rust_flags="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette/flags.json"
-if [ -r "$rust_flags" ] &&
-   grep -Eq '"(useRustTools|rustWallpapers)"[[:space:]]*:[[:space:]]*false' "$rust_flags"; then
-    rust_enabled=false
+_ws_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -r "${_ws_dir}/lib/lib-rust.sh" ]; then
+    # shellcheck source=lib/lib-rust.sh
+    source "${_ws_dir}/lib/lib-rust.sh"
 fi
+rust_bin="${_ws_dir}/bin/silhouette-tools"
 if [ "${WALLPAPER_FORCE_SHELL:-0}" != 1 ] &&
-   [ "$rust_enabled" = true ] &&
+   declare -F rust_tools_usable >/dev/null 2>&1 &&
+   rust_tools_usable &&
    [ -x "$rust_bin" ]; then
     case "${1:-}" in
         search)

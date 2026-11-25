@@ -8,6 +8,16 @@
 
 set -euo pipefail
 
+scripts_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
+	# shellcheck source=lib/lib-rust.sh
+	source "$scripts_dir/lib/lib-rust.sh"
+	rust_bin="$scripts_dir/bin/silhouette-tools"
+	if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" gamemode --help >/dev/null 2>&1; then
+		exec "$rust_bin" gamemode "$@"
+	fi
+fi
+
 state="${XDG_STATE_HOME:-$HOME/.local/state}/silhouette"
 snap="$state/gamemode-snapshot.json"
 mkdir -p "$state"
