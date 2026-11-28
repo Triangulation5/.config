@@ -28,6 +28,9 @@ enum Request {
     Usage {
         usage: HashMap<String, u32>,
     },
+    Bump {
+        id: String,
+    },
     Query {
         seq: u64,
         #[serde(default)]
@@ -81,6 +84,9 @@ pub(crate) fn run() -> bool {
             }
             Request::Usage { usage } => {
                 matcher.set_usage(usage);
+            }
+            Request::Bump { id } => {
+                matcher.bump_usage(&id);
             }
             Request::Query { seq, q } => {
                 matcher.rank(&q, &mut indices);

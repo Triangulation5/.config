@@ -15,7 +15,7 @@ if [ "$#" -ge 4 ] && [ -r "$scripts_dir/lib/lib-rust.sh" ]; then
 	# shellcheck source=lib/lib-rust.sh
 	source "$scripts_dir/lib/lib-rust.sh"
 	rust_bin="$scripts_dir/bin/silhouette-tools"
-	if rust_tools_usable && [ -x "$rust_bin" ] && "$rust_bin" launch-guard --help >/dev/null 2>&1; then
+	if rust_tools_usable && [ -x "$rust_bin" ]; then
 		exec "$rust_bin" launch-guard "$@"
 	fi
 fi

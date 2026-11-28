@@ -13,10 +13,11 @@ const STDERR_CAP_BYTES: usize = 65_536;
 
 fn maybe_heal_appimage(cmd: &OsString) -> Option<OsString> {
     let s = cmd.to_str()?;
-    if Path::new(s).is_file() {
+    // Check suffix before stat() so non-AppImage launches pay zero filesystem overhead.
+    if !s.to_ascii_lowercase().ends_with(".appimage") {
         return None;
     }
-    if !s.to_ascii_lowercase().ends_with(".appimage") {
+    if Path::new(s).is_file() {
         return None;
     }
     let out = env::current_exe()

@@ -70,6 +70,24 @@ impl Matcher {
         }
     }
 
+    pub(crate) fn bump_usage(&mut self, id: &str) {
+        if id.is_empty() {
+            return;
+        }
+        let next = self
+            .usage_map
+            .get(id)
+            .copied()
+            .unwrap_or(0)
+            .saturating_add(1);
+        self.usage_map.insert(id.to_string(), next);
+        for entry in &mut self.entries {
+            if entry.id == id {
+                entry.usage = next;
+            }
+        }
+    }
+
     /// Rank indexed entries for `query`, writing matching entry indices into `out`.
     pub(crate) fn rank(&mut self, query: &str, out: &mut Vec<usize>) {
         out.clear();
@@ -237,5 +255,21 @@ mod tests {
 
         matcher.rank("shell", &mut out);
         assert_eq!(out, vec![1]);
+    }
+
+    #[test]
+    fn bump_usage_updates_ranking_in_place() {
+        let mut matcher = Matcher::new();
+        matcher.set_entries(vec![
+            IndexedEntry::new("alpha".into(), "Alpha", None, &[], 0),
+            IndexedEntry::new("beta".into(), "Beta", None, &[], 0),
+        ]);
+        let mut out = Vec::new();
+        matcher.rank("", &mut out);
+        assert_eq!(out, vec![0, 1]);
+
+        matcher.bump_usage("beta");
+        matcher.rank("", &mut out);
+        assert_eq!(out, vec![1, 0]);
     }
 }
