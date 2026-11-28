@@ -1,8 +1,8 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import Quickshell.Hyprland
+import qs.services
 import "../utils/launcher/fuzzy.js" as Fuzzy
 
 /**
@@ -11,23 +11,10 @@ import "../utils/launcher/fuzzy.js" as Fuzzy
  * The launcher is a mode of the bar, not a window of its own: while `open`, the
  * strip on `monitor` stops drawing its readouts and draws a prompt, an input and
  * a horizontal run of matches in their place, the way dmenu takes over a dwm bar.
- * This singleton is the one place that says whether it is open, on which output,
- * what has been typed and which match is selected — the strip on every other
- * output only reads `open` and `monitor` to know it is not the one.
  *
- * It reuses the standalone launcher's own machinery rather than growing a second
- * set of rules: the same fuzzy ranking (utils/launcher/fuzzy.js), the same usage
- * file, so the apps you open most rise to the top in both, and the same
- * launch-guard script, so an app that dies on startup fails loudly the same way.
- * The file is watched, so a launch from the other launcher is picked up here too.
- *
- * It answers to the standalone launcher's own IPC target and keybind as well:
- * while the bar is the shell, `launcher show|hide|toggle` (see LauncherRoot) is
- * routed here instead of raising the full-screen overlay, so one bind opens
- * whichever launcher belongs to the presentation on screen.
- *
- * The ranked list is built only while the launcher is open: the bar is on screen
- * all day and the launcher a few seconds of it.
+ * Desktop entry filtering, usage persistence, and crash-guarded/terminal-aware
+ * launching live in `services/AppLauncher.qml` so every launcher shares one
+ * implementation.
  */
 Singleton {
     id: root
@@ -38,59 +25,34 @@ Singleton {
     property string monitor: ""
     property string query: ""
     property int selected: 0
-    property var usage: ({})
 
-    readonly property var allEntries: {
-        if (!root.open)
-            return [];
-        var src = DesktopEntries.applications.values;
-        var out = [];
-        for (var i = 0; i < src.length; i++)
-            if (src[i] && !src[i].noDisplay)
-                out.push(src[i]);
-        return out;
-    }
-
-    readonly property int total: allEntries.length
+    readonly property var allEntries: root.open ? AppLauncher.allEntries : []
+    readonly property int total: root.open ? AppLauncher.total : 0
     readonly property var results: {
         if (!root.open)
             return [];
         void LauncherMatch.lastSeq;
         var rust = LauncherMatch.resolve(allEntries);
-        return rust !== null ? rust : Fuzzy.rank(allEntries, query, usage);
+        return rust !== null ? rust : Fuzzy.rank(allEntries, query, AppLauncher.usage);
     }
 
-    onAllEntriesChanged: if (root.open) LauncherMatch.sync(allEntries, query, usage)
-    onUsageChanged: if (root.open) LauncherMatch.sync(allEntries, query, usage)
-    onQueryChanged: if (root.open) LauncherMatch.sendQuery(query)
-
-    readonly property string guardScript: Quickshell.env("HOME") + "/.config/scripts/launch-guard.sh"
-
-    FileView {
-        id: usageStore
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/launcher-usage.json"
-        atomicWrites: true
-        printErrors: false
-        watchChanges: true
-        onFileChanged: reload()
-        onLoaded: root.parseUsage(usageStore.text())
-        onLoadFailed: root.parseUsage("")
-    }
-
-    function parseUsage(raw) {
-        try {
-            root.usage = raw && raw.length ? JSON.parse(raw) : ({});
-        } catch (e) {
-            root.usage = ({});
+    Connections {
+        target: AppLauncher
+        function onAllEntriesChanged() {
+            if (root.open)
+                LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
+        }
+        function onUsageChanged() {
+            if (root.open)
+                LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
         }
     }
 
+    onQueryChanged: if (root.open) LauncherMatch.sendQuery(query)
+
     /**
-     * The output to open on. The standalone launcher's bind hands over a monitor
-     * name of its own making (or none), so whatever arrives is checked against
-     * the screens that exist: a real name is honoured, anything else falls back
-     * to the focused output, then to the first, so the launcher can never open on
-     * an output with no strip to carry it.
+     * The output to open on. Checks the requested name against connected
+     * screens, falling back to the focused output, then the first screen.
      */
     function resolve(mon) {
         var screens = Quickshell.screens;
@@ -134,17 +96,8 @@ Singleton {
         return root.results.length > 0 ? root.results[root.selected] : null;
     }
 
-    /**
-     * entry.execute() is fire and forget, so an app that dies on startup fails
-     * silently; the guard script watches the first seconds and toasts the exit
-     * code plus stderr when it does. Same call the standalone launcher makes.
-     */
     function launchApp(entry) {
-        if (!entry.command || entry.command.length === 0) {
-            entry.execute();
-            return;
-        }
-        Quickshell.execDetached(["bash", root.guardScript, entry.name, entry.icon || "", entry.workingDirectory || ""].concat(entry.command));
+        AppLauncher.launch(entry);
     }
 
     /** Launch the selected match and close; counts the launch so it ranks higher next time. */
@@ -152,12 +105,7 @@ Singleton {
         var entry = root.current();
         if (!entry)
             return;
-        if (entry.id) {
-            root.usage[entry.id] = (root.usage[entry.id] || 0) + 1;
-            /** Fire-and-forget: the write is async, so a launch never waits on disk. */
-            usageStore.setText(JSON.stringify(root.usage));
-        }
-        root.launchApp(entry);
+        AppLauncher.launchAndRecord(entry);
         root.hide();
     }
 
@@ -172,10 +120,10 @@ Singleton {
 
     /** Take the latest usage counts each time it opens. */
     onOpenChanged: {
-        LauncherMatch.active = root.open;
+        LauncherMatch.setConsumer("bar", root.open);
         if (root.open) {
-            usageStore.reload();
-            LauncherMatch.sync(allEntries, query, usage);
+            AppLauncher.reloadUsage();
+            LauncherMatch.sync(AppLauncher.allEntries, query, AppLauncher.usage);
         }
     }
 }

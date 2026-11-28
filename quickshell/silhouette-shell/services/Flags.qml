@@ -813,6 +813,9 @@ Singleton {
         }
     }
 
+    /** Shared path to the compiled `silhouette-tools` Rust binary. */
+    readonly property string rustBin: Quickshell.env("HOME") + "/.config/scripts/bin/silhouette-tools"
+
     /**
      * Touched by `scripts/build-rust-tools.sh` once a background build finishes,
      * so services that fell back while `silhouette-tools` was compiling re-arm
