@@ -120,14 +120,7 @@ Column {
         return best;
     }
 
-    readonly property var allEntries: {
-        var src = DesktopEntries.applications.values;
-        var out = [];
-        for (var i = 0; i < src.length; i++)
-            if (src[i] && !src[i].noDisplay)
-                out.push(src[i]);
-        return out;
-    }
+    readonly property var allEntries: AppLauncher.allEntries
     readonly property var results: Fuzzy.rank(allEntries, query, ({}))
 
     /**

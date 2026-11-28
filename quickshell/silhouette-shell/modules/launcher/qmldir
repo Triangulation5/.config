@@ -4,10 +4,12 @@ AppPickerList 1.0 AppPickerList.qml
 AppRow 1.0 AppRow.qml
 CalcRow 1.0 CalcRow.qml
 EmojiGrid 1.0 EmojiGrid.qml
+EmojiSearch 1.0 EmojiSearch.qml
 Launcher 1.0 Launcher.qml
 LauncherRoot 1.0 LauncherRoot.qml
 ModeRows 1.0 ModeRows.qml
 PrefixRow 1.0 PrefixRow.qml
 SearchField 1.0 SearchField.qml
 WindowRow 1.0 WindowRow.qml
+WindowSearch 1.0 WindowSearch.qml
 WinList 1.0 WinList.qml

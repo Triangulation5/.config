@@ -16,6 +16,10 @@ Item {
     property real s: 1.1
     property var host: null
 
+    function scrollTo(index) {
+        emojiGrid.positionViewAtIndex(index, GridView.Contain);
+    }
+
     GridView {
         id: emojiGrid
         visible: host.emojiActive

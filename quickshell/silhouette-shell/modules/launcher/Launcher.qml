@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 import qs.services
 import qs.modules.settings
 import qs.modules.pill.surfaces
@@ -11,14 +10,13 @@ import qs.components.icons
 import qs.components.controls
 import "../../utils/launcher/fuzzy.js" as Fuzzy
 import "../../utils/launcher/calc.js" as Calc
-import "../../utils/launcher/emojis.js" as EmojiData
 
 /**
  * Launcher surface: search field over a ranked application list, drawn as one
- * of the pill's surfaces. Desktop entries are ranked by fuzzy match and prior
- * launch frequency (usage file shared with the standalone launcher), the
- * chosen entry launches through the crash guard so a startup failure is not
- * silent.
+ * of the pill's surfaces (or hosted inside `LauncherRoot` as a full-screen
+ * overlay). Desktop entries, usage frequency persistence, and crash-guarded /
+ * terminal-aware launching are provided by `services/AppLauncher.qml`; emoji
+ * and window modes are split into `EmojiSearch.qml` and `WindowSearch.qml`.
  */
 PillSurface {
     id: root
@@ -30,8 +28,8 @@ PillSurface {
 
     property string query: ""
     property int selectedIndex: 0
-    property var usage: ({})
-    property var entries: []
+    /** Optional externally ranked list (supplied by `LauncherRoot`). Null when self-driven in the pill. */
+    property var entries: null
     property int total: 0
 
     signal launch(var entry)
@@ -44,14 +42,8 @@ PillSurface {
      */
     property var pillRef: null
 
-    /**
-     * Exit path for every mode: launch a Firefox tab, run a terminal command,
-     * copy an emoji, focus a window or pick an app. The launcher is normally
-     * opened from the hover face, so the pointer is on the pill when it closes
-     * and the hover face would come straight back up — clock, media bud, tray
-     * and dates over the app that was just launched. The pill is told to drop
-     * that hover instead, so every exit leaves the desktop alone.
-     */
+    readonly property bool externalMode: root.entries !== null
+
     function finish() {
         if (pillRef)
             pillRef.dismissHover();
@@ -59,18 +51,16 @@ PillSurface {
         requestClose();
     }
 
-    /**
-     * Calc mode: when the whole query parses as a real calculation (an
-     * expression with at least one operation, so lone numbers and app names like
-     * i3 or python3 fall through to app search), a result row appears above the
-     * list and Enter copies the value. The parser in utils/launcher/calc.js never
-     * evals, so a query cannot run code.
-     */
+    /** Calc mode: active when the query parses as an expression with at least one operation. */
     readonly property var calc: Calc.evaluate(query)
     readonly property bool calcActive: calc.ok
     property bool calcCopied: false
-    property bool emojiCopied: false
-    onQueryChanged: { calcCopied = false; emojiCopied = false; }
+    readonly property bool emojiCopied: emojiSearch.copied
+    onQueryChanged: {
+        calcCopied = false;
+        if (!root.externalMode && root.active)
+            LauncherMatch.sendQuery(root.query);
+    }
 
     function copyResult() {
         if (!root.calcActive)
@@ -79,28 +69,19 @@ PillSurface {
         root.calcCopied = true;
     }
 
-    /**
-     * AI mode: an `@` prefix opens Perplexity in Firefox with the query
-     * pre-filled and submitted via the `q=` URL parameter. Reuses an
-     * existing Firefox window as a new tab if one is already running.
-     */
+    /** AI mode (`@` prefix): open Perplexity search in Firefox. */
     readonly property bool aiActive: query.length > 1 && query[0] === '@'
     readonly property string aiQuery: aiActive ? query.slice(1).trim() : ""
 
     function runAI() {
         if (!aiActive || aiQuery.length === 0)
             return;
-
         const url = "https://www.perplexity.ai/search?q=" + encodeURIComponent(aiQuery);
         Quickshell.execDetached(["firefox", "--new-tab", url]);
-
         root.finish();
     }
 
-    /**
-     * Command palette mode: a `>` prefix turns the launcher into a raycast-style
-     * palette. Currently supports web search via Firefox.
-     */
+    /** Command palette mode (`>` prefix): web search via Firefox. */
     readonly property bool commandActive: query.length > 1 && query[0] === '>'
     readonly property string commandQuery: commandActive ? query.slice(1).trim() : ""
 
@@ -111,11 +92,7 @@ PillSurface {
         root.finish();
     }
 
-    /**
-     * Terminal mode: a `$` prefix turns the launcher into a terminal command
-     * runner. The query is launched via kitty so CLI apps like btop or nvim
-     * open in their own terminal window.
-     */
+    /** Terminal mode (`$` prefix): run a command inside kitty. */
     readonly property bool terminalActive: query.length > 1 && query[0] === '$'
     readonly property string terminalCommand: terminalActive ? query.slice(1).trim() : ""
 
@@ -126,264 +103,117 @@ PillSurface {
         root.finish();
     }
 
-    /**
-     * Window switcher mode: a `:w` prefix shows open Hyprland windows filtered
-     * by title/class. Enter focuses the selected window and closes.
-     */
+    /** Window switcher mode (`:w` prefix). */
     readonly property bool windowActive: query.length >= 2 && query[0] === ':' && query[1] === 'w'
         && (query.length === 2 || query[2] === ' ')
     readonly property string windowQuery: windowActive ? (query.length > 3 ? query.slice(3).trim() : "") : ""
 
-    /**
-     * Emoji picker mode: a `:` prefix (not `:w`) shows emojis filtered by name.
-     * Enter copies the selected emoji via wl-copy and closes.
-     */
+    /** Emoji picker mode (`:` prefix, excluding `:w`). */
     readonly property bool emojiActive: query.length > 1 && query[0] === ':' && !root.windowActive
     readonly property string emojiQuery: emojiActive ? query.slice(1).trim() : ""
 
-    readonly property string watcherRunner: Qt.resolvedUrl("../../utils/watchers/run.sh").toString().replace(/^file:\/\//, "")
-    readonly property string emojiDbPath: Qt.resolvedUrl("../../utils/launcher/emojis.js").toString().replace(/^file:\/\//, "")
-    property bool rustEmojiUnavailable: false
-    readonly property bool useRustEmoji: Flags.useRustTools && !root.rustEmojiUnavailable
-    property var rustEmojiIndices: []
-    property int rustEmojiSeq: 0
-    property int rustEmojiPendingSeq: 0
-    property bool rustEmojiReady: false
-    property bool rustEmojiHasResult: false
-
-    onEmojiQueryChanged: {
-        if (root.emojiActive && root.useRustEmoji && root.rustEmojiReady) {
-            root.rustEmojiPendingSeq += 1;
-            emojiMatchProc.write(root.rustEmojiPendingSeq + "\t" + root.emojiQuery + "\n");
+    EmojiSearch {
+        id: emojiSearch
+        active: root.emojiActive
+        query: root.emojiQuery
+        onResultsChanged: {
+            if (root.selectedIndex >= emojiSearch.results.length)
+                root.selectedIndex = 0;
         }
     }
 
-    Process {
-        id: emojiMatchProc
-        command: [root.watcherRunner, "emoji-match", root.emojiDbPath]
-        stdinEnabled: true
-        running: root.emojiActive && root.useRustEmoji
-        onStarted: {
-            root.rustEmojiReady = true;
-            root.rustEmojiHasResult = false;
-            root.rustEmojiPendingSeq += 1;
-            emojiMatchProc.write(root.rustEmojiPendingSeq + "\t" + root.emojiQuery + "\n");
-        }
-        onRunningChanged: {
-            if (!running) {
-                root.rustEmojiReady = false;
-                root.rustEmojiHasResult = false;
-            }
-        }
-        stdout: SplitParser {
-            onRead: (line) => {
-                if (!line || line.trim().length === 0)
-                    return;
-                try {
-                    var msg = JSON.parse(line);
-                    if (msg && typeof msg.seq === "number" && Array.isArray(msg.indices)) {
-                        if (msg.seq >= root.rustEmojiSeq) {
-                            root.rustEmojiSeq = msg.seq;
-                            root.rustEmojiIndices = msg.indices;
-                            root.rustEmojiHasResult = true;
-                        }
-                    }
-                } catch (e) {
-                }
-            }
-        }
-        onExited: function(exitCode) {
-            if (exitCode === 127)
-                root.rustEmojiUnavailable = true;
+    WindowSearch {
+        id: windowSearch
+        active: root.windowActive
+        query: root.windowQuery
+        onResultsChanged: {
+            if (root.selectedIndex >= windowSearch.results.length)
+                root.selectedIndex = 0;
         }
     }
 
-    readonly property var emojiResults: {
-        var q = root.emojiQuery.toLowerCase();
-        if (q.length === 0)
-            return EmojiData.Emojis;
-        if (root.useRustEmoji && root.rustEmojiHasResult) {
-            var idxs = root.rustEmojiIndices;
-            var mapped = new Array(idxs.length);
-            var n = 0;
-            for (var r = 0; r < idxs.length; r++) {
-                var idx = idxs[r];
-                if (idx >= 0 && idx < EmojiData.Emojis.length)
-                    mapped[n++] = EmojiData.Emojis[idx];
-            }
-            if (n !== mapped.length)
-                mapped.length = n;
-            return mapped;
-        }
-        var out = [];
-        for (var i = 0; i < EmojiData.Emojis.length; i++) {
-            if (EmojiData.Emojis[i].n.indexOf(q) !== -1)
-                out.push(EmojiData.Emojis[i]);
-        }
-        return out;
-    }
-
-    readonly property var windowResults: {
-        var tl = Hyprland.toplevels.values;
-        var out = [];
-        for (var i = 0; i < tl.length; i++) {
-            var t = tl[i];
-            if (!t || !t.address || !t.title)
-                continue;
-            var ipc = t.lastIpcObject;
-            out.push({
-                address: t.address,
-                title: t.title || "",
-                cls: (ipc && ipc.class) ? ipc.class : "",
-                workspace: (ipc && ipc.workspace) ? ipc.workspace.name : ""
-            });
-        }
-        var q = root.windowQuery.toLowerCase();
-        if (q.length === 0)
-            return out;
-        var filtered = [];
-        for (var j = 0; j < out.length; j++) {
-            var w = out[j];
-            if (w.title.toLowerCase().indexOf(q) !== -1 || w.cls.toLowerCase().indexOf(q) !== -1)
-                filtered.push(w);
-        }
-        return filtered;
-    }
-
-    /** Cached lowercase desktop-id -> icon path map so window rows resolve in O(1). */
-    readonly property var windowIconMap: {
-        var apps = DesktopEntries.applications.values;
-        var map = {};
-        for (var i = 0; i < apps.length; i++) {
-            var a = apps[i];
-            if (!a || !a.id || !a.icon)
-                continue;
-            var id = a.id.toLowerCase();
-            var icon = Quickshell.iconPath(a.icon, true);
-            if (!icon)
-                continue;
-            map[id] = icon;
-            if (id.endsWith(".desktop"))
-                map[id.slice(0, -8)] = icon;
-        }
-        return map;
-    }
+    readonly property var emojiResults: emojiSearch.results
+    readonly property var windowResults: windowSearch.results
 
     function iconForWindow(cls) {
-        if (!cls || !cls.length)
-            return "";
-        var key = cls.toLowerCase();
-        return root.windowIconMap[key] || root.windowIconMap[key + ".desktop"] || "";
+        return windowSearch.iconForWindow(cls);
     }
 
     function copyEmoji() {
-        if (!root.emojiActive || root.emojiResults.length === 0 || selectedIndex < 0 || selectedIndex >= root.emojiResults.length)
-            return;
-        Quickshell.execDetached(["wl-copy", "--", root.emojiResults[selectedIndex].e]);
-        root.emojiCopied = true;
-        root.finish();
+        if (emojiSearch.copyAt(root.selectedIndex))
+            root.finish();
     }
 
     function focusWindow() {
-        if (!root.windowActive || root.windowResults.length === 0 || selectedIndex < 0 || selectedIndex >= root.windowResults.length)
-            return;
-        var addr = root.windowResults[selectedIndex].address;
-        if (addr.indexOf("0x") !== 0)
-            addr = "0x" + addr;
-        Hyprland.dispatch('hl.dsp.focus({ window = "address:' + addr + '" })');
-        root.finish();
+        if (windowSearch.focusAt(root.selectedIndex))
+            root.finish();
     }
 
     /** Row index currently in AppImage edit mode (rename plus armed delete), -1 when none. */
     property int editIndex: -1
 
-    readonly property string appimageScript: Quickshell.env("HOME") + "/.config/scripts/app-install.sh"
-    readonly property string guardScript: Quickshell.env("HOME") + "/.config/scripts/launch-guard.sh"
-
-    /**
-     * entry.execute() is fire and forget, so an app that dies on startup fails
-     * silently. The guard watches the first seconds and toasts exit code plus
-     * stderr with a Copy action when it does.
-     */
-    function launchApp(entry) {
-        if (!entry.command || entry.command.length === 0) {
-            entry.execute();
-            return;
-        }
-        Quickshell.execDetached(["bash", root.guardScript, entry.name, entry.icon || "", entry.workingDirectory || ""].concat(entry.command));
-    }
-
-    /**
-     * The AppImage slug behind an entry id, or "" when it is not one of ours.
-     * The drop-installer writes `silhouette-<slug>` now; `ricelin-<slug>` is what
-     * entries installed before that rename look like, and they stay editable
-     * instead of being orphaned by it.
-     */
-    function appimageSlug(entry) {
-        if (!entry || !entry.id)
-            return "";
-        if (entry.id.indexOf("silhouette-") === 0)
-            return entry.id.substring(11);
-        if (entry.id.indexOf("ricelin-") === 0)
-            return entry.id.substring(8);
-        return "";
-    }
-
+    readonly property string appimageScript: AppLauncher.appimageScript
+    readonly property alias appimageProc: appimageProc
     Process { id: appimageProc }
 
+    function launchApp(entry) {
+        AppLauncher.launch(entry);
+    }
+
+    function appimageSlug(entry) {
+        return AppLauncher.appimageSlug(entry);
+    }
+
+    function mapCategory(raw) {
+        return AppLauncher.mapCategory(raw);
+    }
+
     /**
-     * Window-coordinate position of the last hover event that was allowed to
-     * move the selection. Rows sliding under a stationary cursor during
-     * keyboard scrolling produce hover events at an unchanged window position,
-     * which must not steal the keyboard selection.
+     * Window-coordinate position of the last hover event allowed to move the
+     * selection so keyboard scrolling under a stationary cursor cannot steal it.
      */
     property point lastPointer: Qt.point(-1, -1)
 
     ameForm: "caret"
     amePoint: caretPointOf(search.input)
 
-    readonly property string usageFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/launcher-usage.json"
-
-    readonly property var allEntries: {
-        var src = DesktopEntries.applications.values;
-        var out = [];
-        for (var i = 0; i < src.length; i++)
-            if (src[i] && !src[i].noDisplay) out.push(src[i]);
-        return out;
+    readonly property var allEntries: AppLauncher.allEntries
+    readonly property int totalCount: root.externalMode ? root.total : AppLauncher.total
+    readonly property var results: {
+        if (root.externalMode)
+            return root.entries;
+        void LauncherMatch.lastSeq;
+        var rust = LauncherMatch.resolve(AppLauncher.allEntries);
+        return rust !== null ? rust : Fuzzy.rank(AppLauncher.allEntries, root.query, AppLauncher.usage);
     }
-    readonly property int totalCount: allEntries.length
-    readonly property var results: (entries && entries.length > 0) ? entries : Fuzzy.rank(allEntries, query, usage)
+
+    Connections {
+        target: AppLauncher
+        function onAllEntriesChanged() {
+            if (!root.externalMode && root.active)
+                LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
+        }
+        function onUsageChanged() {
+            if (!root.externalMode && root.active)
+                LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
+        }
+    }
 
     function focusField() { search.input.forceActiveFocus(); }
-
-    function mapCategory(raw) {
-        const order = [
-            ["TerminalEmulator", "Terminal"], ["WebBrowser", "Browser"],
-            ["InstantMessaging", "Chat"], ["Audio", "Media"], ["AudioVideo", "Media"],
-            ["Video", "Media"], ["Game", "Game"], ["Development", "Dev"],
-            ["Graphics", "Graphics"], ["Office", "Office"], ["Settings", "System"],
-            ["System", "System"], ["Utility", "Tool"], ["Network", "Net"]
-        ];
-        const cats = String(raw).split(/[;,]/);
-        for (let i = 0; i < order.length; i++)
-            if (cats.includes(order[i][0]))
-                return order[i][1];
-        return "";
-    }
 
     function move(delta) {
         if (root.windowActive) {
             if (root.windowResults.length === 0)
                 return;
             selectedIndex = Math.max(0, Math.min(root.windowResults.length - 1, selectedIndex + delta));
-            winList.positionViewAtIndex(selectedIndex, ListView.Contain);
+            winListView.scrollTo(selectedIndex);
             return;
         }
         if (root.emojiActive) {
             if (root.emojiResults.length === 0)
                 return;
             selectedIndex = Math.max(0, Math.min(root.emojiResults.length - 1, selectedIndex + delta));
-            emojiGrid.positionViewAtIndex(selectedIndex, GridView.Contain);
+            emojiGridView.scrollTo(selectedIndex);
             return;
         }
         if (results.length === 0)
@@ -421,20 +251,22 @@ PillSurface {
             return;
         var entry = results[selectedIndex];
         if (entry) {
-            if (root.entries && root.entries.length > 0) {
+            if (root.externalMode)
                 root.launch(entry);
-            } else {
-                if (entry.id) {
-                    root.usage[entry.id] = (root.usage[entry.id] || 0) + 1;
-                    usageStore.setText(JSON.stringify(root.usage));
-                }
-                root.launchApp(entry);
-            }
+            else
+                AppLauncher.launchAndRecord(entry);
         }
         root.finish();
     }
 
     onActiveChanged: {
+        if (!root.externalMode) {
+            LauncherMatch.setConsumer("pill", root.active);
+            if (root.active) {
+                AppLauncher.reloadUsage();
+                LauncherMatch.sync(AppLauncher.allEntries, "", AppLauncher.usage);
+            }
+        }
         if (active) {
             query = "";
             search.text = "";
@@ -442,36 +274,14 @@ PillSurface {
             Qt.callLater(root.focusField);
         }
     }
+    Component.onDestruction: {
+        if (!root.externalMode)
+            LauncherMatch.setConsumer("pill", false);
+    }
     onResultsChanged: {
         if (selectedIndex >= results.length)
             selectedIndex = 0;
         editIndex = -1;
-    }
-    onEmojiResultsChanged: {
-        if (selectedIndex >= root.emojiResults.length)
-            selectedIndex = 0;
-    }
-    onWindowResultsChanged: {
-        if (selectedIndex >= root.windowResults.length)
-            selectedIndex = 0;
-    }
-
-    /** Usage map loads async so opening the surface never blocks on disk; the first pass ranks with an empty map and re-ranks when it lands. */
-    FileView {
-        id: usageStore
-        path: root.usageFile
-        atomicWrites: true
-        printErrors: false
-        onLoaded: parseUsage(usageStore.text())
-        onLoadFailed: parseUsage("")
-    }
-
-    function parseUsage(raw) {
-        try {
-            root.usage = raw && raw.length ? JSON.parse(raw) : ({});
-        } catch (e) {
-            root.usage = ({});
-        }
     }
 
     SearchField {
@@ -531,8 +341,8 @@ PillSurface {
         font.pixelSize: 10.5 * root.s
     }
 
-
     EmojiGrid {
+        id: emojiGridView
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
@@ -541,9 +351,9 @@ PillSurface {
         s: root.s
         host: root
     }
-
 
     WinList {
+        id: winListView
         anchors.top: divider.bottom
         anchors.topMargin: 6 * root.s
         anchors.left: parent.left
@@ -552,7 +362,6 @@ PillSurface {
         s: root.s
         host: root
     }
-
 
     ListView {
         id: list
@@ -577,7 +386,7 @@ PillSurface {
             selected: root.selectedIndex === index
             /** Coerced to a real bool: a missing entry would otherwise leave the
              *  expression undefined, which QML logs as an invalid assignment. */
-            editing: { var e = root.results[index]; return !!(e && root.appimageSlug(e).length > 0 && root.editIndex === index); }
+            editing: { var e = root.results[index]; return !!(e && AppLauncher.isAppImage(e) && root.editIndex === index); }
         }
     }
 

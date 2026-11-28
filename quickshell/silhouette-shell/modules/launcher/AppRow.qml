@@ -23,15 +23,14 @@ Item {
 
     /** Entries the drop-installer wrote: `silhouette-` now, and the `ricelin-`
      *  prefix everything installed before that rename still carries. */
-    readonly property bool isAppImage: entry && entry.id
-        && (entry.id.indexOf("silhouette-") === 0 || entry.id.indexOf("ricelin-") === 0)
+    readonly property bool isAppImage: AppLauncher.isAppImage(entry)
     property bool armed: false
     onEditingChanged: if (!editing) armed = false
 
     readonly property string secondary: {
         if (!entry) return "";
         if (entry.genericName && entry.genericName.length > 0) return entry.genericName;
-        if (entry.categories && entry.categories.length > 0 && surface) return surface.mapCategory(entry.categories);
+        if (entry.categories && entry.categories.length > 0) return AppLauncher.mapCategory(entry.categories);
         return "";
     }
 

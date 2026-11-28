@@ -8,82 +8,49 @@ import "../../utils/launcher/fuzzy.js" as Fuzzy
 
 /**
  * Launcher window root. Shows the launcher on the target monitor with a
- * full-screen overlay, backed by the fuzzy-ranked desktop entries and a persisted
- * usage map (launcher-usage.json) so frequent apps rise to the top; launching an
- * entry runs it through the surface's crash guard and closes.
+ * full-screen overlay, backed by `AppLauncher` and `LauncherMatch`.
  */
-
 ShellRoot {
     id: root
 
     property string query: ""
-    property var usage: ({})
     property bool shown: false
     property string targetMonitor: ""
 
-    /**
-     * Usage map loads asynchronously so startup never blocks on disk; the first
-     * ranking pass sees an empty map and re-ranks the moment it lands. Writes
-     * are fire-and-forget (atomicWrites), so launching an app never waits on IO.
-     */
-    FileView {
-        id: usageStore
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/silhouette/launcher-usage.json"
-        atomicWrites: true
-        printErrors: false
-        onLoaded: parseUsage(usageStore.text())
-        onLoadFailed: parseUsage("")
-    }
-
-    function parseUsage(raw) {
-        try {
-            root.usage = raw && raw.length ? JSON.parse(raw) : ({});
-        } catch (e) {
-            root.usage = ({});
-        }
-    }
-
-    readonly property var allEntries: {
-        var src = DesktopEntries.applications.values;
-        var out = [];
-        for (var i = 0; i < src.length; i++)
-            if (src[i] && !src[i].noDisplay) out.push(src[i]);
-        return out;
-    }
-
-    readonly property int totalCount: allEntries.length
+    readonly property var allEntries: AppLauncher.allEntries
+    readonly property int totalCount: AppLauncher.total
     readonly property var results: {
         if (!root.shown)
             return [];
         void LauncherMatch.lastSeq;
         var rust = LauncherMatch.resolve(allEntries);
-        return rust !== null ? rust : Fuzzy.rank(allEntries, query, usage);
+        return rust !== null ? rust : Fuzzy.rank(allEntries, query, AppLauncher.usage);
+    }
+
+    Connections {
+        target: AppLauncher
+        function onAllEntriesChanged() {
+            if (root.shown)
+                LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
+        }
+        function onUsageChanged() {
+            if (root.shown)
+                LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
+        }
     }
 
     onShownChanged: {
         if (!root.shown)
             root.query = "";
-        LauncherMatch.active = root.shown || BarLauncher.open;
+        LauncherMatch.setConsumer("overlay", root.shown);
         if (root.shown)
-            LauncherMatch.sync(allEntries, query, usage);
+            LauncherMatch.sync(AppLauncher.allEntries, root.query, AppLauncher.usage);
     }
-    onAllEntriesChanged: if (root.shown) LauncherMatch.sync(allEntries, query, usage)
-    onUsageChanged: if (root.shown) LauncherMatch.sync(allEntries, query, usage)
     onQueryChanged: if (root.shown) LauncherMatch.sendQuery(query)
 
     function run(entry) {
-        if (entry) {
-            if (entry.id) {
-                root.usage[entry.id] = (root.usage[entry.id] || 0) + 1;
-                /** Fire-and-forget: the FileView write is async, so launch never blocks on disk. */
-                usageStore.setText(JSON.stringify(root.usage));
-            }
-            /** Reuse the surface's guard launch so both launchers fail loudly the same way. */
-            if (launcherLoader.item && launcherLoader.item.launchApp)
-                launcherLoader.item.launchApp(entry);
-            else
-                entry.execute();
-        }
+        if (entry)
+            AppLauncher.launchAndRecord(entry);
         root.shown = false;
     }
 
@@ -116,10 +83,7 @@ ShellRoot {
 
             /**
              * Built asynchronously in frame gaps so opening the launcher never
-             * blocks the UI thread (the whole ranked entry list instantiates
-             * here). Quickshell's LazyLoader can't host this: it is a non-Item
-             * window loader, and the launcher content must fill the window as
-             * a visual child — so this stays a Qt Loader, just async.
+             * blocks the UI thread.
              */
             Loader {
                 id: launcherLoader
@@ -128,12 +92,6 @@ ShellRoot {
                 active: root.shown && root.targetMonitor === modelData.name
                 asynchronous: true
 
-                /**
-                 * Focus once the item exists. The window's visible gates on
-                 * the loader's Ready status rather than onVisibleChanged, so
-                 * focus lands after the build completes. The item is recreated
-                 * fresh per open, so query and selection reset by construction.
-                 */
                 onItemChanged: if (item) Qt.callLater(item.focusField)
 
                 sourceComponent: Launcher {
@@ -143,13 +101,6 @@ ShellRoot {
                     onLaunch: (entry) => root.run(entry)
                     onQuit: root.shown = false
 
-                    /**
-                     * Push the live query up so `root.results` re-ranks as the
-                     * user types, and reset the row selection on every change.
-                     * Wired here instead of a Connections on the loader's item,
-                     * which would touch `.item` from a binding and defeat the
-                     * async load.
-                     */
                     onQueryChanged: { root.query = query; selectedIndex = 0; }
                 }
             }
@@ -157,19 +108,8 @@ ShellRoot {
     }
 
     /**
-     * IPC: the standalone launcher owns its show/hide/toggle surface. The
-     * launcher UI builds asynchronously in frame gaps (see launcherLoader), so
-     * show/toggle flip `shown` immediately — the IPC dispatch returns without
-     * blocking and the window appears the moment the build lands. Hide stays
-     * immediate.
-     *
-     * While the minimal bar is the shell (`Flags.barEnabled`) the same three calls
-     * drive the bar's in-strip launcher instead of this overlay, so the one bind
-     * that opens the launcher opens whichever belongs to the presentation on
-     * screen and nothing has to be rebound when the bar is switched on. The
-     * bar's singleton is only touched behind that flag, so with the pill as the
-     * shell it is never even built. `hide` closes both, which also leaves nothing
-     * stuck open if the flag was flipped while one of them was up.
+     * IPC: the standalone launcher owns its show/hide/toggle surface.
+     * While `Flags.barEnabled` is true, these calls drive `BarLauncher` instead.
      */
     IpcHandler {
         target: "launcher"

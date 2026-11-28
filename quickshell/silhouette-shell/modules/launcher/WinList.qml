@@ -15,6 +15,10 @@ Item {
     property real s: 1.1
     property var host: null
 
+    function scrollTo(index) {
+        winList.positionViewAtIndex(index, ListView.Contain);
+    }
+
     Text {
         anchors.centerIn: winList
         visible: host.windowActive && host.windowResults.length === 0
